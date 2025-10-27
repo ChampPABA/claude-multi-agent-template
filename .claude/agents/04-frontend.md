@@ -3,6 +3,7 @@ name: frontend
 description: Frontend implementation connecting components to APIs
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
+color: green
 ---
 
 # Frontend Agent

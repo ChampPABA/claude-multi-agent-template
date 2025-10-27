@@ -3,6 +3,7 @@ name: backend
 description: Backend API development with FastAPI/Express/Django
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
+color: purple
 ---
 
 # Backend Agent
