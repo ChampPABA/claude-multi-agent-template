@@ -61,6 +61,26 @@ Run automated tests, find bugs, fix them, and iterate until tests pass. Maximum 
 
 ## Context Loading Strategy
 
+### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+
+**BEFORE doing anything, read tech-stack.md:**
+
+```bash
+# Check if tech-stack.md exists
+.claude/contexts/domain/{project-name}/tech-stack.md
+```
+
+**Extract:**
+1. **Framework** (Next.js, FastAPI, Vue, etc.)
+2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
+3. **Dependencies** (specific to this agent's role)
+
+**Action:**
+- Store framework → Use for Context7 search
+- Store package manager → **USE THIS for all install/run commands**
+
+**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
+
 ### Step 1: Load Universal Patterns (Always)
 - @.claude/contexts/patterns/testing.md
 - @.claude/contexts/patterns/error-handling.md
@@ -394,6 +414,30 @@ Recommendation:
 ```
 
 ## Rules
+
+### Package Manager (CRITICAL!)
+- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
+- ✅ Use package manager specified in tech-stack.md
+- ✅ Never assume `npm`, `pip`, or any other package manager
+- ✅ For monorepos: use correct package manager for ecosystem
+
+**Example:**
+```markdown
+# tech-stack.md shows:
+Package Manager: pnpm (JavaScript)
+
+✅ CORRECT: pnpm test
+✅ CORRECT: pnpm add -D vitest
+❌ WRONG: npm test (ignored tech-stack.md!)
+❌ WRONG: bun test (tech-stack says pnpm!)
+```
+
+**If tech-stack.md doesn't exist:**
+- Warn user to run `/agentsetup` first
+- Ask user which package manager to use
+- DO NOT proceed with hardcoded package manager
+
+### Testing Standards
 - ✅ Run tests automatically (no manual testing)
 - ✅ Fix bugs iteratively (max 3-4 times)
 - ✅ Log each iteration (what was tried, what changed)
@@ -405,3 +449,59 @@ Recommendation:
 - ❌ Don't change spec without approval (escalate first)
 - ❌ Don't skip logging (observability critical)
 - ❌ Don't block on TDD violations (report only)
+
+---
+
+## Pre-Delivery Checklist
+
+**Before marking task as complete, verify:**
+
+### ✅ Test Execution
+- [ ] All tests pass (`pnpm test` or equivalent)
+- [ ] No test failures or errors
+- [ ] No skipped tests (unless intentional)
+- [ ] Test output is clean (no console warnings)
+
+### ✅ Test Coverage
+- [ ] Coverage meets minimum threshold (70%+ for critical paths)
+- [ ] New code has tests added
+- [ ] Edge cases are covered
+
+### ✅ Code Quality
+- [ ] No linting errors (`pnpm lint` or equivalent)
+- [ ] No TypeScript/type errors
+- [ ] No console.log or debug statements left
+- [ ] No TODO comments without tracking
+
+### ✅ Logging & Observability
+- [ ] Error scenarios are logged properly
+- [ ] Test failures have clear error messages
+- [ ] Structured logging used (not console.log)
+
+### ✅ Documentation
+- [ ] Test descriptions are clear (`test('should...')`)
+- [ ] Complex test logic has comments
+- [ ] NO separate .md files created (unless explicitly requested)
+
+### ❌ Failure Actions
+
+**If any checklist item fails:**
+1. Continue fixing (if iterations < 4)
+2. Log the failure and what was attempted
+3. Escalate to Main Claude (if iterations >= 4)
+
+**Example:**
+```json
+{
+  "event": "pre_delivery_check_failed",
+  "checklist": {
+    "tests_pass": true,
+    "coverage": false,
+    "linting": true
+  },
+  "action": "continuing_fixes",
+  "iteration": 2
+}
+```
+
+**IMPORTANT:** Don't mark task complete if critical items fail (tests, linting, type errors)

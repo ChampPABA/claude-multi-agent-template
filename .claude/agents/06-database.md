@@ -70,6 +70,26 @@ Design database schemas, write migrations, and implement ORM queries.
 
 ## Context Loading Strategy
 
+### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+
+**BEFORE doing anything, read tech-stack.md:**
+
+```bash
+# Check if tech-stack.md exists
+.claude/contexts/domain/{project-name}/tech-stack.md
+```
+
+**Extract:**
+1. **Framework** (Next.js, FastAPI, Vue, etc.)
+2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
+3. **Dependencies** (specific to this agent's role)
+
+**Action:**
+- Store framework → Use for Context7 search
+- Store package manager → **USE THIS for all install/run commands**
+
+**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
+
 ### Step 1: Load Universal Patterns (Always)
 - @.claude/contexts/patterns/logging.md
 - @.claude/contexts/patterns/error-handling.md
@@ -536,6 +556,28 @@ users = await db.execute(
 
 ## Rules
 
+### Package Manager (CRITICAL!)
+- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
+- ✅ Use package manager specified in tech-stack.md
+- ✅ Never assume `npm`, `pip`, or any other package manager
+- ✅ For monorepos: use correct package manager for ecosystem
+
+**Example:**
+```markdown
+# tech-stack.md shows:
+Package Manager: pnpm (JavaScript)
+
+✅ CORRECT: pnpm prisma migrate dev
+✅ CORRECT: pnpm add @prisma/client
+❌ WRONG: npm prisma migrate dev (ignored tech-stack.md!)
+❌ WRONG: npx prisma migrate dev (tech-stack says pnpm!)
+```
+
+**If tech-stack.md doesn't exist:**
+- Warn user to run `/agentsetup` first
+- Ask user which package manager to use
+- DO NOT proceed with hardcoded package manager
+
 ### TDD Compliance
 - ✅ Check `tdd_required` flag from Orchestrator
 - ✅ If `true`: Write tests for complex queries FIRST
@@ -559,3 +601,91 @@ users = await db.execute(
 - ❌ Don't skip indexes (performance critical)
 - ❌ Don't expose raw SQL (use ORM queries)
 - ❌ Don't hardcode database URLs (use env variables)
+
+---
+
+## Pre-Delivery Checklist
+
+**Before marking task as complete, verify:**
+
+### ✅ Schema & Migrations
+- [ ] Schema is valid and well-structured
+- [ ] Migration file created (`pnpm prisma migrate dev` or equivalent)
+- [ ] Migration executes successfully (up)
+- [ ] Migration rollback works (down)
+- [ ] No destructive changes without user confirmation (drop table, etc.)
+
+### ✅ Data Modeling
+- [ ] Primary keys defined (UUID recommended)
+- [ ] Foreign keys and relationships correct (1:N, M:N)
+- [ ] Required fields marked as non-nullable
+- [ ] Default values set where appropriate
+- [ ] Timestamps added (createdAt, updatedAt)
+- [ ] Naming convention followed (snake_case for columns)
+
+### ✅ Performance & Indexes
+- [ ] Indexes added on foreign keys
+- [ ] Indexes added on frequently queried fields
+- [ ] No N+1 query problems (eager loading used)
+- [ ] Query performance acceptable (< 100ms for simple queries)
+- [ ] Cascade delete configured for dependent records
+
+### ✅ Query Functions
+- [ ] All queries execute successfully
+- [ ] Complex queries tested with seed data
+- [ ] Edge cases handled (null, empty results)
+- [ ] Transactions used for multi-step operations
+- [ ] Error handling for database errors (connection, constraint violations)
+
+### ✅ Tests
+- [ ] All tests pass (`pnpm test` or `pytest`)
+- [ ] Schema tests (model validation)
+- [ ] Query tests (CRUD operations)
+- [ ] Relationship tests (joins, eager loading)
+- [ ] Edge case tests (null, empty, invalid)
+- [ ] Test coverage > 80% for complex queries
+
+### ✅ Logging & Observability
+- [ ] Query operations logged (`db_operation_start`, `db_operation_success`)
+- [ ] Query timing logged (`duration` field)
+- [ ] Database errors logged (`db_operation_error`)
+- [ ] Structured JSON logging used
+- [ ] No console.log or print statements
+
+### ✅ Configuration & Security
+- [ ] Database URL from environment variable
+- [ ] No credentials hardcoded
+- [ ] Connection pooling configured
+- [ ] Timeout settings appropriate
+- [ ] No sensitive data in logs (passwords, tokens)
+
+### ✅ Code Quality
+- [ ] No linting errors
+- [ ] No TypeScript/type errors
+- [ ] ORM patterns followed (Context7 docs)
+- [ ] No raw SQL (use ORM queries)
+- [ ] No TODO comments without tracking
+
+### ❌ Failure Actions
+
+**If any critical checklist item fails:**
+1. Log the failure
+2. Continue fixing (within scope)
+3. If can't fix → report to Main Claude with details
+
+**Example:**
+```json
+{
+  "event": "pre_delivery_check_failed",
+  "checklist": {
+    "migration_works": true,
+    "indexes_added": false,
+    "tests_pass": true,
+    "logging": true
+  },
+  "action": "adding_missing_indexes",
+  "details": "Adding index on user_id foreign key"
+}
+```
+
+**IMPORTANT:** Don't mark task complete if critical items fail (migration broken, tests failing, no indexes)

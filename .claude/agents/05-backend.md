@@ -66,13 +66,49 @@ Build API endpoints with validation, error handling, and database integration.
 
 ## Context Loading Strategy
 
+### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+
+**BEFORE doing anything, read tech-stack.md:**
+
+```bash
+# Check if tech-stack.md exists
+.claude/contexts/domain/{project-name}/tech-stack.md
+```
+
+**Extract:**
+1. **Framework** (FastAPI, Express, Next.js, Django)
+2. **Package Manager** (uv, poetry, pip, npm, pnpm, bun, yarn)
+3. **Database ORM** (Prisma, SQLAlchemy, TypeORM)
+4. **Testing Framework** (Pytest, Vitest, Jest)
+
+**Example tech-stack.md:**
+```markdown
+## Stack Overview
+| Category | Library | Version |
+|----------|---------|---------|
+| Backend  | FastAPI | 0.104.1 |
+| Database | SQLAlchemy | 2.0.23 |
+
+## Package Manager
+### Python
+- Tool: uv
+- Install: uv pip install <package>
+- Run: uv run <script>
+```
+
+**Action:**
+- Store framework → Use for Context7 search
+- Store package manager → **USE THIS for all install/run commands**
+
+**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
+
 ### Step 1: Load Universal Patterns (Always)
 - @.claude/contexts/patterns/logging.md
 - @.claude/contexts/patterns/error-handling.md
 - @.claude/contexts/patterns/testing.md
 - @.claude/contexts/patterns/task-classification.md
 
-### Step 2: Detect Tech Stack & Load Docs (Context7)
+### Step 2: Load Tech Stack Docs from Context7
 
 **IF FastAPI (Python):**
 ```
@@ -797,6 +833,27 @@ Response: { token: string, user: { id, email, name } }
 - ✅ If `false`: Test-Alongside OK (implementation first, then tests)
 - ✅ Log each TDD phase (red, green, refactor)
 
+### Package Manager (CRITICAL!)
+- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
+- ✅ Use package manager specified in tech-stack.md
+- ✅ Never assume `npm`, `pip`, or any other package manager
+- ✅ For monorepos: use correct package manager for ecosystem (JS vs Python)
+
+**Example:**
+```markdown
+# tech-stack.md shows:
+Package Manager: uv (Python)
+
+✅ CORRECT: uv pip install fastapi
+❌ WRONG: pip install fastapi (ignored tech-stack.md!)
+❌ WRONG: pnpm add fastapi (fastapi is Python, not JS!)
+```
+
+**If tech-stack.md doesn't exist:**
+- Warn user to run `/agentsetup` first
+- Ask user which package manager to use
+- DO NOT proceed with hardcoded package manager
+
 ### Implementation Standards
 - ✅ Validate ALL inputs (Pydantic/Zod)
 - ✅ Log ALL significant events (entry, success, failure, error)
@@ -811,4 +868,86 @@ Response: { token: string, user: { id, email, name } }
 - ❌ Don't write implementation before tests (when TDD required)
 - ❌ Don't skip validation (never trust inputs)
 - ❌ Don't expose sensitive data in errors
+- ❌ Don't use hardcoded package managers (ALWAYS read tech-stack.md)
 - ❌ Don't use print/console.log (use structured logging)
+
+---
+
+## Pre-Delivery Checklist
+
+**Before marking task as complete, verify:**
+
+### ✅ API Implementation
+- [ ] Endpoint is accessible and responds correctly
+- [ ] HTTP status codes are appropriate (200, 201, 400, 401, 404, 500)
+- [ ] Response format matches spec (JSON structure)
+- [ ] Request body/query params validated
+
+### ✅ Validation & Error Handling
+- [ ] Input validation added (Pydantic/Zod)
+- [ ] Required fields checked
+- [ ] Type validation works (email, UUID, etc.)
+- [ ] Error responses are structured (no raw stack traces)
+- [ ] Errors include helpful messages
+
+### ✅ Business Logic
+- [ ] Core functionality works as expected
+- [ ] Edge cases handled (null, empty, invalid)
+- [ ] Calculations/transformations are correct
+- [ ] Dependencies injected properly (FastAPI Depends, etc.)
+
+### ✅ Database Integration
+- [ ] Queries execute successfully
+- [ ] Transactions used where needed
+- [ ] No N+1 query problems
+- [ ] Database errors handled gracefully
+
+### ✅ Tests
+- [ ] All tests pass (`pnpm test` or `pytest`)
+- [ ] Unit tests cover business logic
+- [ ] Integration tests cover endpoint (request → response)
+- [ ] Edge cases tested (invalid inputs, errors)
+- [ ] Test coverage > 80% for critical paths
+
+### ✅ Logging & Observability
+- [ ] API entry logged (`api_route_entry`)
+- [ ] Success cases logged (`api_route_success`)
+- [ ] Error cases logged (`api_route_error`)
+- [ ] Structured JSON logging used
+- [ ] No console.log or print statements
+
+### ✅ Security & Configuration
+- [ ] No secrets hardcoded (use env variables)
+- [ ] No sensitive data in logs (passwords, tokens)
+- [ ] CORS configured (if applicable)
+- [ ] Authentication/authorization added (if required)
+
+### ✅ Code Quality
+- [ ] No linting errors
+- [ ] No TypeScript/type errors
+- [ ] Code follows framework patterns (Context7 docs)
+- [ ] No TODO comments without tracking
+
+### ❌ Failure Actions
+
+**If any critical checklist item fails:**
+1. Log the failure
+2. Continue fixing (within scope)
+3. If can't fix → report to Main Claude with details
+
+**Example:**
+```json
+{
+  "event": "pre_delivery_check_failed",
+  "checklist": {
+    "api_works": true,
+    "validation": true,
+    "tests": false,
+    "logging": true
+  },
+  "action": "fixing_tests",
+  "details": "2 integration tests failing - debugging now"
+}
+```
+
+**IMPORTANT:** Don't mark task complete if critical items fail (API broken, tests failing, validation missing)

@@ -53,6 +53,26 @@ Validate that frontend and backend API contracts match. Act as a "contract valid
 
 ## Context Loading Strategy
 
+### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+
+**BEFORE doing anything, read tech-stack.md:**
+
+```bash
+# Check if tech-stack.md exists
+.claude/contexts/domain/{project-name}/tech-stack.md
+```
+
+**Extract:**
+1. **Framework** (Next.js, FastAPI, Vue, etc.)
+2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
+3. **Dependencies** (specific to this agent's role)
+
+**Action:**
+- Store framework → Use for Context7 search
+- Store package manager → **USE THIS for all install/run commands**
+
+**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
+
 ### Step 1: Load Universal Patterns (Always)
 - @.claude/contexts/patterns/error-handling.md
 - @.claude/contexts/patterns/logging.md
@@ -461,6 +481,28 @@ Frontend expects `email` but backend doesn't return it.
 ---
 
 ## Rules
+
+### Package Manager (CRITICAL!)
+- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
+- ✅ Use package manager specified in tech-stack.md
+- ✅ Never assume `npm`, `pip`, or any other package manager
+- ✅ For monorepos: use correct package manager for ecosystem
+
+**Example:**
+```markdown
+# tech-stack.md shows:
+Package Manager: pnpm (JavaScript)
+
+✅ CORRECT: pnpm install
+✅ CORRECT: pnpm add <package>
+❌ WRONG: npm install (ignored tech-stack.md!)
+❌ WRONG: bun add <package> (tech-stack says pnpm!)
+```
+
+**If tech-stack.md doesn't exist:**
+- Warn user to run `/agentsetup` first
+- Ask user which package manager to use
+- DO NOT proceed with hardcoded package manager
 
 ### Validation Standards
 - ✅ Read ACTUAL code files (don't guess or assume)

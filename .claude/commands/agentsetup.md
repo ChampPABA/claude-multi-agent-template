@@ -180,25 +180,107 @@ Use the **AskUserQuestion** tool:
 6. Ruby on Rails (Ruby full-stack framework)
 ```
 
-**Follow-up questions:**
-- Database: Prisma / SQLAlchemy / TypeORM / Eloquent / ActiveRecord?
-- Testing: Vitest / Jest / Pytest / PHPUnit / RSpec?
-- State Management (if frontend): Zustand / Redux / Pinia / Vuex?
+**Follow-up questions based on ecosystem:**
+
+#### If JavaScript/TypeScript stack (Next.js, Express, etc.):
+```markdown
+1. Database: Prisma / Drizzle / TypeORM?
+2. Testing: Vitest / Jest / Playwright?
+3. State Management: Zustand / Redux / Jotai?
+4. **Package Manager:**
+   - pnpm (recommended - fast, disk efficient)
+   - npm (default - slower but universal)
+   - bun (experimental - fastest, some compatibility issues)
+   - yarn (classic - stable but slower than pnpm)
+```
+
+#### If Python stack (FastAPI, Django, Flask):
+```markdown
+1. Database: SQLAlchemy / Prisma (via Python client) / Django ORM?
+2. Testing: Pytest / Unittest?
+3. **Package Manager:**
+   - uv (recommended - fastest, pip replacement)
+   - poetry (stable - dependency resolution + virtual envs)
+   - pip + venv (classic - simple but slow)
+   - pipenv (stable - older alternative to poetry)
+```
+
+#### If PHP stack (Laravel):
+```markdown
+1. Testing: PHPUnit / Pest?
+2. **Package Manager:** composer (standard)
+```
+
+#### If Ruby stack (Rails):
+```markdown
+1. Testing: RSpec / Minitest?
+2. **Package Manager:** bundler (standard)
+```
+
+#### If Go stack:
+```markdown
+**Package Manager:** go (standard go mod)
+```
+
+#### If Rust stack:
+```markdown
+**Package Manager:** cargo (standard)
+```
 
 ### Example Interaction:
 
 ```
 User selects: Next.js
 → Ask: "Which database ORM?"
-  - Prisma
+  - Prisma ✓
   - Drizzle
   - TypeORM
 
 User selects: Prisma
 → Ask: "Which testing framework?"
-  - Vitest
+  - Vitest ✓
   - Jest
   - Playwright (E2E)
+
+User selects: Vitest
+→ Ask: "Which package manager?"
+  - pnpm (recommended - 3x faster than npm, disk efficient)
+  - npm (default - slower but works everywhere)
+  - bun (experimental - fastest but may have issues)
+  - yarn (stable alternative)
+
+User selects: pnpm
+```
+
+```
+User selects: FastAPI
+→ Ask: "Which database ORM?"
+  - SQLAlchemy ✓
+  - Prisma Python
+  - TortoiseORM
+
+User selects: SQLAlchemy
+→ Ask: "Which testing framework?"
+  - Pytest ✓
+  - Unittest
+
+User selects: Pytest
+→ Ask: "Which package manager?"
+  - uv (recommended - 10-100x faster than pip)
+  - poetry (stable - good dependency resolution)
+  - pip + venv (classic - simple but slow)
+  - pipenv (older alternative)
+
+User selects: uv
+```
+
+**Store selections for tech-stack.md:**
+```markdown
+Selected Stack:
+- Framework: FastAPI (latest)
+- Database: SQLAlchemy (latest)
+- Testing: Pytest (latest)
+- Package Manager: uv (latest)
 ```
 
 ---
@@ -208,6 +290,60 @@ User selects: Prisma
 ### Auto-Detect Stack from Files
 
 **Read the dependency file and extract versions:**
+
+### **FIRST: Detect Package Manager(s)**
+
+Check for lock files to determine package manager:
+
+#### JavaScript/TypeScript Package Managers:
+```bash
+# Check in order:
+1. bun.lockb → bun
+2. pnpm-lock.yaml → pnpm
+3. yarn.lock → yarn (check version: yarn.lock v1 vs v3+)
+4. package-lock.json → npm
+5. package.json only → ask user (default: pnpm)
+```
+
+#### Python Package Managers:
+```bash
+# Check in order:
+1. uv.lock → uv
+2. poetry.lock → poetry
+3. Pipfile.lock → pipenv
+4. pdm.lock → pdm
+5. pyproject.toml:
+   - Has [tool.uv] → uv
+   - Has [tool.poetry] → poetry
+   - Has [tool.pdm] → pdm
+6. requirements.txt only → ask user (default: uv)
+```
+
+#### Other Ecosystems:
+```bash
+- composer.lock → composer (PHP)
+- Gemfile.lock → bundler (Ruby)
+- go.mod → go (Go ecosystem)
+- Cargo.lock → cargo (Rust)
+- pnpm-workspace.yaml → pnpm (monorepo)
+```
+
+**Store detected package manager(s):**
+```markdown
+Package Manager(s) Detected:
+- JavaScript: pnpm 9.x (from pnpm-lock.yaml)
+- Python: uv 0.4.x (from uv.lock)
+```
+
+**If multiple ecosystems found (e.g., monorepo):**
+```markdown
+Monorepo Detected:
+- Frontend (JS): pnpm
+- Backend (Python): uv
+- Docs (Ruby): bundler
+```
+
+---
 
 #### Node.js (package.json)
 ```typescript
@@ -369,17 +505,53 @@ mkdir -p .claude/contexts/domain/{project-name}
 | State | Zustand | 5.0.0 | /pmndrs/zustand |
 | Testing | Vitest | 2.0.0 | /vitest-dev/vitest |
 
+## Package Manager(s)
+
+### JavaScript/TypeScript
+- **Tool:** pnpm
+- **Version:** 9.x
+- **Detected from:** pnpm-lock.yaml
+- **Install:** `pnpm install`
+- **Add package:** `pnpm add <package>`
+- **Run script:** `pnpm run <script>`
+- **Remove:** `pnpm remove <package>`
+
+### Python (if applicable)
+- **Tool:** uv
+- **Version:** 0.4.x
+- **Detected from:** uv.lock
+- **Install:** `uv pip install -r requirements.txt`
+- **Add package:** `uv pip install <package>`
+- **Run script:** `uv run <script>`
+
+### PHP (if applicable)
+- **Tool:** composer
+- **Install:** `composer install`
+- **Add package:** `composer require <package>`
+
+### Ruby (if applicable)
+- **Tool:** bundler
+- **Install:** `bundle install`
+- **Add gem:** `bundle add <gem>`
+
 ## Installation Commands
 
+**IMPORTANT:** All agents MUST use the package manager(s) specified above.
+
 \`\`\`bash
-# Node.js
+# JavaScript/TypeScript (use pnpm as specified)
 pnpm install
+pnpm add <package>
+pnpm run dev
 
-# Python
-pip install -r requirements.txt
+# Python (use uv as specified)
+uv pip install -r requirements.txt
+uv pip install <package>
+uv run <script>
 
-# PHP
-composer install
+# Monorepo Example (if multiple ecosystems):
+# Frontend: pnpm install
+# Backend: uv pip install -r requirements.txt
 \`\`\`
 
 ## Key Patterns (from Context7)
@@ -477,6 +649,10 @@ After creating all files, output a summary:
 - State: Zustand 5.0.0
 - Testing: Vitest 2.0.0
 
+📦 Package Manager(s):
+- JavaScript: pnpm 9.x (detected from pnpm-lock.yaml)
+- Python: uv 0.4.x (detected from uv.lock) [if applicable]
+
 📁 Domain Context Created:
 - .claude/contexts/domain/{project}/tech-stack.md
 - .claude/contexts/domain/{project}/architecture.md (if applicable)
@@ -490,10 +666,13 @@ After creating all files, output a summary:
 - Vitest 2 Testing (3000 tokens)
 
 🚀 Ready to start! Use:
-- /agents orchestrator → Coordinate complex tasks
-- /agents frontend → Build UI components
+- /agents uxui-frontend → Design UI components with mock data
+- /agents frontend → Connect UI to APIs
 - /agents backend → Create API endpoints
 - /agents database → Design schemas
+- /agents test-debug → Run tests and fix bugs
+
+💡 Remember: All agents will use the detected package manager(s) automatically.
 ```
 
 ---
@@ -526,10 +705,40 @@ What tech stack do you want to use?
 
 1. **ALWAYS use Context7 MCP** for latest docs (never hardcode docs)
 2. **ALWAYS create tech-stack.md** (mandatory)
-3. **ONLY create architecture/business-rules/design-tokens** if spec provides info
-4. **NEVER guess versions** - read from package files or ask user
-5. **ALWAYS confirm detected stack** with user before proceeding
-6. **Store Context7 library IDs** in tech-stack.md for future reference
+3. **ALWAYS detect and store package manager(s)** in tech-stack.md
+4. **ONLY create architecture/business-rules/design-tokens** if spec provides info
+5. **NEVER guess versions** - read from package files or ask user
+6. **NEVER hardcode package manager commands** - always read from tech-stack.md
+7. **ALWAYS confirm detected stack** with user before proceeding
+8. **Store Context7 library IDs** in tech-stack.md for future reference
+
+### Critical: Package Manager Usage
+
+**All agents (backend, frontend, database, test-debug) MUST:**
+1. Read `.claude/contexts/domain/{project}/tech-stack.md` BEFORE running any install/run commands
+2. Use the package manager specified in tech-stack.md
+3. Never assume npm/pip - always check tech-stack.md first
+
+**Example:**
+```
+Agent reads tech-stack.md:
+- Package Manager: pnpm
+
+Agent runs:
+✅ pnpm add fastapi  (correct)
+❌ npm install fastapi  (wrong - ignored tech-stack.md!)
+```
+
+**For monorepo projects:**
+```
+Agent reads tech-stack.md:
+- JavaScript: pnpm
+- Python: uv
+
+Agent working on backend (Python):
+✅ uv pip install fastapi  (correct - uses Python package manager)
+❌ pnpm add fastapi  (wrong - fastapi is Python, not JS!)
+```
 
 ---
 
