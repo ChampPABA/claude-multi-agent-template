@@ -1011,7 +1011,7 @@ Package Manager: uv (Python)
 - [ ] Unit tests cover business logic
 - [ ] Integration tests cover endpoint (request → response)
 - [ ] Edge cases tested (invalid inputs, errors)
-- [ ] Test coverage > 80% for critical paths
+- [ ] Test coverage > 85% for critical paths
 
 ### ✅ Logging & Observability
 - [ ] API entry logged (`api_route_entry`)

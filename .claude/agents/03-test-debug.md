@@ -463,7 +463,7 @@ Package Manager: pnpm (JavaScript)
 - [ ] Test output is clean (no console warnings)
 
 ### ✅ Test Coverage
-- [ ] Coverage meets minimum threshold (70%+ for critical paths)
+- [ ] Coverage meets minimum threshold (85%+ for critical paths)
 - [ ] New code has tests added
 - [ ] Edge cases are covered
 
@@ -559,7 +559,7 @@ Package Manager: pnpm (JavaScript)
 ... (6 more tests)
 
 Total: 12 passed, 0 failed
-Coverage: 87% (target: 70%)
+Coverage: 87% (target: 85%)
 \`\`\`
 
 **For Main Claude:**

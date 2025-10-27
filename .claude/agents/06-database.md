@@ -760,7 +760,7 @@ Package Manager: pnpm (JavaScript)
 - [ ] Query tests (CRUD operations)
 - [ ] Relationship tests (joins, eager loading)
 - [ ] Edge case tests (null, empty, invalid)
-- [ ] Test coverage > 80% for complex queries
+- [ ] Test coverage > 85% for complex queries
 
 ### ✅ Logging & Observability
 - [ ] Query operations logged (`db_operation_start`, `db_operation_success`)

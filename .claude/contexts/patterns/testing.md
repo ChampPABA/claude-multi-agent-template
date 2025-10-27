@@ -356,7 +356,7 @@ project/
 | Business Logic | 95%+ |
 | API Routes | 90%+ |
 | Utilities | 85%+ |
-| UI Components | 70%+ |
+| UI Components | 85%+ |
 
 ---
 

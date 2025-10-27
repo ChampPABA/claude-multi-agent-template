@@ -219,7 +219,7 @@ Task 4.5: Documentation
 
 Task 4.6: Code Review Checklist
 - ✅ All tests passing (unit + integration + E2E)
-- ✅ Test coverage > 80%
+- ✅ Test coverage > 85%
 - ✅ All operations logged
 - ✅ Type safety (no 'any' types)
 - ✅ No console.log statements (use logger)
