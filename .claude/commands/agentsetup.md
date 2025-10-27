@@ -15,7 +15,136 @@ You are the **Agent Setup Assistant**. Your job is to:
 
 ---
 
-## Step 1: Detect Project Type
+## Step 1: Check if Re-run
+
+**FIRST, check if tech-stack.md already exists:**
+
+```bash
+.claude/contexts/domain/{project}/tech-stack.md
+```
+
+**Decision:**
+- **IF tech-stack.md exists** → **RE-RUN MODE** (go to Step 1A)
+- **ELSE** → **FIRST RUN** (go to Step 1B)
+
+---
+
+## Step 1A: Re-run Mode (tech-stack.md exists)
+
+**This means user already ran `/agentsetup` before.**
+
+### 1. Read existing tech-stack.md
+
+Parse the existing stack:
+```markdown
+| Category | Library | Version | Context7 ID |
+|----------|---------|---------|-------------|
+| Frontend | Next.js | 15.5.0 | /vercel/next.js |
+| Database | Prisma | 6.5.0 | /prisma/prisma |
+```
+
+### 2. Check for package files NOW
+
+- `package.json` (Node.js/JS/TS)
+- `requirements.txt` or `pyproject.toml` (Python)
+- `composer.json` (PHP)
+- `Cargo.toml` (Rust)
+- `go.mod` (Go)
+- `pom.xml` or `build.gradle` (Java)
+- `Gemfile` (Ruby)
+
+### 3. Compare old vs new
+
+**Scenario A: Package file found (Greenfield → Brownfield)**
+
+```
+Old stack (from tech-stack.md):
+- Frontend: Next.js (no version - was greenfield)
+- Database: Prisma (no version)
+
+New stack (from package.json):
+- Frontend: Next.js 15.5.0 ✓ (version detected!)
+- Database: Prisma 6.5.0 ✓ (version detected!)
+- State: Zustand 5.0.0 🆕 (newly added!)
+- Testing: Vitest 2.0.0 🆕 (newly added!)
+```
+
+**Output:**
+```
+🔄 Tech stack update detected!
+
+📋 Changes:
+✓ Next.js: (no version) → 15.5.0
+✓ Prisma: (no version) → 6.5.0
+🆕 Zustand: 5.0.0 (newly added)
+🆕 Vitest: 2.0.0 (newly added)
+
+❓ Update tech-stack.md? (yes/no)
+```
+
+**Scenario B: Package file found (Brownfield → Brownfield updated)**
+
+```
+Old stack (from tech-stack.md):
+- Frontend: Next.js 15.5.0
+- Database: Prisma 6.5.0
+
+New stack (from package.json):
+- Frontend: Next.js 15.8.0 ⬆️ (upgraded!)
+- Database: Prisma 6.7.0 ⬆️ (upgraded!)
+- State: Zustand 5.0.0 🆕 (newly added!)
+```
+
+**Output:**
+```
+🔄 Tech stack update detected!
+
+📋 Changes:
+⬆️ Next.js: 15.5.0 → 15.8.0 (upgraded)
+⬆️ Prisma: 6.5.0 → 6.7.0 (upgraded)
+🆕 Zustand: 5.0.0 (newly added)
+
+❓ Update tech-stack.md and re-fetch Context7 docs? (yes/no)
+```
+
+**Scenario C: No package file (Greenfield → Greenfield still)**
+
+```
+Old stack (from tech-stack.md):
+- Frontend: Next.js (no version)
+- Database: Prisma (no version)
+
+New stack: (no package file found)
+- Same as old
+```
+
+**Output:**
+```
+ℹ️ No changes detected.
+
+Your project is still in greenfield mode (no package.json found).
+
+Options:
+1. Keep existing tech-stack.md
+2. Re-run setup (ask questions again)
+
+Choose: (1/2)
+```
+
+### 4. User confirms update
+
+**If user says "yes":**
+- Re-run Context7 searches with new versions
+- Update tech-stack.md with new stack
+- Show summary
+
+**If user says "no":**
+- Keep existing tech-stack.md
+- Exit
+
+---
+
+## Step 1B: First Run (tech-stack.md does NOT exist)
 
 **Check for these files in the project root:**
 
@@ -28,8 +157,8 @@ You are the **Agent Setup Assistant**. Your job is to:
 - `Gemfile` (Ruby)
 
 **Decision:**
-- **IF any file found** → **BROWNFIELD** (existing project)
-- **ELSE** → **GREENFIELD** (new project)
+- **IF any file found** → **BROWNFIELD** (existing project - go to Step 2B)
+- **ELSE** → **GREENFIELD** (new project - go to Step 2A)
 
 ---
 
