@@ -131,9 +131,9 @@ Designs schemas, writes migrations (Prisma, SQLAlchemy, TypeORM).
     │   ├── task-breakdown.md
     │   ├── development-principles.md
     │   ├── code-standards.md
-    │   ├── state-management.md
-    │   ├── package-management.md
-    │   └── specification.md
+    │   # REMOVED - Use Context7 MCP instead
+    │   # REMOVED - Use Context7 MCP instead
+    │   # REMOVED - Optional (OpenSpec, BMAD, SpecKit)
     │
     ├── design/                  # Design foundation (static)
     │   ├── index.md
