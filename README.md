@@ -20,18 +20,32 @@ A **production-ready template** for building software with AI agents that:
 
 ## 🚀 Quick Start
 
-### 1. Clone Template
+### มาถึงปุ๊บ ต้องทำอะไร? (Step-by-Step)
+
+#### 📥 Step 1: Clone Template (1 นาที)
 
 ```bash
-git clone https://github.com/ChampPABA/claude-multi-agent-template.git my-project
+# Clone template มา
+git clone https://github.com/anongecko/claude-multi-agent-template.git my-project
 cd my-project
+
+# ลบ .git เดิม แล้วสร้างใหม่
 rm -rf .git
 git init
+git add .
+git commit -m "Initial commit from template"
 ```
 
-### 2. Setup MCP (Context7)
+---
 
-Add to your MCP settings:
+#### 🔌 Step 2: Setup Context7 MCP (2 นาที)
+
+**ทำไมต้องมี?** ให้ AI หา docs ล่าสุดของ framework ให้เอง (Next.js, FastAPI, Vue, etc.)
+
+**วิธีติดตั้ง:**
+
+1. เปิด Claude Code Settings → MCP Servers
+2. เพิ่ม config นี้:
 
 ```json
 {
@@ -44,46 +58,231 @@ Add to your MCP settings:
 }
 ```
 
-### 3. Start Building
+3. Restart Claude Code
+4. เช็คว่าใช้งานได้: พิมพ์ `/mcp` ดู list → ต้องมี `context7`
 
-**Option A: Manual**
+---
+
+#### 🎨 Step 3: (Optional) กำหนดสี Design Tokens (5 นาที)
+
+ถ้าโปรเจคมีสีเฉพาะ เช่น brand colors:
+
 ```bash
-/agents orchestrator
-# Describe your task, agent coordinates implementation
+mkdir -p .claude/contexts/domain/myproject
 ```
 
-**Option B: With tasks.md**
+สร้างไฟล์ `.claude/contexts/domain/myproject/design-tokens.md`:
+
 ```markdown
-<!-- tasks.md -->
+# MyProject Design Tokens
+
+## Brand Colors
+- Primary: `rgb(255, 87, 34)` (Orange - Energy, Innovation)
+- Secondary: `rgb(33, 150, 243)` (Blue - Trust, Stability)
+- Accent: `rgb(76, 175, 80)` (Green - Success)
+
+## Usage
+- Primary: CTA buttons, links, brand elements
+- Secondary: Headers, navigation
+- Accent: Success messages, completed states
+```
+
+**หมายเหตุ:** ถ้าไม่กำหนดเอง AI จะใช้ design foundation จาก `.claude/contexts/design/` (สีทั่วไป)
+
+---
+
+#### 🏗️ Step 4: เริ่มทำงาน - เลือก 1 ใน 2 วิธี
+
+### **วิธีที่ 1: สั่งตรงๆ (Simple, Ad-hoc)**
+
+```bash
+# เปิด Orchestrator
+/agents orchestrator
+
+# สั่งงาน
+"สร้าง login form ใช้ Next.js + Prisma"
+```
+
+**Orchestrator จะ:**
+1. ตรวจสอบ tech stack ในโปรเจค (อ่าน `package.json` หรือ `requirements.txt`)
+2. ค้น Context7 หา docs (Next.js 15, Prisma 6)
+3. มอบหมายงานให้ agents:
+   - **UX-UI Frontend**: สร้าง form + mock data
+   - **Test-Debug**: เขียน tests
+   - **Frontend**: ต่อ API
+   - **Backend**: สร้าง POST /api/auth/login
+   - **Database**: สร้าง User model
+
+---
+
+### **วิธีที่ 2: ใช้ tasks.md (Structured, Complex Projects)**
+
+สร้างไฟล์ `tasks.md`:
+
+```markdown
 # Feature: User Authentication
 
 ## Tech Stack
-- Frontend: Next.js 15
+- Frontend: Next.js 15 App Router
 - Backend: Next.js API Routes
 - Database: Prisma + PostgreSQL
+- Testing: Vitest
 
-## Tasks
-### Phase 1: UX-UI
-- Task 1.1: Create login form (mock data)
-- Task 1.2: Test with Vitest
-- Task 1.3: Human approval
+---
 
-### Phase 2: Frontend
-- Task 2.1: Connect to API
-- Task 2.2: Add state management (Zustand)
+## Phase 1: MVT (Minimum Viable Test)
+**Goal:** 1 user สามารถ login ได้
 
-### Phase 3: Backend
-- Task 3.1: POST /api/auth/login
-- Task 3.2: JWT token generation
+### Task 1.1: Create Login Form (UX-UI Frontend Agent)
+- Email input (required, type=email)
+- Password input (required, minLength=8)
+- Submit button
+- Mock data: `{ email: 'test@example.com', password: 'password123' }`
 
-### Phase 4: Database
-- Task 4.1: User model (email, password, name)
+### Task 1.2: Write Unit Tests (Test-Debug Agent)
+- Test form validation (empty fields, invalid email)
+- Test mock login flow
+
+### Task 1.3: Human Approval ✋
+**STOP** - User tests manually, approves before Phase 2
+
+---
+
+## Phase 2: Complexity (Add Real API)
+**Goal:** Connect form to real backend
+
+### Task 2.1: Create Login API (Backend Agent)
+- POST /api/auth/login
+- Validate email + password with Zod
+- Return 200 + JWT token OR 401 error
+
+### Task 2.2: Connect Form to API (Frontend Agent)
+- Replace mock data with fetch('/api/auth/login')
+- Handle loading state
+- Handle error messages
+
+### Task 2.3: Add State Management (Frontend Agent)
+- Zustand store for auth state
+- Store JWT token in localStorage
+- Add logout action
+
+---
+
+## Phase 3: Scale (Full Auth Flow)
+
+### Task 3.1: Database Schema (Database Agent)
+```prisma
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // bcrypt hash
+  name      String?
+  createdAt DateTime @default(now())
+}
 ```
 
-Then:
+### Task 3.2: Password Hashing (Backend Agent)
+- Install bcrypt
+- Hash password before saving
+- Compare hash during login
+
+### Task 3.3: JWT Generation (Backend Agent)
+- Install jsonwebtoken
+- Generate token with user.id payload
+- Set expiry (7 days)
+
+### Task 3.4: Protected Routes (Frontend Agent)
+- Create middleware to check JWT
+- Redirect to /login if not authenticated
+
+---
+
+## Phase 4: Deploy (Production Ready)
+
+### Task 4.1: Error Handling (Backend Agent)
+- Add try-catch to all API routes
+- Return proper HTTP status codes
+- Log all errors with logger.error()
+
+### Task 4.2: Integration Tests (Test-Debug Agent)
+- Test complete login flow (form → API → database)
+- Test error cases (wrong password, user not found)
+
+### Task 4.3: Security Review (Backend Agent)
+- Add rate limiting (max 5 login attempts/minute)
+- Add CORS configuration
+- Add input sanitization
+
+### Task 4.4: Documentation (Orchestrator)
+- API documentation (endpoints, request/response)
+- Setup instructions (environment variables)
 ```
-User: "Execute tasks.md"
-→ Orchestrator reads tasks → Detects Next.js/Prisma → Delegates to agents
+
+**วิธีใช้:**
+
+```bash
+/agents orchestrator
+"Execute tasks.md"
+```
+
+**Orchestrator จะ:**
+1. อ่าน tasks.md ทั้งหมด
+2. ตรวจสอบ tech stack (Next.js 15, Prisma)
+3. ดึง docs จาก Context7
+4. ทำงาน Phase 1 → รอ approval → Phase 2 → Phase 3 → Phase 4
+5. หยุดรอที่ "Human Approval ✋" (Task 1.3, 2.3, etc.)
+
+---
+
+#### 🔄 Step 5: ใช้งานต่อเนื่อง
+
+**เพิ่ม Feature ใหม่:**
+```bash
+/agents orchestrator
+"สร้าง user profile page - ให้แก้ไขชื่อ/อีเมลได้"
+```
+
+**แก้ Bug:**
+```bash
+/agents test-debug
+"Login form ไม่แสดง error message เมื่อ password ผิด"
+```
+
+**Refactor Code:**
+```bash
+/agents backend
+"Refactor /api/auth/login - แยก validation logic ออกมา"
+```
+
+---
+
+#### 📚 Step 6: เรียนรู้เพิ่มเติม
+
+**อ่าน navigation guide:**
+```bash
+cat .claude/CLAUDE.md
+```
+
+**ดู agent ทั้งหมด:**
+```bash
+ls .claude/agents/
+```
+
+**ดู universal patterns:**
+```bash
+ls .claude/contexts/patterns/
+# - logging.md (structured JSON logging)
+# - testing.md (TDD, Red-Green-Refactor)
+# - error-handling.md (try-catch, retry, circuit breaker)
+# - task-breakdown.md (4-phase methodology)
+```
+
+**ดู design foundation:**
+```bash
+ls .claude/contexts/design/
+# - box-thinking.md (layout analysis framework)
+# - accessibility.md (WCAG 2.1 AA compliance)
+# - color-theory.md, typography.md, spacing.md, etc.
 ```
 
 ---
