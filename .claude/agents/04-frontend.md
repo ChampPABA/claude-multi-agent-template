@@ -762,6 +762,98 @@ test('failed login shows error message', async () => {
 **Coverage:** 92%
 ```
 
+---
+
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** frontend
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (Frontend → Test-Debug):
+
+```markdown
+## ✅ Task Complete: Connect login form to API
+
+**Agent:** frontend
+
+**What I Did:**
+- Replaced mock data with real API calls to POST /api/auth/login
+- Added Zustand store for auth state (token + user)
+- Implemented login/logout actions
+- Added token persistence (localStorage)
+- Added error handling for API failures
+
+**For Next Agent (Test-Debug):**
+
+**What to Test:**
+
+**1. Login Flow:**
+- [ ] Valid credentials → Success (200, token returned)
+- [ ] Invalid credentials → Error (401, error message shown)
+- [ ] Missing fields → Error (422, validation error shown)
+- [ ] Network error → Error message shown
+- [ ] Token stored in localStorage after success
+- [ ] User redirected to /dashboard after success
+
+**2. State Management:**
+- [ ] User object stored in Zustand after login
+- [ ] Token accessible from auth store
+- [ ] Logout clears token and user from store
+- [ ] Logout clears localStorage
+
+**3. Protected Routes:**
+- [ ] /dashboard requires authentication
+- [ ] Redirect to /login if not authenticated
+- [ ] Token sent in Authorization header for API calls
+
+**Test Files:**
+- tests/auth/login.test.tsx (component test)
+- tests/store/auth.test.ts (store test)
+- e2e/login.spec.ts (end-to-end test)
+
+**Important Notes:**
+- Token expires in 7 days (no auto-refresh yet - add later)
+- If 401 on any API call, logout and redirect to login
+- CORS already configured on backend (no issues expected)
+
+**Files Modified:**
+- components/LoginForm.tsx (added API call)
+- store/auth.ts (new Zustand store)
+- hooks/useAuth.ts (custom hook for auth state)
+- middleware/auth.ts (protected route middleware)
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---
+
 ## Documentation Policy
 
 ### ❌ NEVER Create Documentation Files Unless Explicitly Requested

@@ -31,6 +31,8 @@ Universal, framework-agnostic template for AI-assisted development.
 
 **Development:**
 - `@/.claude/contexts/patterns/task-classification.md` (Agent selection guide)
+- `@/.claude/contexts/patterns/agent-coordination.md` (When to run agents parallel/sequential)
+- `@/.claude/contexts/patterns/error-recovery.md` (How agents handle errors & escalate)
 - `@/.claude/contexts/patterns/logging.md`
 - `@/.claude/contexts/patterns/testing.md`
 - `@/.claude/contexts/patterns/task-breakdown.md`

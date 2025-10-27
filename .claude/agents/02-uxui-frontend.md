@@ -401,6 +401,108 @@ Return to Orchestrator:
 **Next Step:** Task 1.2 (Test-Debug agent validates)
 ```
 
+---
+
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** uxui-frontend
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (UX-UI Frontend → Frontend):
+
+```markdown
+## ✅ Task Complete: Create login form UI
+
+**Agent:** uxui-frontend
+
+**What I Did:**
+- Created LoginForm component with email/password inputs
+- Added form validation (required, email format)
+- Created submit button with loading state
+- Using mock data for now (hardcoded credentials)
+
+**For Next Agent (Frontend):**
+
+**Component Location:**
+- components/LoginForm.tsx
+
+**Current Mock Implementation:**
+\`\`\`typescript
+// Remove this mock logic:
+const mockLogin = (email: string, password: string) => {
+  if (email === 'test@example.com' && password === 'password123') {
+    return { token: 'mock-token', user: { id: '1', email } }
+  }
+  throw new Error('Invalid credentials')
+}
+\`\`\`
+
+**Replace With:**
+\`\`\`typescript
+// Real API call:
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
+})
+
+if (!response.ok) {
+  const error = await response.json()
+  throw new Error(error.detail || 'Login failed')
+}
+
+const data = await response.json()
+// data = { token: string, user: { id, email, name } }
+\`\`\`
+
+**State Management Needed:**
+- Store JWT token (localStorage or cookie)
+- Store user object (global state - Zustand/Redux)
+- Add logout action (clear token + user)
+
+**Important Notes:**
+- Form already validates email format (client-side)
+- Loading state already handled (disable button during submit)
+- Error messages displayed below form (update with API error)
+- Success: redirect to dashboard or home page
+
+**Files Created:**
+- components/LoginForm.tsx
+- components/ui/Input.tsx (reusable)
+- components/ui/Button.tsx (reusable)
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---
+
 ## Documentation Policy
 
 ### ❌ NEVER Create Documentation Files Unless Explicitly Requested

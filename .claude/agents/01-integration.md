@@ -480,6 +480,102 @@ Frontend expects `email` but backend doesn't return it.
 
 ---
 
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** integration
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (Integration → Frontend):
+
+```markdown
+## ✅ Task Complete: Verify API contracts
+
+**Agent:** integration
+
+**What I Did:**
+- Validated frontend expectations vs backend responses
+- Checked all 3 endpoints: POST /api/login, GET /api/posts, POST /api/posts
+- Found 1 mismatch (fixed - see below)
+
+**Contract Validation Results:**
+
+**POST /api/auth/login:**
+- ✅ Request format matches
+- ✅ Success response matches (200, {token, user})
+- ✅ Error response matches (401, {detail})
+
+**GET /api/posts:**
+- ✅ Response format matches
+- ⚠️ **MISMATCH FOUND:** Backend returns `author_id`, frontend expects `authorId`
+
+**POST /api/posts:**
+- ✅ Request format matches
+- ✅ Response format matches
+
+**For Next Agent (Frontend):**
+
+**Fix Required:**
+
+**File:** components/PostList.tsx
+
+**Change this:**
+\`\`\`typescript
+// Current (wrong - expects authorId):
+const authorId = post.authorId
+
+// Fix to:
+const authorId = post.author_id
+\`\`\`
+
+**Or better:** Update backend to use camelCase (authorId) instead of snake_case
+
+**Recommendation:** Use camelCase consistently across frontend + backend
+- Frontend: JavaScript convention (camelCase)
+- Backend (Python): Python convention (snake_case)
+- **Solution:** Add serializer on backend to convert snake_case → camelCase in responses
+
+**Important Notes:**
+- All other contracts match ✅
+- This is the only mismatch found
+- Fix this before proceeding to avoid runtime errors
+
+**Files Checked:**
+- Frontend: components/LoginForm.tsx, components/PostList.tsx, components/CreatePost.tsx
+- Backend: app/api/auth.py, app/api/posts.py
+- Contracts: Compared request/response formats
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---
+
 ## Rules
 
 ### Package Manager (CRITICAL!)

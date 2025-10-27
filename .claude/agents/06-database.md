@@ -527,6 +527,123 @@ users = await db.execute(
 **Performance:** N+1 queries prevented with eager loading
 ```
 
+---
+
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** database
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (Database → Backend):
+
+```markdown
+## ✅ Task Complete: Create User and Post tables
+
+**Agent:** database
+
+**What I Did:**
+- Created User table with email, password, name fields
+- Created Post table with title, content, authorId fields
+- Added 1:N relationship (User → Posts)
+- Created migration file
+- Added indexes on foreign keys
+
+**For Next Agent (Backend):**
+
+**Schema Overview:**
+
+**User Table:**
+\`\`\`typescript
+{
+  id: string (UUID, primary key)
+  email: string (unique, indexed)
+  password: string (bcrypt hash)
+  name: string | null
+  createdAt: DateTime
+  updatedAt: DateTime
+  posts: Post[] (1:N relationship)
+}
+\`\`\`
+
+**Post Table:**
+\`\`\`typescript
+{
+  id: string (UUID, primary key)
+  title: string
+  content: string
+  authorId: string (foreign key → User.id, indexed)
+  createdAt: DateTime
+  updatedAt: DateTime
+  author: User (N:1 relationship)
+}
+\`\`\`
+
+**Query Examples:**
+
+\`\`\`python
+# Find user by email (for login)
+user = await db.execute(
+  select(User).where(User.email == email)
+)
+
+# Get user with all posts (eager loading, prevents N+1)
+user = await db.execute(
+  select(User).options(selectinload(User.posts)).where(User.id == user_id)
+)
+
+# Create new post
+post = Post(title=title, content=content, authorId=user_id)
+await db.add(post)
+await db.commit()
+\`\`\`
+
+**Important Notes:**
+- Email is indexed (fast lookups for login)
+- authorId is indexed (fast post queries by author)
+- Use eager loading (selectinload) to prevent N+1 queries
+- Password should be hashed with bcrypt (never store plain text)
+- CASCADE delete: If user deleted, all posts deleted too
+
+**Migration File:**
+- migrations/001_create_users_and_posts.py
+
+**Run Migration:**
+\`\`\`bash
+uv run alembic upgrade head
+\`\`\`
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---
+
 ## Documentation Policy
 
 ### ❌ NEVER Create Documentation Files Unless Explicitly Requested

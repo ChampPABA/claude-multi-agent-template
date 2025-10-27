@@ -505,3 +505,94 @@ Package Manager: pnpm (JavaScript)
 ```
 
 **IMPORTANT:** Don't mark task complete if critical items fail (tests, linting, type errors)
+
+---
+
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** test-debug
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (Test-Debug → Main Claude):
+
+```markdown
+## ✅ Task Complete: Fix login test failures
+
+**Agent:** test-debug
+
+**What I Did:**
+- Fixed 3 failing tests in tests/auth/login.test.tsx
+- Issue was: mock API response format didn't match real API
+- Updated mocks to return {token, user} instead of just {token}
+- All tests now passing (12/12)
+
+**Test Results:**
+
+\`\`\`bash
+✅ test_login_success (PASS)
+✅ test_login_invalid_credentials (PASS)
+✅ test_login_validation_error (PASS)
+✅ test_login_network_error (PASS)
+✅ test_logout_clears_state (PASS)
+✅ test_protected_route_redirect (PASS)
+... (6 more tests)
+
+Total: 12 passed, 0 failed
+Coverage: 87% (target: 70%)
+\`\`\`
+
+**For Main Claude:**
+
+**Feature Status:** ✅ Complete and tested
+
+**What Works:**
+- Login form validates and submits correctly
+- API integration works (POST /api/auth/login)
+- Auth state management (Zustand)
+- Protected routes redirect to login
+- Error handling for all edge cases
+
+**Known Issues:** None
+
+**Next Steps (if any):**
+- [ ] Add "Remember Me" checkbox (optional)
+- [ ] Add "Forgot Password" link (future feature)
+- [ ] Add auto-refresh token logic (expires in 7 days)
+
+**Files Fixed:**
+- tests/auth/login.test.tsx (updated mocks)
+- tests/mocks/api.ts (fixed response format)
+
+**Iterations:** 2 (first fix: wrong mock format, second fix: added missing test)
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---

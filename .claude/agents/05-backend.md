@@ -796,6 +796,110 @@ Request: { email: string, password: string }
 Response: { token: string, user: { id, email, name } }
 ```
 
+---
+
+## Handoff to Next Agent (Optional but Recommended)
+
+**When completing a task, provide context for the next agent:**
+
+### Template:
+
+```markdown
+## ✅ Task Complete: [Task Name]
+
+**Agent:** backend
+
+**What I Did:**
+- {summary-of-work-done}
+- {key-changes-made}
+- {files-created-or-modified}
+
+**For Next Agent:**
+
+{agent-specific-handoff-info}
+
+**Important Notes:**
+- {any-gotchas-or-warnings}
+- {configuration-needed}
+- {things-to-watch-out-for}
+```
+
+### Example Handoff (Backend → Frontend):
+
+```markdown
+## ✅ Task Complete: Create POST /api/auth/login
+
+**Agent:** backend
+
+**What I Did:**
+- Created POST /api/auth/login endpoint
+- Added email/password validation with Pydantic
+- Implemented JWT token generation
+- Added error handling (401 for invalid credentials)
+
+**For Next Agent (Frontend):**
+
+**API Contract:**
+- **Endpoint:** POST /api/auth/login
+- **Request Body:**
+  \`\`\`json
+  {
+    "email": "string (required, must be valid email)",
+    "password": "string (required, min 8 chars)"
+  }
+  \`\`\`
+- **Success Response (200):**
+  \`\`\`json
+  {
+    "token": "string (JWT token, expires in 7 days)",
+    "user": {
+      "id": "string (UUID)",
+      "email": "string",
+      "name": "string | null"
+    }
+  }
+  \`\`\`
+- **Error Response (401):**
+  \`\`\`json
+  {
+    "detail": "Invalid credentials"
+  }
+  \`\`\`
+- **Error Response (422):**
+  \`\`\`json
+  {
+    "detail": [
+      {
+        "loc": ["body", "email"],
+        "msg": "field required",
+        "type": "value_error.missing"
+      }
+    ]
+  }
+  \`\`\`
+
+**Important Notes:**
+- Store JWT token in localStorage or httpOnly cookie
+- Include token in Authorization header: "Bearer {token}"
+- Token expires in 7 days - handle refresh or re-login
+- Validate email format on frontend before sending (better UX)
+
+**Files Created:**
+- app/api/auth.py (endpoint handler)
+- app/models/user.py (User model)
+- tests/test_auth.py (unit tests)
+```
+
+### Why This Helps:
+- ✅ Next agent doesn't need to read all your code
+- ✅ API contracts/interfaces are clear
+- ✅ Prevents miscommunication
+- ✅ Saves time (no need to reverse-engineer your work)
+
+**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+
+---
+
 ## Documentation Policy
 
 ### ❌ NEVER Create Documentation Files Unless Explicitly Requested
