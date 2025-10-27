@@ -75,6 +75,7 @@ Build UX/UI components with **mock data only**. Focus on design quality, user ex
 **CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
 
 ### Step 1: Load Universal Patterns (Always)
+- @.claude/contexts/patterns/ui-component-consistency.md (CRITICAL - Check existing components!)
 - @.claude/contexts/patterns/testing.md
 - @.claude/contexts/patterns/logging.md
 - @.claude/contexts/patterns/code-standards.md
@@ -127,6 +128,153 @@ IF exists:
   → Load domain-specific design tokens
   → Example: domain/ielts/design-tokens.md
 ```
+
+---
+
+## Component Reuse Workflow (CRITICAL!)
+
+**BEFORE creating ANY new component, ALWAYS follow these steps:**
+
+### Step 1: Search for Existing Similar Components
+
+```bash
+# Example: Creating "UserCard" component
+
+# Search for similar components
+Glob: "**/*{Card,User,Profile}*.{tsx,jsx,vue}"
+
+# Search for similar visual elements
+Grep: "card|border.*rounded|shadow"
+
+# Search for similar functionality
+Grep: "avatar|user.*name|user.*email"
+```
+
+**Questions to ask:**
+- ✅ Is there already a Card component I can reuse?
+- ✅ Is there a User-related component with similar structure?
+- ✅ What design tokens (colors, spacing, shadows) are used in existing cards?
+
+---
+
+### Step 2: Reuse vs Create New
+
+**Decision Matrix:**
+
+| Scenario | Action | Example |
+|----------|--------|---------|
+| **Exact match exists** | ✅ Reuse it | `<Card>` exists → Use it! |
+| **Similar with small diff** | ✅ Extend/compose | `<Card>` + custom content |
+| **Completely different** | ⚠️ Create new, but extract design tokens | New component, same colors/spacing |
+
+**Reuse Pattern:**
+```typescript
+// ✅ CORRECT - Reuse existing Card component
+import { Card } from '@/components/ui/Card'
+
+export function UserCard({ user }) {
+  return (
+    <Card>
+      <Card.Header>
+        <h3>{user.name}</h3>
+      </Card.Header>
+      <Card.Body>
+        <p>{user.email}</p>
+      </Card.Body>
+    </Card>
+  )
+}
+```
+
+**Create New Pattern (extract tokens):**
+```typescript
+// If no Card component exists, create one
+// BUT extract tokens from similar components first!
+
+// 1. Find similar component (e.g., ProductCard)
+// 2. Extract design tokens:
+const CARD_TOKENS = {
+  padding: 'p-6',              // From ProductCard
+  border: 'border',            // From ProductCard
+  borderRadius: 'rounded-lg',  // From ProductCard
+  shadow: 'shadow-sm',         // From ProductCard
+  background: 'bg-card',       // From ProductCard
+  hover: 'hover:shadow-md transition-shadow', // From ProductCard
+}
+
+// 3. Apply to new component
+export function UserCard({ user }) {
+  return (
+    <div className={`${CARD_TOKENS.padding} ${CARD_TOKENS.border} ${CARD_TOKENS.borderRadius} ${CARD_TOKENS.shadow} ${CARD_TOKENS.background} ${CARD_TOKENS.hover}`}>
+      {/* ... */}
+    </div>
+  )
+}
+```
+
+---
+
+### Step 3: Visual Consistency Check
+
+**Before finalizing component, verify:**
+
+✅ **Colors match existing palette**
+```typescript
+// ✅ CORRECT - Use theme colors
+text-foreground, bg-background, border-input
+
+// ❌ WRONG - Hardcoded colors
+text-gray-500, bg-white, border-gray-300
+```
+
+✅ **Spacing matches existing components**
+```typescript
+// Find existing spacing pattern first
+Grep: "p-4|px-4|gap-4"
+
+// ✅ CORRECT - Consistent spacing
+padding: 'p-4'  // Same as existing cards
+
+// ❌ WRONG - Random spacing
+padding: 'p-5'  // Different from existing
+```
+
+✅ **Shadows match existing elevation**
+```typescript
+// Find existing shadow pattern
+Grep: "shadow-sm|shadow-md"
+
+// ✅ CORRECT - Consistent shadow
+shadow: 'shadow-sm hover:shadow-md'
+
+// ❌ WRONG - Custom shadow
+shadow: 'shadow-lg'  // Different from existing
+```
+
+---
+
+### Step 4: Document Reused Components
+
+**In your handoff, mention:**
+
+```markdown
+## Reused Components
+
+✅ Reused:
+- Card component from @/components/ui/Card
+- Avatar component from @/components/ui/Avatar
+
+✅ Design tokens extracted from:
+- ProductCard (padding, border, shadow)
+- UserBadge (colors, text styles)
+
+✅ Why consistent:
+- Same spacing as other cards (p-6)
+- Same shadow elevation (shadow-sm → shadow-md on hover)
+- Same border radius (rounded-lg)
+```
+
+---
 
 ## TDD Decision Logic
 
