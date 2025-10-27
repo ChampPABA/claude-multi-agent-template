@@ -1,7 +1,6 @@
 ---
 name: uxui-frontend
 description: UX/UI frontend development with React/Next.js/Vue using mock data
-tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
 color: blue
 ---

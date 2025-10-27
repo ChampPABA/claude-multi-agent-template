@@ -1,0 +1,37 @@
+{
+  "name": "create-claude-agent",
+  "version": "1.0.0",
+  "description": "Universal multi-agent template for Claude Code with orchestrator and specialist agents",
+  "type": "module",
+  "bin": {
+    "create-claude-agent": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "template",
+    "README.md"
+  ],
+  "keywords": [
+    "claude",
+    "agent",
+    "multi-agent",
+    "orchestrator",
+    "ai",
+    "template",
+    "scaffold"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/create-claude-agent"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "prompts": "^2.4.2"
+  }
+}

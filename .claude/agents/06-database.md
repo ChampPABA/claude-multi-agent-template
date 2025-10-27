@@ -1,9 +1,8 @@
 ---
 name: database
 description: Database schema design and migrations with Prisma/SQLAlchemy
-tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
-color: gray
+color: pink
 ---
 
 # Database Agent

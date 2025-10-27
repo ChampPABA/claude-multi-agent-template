@@ -1,9 +1,8 @@
 ---
 name: orchestrator
 description: Coordinates multi-step tasks and delegates to specialist agents
-tools: Read, Grep, Glob, Bash, Task
 model: sonnet
-color: gold
+color: yellow
 ---
 
 # Orchestrator Agent

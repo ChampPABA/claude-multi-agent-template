@@ -1,7 +1,6 @@
 ---
 name: test-debug
 description: Automated testing and debugging with Vitest/Jest/Playwright
-tools: Read, Edit, Bash, Grep, Glob
 model: haiku
 color: red
 ---
