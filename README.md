@@ -63,7 +63,64 @@ git commit -m "Initial commit from template"
 
 ---
 
-#### 🎨 Step 3: (Optional) กำหนดสี Design Tokens (5 นาที)
+#### ⚡ Step 3: Auto-Setup Tech Stack (30 วินาที)
+
+**ใช้ `/agentsetup` command:**
+
+```bash
+/agentsetup
+```
+
+**Command จะทำอะไร?**
+
+**1. ตรวจสอบ Greenfield vs Brownfield:**
+- **Brownfield** (มีโปรเจคอยู่แล้ว):
+  - อ่าน `package.json` / `requirements.txt` / `composer.json`
+  - ตรวจจับ stack อัตโนมัติ (Next.js 15, Prisma 6, etc.)
+  - ดึง docs จาก Context7
+
+- **Greenfield** (เริ่มใหม่):
+  - ถามว่าจะใช้ stack อะไร (Next.js? FastAPI? Django?)
+  - ถามต่อ: Database ORM? Testing framework?
+  - ดึง docs จาก Context7
+
+**2. สร้างไฟล์ Domain Context:**
+```
+.claude/contexts/domain/{project}/
+├─ tech-stack.md       ← Stack + versions + Context7 IDs
+├─ architecture.md     ← (ถ้า spec มี)
+├─ business-rules.md   ← (ถ้า spec มี)
+└─ design-tokens.md    ← (ถ้า spec มี)
+```
+
+**ตัวอย่าง Output:**
+```
+✅ Agent Setup Complete!
+
+📦 Project Type: Brownfield
+
+🛠️ Tech Stack Detected:
+- Frontend: Next.js 15.5.0
+- Database: Prisma 6.5.0
+- State: Zustand 5.0.0
+- Testing: Vitest 2.0.0
+
+📁 Domain Context Created:
+- .claude/contexts/domain/myproject/tech-stack.md
+
+📚 Context7 Docs Retrieved:
+- Next.js 15 App Router (5000 tokens)
+- Prisma 6 Best Practices (5000 tokens)
+- Zustand 5 TypeScript (3000 tokens)
+
+🚀 Ready to start!
+```
+
+**หมายเหตุ:** ถ้าไม่รู้จะใช้ stack อะไร ให้ข้าม step นี้ไปก่อน แล้วค่อยกลับมารัน `/agentsetup` ทีหลัง
+
+---
+
+#### 🎨 Step 4: (Optional) กำหนดสี Design Tokens (5 นาที)
 
 ถ้าโปรเจคมีสีเฉพาะ เช่น brand colors:
 
@@ -91,7 +148,7 @@ mkdir -p .claude/contexts/domain/myproject
 
 ---
 
-#### 🏗️ Step 4: เริ่มทำงาน - เลือก 1 ใน 2 วิธี
+#### 🏗️ Step 5: เริ่มทำงาน - เลือก 1 ใน 2 วิธี
 
 ### **วิธีที่ 1: สั่งตรงๆ (Simple, Ad-hoc)**
 
@@ -234,7 +291,7 @@ model User {
 
 ---
 
-#### 🔄 Step 5: ใช้งานต่อเนื่อง
+#### 🔄 Step 6: ใช้งานต่อเนื่อง
 
 **เพิ่ม Feature ใหม่:**
 ```bash
@@ -256,7 +313,7 @@ model User {
 
 ---
 
-#### 📚 Step 6: เรียนรู้เพิ่มเติม
+#### 📚 Step 7: เรียนรู้เพิ่มเติม
 
 **อ่าน navigation guide:**
 ```bash
