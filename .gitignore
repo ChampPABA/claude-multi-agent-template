@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp files
+*.tmp
+*.log
+.cache/
+
+# Domain-specific (project fills this)
+.claude/contexts/domain/*
+!.claude/contexts/domain/README.md
