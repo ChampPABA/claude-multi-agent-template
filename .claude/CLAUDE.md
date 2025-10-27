@@ -10,8 +10,8 @@
 Universal, framework-agnostic template for AI-assisted development.
 
 **What's Included:**
-- ✅ 6 Specialized Agents (Orchestrator + 5 specialists)
-- ✅ Universal Patterns (logging, testing, error-handling)
+- ✅ 6 Specialized Agents (integration + 5 domain specialists)
+- ✅ Universal Patterns (logging, testing, error-handling, agent selection)
 - ✅ Design Foundation (color theory, spacing, typography)
 - ✅ Domain-Specific Support (add your business logic)
 
@@ -30,6 +30,7 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/contexts/patterns/ui-component-consistency.md` (Visual consistency)
 
 **Development:**
+- `@/.claude/contexts/patterns/task-classification.md` (Agent selection guide)
 - `@/.claude/contexts/patterns/logging.md`
 - `@/.claude/contexts/patterns/testing.md`
 - `@/.claude/contexts/patterns/task-breakdown.md`
@@ -44,45 +45,58 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ### How It Works:
 
-**Orchestrator (Planner) → Main Claude (Executor)**
+**Main Claude analyzes tasks → Invokes specialist agents directly**
 
 ```
-1. Main Claude calls orchestrator agent
+1. User provides task (e.g., "Build login system")
    ↓
-2. Orchestrator analyzes tasks.md → Returns JSON plan
+2. Main Claude reads @task-classification.md
    ↓
-3. Main Claude executes plan:
-   - Phase 1: Sequential (uxui-frontend → test-debug → human approval)
-   - Phase 2+: Parallel (frontend, backend, database)
+3. Main Claude selects appropriate agent(s)
+   ↓
+4. Execute in proper sequence:
+   - Phase 1: uxui-frontend (UI with mock data)
+   - Phase 2: backend + database (parallel)
+   - Phase 2.5: integration (validate contracts)
+   - Phase 3: frontend (connect UI to API)
+   - Phase 4: test-debug (tests & bug fixes)
 ```
 
-### Available Agents:
+### Available Agents (6 specialists):
 
-| Agent | Color | Role |
-|-------|-------|------|
-| **orchestrator** | Gold | Analyzes tasks.md, returns execution plan (Planner) |
-| **uxui-frontend** | Blue | UX/UI components with mock data |
-| **test-debug** | Red | Automated testing (max 3-4 iterations) |
-| **frontend** | Green | Connect components to APIs |
-| **backend** | Purple | API endpoints with validation |
-| **database** | Gray | Schema design and migrations |
+| Agent | Color | When to Use | Phase |
+|-------|-------|-------------|-------|
+| **integration** | Orange | Validate API contracts before connecting | 2.5 |
+| **uxui-frontend** | Blue | Design UI components with mock data | 1 |
+| **test-debug** | Red | Run tests and fix bugs (max 3-4 iterations) | 1,3,4 |
+| **frontend** | Green | Connect UI to backend APIs | 3 |
+| **backend** | Purple | Create API endpoints with validation | 2 |
+| **database** | Pink | Design schemas, migrations, complex queries | 2 |
 
 ### Usage:
 
-**Option 1: With Orchestrator (Recommended for complex projects)**
-```
-User: "Analyze tasks.md and create execution plan"
-Main Claude: *Calls orchestrator agent*
-Orchestrator: *Returns JSON plan*
-Main Claude: *Shows plan to user*
-User: "Approved"
-Main Claude: *Executes plan using specialist agents*
-```
+**For any task, Main Claude will:**
+1. Read `@/.claude/contexts/patterns/task-classification.md`
+2. Determine which agent(s) to use
+3. Invoke agents in proper sequence
+4. Coordinate between agents
 
-**Option 2: Direct Agent Invocation (For simple tasks)**
+**You can also invoke agents directly:**
 ```
 User: "/agents uxui-frontend"
-Main Claude: *Executes agent directly*
+Main Claude: *Executes uxui-frontend agent directly*
+```
+
+**Example: Build Login System**
+```
+User: "Build a login system"
+Main Claude analyzes → Breaks into phases:
+  Phase 1: /agents uxui-frontend (create login form UI)
+  Phase 2: /agents backend (create POST /api/login)
+          /agents database (create User model) [parallel]
+  Phase 2.5: /agents integration (verify contracts)
+  Phase 3: /agents frontend (connect form to API)
+  Phase 4: /agents test-debug (test everything)
 ```
 
 ---

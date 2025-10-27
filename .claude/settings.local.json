@@ -20,7 +20,17 @@
       "mcp__chrome-devtools__navigate_page",
       "mcp__chrome-devtools__fill",
       "mcp__chrome-devtools__click",
-      "mcp__chrome-devtools__take_screenshot"
+      "mcp__chrome-devtools__take_screenshot",
+      "Bash(/agents uxui-frontend)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git -C \"E:\\project\\claude-multi-agent-template\" status)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

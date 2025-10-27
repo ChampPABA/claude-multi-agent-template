@@ -6,41 +6,78 @@
 
 ## Test-Driven Development (TDD)
 
-### When to Use TDD (REQUIRED)
+### Automatic TDD Classification
 
-✅ **Use TDD for critical code:**
-- Business logic (calculations, transformations)
-- API endpoints (validation, error handling)
-- External service integrations
-- Data transformations
-- Complex algorithms
+**Orchestrator automatically determines if TDD is required based on task content.**
 
-⚠️ **Test-Alongside OK for:**
+You don't decide. Orchestrator decides. Your job is to **follow the `tdd_required` flag**.
+
+### When You Receive a Task
+
+**Check the metadata from Orchestrator:**
+```json
+{
+  "description": "Implement POST /api/auth/login",
+  "type": "critical",
+  "tdd_required": true,
+  "workflow": "red-green-refactor",
+  "reason": "API endpoint + authentication logic"
+}
+```
+
+### Classification Rules (Orchestrator Logic)
+
+✅ **TDD Required (`tdd_required: true`) for:**
+- API mutations (POST, PUT, PATCH, DELETE)
+- Business logic (calculations, transformations, validation)
+- External service integrations (payment, email, SMS, storage)
+- Data transformations (ETL, serialization, aggregations)
+- Security operations (authentication, authorization, encryption)
+- Complex UI logic (multi-step forms, state machines, accessibility)
+
+⚠️ **Test-Alongside OK (`tdd_required: false`) for:**
+- Simple GET endpoints (read-only)
+- Presentational UI components
 - Simple CRUD operations
-- UI components (presentational)
 - Configuration files
 - Trivial utilities
 
-### TDD Workflow
+**Note:** For full classification logic, see `@.claude/contexts/patterns/task-classification.md`
+
+### TDD Workflow (Red-Green-Refactor)
+
+**Use when:** `tdd_required: true`
 
 ```
-1. Write the test first
+1. RED Phase - Write the test first
    → Define expected behavior before implementation
+   → Run test → MUST FAIL (proves test works)
+   → Log: "tdd_red_phase"
 
-2. Watch it fail (Red)
-   → Ensure the test actually tests something
-
-3. Write minimal code (Green)
+2. GREEN Phase - Write minimal code
    → Just enough to make the test pass
+   → Run test → MUST PASS
+   → Log: "tdd_green_phase"
 
-4. Add logging
-   → Observability for production debugging
+3. REFACTOR Phase - Improve code quality
+   → Add logging for observability
+   → Add error handling
+   → Add documentation
+   → Run test → MUST STILL PASS
+   → Log: "tdd_refactor_phase"
 
-5. Refactor
-   → Improve code while keeping tests green
-
-6. Repeat
+4. Repeat
    → One test at a time
+```
+
+### Standard Workflow (Test-Alongside)
+
+**Use when:** `tdd_required: false`
+
+```
+1. Write implementation first
+2. Write tests to verify
+3. Run tests → PASS
 ```
 
 ---
@@ -348,6 +385,28 @@ pnpm test:e2e              # Run E2E tests
 pnpm test:e2e --ui         # Run with UI mode
 pnpm test:e2e --debug      # Run with debugger
 ```
+
+---
+
+---
+
+## Trust the Classification
+
+**Orchestrator uses comprehensive pattern matching:**
+- API endpoints (HTTP methods, routes)
+- Business logic (calculations, validation)
+- External integrations (Stripe, SendGrid, Twilio, S3, etc.)
+- Data transformations (ETL, serialization)
+- Security operations (auth, encryption)
+
+**Your responsibility:**
+1. Check `tdd_required` flag in task metadata
+2. If `true` → Use Red-Green-Refactor workflow
+3. If `false` → Use Test-Alongside workflow
+4. Log each phase for observability
+
+**Don't override the classification unless you find a clear error.**
+If classification seems wrong, report to user for pattern refinement.
 
 ---
 
