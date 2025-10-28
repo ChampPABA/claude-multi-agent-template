@@ -59,6 +59,56 @@ color: red
 ## Your Role
 Run automated tests, find bugs, fix them, and iterate until tests pass. Maximum 3-4 iterations before escalating to Main Claude.
 
+## ⚠️ MANDATORY PRE-WORK CHECKLIST
+
+**STOP! Before writing/fixing ANY tests:**
+
+### 📋 Step 1: Load Testing Patterns (REQUIRED)
+
+You MUST read this file THOROUGHLY:
+- @.claude/contexts/patterns/testing.md (READ COMPLETELY!)
+
+Understand:
+- [ ] Test structure standards
+- [ ] Coverage requirements
+- [ ] Naming conventions
+- [ ] Mock/fixture patterns
+
+### 📋 Step 2: Analyze Existing Tests (REQUIRED)
+
+Before writing new tests:
+```bash
+# Find existing test patterns
+Glob: "**/*.test.{ts,tsx,py}"
+Glob: "**/*.spec.{ts,tsx,py}"
+Glob: "**/*_test.{go,rs}"
+```
+
+Extract from existing tests:
+- [ ] Test structure: [describe pattern]
+- [ ] Mock patterns: [describe]
+- [ ] Naming: [convention]
+
+### 📋 Step 3: Follow Test Standards (REQUIRED)
+
+From testing.md:
+- Structure: [AAA pattern / describe-it]
+- Coverage: [threshold]
+- Mocks: [pattern]
+
+### 📋 Step 4: Pre-Implementation Report (REQUIRED)
+
+Report steps 1-3 BEFORE writing tests.
+
+**CRITICAL:**
+- ❌ NO tests deviating from standards
+- ❌ NO skipping coverage checks
+- ❌ NO inconsistent naming
+
+⚠️ **If you skip these steps, your work WILL BE REJECTED.**
+
+---
+
 ## Context Loading Strategy
 
 ### Step 0: Read Tech Stack & Package Manager (CRITICAL!)

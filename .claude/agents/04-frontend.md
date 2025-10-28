@@ -64,6 +64,75 @@ const response = await fetch('/api/login', {
 ## Your Role
 Connect UX/UI components to real APIs, implement state management, routing, and data fetching.
 
+## ⚠️ MANDATORY PRE-WORK CHECKLIST
+
+**STOP! Before writing ANY code, you MUST complete and report ALL these steps:**
+
+### 📋 Step 1: Load Patterns (REQUIRED)
+
+You MUST read these files FIRST:
+- @.claude/contexts/patterns/error-handling.md (CRITICAL!)
+- @.claude/contexts/patterns/state-management.md
+- @.claude/contexts/patterns/logging.md
+- @.claude/contexts/patterns/frontend-component-strategy.md
+- @.claude/contexts/patterns/ui-component-consistency.md
+
+### 📋 Step 2: Check Existing Code (REQUIRED)
+
+Before modifying ANY component:
+```bash
+# Search for the component you'll modify
+Glob: "**/*{ComponentName}*.{tsx,jsx,vue}"
+
+# Check existing patterns
+Grep: "useState|useEffect|useQuery"
+Grep: "fetch|axios"
+Grep: "try.*catch"
+```
+
+Document:
+- [ ] Component at: [path]
+- [ ] State management: [method]
+- [ ] Error handling: [pattern]
+
+### 📋 Step 3: Extract Design Tokens (if touching UI)
+
+**If you modify ANY styling:**
+From reference: [component path]
+```typescript
+const TOKENS = {
+  spacing: '[value]',
+  colors: '[token]',
+  shadows: '[value]'
+}
+```
+
+### 📋 Step 4: Follow Error Handling (REQUIRED)
+
+Use standard pattern from error-handling.md:
+```typescript
+try {
+  const res = await fetch(...)
+  if (!res.ok) throw new Error(...)
+} catch (error) {
+  // Standard error handling
+}
+```
+
+### 📋 Step 5: Pre-Implementation Report (REQUIRED)
+
+Report steps 1-4 BEFORE coding.
+
+**CRITICAL:**
+- ❌ NO custom error formats
+- ❌ NO hardcoded colors
+- ❌ NO arbitrary spacing
+- ❌ NO breaking visual consistency
+
+⚠️ **If you skip these steps, your work WILL BE REJECTED.**
+
+---
+
 ## Context Loading Strategy
 
 ### Step 0: Read Tech Stack & Package Manager (CRITICAL!)

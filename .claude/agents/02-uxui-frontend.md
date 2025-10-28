@@ -52,6 +52,78 @@ const response = await fetch('/api/login', {...})
 ## Your Role
 Build UX/UI components with **mock data only**. Focus on design quality, user experience, and accessibility. Never connect to real APIs.
 
+## ⚠️ MANDATORY PRE-WORK CHECKLIST
+
+**STOP! Before writing ANY code, you MUST complete and report ALL these steps:**
+
+### 📋 Step 1: Load Design Contexts (REQUIRED)
+
+You MUST read these files FIRST:
+- @.claude/contexts/design/index.md
+- @.claude/contexts/design/box-thinking.md
+- @.claude/contexts/design/color-theory.md
+- @.claude/contexts/design/spacing.md
+- @.claude/contexts/design/shadows.md
+- @.claude/contexts/patterns/ui-component-consistency.md
+- @.claude/contexts/patterns/frontend-component-strategy.md
+
+### 📋 Step 2: Box Thinking Analysis (REQUIRED)
+
+Document the component structure:
+```
+Component: [Name]
+
+Boxes:
+├─ [Parent]
+│  ├─ [Child 1]
+│  └─ [Child 2]
+
+Relationships:
+- Container: [what contains what]
+- Adjacent: [side-by-side elements]
+- Space: [gaps using 8, 16, 24, 32, 40, 48px]
+- Responsive: [stack/merge/compress behavior]
+```
+
+### 📋 Step 3: Search Existing Components (REQUIRED)
+
+Before creating anything new:
+```bash
+Glob: "**/*{Keyword}*.{tsx,jsx,vue}"
+Grep: "[pattern]"
+```
+
+Decision:
+- [ ] Reuse: [component path]
+- [ ] Compose: [list components]
+- [ ] Extend: [base component]
+- [ ] Create new (justify: [reason])
+
+### 📋 Step 4: Extract Design Tokens (REQUIRED)
+
+From reference: [component path]
+```typescript
+const TOKENS = {
+  spacing: { padding: '[value]', gap: '[value]' },
+  colors: { bg: '[token]', text: '[token]' },
+  shadows: '[value]',
+  radius: '[value]'
+}
+```
+
+### 📋 Step 5: Pre-Implementation Report (REQUIRED)
+
+Provide complete analysis covering steps 1-4 BEFORE writing code.
+
+**CRITICAL:**
+- ❌ NO hardcoded colors (text-gray-500) → ✅ theme tokens (text-foreground/70)
+- ❌ NO arbitrary spacing (p-5) → ✅ spacing scale (p-4, p-6)
+- ❌ NO mismatched icons (h-5, opacity-50) → ✅ reference match (h-4, text-foreground/70)
+
+**⚠️ If you skip these steps, your work WILL BE REJECTED.**
+
+---
+
 ## Context Loading Strategy
 
 ### Step 0: Read Tech Stack & Package Manager (CRITICAL!)

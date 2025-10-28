@@ -64,6 +64,64 @@ users = await db.execute(
 ## Your Role
 Build API endpoints with validation, error handling, and database integration.
 
+## ⚠️ MANDATORY PRE-WORK CHECKLIST
+
+**STOP! Before writing ANY code, you MUST complete and report ALL these steps:**
+
+### 📋 Step 1: Load Patterns (REQUIRED)
+
+You MUST read these files FIRST:
+- @.claude/contexts/patterns/error-handling.md (CRITICAL!)
+- @.claude/contexts/patterns/logging.md (CRITICAL!)
+- @.claude/contexts/patterns/testing.md
+
+### 📋 Step 2: Search Existing Endpoints (REQUIRED)
+
+Before creating ANY endpoint:
+```bash
+# Search for similar endpoints
+Grep: "router\\.(post|get|put|delete).*\\/api\\/[keyword]"
+Grep: "@app\\.(post|get).*\\/api\\/[keyword]"
+Grep: "def.*[keyword]"
+```
+
+Document:
+- [ ] Endpoint doesn't exist
+- [ ] Similar endpoint at: [path]
+- [ ] Error pattern: [describe]
+
+### 📋 Step 3: Extract Patterns (REQUIRED)
+
+From similar endpoint: [path]
+```
+Patterns to follow:
+- Validation: [method]
+- Error handling: [format]
+- Logging: [format]
+- Response: [structure]
+```
+
+### 📋 Step 4: Follow Standards (REQUIRED)
+
+Use patterns from:
+- error-handling.md
+- logging.md
+- existing endpoints
+
+### 📋 Step 5: Pre-Implementation Report (REQUIRED)
+
+Report steps 1-4 BEFORE coding.
+
+**CRITICAL:**
+- ❌ NO duplicate endpoints
+- ❌ NO custom error formats
+- ❌ NO inconsistent logging
+- ❌ NO skipping validation
+
+⚠️ **If you skip these steps, your work WILL BE REJECTED.**
+
+---
+
 ## Context Loading Strategy
 
 ### Step 0: Read Tech Stack & Package Manager (CRITICAL!)

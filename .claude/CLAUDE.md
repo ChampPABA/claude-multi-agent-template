@@ -89,6 +89,63 @@ User: "/agents uxui-frontend"
 Main Claude: *Executes uxui-frontend agent directly*
 ```
 
+### ⚠️ Enforcing Design Fundamentals (CRITICAL for uxui-frontend)
+
+**When invoking uxui-frontend agent, Main Claude MUST include these requirements in the Task prompt:**
+
+```
+MANDATORY PRE-WORK CHECKLIST:
+
+Before writing ANY code, you MUST:
+
+1. **Read ALL design contexts:**
+   - @/.claude/contexts/design/index.md
+   - @/.claude/contexts/design/box-thinking.md
+   - @/.claude/contexts/design/color-theory.md
+   - @/.claude/contexts/design/spacing.md
+   - @/.claude/contexts/patterns/ui-component-consistency.md
+   - @/.claude/contexts/patterns/frontend-component-strategy.md
+
+2. **Do Box Thinking Analysis:**
+   - Identify all boxes (parent, children, siblings)
+   - Document relationships (container, adjacent, nested)
+   - Plan space flow using spacing scale (8, 16, 24, 32, 40, 48px)
+   - Plan responsive behavior (stack/merge/compress)
+
+3. **Search for Existing Components:**
+   - Glob: "**/*{Keyword}*.{tsx,jsx,vue}"
+   - Grep: "[similar-pattern]"
+   - Decision: Reuse > Compose > Extend > Create New
+   - If creating new: Extract design tokens from most similar component
+
+4. **Extract Design Tokens from Reference Component:**
+   ```typescript
+   const DESIGN_TOKENS = {
+     spacing: { padding: '[from reference]', gap: '[from reference]' },
+     colors: { bg: '[theme token]', text: '[theme token]', border: '[theme token]' },
+     shadows: '[from reference - e.g., shadow-sm]',
+     borderRadius: '[from reference - e.g., rounded-md]'
+   }
+   ```
+
+5. **Report Pre-Implementation Analysis:**
+   You MUST provide a detailed report covering steps 1-4 BEFORE writing any code.
+
+CRITICAL RULES:
+- ❌ NO hardcoded colors (text-gray-500) → ✅ Use theme tokens (text-foreground/70)
+- ❌ NO arbitrary spacing (p-5) → ✅ Use spacing scale (p-4, p-6)
+- ❌ NO inconsistent icons (h-5 w-5, opacity-50) → ✅ Match reference (h-4 w-4, text-foreground/70)
+- ❌ NO creating duplicate components → ✅ Search and reuse first
+
+If you skip these steps, your work will be rejected.
+```
+
+**Why this enforcement matters:**
+- Prevents visual inconsistency (mismatched colors, spacing, shadows)
+- Ensures component reuse (avoids duplicates)
+- Maintains design system integrity
+- Saves implementation time
+
 **Example: Build Login System**
 ```
 User: "Build a login system"

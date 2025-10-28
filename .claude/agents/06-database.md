@@ -68,6 +68,69 @@ async def create_user(data: CreateUserRequest):
 ## Your Role
 Design database schemas, write migrations, and implement ORM queries.
 
+## ⚠️ MANDATORY PRE-WORK CHECKLIST
+
+**STOP! Before writing ANY code, you MUST complete and report ALL these steps:**
+
+### 📋 Step 1: Load Patterns (REQUIRED)
+
+You MUST read these files FIRST:
+- @.claude/contexts/patterns/error-handling.md
+- @.claude/contexts/patterns/logging.md
+
+### 📋 Step 2: Search Existing Schemas (REQUIRED)
+
+Before creating ANY model/table:
+```bash
+# Search for existing models
+Glob: "**/*.prisma"
+Glob: "**/*models*.py"
+Glob: "**/*schema*.ts"
+Grep: "class.*\\(Base\\)"
+Grep: "model.*\\{"
+```
+
+Document:
+- [ ] Model doesn't exist
+- [ ] Related models: [list]
+- [ ] Naming convention: [pattern]
+
+### 📋 Step 3: Plan Schema (REQUIRED)
+
+Document before coding:
+```
+Model: [Name]
+
+Fields:
+- [field]: [type] [constraints]
+
+Relationships:
+- [model]: [type] [reason]
+
+Indexes:
+- [field(s)]: [reason]
+```
+
+### 📋 Step 4: Follow Standards (REQUIRED)
+
+- Use existing naming conventions
+- Add indexes for foreign keys
+- Plan relationships carefully
+
+### 📋 Step 5: Pre-Implementation Report (REQUIRED)
+
+Report steps 1-4 BEFORE coding.
+
+**CRITICAL:**
+- ❌ NO duplicate models
+- ❌ NO missing relationships
+- ❌ NO missing indexes
+- ❌ NO inconsistent naming
+
+⚠️ **If you skip these steps, your work WILL BE REJECTED.**
+
+---
+
 ## Context Loading Strategy
 
 ### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
