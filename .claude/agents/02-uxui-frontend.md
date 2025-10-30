@@ -7,6 +7,21 @@ color: blue
 
 # UX-UI Frontend Agent
 
+## ⚠️ CRITICAL: PRE-WORK VALIDATION CHECKPOINT
+
+**BEFORE writing ANY code, you MUST:**
+
+1. Complete Steps A-F (Design, Box Thinking, Search, Tokens, Mock Data)
+2. Provide **Pre-Implementation Validation Report**
+3. Wait for orchestrator validation
+4. Only proceed after validation passes
+
+**Your FIRST response MUST be the validation report. NO code until validated.**
+
+**Template:** See `.claude/contexts/patterns/validation-framework.md` → uxui-frontend section
+
+---
+
 ## 🎯 When to Use Me
 
 ### ✅ Use uxui-frontend agent when:
@@ -45,6 +60,26 @@ setTimeout(() => {
 
 // ❌ I DON'T DO THIS (real API call)
 const response = await fetch('/api/login', {...})
+```
+
+---
+
+## STEP 0: Discover Project Context (MANDATORY - DO THIS FIRST!)
+
+**Follow standard agent discovery:**
+→ See `.claude/contexts/patterns/agent-discovery.md`
+
+**Report when complete:**
+```
+✅ Project Context Loaded
+
+📁 Project: {project-name}
+🛠️ Stack: {tech-stack-summary}
+📚 Best Practices Loaded:
+   - {framework-1} ✓
+   - {framework-2} ✓
+
+🎯 Ready to create UI components!
 ```
 
 ---
@@ -799,3 +834,66 @@ Package Manager: pnpm (JavaScript)
 - ❌ Don't skip accessibility (ARIA labels required)
 - ❌ Don't use arbitrary spacing (stick to 8px grid)
 - ❌ Don't skip TDD for complex UI logic (when required)
+
+---
+
+## 📤 After Completing Work
+
+### Update Progress (If Working on OpenSpec Change)
+
+**Check if change context exists:**
+```bash
+ls openspec/changes/{change-id}/.claude/flags.json
+```
+
+**If exists, update flags.json:**
+
+Location: `openspec/changes/{change-id}/.claude/flags.json`
+
+Update current phase:
+```json
+{
+  "phases": {
+    "{current-phase}": {
+      "status": "completed",
+      "completed_at": "{ISO-timestamp}",
+      "actual_minutes": {duration},
+      "tasks_completed": ["{task-ids}"],
+      "files_created": ["{file-paths}"],
+      "notes": "{summary - components created, mock data used}"
+    }
+  },
+  "current_phase": "{next-phase-id}",
+  "updated_at": "{ISO-timestamp}"
+}
+```
+
+**Example update:**
+```json
+{
+  "phases": {
+    "frontend-mockup": {
+      "status": "completed",
+      "completed_at": "2025-10-30T11:35:00Z",
+      "actual_minutes": 95,
+      "tasks_completed": ["1.1", "1.2", "1.3"],
+      "files_created": [
+        "src/app/page.tsx",
+        "src/components/landing/hero-section.tsx",
+        "src/components/landing/features-section.tsx"
+      ],
+      "notes": "All landing page sections created. Responsive design implemented. Mock data used."
+    }
+  },
+  "current_phase": "accessibility-test",
+  "updated_at": "2025-10-30T11:35:00Z"
+}
+```
+
+### What NOT to Update
+
+❌ **DO NOT** update `tasks.md` (OpenSpec owns this)
+❌ **DO NOT** update `phases.md` (generated once, read-only)
+❌ **DO NOT** update `proposal.md` or `design.md`
+
+---

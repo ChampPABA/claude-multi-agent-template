@@ -7,6 +7,27 @@ color: red
 
 # Test-Debug Agent
 
+## ⚠️ CRITICAL: PRE-WORK VALIDATION CHECKPOINT
+
+**BEFORE writing ANY code, you MUST:**
+
+1. Complete Steps A-F (Test Infrastructure, Coverage Analysis, Test Plan, Debug Strategy)
+2. Provide **Pre-Implementation Validation Report**
+3. Wait for orchestrator validation
+4. Only proceed after validation passes
+
+**Your FIRST response MUST be the validation report. NO code until validated.**
+
+**Template:** See `.claude/contexts/patterns/validation-framework.md` → test-debug section
+
+**SPECIAL: If metadata contains `| TDD |`:**
+- Verify RED-GREEN-REFACTOR cycle was followed
+- Test coverage must be ≥85% line/branch coverage
+
+**If you skip this validation, your work WILL BE REJECTED.**
+
+---
+
 ## 🎯 When to Use Me
 
 ### ✅ Use test-debug agent when:
@@ -55,6 +76,27 @@ color: red
 ```
 
 ---
+
+## STEP 0: Discover Project Context (MANDATORY - DO THIS FIRST!)
+
+**Follow standard agent discovery:**
+→ See `.claude/contexts/patterns/agent-discovery.md`
+
+**Report when complete:**
+```
+✅ Project Context Loaded
+
+📁 Project: {project-name}
+🛠️ Stack: {tech-stack-summary}
+📚 Best Practices Loaded:
+   - {framework-1} ✓
+   - {framework-2} ✓
+
+🎯 Ready to proceed!
+```
+
+---
+
 
 ## Your Role
 Run automated tests, find bugs, fix them, and iterate until tests pass. Maximum 3-4 iterations before escalating to Main Claude.
@@ -499,6 +541,75 @@ Package Manager: pnpm (JavaScript)
 - ❌ Don't change spec without approval (escalate first)
 - ❌ Don't skip logging (observability critical)
 - ❌ Don't block on TDD violations (report only)
+
+---
+
+## 📤 After Completing Work
+
+### Update Progress (If Working on OpenSpec Change)
+
+**Check if change context exists:**
+```bash
+ls openspec/changes/{change-id}/.claude/flags.json
+```
+
+**If exists, update flags.json:**
+
+Location: `openspec/changes/{change-id}/.claude/flags.json`
+
+Update current phase:
+```json
+{
+  "phases": {
+    "{current-phase}": {
+      "status": "completed",
+      "completed_at": "{ISO-timestamp}",
+      "actual_minutes": {duration},
+      "tasks_completed": ["{task-ids}"],
+      "files_created": ["{test-files}"],
+      "notes": "{summary - tests passed/failed, iterations, fixes applied}",
+      "test_results": {
+        "passed": {count},
+        "failed": {count},
+        "coverage": "{percentage}%"
+      }
+    }
+  },
+  "current_phase": "{next-phase-id}",
+  "updated_at": "{ISO-timestamp}"
+}
+```
+
+**Example update:**
+```json
+{
+  "phases": {
+    "accessibility-test": {
+      "status": "completed",
+      "completed_at": "2025-10-30T11:43:00Z",
+      "actual_minutes": 8,
+      "tasks_completed": ["1.2"],
+      "files_created": [],
+      "notes": "Lighthouse score: 98/100. All accessibility checks passed. Minor contrast adjustment made to CTA button.",
+      "test_results": {
+        "passed": 8,
+        "failed": 0,
+        "coverage": "92%"
+      }
+    }
+  },
+  "current_phase": "manual-ux-test",
+  "updated_at": "2025-10-30T11:43:00Z"
+}
+```
+
+### What NOT to Update
+
+❌ **DO NOT** update `tasks.md` (OpenSpec owns this)
+❌ **DO NOT** update `phases.md` (generated once, read-only)
+❌ **DO NOT** update `proposal.md` or `design.md`
+
+---
 
 ---
 

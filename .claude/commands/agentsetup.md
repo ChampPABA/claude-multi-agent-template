@@ -482,14 +482,455 @@ For each major library in the stack, search Context7:
 
 ---
 
-## Step 4: Create Domain Context Files
+## Step 3.5: Generate Framework Best Practices & Examples
 
-Create directory structure:
+**THIS IS THE NEW CRITICAL STEP!**
+
+After pulling docs from Context7, use that knowledge to generate framework-specific best practices and code examples.
+
+### Create Directory Structure
+
 ```bash
-mkdir -p .claude/contexts/domain/{project-name}
+mkdir -p .claude/contexts/frameworks/examples
 ```
 
-### File 1: tech-stack.md
+### For Each Major Framework in Stack
+
+For each framework detected (React, Next.js, Vue, FastAPI, etc.), generate TWO things:
+
+#### 1. Best Practices File: `{framework}-best-practices.md`
+
+**Query Context7 for:**
+- Best practices and patterns
+- Common anti-patterns and mistakes
+- DO's and DON'Ts
+- Quick reference checklist
+
+**Example Queries:**
+
+```typescript
+// For React
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "hooks best practices, common mistakes, anti-patterns, rules of hooks",
+  tokens: 8000
+})
+
+// For Next.js
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "App Router best practices, Server Components vs Client Components, common mistakes, data fetching patterns",
+  tokens: 8000
+})
+
+// For FastAPI
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/tiangolo/fastapi",
+  topic: "endpoint patterns, validation best practices, error handling, dependency injection",
+  tokens: 8000
+})
+
+// For Prisma
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/prisma/prisma",
+  topic: "schema design patterns, query optimization, transaction handling, common mistakes",
+  tokens: 8000
+})
+```
+
+**File Structure Template:**
+
+```markdown
+# {Framework} Best Practices
+
+**Source:** Context7 - {Framework} Documentation
+**Last Updated:** {date}
+**Version:** {detected_version}
+
+---
+
+## ✅ DO (Best Practices)
+
+### 1. {Best Practice Category}
+- {Practice 1}
+- {Practice 2}
+- {Practice 3}
+
+### 2. {Another Category}
+- {Practice 1}
+- {Practice 2}
+
+---
+
+## ❌ DON'T (Anti-Patterns)
+
+### 🚫 Critical Mistakes (Check Before Committing):
+
+- [ ] ❌ **{Anti-pattern 1}**
+  ```code
+  // ❌ BAD - {why it's bad}
+  {bad example}
+
+  // ✅ GOOD - {why it's good}
+  {good example}
+  ```
+
+- [ ] ❌ **{Anti-pattern 2}**
+  ```code
+  // ❌ BAD
+  {bad example}
+
+  // ✅ GOOD
+  {good example}
+  ```
+
+---
+
+## 🔧 Common Mistakes & How to Fix
+
+### 1. {Common Mistake Title}
+
+```code
+// ❌ BAD - {description}
+{bad code}
+
+// ✅ GOOD - {description}
+{good code}
+```
+
+### 2. {Another Common Mistake}
+
+{explanation and fix}
+
+---
+
+## 🎯 Quick Checklist
+
+Before committing {framework} code:
+
+**{Category 1}:**
+- [ ] {check 1}
+- [ ] {check 2}
+
+**{Category 2}:**
+- [ ] {check 1}
+- [ ] {check 2}
+
+---
+
+**⚠️ All agents MUST read this file before writing {framework} code!**
+```
+
+**Save to:** `.claude/contexts/frameworks/{framework}-best-practices.md`
+
+---
+
+#### 2. Example Code Files: `examples/{example-name}.{ext}`
+
+**Query Context7 for code examples:**
+
+```typescript
+// For React - Custom Hook Example
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "custom hooks example for data fetching with loading error states and cleanup",
+  tokens: 5000
+})
+
+// For React - Error Boundary Example
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "Error Boundary component implementation with TypeScript, reset functionality",
+  tokens: 5000
+})
+```
+
+**Generate 1-2 Complete, Working Examples Per Framework:**
+
+**For React:**
+- `examples/use-fetch.tsx` - Custom hook with loading/error/cleanup
+- `examples/error-boundary.tsx` - Error boundary with reset
+
+**For Next.js:**
+- `examples/server-component.tsx` - Async Server Component with data fetching
+- `examples/route-handler.ts` - API Route Handler with validation
+
+**For FastAPI:**
+- `examples/endpoint-pattern.py` - REST endpoint with validation/error handling
+- `examples/dependency-injection.py` - Dependency injection pattern
+
+**For Prisma:**
+- `examples/transaction-pattern.ts` - Safe transaction handling
+- `examples/query-optimization.ts` - Optimized queries with relations
+
+**Example File Template:**
+
+```typescript
+/**
+ * {Example Title}
+ *
+ * Purpose: {What this example demonstrates}
+ * Source: Context7 - {Framework} Best Practices
+ *
+ * Features:
+ * - {Feature 1}
+ * - {Feature 2}
+ * - {Feature 3}
+ *
+ * Usage:
+ *   {usage example}
+ */
+
+{Complete working code from Context7}
+
+/**
+ * ✅ GOOD Example: {What makes this good}
+ */
+{good example code}
+
+/**
+ * ❌ BAD Example: Common Mistakes to Avoid
+ */
+{bad example code with comments explaining why it's bad}
+```
+
+---
+
+### Framework Detection → Files to Generate
+
+**If React detected:**
+- `react-best-practices.md`
+- `examples/use-fetch.tsx`
+- `examples/error-boundary.tsx`
+
+**If Next.js detected:**
+- `nextjs-best-practices.md`
+- `examples/server-component.tsx`
+- `examples/route-handler.ts`
+
+**If Vue detected:**
+- `vue-best-practices.md`
+- `examples/composable.ts`
+
+**If FastAPI detected:**
+- `fastapi-best-practices.md`
+- `examples/endpoint-pattern.py`
+
+**If Express detected:**
+- `express-best-practices.md`
+- `examples/middleware-pattern.ts`
+
+**If Prisma detected:**
+- `prisma-best-practices.md`
+- `examples/transaction-pattern.ts`
+
+**If SQLAlchemy detected:**
+- `sqlalchemy-best-practices.md`
+- `examples/model-pattern.py`
+
+**If Tailwind CSS detected:**
+- `tailwind-best-practices.md`
+
+---
+
+### Output to User
+
+After generating files:
+
+```
+📚 Generating framework best practices from Context7...
+
+✅ React Best Practices
+   - Queried Context7 for hooks patterns... ✓
+   - Generated: react-best-practices.md
+   - Generated: examples/use-fetch.tsx
+   - Generated: examples/error-boundary.tsx
+
+✅ Next.js Best Practices
+   - Queried Context7 for App Router patterns... ✓
+   - Generated: nextjs-best-practices.md
+   - Generated: examples/server-component.tsx
+   - Generated: examples/route-handler.ts
+
+✅ Prisma Best Practices
+   - Queried Context7 for schema patterns... ✓
+   - Generated: prisma-best-practices.md
+   - Generated: examples/transaction-pattern.ts
+
+📁 Framework contexts created:
+   - .claude/contexts/frameworks/react-best-practices.md
+   - .claude/contexts/frameworks/nextjs-best-practices.md
+   - .claude/contexts/frameworks/prisma-best-practices.md
+   - .claude/contexts/frameworks/examples/ (5 files)
+```
+
+---
+
+## Step 4: Create Domain Context Files
+
+**CRITICAL: You MUST create files in this exact order for proper indexing!**
+
+### Create Directory Structure
+
+```bash
+mkdir -p .claude/contexts/domain/{project-name}/best-practices
+```
+
+---
+
+## 📋 Files to Create (in order)
+
+### File 1: `domain/index.md` (🔑 Level 1 Index - Project Registry)
+
+**Purpose:** Central registry of all projects. Tells agents which project is current.
+
+```markdown
+# Domain Contexts Registry
+
+> **Auto-generated by `/agentsetup`**
+> **Last updated:** {current-date}
+
+---
+
+## 📋 Available Projects
+
+| Project | Tech Stack | Location | Last Setup |
+|---------|------------|----------|------------|
+| **{project-name}** | {tech-stack-summary} | [→](./{project-name}/) | {current-date} |
+
+---
+
+## 🎯 Current Working Project
+
+**Name:** `{project-name}`
+**Location:** `.claude/contexts/domain/{project-name}/`
+
+**Quick Links:**
+- [Tech Stack](./{project-name}/tech-stack.md)
+- [Best Practices](./{project-name}/best-practices/)
+- [Project README](./{project-name}/README.md)
+
+---
+
+## 🔍 For Agents
+
+**To discover project context, read this file first!**
+
+\`\`\`bash
+# Step 1: Read this file
+Read: .claude/contexts/domain/index.md
+
+# Step 2: Extract current project name
+Current project: {project-name}
+
+# Step 3: Navigate to project directory
+Path: .claude/contexts/domain/{project-name}/
+\`\`\`
+
+---
+
+**⚠️ This file is auto-managed by `/agentsetup`. Do not edit manually.**
+```
+
+**Example values:**
+- `{project-name}`: claude-multi-agent-template
+- `{tech-stack-summary}`: Next.js 15, React 18, Prisma 6
+- `{current-date}`: 2025-10-30
+
+---
+
+### File 2: `domain/{project-name}/README.md` (🔑 Level 2 Index - Project Overview)
+
+**Purpose:** Project overview. Tells agents what contexts are available and quick discovery paths.
+
+```markdown
+# {project-name}
+
+> **Project Type:** {Greenfield/Brownfield}
+> **Last Setup:** {current-date} (via `/agentsetup`)
+
+---
+
+## 📁 Available Contexts
+
+| Context | Description | Location |
+|---------|-------------|----------|
+| **Tech Stack** | Versions, package managers, installation commands | [tech-stack.md](./tech-stack.md) |
+| **Best Practices** | Framework-specific guidelines from Context7 | [best-practices/](./best-practices/) |
+
+---
+
+## 🛠️ Tech Stack Summary
+
+**Detected on:** {current-date}
+
+| Category | Library | Version | Context7 ID |
+|----------|---------|---------|-------------|
+{tech-stack-table-rows}
+
+**Package Manager:** {package-manager}
+
+---
+
+## 📚 Available Best Practices
+
+**Location:** [best-practices/](./best-practices/)
+
+{best-practices-summary}
+
+---
+
+## 🔍 For Agents
+
+### Quick Discovery:
+
+\`\`\`bash
+{agent-reading-guide}
+\`\`\`
+
+### Full discovery flow:
+
+\`\`\`bash
+1. Read: domain/index.md (get current project)
+2. Read: domain/{project-name}/README.md (this file - get overview)
+3. Read: domain/{project-name}/best-practices/index.md (get detailed registry)
+4. Read: domain/{project-name}/best-practices/{relevant-files}
+\`\`\`
+
+---
+
+**⚠️ All agents MUST read relevant best practices before writing code!**
+```
+
+**Example values:**
+- `{tech-stack-table-rows}`:
+  ```
+  | Frontend | Next.js | 15.5.0 | /vercel/next.js |
+  | Frontend | React | 18.3.0 | /facebook/react |
+  | Database | Prisma | 6.5.0 | /prisma/prisma |
+  ```
+- `{best-practices-summary}`:
+  ```
+  **Frontend:**
+  - [React 18](./best-practices/react-18.md) - Hooks, components
+  - [Next.js 15](./best-practices/nextjs-15.md) - App Router, Server Components
+
+  **Database:**
+  - [Prisma 6](./best-practices/prisma-6.md) - Schema, queries, transactions
+  ```
+- `{agent-reading-guide}`:
+  ```
+  # If you're a frontend agent (uxui-frontend, frontend):
+  Read: ./best-practices/react-18.md
+  Read: ./best-practices/nextjs-15.md
+
+  # If you're a backend agent:
+  Read: ./best-practices/prisma-6.md
+  ```
+
+---
+
+### File 3: `domain/{project-name}/tech-stack.md`
 
 ```markdown
 # Tech Stack - {Project Name}
@@ -554,30 +995,257 @@ uv run <script>
 # Backend: uv pip install -r requirements.txt
 \`\`\`
 
-## Key Patterns (from Context7)
+## 📚 Best Practices Reference
 
-### Next.js 15 App Router
-- Server Components by default
-- Use 'use client' for interactivity
-- File-based routing in app/ directory
+**IMPORTANT:** Detailed best practices are in separate files for better organization.
 
-### Prisma 6
-- Use \`prisma generate\` after schema changes
-- Connection pooling with \`?pool_timeout=0\`
-- Use transactions for multi-step operations
+**Location:** `.claude/contexts/domain/{project-name}/best-practices/`
 
-### Zustand 5
-- Create stores with \`create()\`
-- Use \`persist\` middleware for localStorage
-- TypeScript support with generics
+**Available guides:**
+- [React 18](./best-practices/react-18.md) - Hooks, components, state management
+- [Next.js 15](./best-practices/nextjs-15.md) - App Router, Server Components, data fetching
+- [Prisma 6](./best-practices/prisma-6.md) - Schema design, queries, transactions
+- [Zustand 5](./best-practices/zustand-5.md) - Store creation, persistence
+- [Vitest 2](./best-practices/vitest-2.md) - Unit tests, mocks, coverage
 
-### Vitest 2
-- Use \`describe\` and \`it\` for tests
-- Mock with \`vi.fn()\` and \`vi.mock()\`
-- Run tests with \`vitest\` or \`vitest --run\`
+**Registry:** [best-practices/index.md](./best-practices/index.md) (see which agent reads what)
+
+---
+
+**⚠️ All agents MUST read relevant best practices before coding!**
 ```
 
-### File 2: architecture.md (Optional)
+---
+
+### File 4: `domain/{project-name}/best-practices/index.md` (🔑 Level 3 Index - Best Practices Registry)
+
+**Purpose:** Registry of all best practices files. Tells agents which files to read based on their role.
+
+```markdown
+# Best Practices Registry
+
+> **Project:** {project-name}
+> **Generated:** {current-date} via Context7 MCP
+> **Total files:** {total-count}
+
+---
+
+## 📋 Available Best Practices
+
+| Framework | Version | File | For Agents | Last Updated |
+|-----------|---------|------|------------|--------------|
+{best-practices-table-rows}
+
+---
+
+## 🎯 Agent Reading Guide
+
+### For `uxui-frontend` agent:
+**Must read:**
+{uxui-must-read-list}
+
+**Optional:**
+{uxui-optional-list}
+
+---
+
+### For `frontend` agent:
+**Must read:**
+{frontend-must-read-list}
+
+---
+
+### For `backend` agent:
+**Must read:**
+{backend-must-read-list}
+
+**Optional:**
+{backend-optional-list}
+
+---
+
+### For `database` agent:
+**Must read:**
+{database-must-read-list}
+
+---
+
+### For `test-debug` agent:
+**Must read:**
+{test-must-read-list}
+
+**Optional:**
+{test-optional-list}
+
+---
+
+## 📊 Content Summary
+
+{content-summaries-per-file}
+
+---
+
+## 🔄 Update History
+
+| Date | Action | Details |
+|------|--------|---------|
+| {current-date} | Initial setup | Generated {count} files from Context7 |
+
+---
+
+**⚠️ To update these files, run `/agentsetup` again.**
+```
+
+**Example values:**
+- `{best-practices-table-rows}`:
+  ```
+  | React | 18.3 | [react-18.md](./react-18.md) | uxui-frontend, frontend | 2025-10-30 |
+  | Next.js | 15.5 | [nextjs-15.md](./nextjs-15.md) | uxui-frontend, frontend | 2025-10-30 |
+  | Prisma | 6.5 | [prisma-6.md](./prisma-6.md) | backend, database | 2025-10-30 |
+  ```
+- `{uxui-must-read-list}`:
+  ```
+  - ✅ [react-18.md](./react-18.md) - Component patterns, hooks rules
+  - ✅ [nextjs-15.md](./nextjs-15.md) - App Router, Server vs Client Components
+  ```
+- `{content-summaries-per-file}`:
+  ```
+  ### [react-18.md](./react-18.md)
+  **Topics covered:**
+  - ✅ Hooks rules (must call at top level, deps arrays)
+  - ✅ Custom hooks patterns
+  - ❌ Common anti-patterns (conditional hooks, state mutation)
+
+  **Key sections:**
+  - DO's: 15 best practices
+  - DON'Ts: 10 anti-patterns with code examples
+  - Quick Checklist: 8 items
+  ```
+
+---
+
+### File 5: `domain/{project-name}/best-practices/{framework}-{version}.md`
+
+**Purpose:** Actual best practices content from Context7. One file per major framework.
+
+**Template structure:**
+
+```markdown
+# {Framework} Best Practices
+
+**Source:** Context7 - {Framework} Documentation
+**Last Updated:** {current-date}
+**Version:** {detected-version}
+
+---
+
+## ✅ DO (Best Practices)
+
+### 1. {Best Practice Category}
+- {Practice 1}
+- {Practice 2}
+- {Practice 3}
+
+```code
+// ✅ GOOD - {explanation}
+{good-example}
+```
+
+### 2. {Another Category}
+- {Practice 1}
+- {Practice 2}
+
+---
+
+## ❌ DON'T (Anti-Patterns)
+
+### 🚫 Critical Mistakes (Check Before Committing):
+
+- [ ] ❌ **{Anti-pattern 1}**
+  ```code
+  // ❌ BAD - {why it's bad}
+  {bad-example}
+
+  // ✅ GOOD - {why it's good}
+  {good-example}
+  ```
+
+- [ ] ❌ **{Anti-pattern 2}**
+  ```code
+  // ❌ BAD
+  {bad-example}
+
+  // ✅ GOOD
+  {good-example}
+  ```
+
+---
+
+## 🔧 Common Mistakes & How to Fix
+
+### 1. {Common Mistake Title}
+
+```code
+// ❌ BAD - {description}
+{bad-code}
+
+// ✅ GOOD - {description}
+{good-code}
+```
+
+### 2. {Another Common Mistake}
+
+{explanation-and-fix}
+
+---
+
+## 🎯 Quick Checklist
+
+Before committing {framework} code:
+
+**{Category 1}:**
+- [ ] {check-1}
+- [ ] {check-2}
+
+**{Category 2}:**
+- [ ] {check-1}
+- [ ] {check-2}
+
+---
+
+**⚠️ All agents MUST read this file before writing {framework} code!**
+```
+
+**Query Context7 for each framework:**
+
+```typescript
+// Example: React
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "hooks best practices, common mistakes, anti-patterns, rules of hooks, custom hooks patterns, component composition",
+  tokens: 8000
+})
+
+// Example: Next.js
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "App Router best practices, Server Components vs Client Components, common mistakes, data fetching patterns, route handlers",
+  tokens: 8000
+})
+
+// Example: Prisma
+mcp__context7__get-library-docs({
+  context7CompatibleLibraryID: "/prisma/prisma",
+  topic: "schema design patterns, query optimization, transaction handling, common mistakes, N+1 problem, migration best practices",
+  tokens: 8000
+})
+```
+
+**Format Context7 response into the template above.**
+
+---
+
+### File 6: architecture.md (Optional)
 
 Only create if spec has architecture info:
 
@@ -642,6 +1310,7 @@ After creating all files, output a summary:
 ✅ Agent Setup Complete!
 
 📦 Project Type: {Greenfield / Brownfield}
+📁 Project Name: {project-name}
 
 🛠️ Tech Stack Detected:
 - Frontend: Next.js 15.5.0
@@ -653,17 +1322,27 @@ After creating all files, output a summary:
 - JavaScript: pnpm 9.x (detected from pnpm-lock.yaml)
 - Python: uv 0.4.x (detected from uv.lock) [if applicable]
 
-📁 Domain Context Created:
-- .claude/contexts/domain/{project}/tech-stack.md
-- .claude/contexts/domain/{project}/architecture.md (if applicable)
-- .claude/contexts/domain/{project}/business-rules.md (if applicable)
-- .claude/contexts/domain/{project}/design-tokens.md (if applicable)
+📁 Files Created:
 
-📚 Context7 Docs Retrieved:
-- Next.js 15 App Router (5000 tokens)
-- Prisma 6 Best Practices (5000 tokens)
-- Zustand 5 TypeScript (3000 tokens)
-- Vitest 2 Testing (3000 tokens)
+**Index Files (3-level discovery):**
+✓ .claude/contexts/domain/index.md (Level 1 - Project Registry)
+✓ .claude/contexts/domain/{project}/README.md (Level 2 - Project Overview)
+✓ .claude/contexts/domain/{project}/best-practices/index.md (Level 3 - Best Practices Registry)
+
+**Context Files:**
+✓ .claude/contexts/domain/{project}/tech-stack.md
+✓ .claude/contexts/domain/{project}/architecture.md (if applicable)
+✓ .claude/contexts/domain/{project}/business-rules.md (if applicable)
+✓ .claude/contexts/domain/{project}/design-tokens.md (if applicable)
+
+**Best Practices (from Context7):**
+✓ .claude/contexts/domain/{project}/best-practices/react-18.md (8000 tokens)
+✓ .claude/contexts/domain/{project}/best-practices/nextjs-15.md (8000 tokens)
+✓ .claude/contexts/domain/{project}/best-practices/prisma-6.md (8000 tokens)
+✓ .claude/contexts/domain/{project}/best-practices/zustand-5.md (8000 tokens)
+✓ .claude/contexts/domain/{project}/best-practices/vitest-2.md (8000 tokens)
+
+📚 Context7 Docs Retrieved: {total-tokens} tokens
 
 🚀 Ready to start! Use:
 - /agents uxui-frontend → Design UI components with mock data
@@ -672,7 +1351,10 @@ After creating all files, output a summary:
 - /agents database → Design schemas
 - /agents test-debug → Run tests and fix bugs
 
-💡 Remember: All agents will use the detected package manager(s) automatically.
+💡 Note: All agents will automatically:
+   - Discover project via domain/index.md
+   - Read relevant best practices before coding
+   - Use detected package manager(s)
 ```
 
 ---
@@ -704,13 +1386,16 @@ What tech stack do you want to use?
 ## Important Rules
 
 1. **ALWAYS use Context7 MCP** for latest docs (never hardcode docs)
-2. **ALWAYS create tech-stack.md** (mandatory)
-3. **ALWAYS detect and store package manager(s)** in tech-stack.md
-4. **ONLY create architecture/business-rules/design-tokens** if spec provides info
-5. **NEVER guess versions** - read from package files or ask user
-6. **NEVER hardcode package manager commands** - always read from tech-stack.md
-7. **ALWAYS confirm detected stack** with user before proceeding
-8. **Store Context7 library IDs** in tech-stack.md for future reference
+2. **ALWAYS create index files** in order: domain/index.md → {project}/README.md → best-practices/index.md
+3. **ALWAYS create tech-stack.md** (mandatory)
+4. **ALWAYS generate best practices** files from Context7 for detected frameworks
+5. **ALWAYS detect and store package manager(s)** in tech-stack.md
+6. **ONLY create architecture/business-rules/design-tokens** if spec provides info
+7. **NEVER guess versions** - read from package files or ask user
+8. **NEVER hardcode package manager commands** - always read from tech-stack.md
+9. **ALWAYS confirm detected stack** with user before proceeding
+10. **Store Context7 library IDs** in tech-stack.md for future reference
+11. **Format best practices** with ✅ DO's, ❌ DON'Ts, and 🎯 Quick Checklist sections
 
 ### Critical: Package Manager Usage
 

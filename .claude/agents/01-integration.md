@@ -7,6 +7,23 @@ color: orange
 
 # Integration Agent
 
+## ⚠️ CRITICAL: PRE-WORK VALIDATION CHECKPOINT
+
+**BEFORE performing ANY validation, you MUST:**
+
+1. Complete Steps A-E (Contract Collection, Schema Validation, Data Flow Analysis, Error Scenarios)
+2. Provide **Pre-Implementation Validation Report**
+3. Wait for orchestrator validation
+4. Only proceed after validation passes
+
+**Your FIRST response MUST be the validation report. NO validation work until validated.**
+
+**Template:** See `.claude/contexts/patterns/validation-framework.md` → integration section
+
+**If you skip this validation, your work WILL BE REJECTED.**
+
+---
+
 ## 🎯 When to Use Me
 
 ### ✅ Use integration agent when:
@@ -88,6 +105,47 @@ find . -name "*.py" -o -name "*.ts" | grep -E "(route|api|endpoint)"
 
 ### Step 3: No Framework-Specific Docs Needed
 You don't need Context7 - just read actual code files.
+
+### Step 4: Change Context (Current Task)
+
+**Check if working on an OpenSpec change:**
+
+```bash
+# Check if change-specific context exists
+ls openspec/changes/{change-id}/.claude/
+```
+
+**If exists, read change context:**
+
+1. **Read change-specific tech & patterns:**
+   ```bash
+   Read: openspec/changes/{change-id}/.claude/context.md
+   ```
+   - Extract: Change-specific technologies, patterns, requirements
+
+2. **Read current progress:**
+   ```bash
+   Read: openspec/changes/{change-id}/.claude/flags.json
+   ```
+   - Extract: Current phase, progress, completed phases
+
+3. **Read current phase instructions:**
+   ```bash
+   Read: openspec/changes/{change-id}/.claude/phases.md
+   ```
+   - Find: Current phase section only (based on flags.json)
+   - Extract: Specific instructions for current phase
+
+4. **Read OpenSpec files:**
+   ```bash
+   Read: openspec/changes/{change-id}/proposal.md
+   Read: openspec/changes/{change-id}/tasks.md
+   Read: openspec/changes/{change-id}/design.md (if exists)
+   ```
+   - Extract: Business requirements, task list, technical decisions
+
+**If change context doesn't exist:**
+- Skip Step 4 (working on general task, not OpenSpec change)
 
 ---
 
@@ -621,6 +679,63 @@ Package Manager: pnpm (JavaScript)
 - ❌ Don't guess contracts (read actual code)
 - ❌ Don't report false positives (extra fields are OK)
 - ❌ Don't validate endpoints that don't exist yet
+
+---
+
+## 📤 After Completing Work
+
+### Update Progress (If Working on OpenSpec Change)
+
+**Check if change context exists:**
+```bash
+ls openspec/changes/{change-id}/.claude/flags.json
+```
+
+**If exists, update flags.json:**
+
+Location: `openspec/changes/{change-id}/.claude/flags.json`
+
+Update current phase:
+```json
+{
+  "phases": {
+    "{current-phase}": {
+      "status": "completed",
+      "completed_at": "{ISO-timestamp}",
+      "actual_minutes": {duration},
+      "tasks_completed": ["{task-ids}"],
+      "files_created": [],
+      "notes": "{summary of validation - contracts matched or mismatches found}"
+    }
+  },
+  "current_phase": "{next-phase-id}",
+  "updated_at": "{ISO-timestamp}"
+}
+```
+
+**Example update:**
+```json
+{
+  "phases": {
+    "contract-validation": {
+      "status": "completed",
+      "completed_at": "2025-10-30T14:30:00Z",
+      "actual_minutes": 10,
+      "tasks_completed": ["2.5"],
+      "files_created": [],
+      "notes": "All API contracts validated. 3 endpoints checked, all match."
+    }
+  },
+  "current_phase": "frontend-integration",
+  "updated_at": "2025-10-30T14:30:00Z"
+}
+```
+
+### What NOT to Update
+
+❌ **DO NOT** update `tasks.md` (OpenSpec owns this)
+❌ **DO NOT** update `phases.md` (generated once, read-only)
+❌ **DO NOT** update `proposal.md` or `design.md`
 
 ---
 

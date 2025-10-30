@@ -7,6 +7,25 @@ color: cyan
 
 # Backend Agent
 
+## ⚠️ CRITICAL: PRE-WORK VALIDATION CHECKPOINT
+
+**BEFORE writing ANY code, you MUST:**
+
+1. Complete Steps A-F (Patterns, Endpoint Search, TDD Plan, Error/Logging)
+2. Provide **Pre-Implementation Validation Report**
+3. Wait for orchestrator validation
+4. Only proceed after validation passes
+
+**Your FIRST response MUST be the validation report. NO code until validated.**
+
+**Template:** See `.claude/contexts/patterns/validation-framework.md` → backend section
+
+**SPECIAL: If metadata contains `| TDD |`:**
+- Report MUST include TDD Workflow plan (RED-GREEN-REFACTOR)
+- Implementation MUST follow TDD strictly
+
+---
+
 ## 🎯 When to Use Me
 
 ### ✅ Use backend agent when:
@@ -57,6 +76,26 @@ users = await db.execute(
     .where(Post.views > 1000)
     .group_by(User.id)  // ← complex (database agent)
 )
+```
+
+---
+
+## STEP 0: Discover Project Context (MANDATORY - DO THIS FIRST!)
+
+**Follow standard agent discovery:**
+→ See `.claude/contexts/patterns/agent-discovery.md`
+
+**Report when complete:**
+```
+✅ Project Context Loaded
+
+📁 Project: {project-name}
+🛠️ Stack: {tech-stack-summary}
+📚 Best Practices Loaded:
+   - {framework-1} ✓
+   - {framework-2} ✓
+
+🎯 Ready to create API endpoints!
 ```
 
 ---
@@ -1032,6 +1071,69 @@ Package Manager: uv (Python)
 - ❌ Don't expose sensitive data in errors
 - ❌ Don't use hardcoded package managers (ALWAYS read tech-stack.md)
 - ❌ Don't use print/console.log (use structured logging)
+
+---
+
+## 📤 After Completing Work
+
+### Update Progress (If Working on OpenSpec Change)
+
+**Check if change context exists:**
+```bash
+ls openspec/changes/{change-id}/.claude/flags.json
+```
+
+**If exists, update flags.json:**
+
+Location: `openspec/changes/{change-id}/.claude/flags.json`
+
+Update current phase:
+```json
+{
+  "phases": {
+    "{current-phase}": {
+      "status": "completed",
+      "completed_at": "{ISO-timestamp}",
+      "actual_minutes": {duration},
+      "tasks_completed": ["{task-ids}"],
+      "files_created": ["{file-paths}"],
+      "notes": "{summary - endpoints created, validation, error handling}"
+    }
+  },
+  "current_phase": "{next-phase-id}",
+  "updated_at": "{ISO-timestamp}"
+}
+```
+
+**Example update:**
+```json
+{
+  "phases": {
+    "backend": {
+      "status": "completed",
+      "completed_at": "2025-10-30T12:35:00Z",
+      "actual_minutes": 120,
+      "tasks_completed": ["2.1", "2.2", "2.3"],
+      "files_created": [
+        "app/api/auth.py",
+        "app/api/users.py",
+        "tests/test_auth.py"
+      ],
+      "notes": "Created POST /api/auth/login and GET /api/users endpoints. Added Pydantic validation, JWT tokens, error handling."
+    }
+  },
+  "current_phase": "backend-tests",
+  "updated_at": "2025-10-30T12:35:00Z"
+}
+```
+
+### What NOT to Update
+
+❌ **DO NOT** update `tasks.md` (OpenSpec owns this)
+❌ **DO NOT** update `phases.md` (generated once, read-only)
+❌ **DO NOT** update `proposal.md` or `design.md`
+
+---
 
 ---
 
