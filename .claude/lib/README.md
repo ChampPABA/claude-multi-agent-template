@@ -12,6 +12,15 @@ Used by `/cdev` to execute agents with automatic retry, validation, and user esc
 **`tdd-classifier.md`** - TDD classification logic
 Used by `/csetup` to automatically determine which phases require TDD workflow
 
+**`flags-updater.md`** - 🆕 Progress tracking protocol
+Ensures Main Claude updates flags.json after EVERY phase completion. Provides helper functions for extracting files, tasks, and calculating duration.
+
+**`agent-router.md`** - 🆕 Mandatory agent routing rules
+Enforces strict agent boundaries. Main Claude MUST delegate implementation work to specialized agents. Includes work type detection patterns and self-check protocol.
+
+**`validation-gates.md`** - 🆕 Validation checkpoints
+Four validation gates that Main Claude MUST pass: before work, after agent responds, before reporting, and before phase start. Ensures quality and correctness at each step.
+
 ---
 
 ## 🚨 Important

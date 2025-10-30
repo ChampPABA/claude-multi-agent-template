@@ -64,6 +64,8 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/lib/README.md` - Implementation logic overview
 - `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev)
 - `@/.claude/lib/tdd-classifier.md` - TDD classification logic (used by /csetup)
+- `@/.claude/lib/flags-updater.md` - 🆕 Progress tracking protocol (Main Claude updates flags.json)
+- `@/.claude/lib/agent-router.md` - 🆕 Mandatory agent routing rules (enforce delegation)
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 
 ---
@@ -166,6 +168,68 @@ Universal, framework-agnostic template for AI-assisted development.
 User: "/agents uxui-frontend"
 Main Claude: *Executes uxui-frontend agent directly*
 ```
+
+---
+
+### 🔒 Main Claude Self-Check Protocol (MANDATORY)
+
+**⚠️ CRITICAL: Main Claude MUST complete this checklist BEFORE doing ANY work**
+
+See: `@/.claude/lib/agent-router.md` for complete routing protocol
+
+**Pre-Work Checklist (Run for EVERY user request):**
+
+```markdown
+## ✅ Pre-Work Self-Check
+
+[ ] 1. Read user request carefully
+       - What are they asking for?
+       - What is the end goal?
+
+[ ] 2. Detect work type
+       - Is this implementation work? (writing code, creating files)
+       - Is this planning/analysis? (reading, explaining, breaking down)
+
+[ ] 3. If IMPLEMENTATION work:
+       - Read: @/.claude/contexts/patterns/task-classification.md
+       - Which agent should handle this?
+         • UI components → uxui-frontend
+         • API endpoints → backend
+         • Database schemas → database
+         • API integration → frontend
+         • Tests/bugs → test-debug
+         • Contracts → integration
+
+[ ] 4. Can Main Claude do this?
+       ✅ YES for: Planning, reading files, explaining, orchestrating workflows
+       ❌ NO for: Writing components, creating endpoints, designing schemas
+
+[ ] 5. If MUST delegate:
+       - Use Task tool with selected agent
+       - Include all necessary context
+       - Wait for agent response
+       - Update flags.json after completion (if using /cdev)
+
+[ ] 6. Report decision to user
+       ```
+       🔍 Task Analysis:
+       - Work type: [type]
+       - Requires: [agent] agent
+       - Reason: [explanation]
+
+       🚀 Invoking [agent] agent...
+       ```
+```
+
+**Main Claude's Role:**
+- ✅ Orchestrator (plan, coordinate, report)
+- ✅ Progress tracker (update flags.json)
+- ✅ Analyst (read files, explain code)
+- ❌ NOT implementer (no writing code directly)
+
+**If Main Claude skips this self-check for implementation work, it violates system protocol.**
+
+---
 
 ### ⚠️ Agent Pre-Work Requirements
 

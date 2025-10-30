@@ -184,23 +184,78 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ---
 
-### Step 5: Post-Execution
+### Step 5: Post-Execution (🆕 MANDATORY FLAGS UPDATE)
 
-After agent completes:
+**⚠️ CRITICAL: Main Claude MUST update flags.json after EVERY phase completion**
 
-1. **Read updated flags.json**
-2. **Check next phase:**
+See: `.claude/lib/flags-updater.md` for complete protocol
+
+**Execution Order (MUST follow this sequence):**
 
 ```typescript
+// 1. MANDATORY: Update flags.json
+output(`\n🔄 Updating progress tracking...`)
+
+// See flags-updater.md for updateFlagsAfterPhase() implementation
+updateFlagsAfterPhase(changeId, currentPhase, agentResponse)
+
+// This function:
+// - Marks phase as completed
+// - Records actual duration
+// - Extracts files created/modified
+// - Updates meta statistics (progress %, time remaining)
+// - Moves current_phase to next phase
+// - Writes back to flags.json
+// - Reports progress to user
+
+// 2. Read updated flags
+const flagsPath = `openspec/changes/${changeId}/.claude/flags.json`
+const flags = JSON.parse(Read(flagsPath))
+
+// 3. Report progress to user
+output(`\n📊 Progress Update:`)
+output(`   ✅ ${flags.meta.completed_phases}/${flags.meta.total_phases} phases complete`)
+output(`   📈 ${flags.meta.progress_percentage}% progress`)
+output(`   ⏱️  ${formatDuration(flags.meta.total_actual_minutes)} spent`)
+output(`   ⏱️  ${formatDuration(flags.meta.time_remaining_estimate)} remaining`)
+
+// 4. Check next phase
 if (flags.ready_to_archive) {
-  output('✅ All phases complete! Ready to archive.')
-} else if (nextPhaseRequiresUser) {
-  output('🛑 Next phase requires your action')
-  output(`When done: /cdev ${changeId} --continue`)
+  output('\n✅ All phases complete! Ready to archive.')
+  output(`\nNext steps:`)
+  output(`1. Review: /cview ${changeId}`)
+  output(`2. Update tasks.md (mark all [x])`)
+  output(`3. Archive: openspec archive ${changeId}`)
 } else {
-  output(`📍 Next: Phase ${nextNumber}: ${nextName}`)
-  output('Continue? (yes/no)')
+  const nextPhase = flags.phases[flags.current_phase]
+
+  output(`\n📍 Next: Phase ${nextPhase.phase_number}: ${flags.current_phase}`)
+  output(`   Agent: ${nextPhase.agent}`)
+  output(`   Estimated: ${nextPhase.estimated_minutes} min`)
+
+  if (nextPhase.agent === 'user') {
+    output('\n🛑 Next phase requires your action')
+    output(`When done: /cdev ${changeId} --continue`)
+  } else {
+    output('\nContinue? (yes/no)')
+  }
 }
+```
+
+**Rules:**
+- ✅ Main Claude updates flags.json (NOT sub-agent)
+- ✅ Update happens IMMEDIATELY after sub-agent responds successfully
+- ✅ Update happens BEFORE asking user to continue
+- ✅ Progress is reported to user after EVERY update
+- ✅ No exceptions - even if agent "says" it updated flags
+
+**Common Mistake:**
+```typescript
+❌ WRONG:
+Agent completes → Ask user to continue → (flags.json never updated)
+
+✅ CORRECT:
+Agent completes → Update flags.json → Report progress → Ask user to continue
 ```
 
 ---
