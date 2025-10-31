@@ -34,7 +34,7 @@ jobs:
 
       # 5. Publish to npm
       - name: Publish to npm
-        run: npm publish
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -43,5 +43,5 @@ jobs:
         if: success()
         run: |
           echo "✅ Successfully published to npm!"
-          echo "📦 Package: claude-agent-kit"
+          echo "📦 Package: @champpaba/claude-agent-kit"
           echo "🏷️ Version: ${{ github.ref_name }}"
