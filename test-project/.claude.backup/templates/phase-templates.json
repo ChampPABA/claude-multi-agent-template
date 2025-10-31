@@ -1,0 +1,124 @@
+{
+  "version": "1.0.0",
+  "templates": {
+    "full-stack": {
+      "name": "Full-Stack Feature",
+      "description": "Complete feature with frontend UI, backend API, and database",
+      "phases": [
+        "frontend-mockup",
+        "accessibility-test",
+        "manual-ux-test",
+        "business-logic-validation",
+        "user-approval",
+        "api-design",
+        "backend",
+        "database",
+        "backend-tests",
+        "contract-backend",
+        "frontend-integration",
+        "contract-frontend",
+        "e2e-tests",
+        "manual-flow-test",
+        "refactor",
+        "regression-tests",
+        "test-coverage",
+        "documentation",
+        "report"
+      ],
+      "total_phases": 19,
+      "estimated_minutes": 420
+    },
+
+    "frontend-only": {
+      "name": "Frontend Only",
+      "description": "UI components with mockup data, no backend integration",
+      "phases": [
+        "frontend-mockup",
+        "accessibility-test",
+        "manual-ux-test",
+        "business-logic-validation",
+        "user-approval",
+        "component-tests",
+        "responsive-test",
+        "refactor",
+        "test-coverage",
+        "documentation",
+        "report"
+      ],
+      "total_phases": 11,
+      "estimated_minutes": 195
+    },
+
+    "backend-only": {
+      "name": "Backend Only",
+      "description": "API endpoints and database without frontend",
+      "phases": [
+        "api-design",
+        "backend",
+        "database",
+        "backend-tests",
+        "contract-backend",
+        "e2e-api-tests",
+        "refactor",
+        "regression-tests",
+        "documentation",
+        "report"
+      ],
+      "total_phases": 10,
+      "estimated_minutes": 210
+    },
+
+    "script-only": {
+      "name": "Script/CLI Tool",
+      "description": "Command-line tool or background script",
+      "phases": [
+        "script-implementation",
+        "automated-tests",
+        "manual-testing",
+        "business-logic-validation",
+        "refactor",
+        "test-coverage",
+        "documentation"
+      ],
+      "total_phases": 7,
+      "estimated_minutes": 150
+    },
+
+    "bug-fix": {
+      "name": "Bug Fix",
+      "description": "Fix existing functionality",
+      "phases": [
+        "fix-implementation",
+        "unit-tests",
+        "manual-verification",
+        "regression-tests",
+        "report"
+      ],
+      "total_phases": 5,
+      "estimated_minutes": 60
+    },
+
+    "refactor": {
+      "name": "Refactoring",
+      "description": "Improve code quality without changing functionality",
+      "phases": [
+        "refactor-implementation",
+        "regression-tests",
+        "documentation",
+        "report"
+      ],
+      "total_phases": 4,
+      "estimated_minutes": 90
+    }
+  },
+
+  "detection_keywords": {
+    "frontend": ["component", "page", "ui", "form", "button", "layout", "responsive", "css", "style", "tsx", "jsx", "vue"],
+    "backend": ["api", "endpoint", "route", "handler", "server", "backend", "middleware", "controller"],
+    "database": ["database", "schema", "migration", "prisma", "model", "query", "sql", "table"],
+    "api_integration": ["fetch", "axios", "api call", "integration", "connect to", "http request"],
+    "script": ["cli", "command", "script", "automation", "batch", "cron", "job", "worker"],
+    "bug_fix": ["bug", "fix", "issue", "error", "broken", "crash"],
+    "refactor": ["refactor", "cleanup", "optimize", "improve", "restructure", "reorganize"]
+  }
+}
