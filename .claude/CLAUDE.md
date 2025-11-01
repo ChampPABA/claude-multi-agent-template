@@ -44,6 +44,7 @@ Universal, framework-agnostic template for AI-assisted development.
 **Project Setup:**
 - `/psetup` - One-time project setup (detect tech stack, generate best practices)
 - `/agentsetup` - Auto-detect tech stack and generate best practices
+- `/designsetup` - Setup project-specific design system from reference website
 
 **OpenSpec Multi-Agent Workflow:**
 - `/csetup {change-id}` - Setup change context (analyze tasks, generate workflow)
@@ -119,6 +120,93 @@ Universal, framework-agnostic template for AI-assisted development.
    - Next.js 15 ✓
 
 🎯 Ready to create UI components!
+```
+
+---
+
+## 🎨 Design System Setup
+
+### How It Works:
+
+**Purpose:** Extract design tokens from reference websites to ensure pixel-perfect UI consistency.
+
+**Workflow:**
+
+```
+1. User captures reference website:
+   - Install SingleFile Extension
+   - Save page → reference/{sitename}.html
+   - (Optional) Screenshot → reference/{sitename}.png
+
+2. Run: /designsetup @reference/
+   ↓
+3. Agent extracts design system:
+   - Colors (exact hex values)
+   - Typography (fonts, sizes, weights)
+   - Spacing (base unit + scale)
+   - Shadows, border radius, components
+   ↓
+4. Generates: domain/{project}/STYLE_GUIDE.md
+   ↓
+5. uxui-frontend agent auto-loads STYLE_GUIDE
+   ↓
+6. All UI components follow design system automatically
+```
+
+### Generated Files:
+
+```
+.claude/contexts/domain/{project}/
+├── README.md
+├── tech-stack.md
+├── best-practices/
+├── STYLE_GUIDE.md                    # ← Design system
+├── reference.html                    # ← Source HTML
+└── reference-screenshot.png          # ← Visual reference (optional)
+```
+
+### Design System Priority:
+
+**When uxui-frontend creates components:**
+
+```
+Priority order:
+1. STYLE_GUIDE.md (if exists)          ← Project-specific design
+2. Existing components (brownfield)    ← Extract from code
+3. Foundation contexts (fallback)      ← Generic defaults
+```
+
+### When to Use:
+
+✅ **Greenfield projects** with design reference (Linear, Stripe, etc.)
+✅ **Consistency critical** (50+ components, need single source of truth)
+✅ **Team projects** (shared understanding of design)
+
+⚠️ **Optional for:**
+- Quick prototypes
+- Brownfield with established patterns
+- Projects using component libraries (shadcn/ui, etc.)
+
+### Example:
+
+```bash
+# Clone Linear.app design
+/designsetup @reference/
+
+# Result:
+✅ STYLE_GUIDE.md created
+   - Primary: #6366f1 (Indigo)
+   - Font: Inter
+   - Spacing: 8px base unit
+   - 15 component patterns documented
+
+# Now build UI:
+/csetup feature-dashboard
+/cdev feature-dashboard
+
+# uxui-frontend uses STYLE_GUIDE automatically
+# → All components: #6366f1 color, 8px spacing, Inter font
+# → 100% consistent!
 ```
 
 ---
@@ -245,10 +333,41 @@ See: `@/.claude/lib/agent-router.md` for complete routing protocol
 
 ```
 1. Read: domain/index.md → Get current project name
+
 2. Read: domain/{project}/README.md → Get tech stack summary
-3. Read: domain/{project}/best-practices/index.md → Find relevant files
-4. Read: domain/{project}/best-practices/{files} → Load best practices
-5. Report: "✅ Project Context Loaded"
+
+3. (uxui-frontend only) Check for Design System:
+
+   Path: domain/{project}/STYLE_GUIDE.md
+
+   If exists:
+     a) Check for visual reference:
+        - Look for: domain/{project}/reference-screenshot.png
+        - If found: View screenshot FIRST (get visual context)
+
+     b) Read STYLE_GUIDE.md (get exact values)
+
+     c) Report design system loaded:
+        """
+        🎨 Design System: ✓ Configured
+        📸 Visual Reference: ✓ Available / ✗ Not provided
+
+        Design Characteristics:
+        - Primary Color: {hex}
+        - Base Spacing: {value}px
+        - Font: {family}
+        - Style: {aesthetic description}
+        """
+
+   If NOT exists:
+     → Report: "⚠️ No STYLE_GUIDE.md - Using fallback methods"
+     → Will use: Existing components OR foundation contexts
+
+4. Read: domain/{project}/best-practices/index.md → Find relevant files
+
+5. Read: domain/{project}/best-practices/{files} → Load best practices
+
+6. Report: "✅ Project Context Loaded"
 ```
 
 **Fallback:** If discovery fails, warn user to run `/agentsetup`
@@ -284,15 +403,45 @@ Before writing ANY code, you MUST:
    - Decision: Reuse > Compose > Extend > Create New
    - If creating new: Extract design tokens from most similar component
 
-4. **Extract Design Tokens from Reference Component:**
-   ```typescript
-   const DESIGN_TOKENS = {
-     spacing: { padding: '[from reference]', gap: '[from reference]' },
-     colors: { bg: '[theme token]', text: '[theme token]', border: '[theme token]' },
-     shadows: '[from reference - e.g., shadow-sm]',
-     borderRadius: '[from reference - e.g., rounded-md]'
-   }
-   ```
+4. **Extract Design Tokens:**
+
+   **Priority order:**
+
+   **a) From STYLE_GUIDE.md (if exists)** ← BEST
+      - Read exact values from STYLE_GUIDE.md
+      - Use documented colors, spacing, fonts
+      - No searching needed, guaranteed consistency
+      - Example:
+        ```typescript
+        // From STYLE_GUIDE.md:
+        // Primary: #6366f1, Spacing base: 8px
+        const DESIGN_TOKENS = {
+          colors: { primary: '#6366f1', bg: 'white' },
+          spacing: { base: 8, sm: 16, md: 24 },
+          borderRadius: 'rounded-md'
+        }
+        ```
+
+   **b) From Existing Components (if no STYLE_GUIDE)** ← FALLBACK
+      - Glob: "**/*{Keyword}*.{tsx,jsx,vue}"
+      - Grep: "[similar-pattern]"
+      - Read and extract tokens from similar component
+      - If multiple found with different values, ask user
+      - Example:
+        ```typescript
+        // From Button.tsx:
+        const DESIGN_TOKENS = {
+          spacing: { padding: 'px-4 py-2', gap: 'gap-2' },
+          colors: { bg: 'bg-[#6366f1]', text: 'text-white' },
+          shadows: 'shadow-sm',
+          borderRadius: 'rounded-md'
+        }
+        ```
+
+   **c) From Foundation Contexts (last resort)** ← DEFAULT
+      - Use generic design contexts (spacing.md, color-theory.md)
+      - Default modern style (#6366f1, 8px spacing)
+      - Warn user: No project-specific design
 
 5. **Report Pre-Implementation Analysis:**
    You MUST provide a detailed report covering steps 1-4 BEFORE writing any code.
