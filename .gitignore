@@ -17,3 +17,7 @@ Thumbs.db
 # Domain-specific (project fills this)
 .claude/contexts/domain/*
 !.claude/contexts/domain/README.md
+
+# Reference materials (user-specific)
+# Users capture their own reference websites for design extraction
+reference/
