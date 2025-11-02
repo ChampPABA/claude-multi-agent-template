@@ -729,654 +729,109 @@ const designConfig = {
 
 ## 📝 Generate STYLE_GUIDE.md
 
-**Generate a concise (1500-2000 lines), data-verified style guide.**
+**Output:** Comprehensive 17-section style guide (1500-2000 lines) based on extracted data.
 
-**Key Requirements:**
-1. **[EXTRACTED]** markers for all computed style data
-2. **Source indicators** (CSS variables, computed styles, etc.)
-3. **Actual component selectors** (button.primary, not generic)
-4. **Anti-patterns section** with [MANDATORY] rules
-5. **Architecture-specific** (auto-detected framework)
+**Requirements:**
+- Mark all computed style data with **[EXTRACTED]**
+- Include source indicators (CSS variables, getComputedStyle, etc.)
+- Use actual component selectors from extraction
+- Include [MANDATORY] rules to prevent anti-patterns
+- Match detected CSS architecture
 
-**Example Structure:**
+**Structure (17 sections):**
 
 ```markdown
 # [Project Name] Design System - Style Guide
 
-> **Source:** Generated from [live website / localhost / AI]
+> **Source:** [Live Website / Localhost / AI-Generated]
 > **Date:** [Current date]
-> **Architecture:** [Tailwind CSS / styled-components / CSS Modules / Vanilla CSS]
-> **Design Style:** [Minimalist / Neo-Brutalism / Modern Professional / Glassmorphism]
+> **Architecture:** [Detected CSS framework]
+> **Design Style:** [Auto-detected or user-selected style]
 
 ---
 
 ## Quick Reference
+Design Tokens JSON with all extracted values: colors, typography, spacing, effects
 
-### Design Tokens (EXTRACTED from computed styles)
-
-```json
-{
-  "colors": {
-    "primary": "#3B82F6",
-    "primaryDark": "#2563EB",
-    "textPrimary": "#111827",
-    "textSecondary": "#6B7280",
-    "background": "#FFFFFF",
-    "backgroundSecondary": "#F9FAFB",
-    "border": "#E5E7EB",
-    "borderFocus": "#3B82F6"
-  },
-  "typography": {
-    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    "fontSizes": {
-      "xs": "12px",
-      "sm": "14px",
-      "base": "16px",
-      "lg": "18px",
-      "xl": "20px",
-      "2xl": "24px"
-    },
-    "fontWeights": {
-      "normal": 400,
-      "medium": 500,
-      "semibold": 600,
-      "bold": 700
-    }
-  },
-  "spacing": {
-    "1": "4px",
-    "2": "8px",
-    "3": "12px",
-    "4": "16px",
-    "6": "24px",
-    "8": "32px",
-    "10": "40px",
-    "12": "48px",
-    "16": "64px"
-  },
-  "effects": {
-    "shadows": {
-      "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
-      "md": "0 4px 6px rgba(0, 0, 0, 0.07)",
-      "lg": "0 10px 15px rgba(0, 0, 0, 0.1)",
-      "xl": "0 20px 25px rgba(0, 0, 0, 0.15)"
-    },
-    "borderRadius": {
-      "sm": "4px",
-      "md": "8px",
-      "lg": "12px"
-    },
-    "transitions": {
-      "fast": "150ms ease",
-      "base": "200ms ease",
-      "slow": "300ms ease"
-    }
-  }
-}
-```
-
----
-
-## 1. Overview (EXTRACTED Architecture)
-
-**Tech Stack:**
-- Framework: React (or detected framework)
-- Styling: **[Tailwind CSS / styled-components / CSS Modules]** ✓ EXTRACTED
-- Class Pattern: [Detected pattern] ✓ EXTRACTED
-- Component Structure: [Detected organization] ✓ EXTRACTED
-- Icons: [SVG / Icon library detected] ✓ EXTRACTED
-
-**NOT Using:**
-- ❌ [Frameworks NOT detected]
-
----
+## 1. Overview
+Tech stack, detected architecture, class patterns, icons
 
 ## 2. Design Philosophy
+Core principles (2-3), visual identity, aesthetic description
 
-**Core Principles:**
-- **[Inferred from extraction]**
-- **[Based on design style]**
-- **[Accessibility focus]**
-
-**Visual Identity:**
-- [Describe aesthetic]
-- [Describe mood]
-- [Key visual patterns]
-
----
-
-## 3. Color Palette (EXTRACTED from computed styles)
-
-### Primary Colors
-
-**Primary (EXTRACTED from button styles)**
-- **Color**: `#3B82F6` (Blue)
-- **Usage**: Primary actions, links, focus states
-- **Extracted**: getComputedStyle(button).backgroundColor → rgb(59, 130, 246) → #3B82F6
-- **Contrast**: 4.5:1 on white (WCAG AA) ✓
-- **Context**: Buttons, links, active states
-
-**Primary Dark (EXTRACTED from hover states)**
-- **Color**: `#2563EB`
-- **Usage**: Hover states, pressed buttons
-- **Extracted**: button:hover backgroundColor
-- **Context**: Interactive element hover
-
-### Text Colors
-
-**Text Primary (EXTRACTED from body/headings)**
-- **Color**: `#111827` (Near Black)
-- **Usage**: Main text, headings
-- **Extracted**: getComputedStyle(p).color → rgb(17, 24, 39) → #111827
-- **Contrast**: 16:1 on white (WCAG AAA) ✓
-- **Context**: All body text, headings
-
-**Text Secondary (EXTRACTED from metadata text)**
-- **Color**: `#6B7280` (Gray)
-- **Usage**: Secondary text, descriptions, metadata
-- **Extracted**: getComputedStyle(span.meta).color
-- **Contrast**: 7:1 on white (WCAG AAA) ✓
-
-### Background Colors
-
-**Background Primary (EXTRACTED from body)**
-- **Color**: `#FFFFFF` (White)
-- **Usage**: Page background, card backgrounds
-- **Extracted**: getComputedStyle(body).backgroundColor
-
-**Background Secondary (EXTRACTED from sections)**
-- **Color**: `#F9FAFB` (Light Gray)
-- **Usage**: Alternate sections, subtle backgrounds
-- **Extracted**: getComputedStyle(section).backgroundColor
-
-### Color Usage Summary
-
-| Color | Hex | Usage | Contrast |
-|-------|-----|-------|----------|
-| Primary | #3B82F6 | Actions, links | 4.5:1 (AA) |
-| Text Primary | #111827 | Body text | 16:1 (AAA) |
-| Text Secondary | #6B7280 | Metadata | 7:1 (AAA) |
-| Background | #FFFFFF | Page bg | - |
-| Border | #E5E7EB | Dividers | - |
-
----
+## 3. Color Palette (EXTRACTED)
+Primary, text, background, border colors with:
+- HEX values (RGB → HEX conversion)
+- Usage context
+- Contrast ratios (WCAG)
+- Extraction method noted
+- Color usage summary table
 
 ## 4. Typography (EXTRACTED)
-
-### Font Families
-
-**Sans-Serif (Primary)**
-```css
-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-```
-- **Usage**: All UI text (headings, body, buttons)
-- **Extracted**: getComputedStyle(body).fontFamily
-- **Why**: Modern, readable, system fallbacks
-
-**Monospace (Code)**
-```css
-font-family: "Fira Code", Consolas, Monaco, "Courier New", monospace;
-```
-- **Usage**: Code blocks, technical content
-- **Extracted**: getComputedStyle(code).fontFamily
-
-### Font Weights (EXTRACTED)
-
-| Weight | Value | Usage |
-|--------|-------|-------|
-| Normal | 400 | Body text, paragraphs ← PRIMARY |
-| Medium | 500 | UI labels, nav links |
-| Semibold | 600 | Headings, emphasis |
-| Bold | 700 | Strong emphasis, CTAs |
-
-### Font Sizes (EXTRACTED, sorted)
-
-| Size | Value | Usage | Line Height |
-|------|-------|-------|-------------|
-| xs | 12px | Fine print, captions | 16px (1.33) |
-| sm | 14px | Small text, labels | 20px (1.43) |
-| base | 16px | Body text ← PRIMARY | 24px (1.5) |
-| lg | 18px | Lead paragraphs | 28px (1.56) |
-| xl | 20px | Subheadings | 28px (1.4) |
-| 2xl | 24px | Section headings | 32px (1.33) |
-| 3xl | 30px | Page headings | 36px (1.2) |
-| 4xl | 36px | Hero headings | 40px (1.11) |
-
----
+Font families, weights (400/500/600/700), sizes table (xs-4xl) with line heights
 
 ## 5. Spacing System (EXTRACTED)
-
-**Grid: 8px base detected** (all values divisible by 4 or 8)
-
-| Size | Pixels | Rem | Usage |
-|------|--------|-----|-------|
-| 1 | 4px | 0.25rem | Fine spacing |
-| 2 | 8px | 0.5rem | Icon gaps |
-| 3 | 12px | 0.75rem | Compact padding |
-| 4 | 16px | 1rem | Standard padding ← PRIMARY |
-| 6 | 24px | 1.5rem | Comfortable padding |
-| 8 | 32px | 2rem | Section spacing |
-| 10 | 40px | 2.5rem | Large gaps |
-| 12 | 48px | 3rem | Section dividers |
-| 16 | 64px | 4rem | Page sections |
-
----
+Grid base (4px or 8px), spacing scale table (1-16 with px/rem), mark primary value
 
 ## 6. Component Styles (EXTRACTED)
-
-### Buttons
-
-**Primary Button (EXTRACTED)**
-```css
-/* Extracted from: button.primary, .btn-primary */
-background-color: #3B82F6;
-color: #FFFFFF;
-padding: 12px 24px; /* py-3 px-6 */
-border-radius: 8px; /* rounded-lg */
-font-size: 16px;
-font-weight: 500;
-transition: background-color 200ms ease;
-
-/* Hover state (EXTRACTED) */
-&:hover {
-  background-color: #2563EB;
-  transform: translateY(-1px);
-}
-
-/* Focus state (EXTRACTED) */
-&:focus {
-  outline: 2px solid #3B82F6;
-  outline-offset: 2px;
-}
-```
-
-**Code Example (Tailwind):**
-```tsx
-<button className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition">
-  Click me
-</button>
-```
-
-**Code Example (styled-components):**
-```tsx
-const Button = styled.button`
-  padding: 12px 24px;
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color 200ms ease;
-
-  &:hover {
-    background-color: var(--color-primary-dark);
-  }
-`;
-```
-
-### Cards
-
-**Card (EXTRACTED)**
-```css
-/* Extracted from: .card, [class*="Card"] */
-background-color: #FFFFFF;
-border: 1px solid #E5E7EB;
-border-radius: 12px;
-padding: 24px;
-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-```
-
-**Code Example (Tailwind):**
-```tsx
-<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-  <h3 className="text-lg font-semibold mb-2">Card Title</h3>
-  <p className="text-gray-600">Card content...</p>
-</div>
-```
-
-### Inputs
-
-**Text Input (EXTRACTED)**
-```css
-/* Extracted from: input[type="text"] */
-padding: 12px 16px;
-border: 1px solid #E5E7EB;
-border-radius: 8px;
-font-size: 16px;
-transition: border-color 200ms ease;
-
-/* Focus state (EXTRACTED) */
-&:focus {
-  border-color: #3B82F6;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-```
-
----
+For each: Button, Card, Input, Badge, etc.
+- Extracted CSS with actual selectors
+- Hover/focus states
+- Code examples (Tailwind + styled-components)
 
 ## 7. Shadows & Elevation (EXTRACTED)
-
-**Shadow Levels:**
-
-```css
-/* sm (EXTRACTED from cards) */
-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-
-/* md (EXTRACTED from buttons) */
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-
-/* lg (EXTRACTED from modals) */
-box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-
-/* xl (EXTRACTED from popovers) */
-box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-```
-
----
+4 levels (sm/md/lg/xl) with CSS values, usage context
 
 ## 8. Animations & Transitions (EXTRACTED)
-
-**Transition Durations:**
-- Fast: 150ms (small changes, hover states)
-- Base: 200ms (standard transitions) ← PRIMARY
-- Slow: 300ms (complex animations)
-
-**Timing Functions:**
-- ease: Default (most common)
-- ease-in-out: Smooth start/end
-- ease-out: Smooth end
-
-**Common Patterns:**
-```css
-/* Button hover */
-transition: background-color 200ms ease;
-
-/* Input focus */
-transition: border-color 200ms ease, box-shadow 200ms ease;
-
-/* Card hover */
-transition: transform 200ms ease, box-shadow 200ms ease;
-```
-
----
+Durations (150ms/200ms/300ms), timing functions, common patterns
 
 ## 9. Border Styles (EXTRACTED)
-
-**Border Widths:**
-- 1px: Default borders (cards, inputs)
-- 2px: Emphasis borders (focused elements)
-
-**Border Colors:**
-- Default: #E5E7EB (light gray)
-- Focus: #3B82F6 (primary)
-- Error: #EF4444 (red)
-
----
+Widths (1px/2px), colors (default/focus/error)
 
 ## 10. Border Radius (EXTRACTED)
-
-| Size | Value | Usage |
-|------|-------|-------|
-| sm | 4px | Small elements, badges |
-| md | 8px | Buttons, inputs ← PRIMARY |
-| lg | 12px | Cards, modals |
-| full | 9999px | Pills, avatars |
-
----
+Size table (sm/md/lg/full), usage examples
 
 ## 11. Responsive Breakpoints (EXTRACTED)
-
-```css
-/* Tailwind default breakpoints (detected) */
-sm: 640px   /* Tablet portrait */
-md: 768px   /* Tablet landscape */
-lg: 1024px  /* Desktop */
-xl: 1280px  /* Large desktop */
-2xl: 1536px /* Extra large */
-```
-
-**Responsive Patterns (EXTRACTED):**
-- Mobile (< 640px): Stack vertically, reduced padding
-- Tablet (640px - 1024px): 2-column layouts, comfortable spacing
-- Desktop (> 1024px): Multi-column layouts, generous spacing
-
----
+Breakpoint values, responsive patterns per device
 
 ## 12. Dark Mode (if detected)
-
-**CSS Variables Pattern:**
-```css
-:root {
-  --color-background: #FFFFFF;
-  --color-text: #111827;
-}
-
-.dark {
-  --color-background: #111827;
-  --color-text: #F9FAFB;
-}
-```
-
----
+CSS Variables pattern with example
 
 ## 13. Anti-Patterns & [MANDATORY] Rules
-
-### 🚨 CRITICAL IMPLEMENTATION RULES
-
-**[MANDATORY] Color Usage:**
-```
-❌ DO NOT hardcode colors (e.g., #3B82F6 inline)
-✅ ALWAYS use theme tokens (bg-primary, text-primary)
-❌ DO NOT create new colors without design approval
-✅ ALWAYS use extracted palette (8 colors max)
-```
-
-**[MANDATORY] Spacing:**
-```
-❌ DO NOT use arbitrary spacing (p-[17px])
-✅ ALWAYS use spacing scale (p-4, m-6)
-❌ DO NOT break 8px grid (padding: 13px)
-✅ ALWAYS use multiples of 4 or 8
-```
-
-**[MANDATORY] Typography:**
-```
-❌ DO NOT use arbitrary font sizes (text-[15px])
-✅ ALWAYS use type scale (text-sm, text-base)
-❌ DO NOT exceed 4 font weights
-✅ ALWAYS use: 400, 500, 600, 700 only
-```
-
-**[MANDATORY] Components:**
-```
-❌ DO NOT create duplicate components
-✅ ALWAYS search existing components first
-❌ DO NOT hardcode component styles inline
-✅ ALWAYS extract to reusable components
-```
-
----
+Critical rules for:
+- Colors: ❌ hardcoded → ✅ theme tokens
+- Spacing: ❌ arbitrary → ✅ scale
+- Typography: ❌ arbitrary sizes → ✅ type scale
+- Components: ❌ duplicates → ✅ reuse
 
 ## 14. Accessibility Guidelines
-
-**Contrast Ratios (WCAG AAA):**
-- Body text: Minimum 7:1 ratio
-- Large text (18px+): Minimum 4.5:1 ratio
-- UI components: Minimum 3:1 ratio
-
-**Focus States:**
-- Always visible outline (2px solid)
-- Offset from element (2px)
-- High contrast color (primary)
-
-**Keyboard Navigation:**
-- All interactive elements focusable
-- Logical tab order
-- Focus trap in modals
-
----
+Contrast ratios (WCAG AAA), focus states, keyboard navigation
 
 ## 15. Code Examples
-
-### Button Component
-
-**Tailwind CSS:**
-```tsx
-// Primary Button
-<button className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition">
-  Click me
-</button>
-
-// Secondary Button
-<button className="px-6 py-3 bg-white text-primary border border-primary rounded-lg font-medium hover:bg-gray-50 transition">
-  Click me
-</button>
-```
-
-**styled-components:**
-```tsx
-import styled from 'styled-components';
-
-const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  padding: 12px 24px;
-  font-weight: 500;
-  border-radius: 8px;
-  transition: all 200ms ease;
-
-  ${props => props.variant === 'primary' && `
-    background-color: var(--color-primary);
-    color: white;
-
-    &:hover {
-      background-color: var(--color-primary-dark);
-    }
-  `}
-
-  ${props => props.variant === 'secondary' && `
-    background-color: white;
-    color: var(--color-primary);
-    border: 1px solid var(--color-primary);
-
-    &:hover {
-      background-color: var(--color-gray-50);
-    }
-  `}
-`;
-
-export default Button;
-```
-
-### Card Component
-
-**Tailwind CSS:**
-```tsx
-<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
-  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-    Card Title
-  </h3>
-  <p className="text-gray-600">
-    Card description text goes here...
-  </p>
-</div>
-```
-
-**styled-components:**
-```tsx
-const Card = styled.div`
-  background-color: white;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 200ms ease;
-
-  &:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-  }
-`;
-```
-
----
+Button, Card, Input components (Tailwind + styled-components examples)
 
 ## 16. Verification Checklist
-
-Before implementing any component, verify:
-
-- [ ] Colors match extracted palette (no hardcoded colors)
-- [ ] Using detected framework ([Tailwind / styled-components / etc.])
-- [ ] Spacing follows 8px grid (multiples of 4 or 8)
-- [ ] Font sizes use type scale (xs, sm, base, lg, etc.)
-- [ ] Font weights: 400, 500, 600, or 700 only
-- [ ] Border radius: 4px, 8px, or 12px only
-- [ ] Shadows: sm, md, lg, or xl only
-- [ ] Transitions: 150ms, 200ms, or 300ms
-- [ ] Contrast ratios meet WCAG AAA
-- [ ] Focus states visible and accessible
-
----
+10-point checklist before implementing components
 
 ## 17. Additional Resources
-
-**Design Tokens (JSON):**
-See "Quick Reference" section above for complete JSON export.
-
-**Component Library:**
-[If detected: Link to Storybook / component docs]
-
-**Figma/Design Files:**
-[If provided by user]
+Design tokens JSON, component library links, Figma files
 
 ---
 
 ## 🎉 End of Style Guide
-
-**Generated by:** Claude Code /designsetup
-**Source:** [Live Website / Localhost / AI-Generated]
-**Date:** [Current date]
-**Method:** Chrome DevTools MCP (computed styles extraction)
-
----
-
-*This guide is CONCISE (1500-2000 lines) but COMPREHENSIVE because:*
-- ✅ Every claim extracted from computed styles (not guessed)
-- ✅ Architecture detected from actual code patterns
-- ✅ Component examples match detected framework
-- ✅ Anti-patterns section prevents mistakes
-- ✅ [MANDATORY] rules enforce consistency
-- ✅ Accessibility guidelines included
-- ✅ Verification checklist provided
+Generated by, source, method, date
 ```
 
 ---
 
 ## 🎯 Success Criteria
 
-**Before reporting success, VERIFY:**
+Verify before reporting:
 
-1. **Data Quality:**
-   - [ ] All colors extracted from computed styles (RGB → HEX)
-   - [ ] Architecture detected from class patterns
-   - [ ] Component styles match actual selectors
-   - [ ] Font weights extracted from getComputedStyle
-   - [ ] Shadows/border-radius extracted accurately
-
-2. **Guide Length:**
-   - [ ] 1500-2000 lines (concise, not 5000+ fluff)
-   - [ ] Focused on extracted data only
-   - [ ] No generic filler content
-
-3. **Actionability:**
-   - [ ] [MANDATORY] rules included
-   - [ ] Anti-patterns section present
-   - [ ] Code examples match architecture
-   - [ ] Verification checklist provided
-
-4. **Accuracy:**
-   - [ ] Chrome DevTools MCP used for extraction
-   - [ ] Screenshots taken for reference
-   - [ ] No assumptions without extraction
-   - [ ] Interactive states tested (hover, focus)
-   - [ ] Responsive breakpoints tested
+1. **Data Quality:** All values extracted via getComputedStyle (RGB → HEX)
+2. **Guide Length:** 1500-2000 lines (concise, data-focused)
+3. **Actionability:** [MANDATORY] rules + anti-patterns included
+4. **Accuracy:** Chrome DevTools MCP used, interactive states tested
 
 ---
 
@@ -1385,37 +840,30 @@ See "Quick Reference" section above for complete JSON export.
 ```
 ✅ Design Setup Complete!
 
-📁 Generated: design-system/STYLE_GUIDE.md (1,850 lines)
+📁 Generated: design-system/STYLE_GUIDE.md ([line count] lines)
 
 📊 Extraction Summary:
-   - Colors extracted: 8 unique colors
-   - Primary color: #3B82F6 ✓ EXTRACTED
-   - Architecture: Tailwind CSS ✓ DETECTED
-   - Components: 12 styles extracted
+   - Colors extracted: [count] unique colors
+   - Primary color: [HEX] ✓ EXTRACTED
+   - Architecture: [framework] ✓ DETECTED
+   - Components: [count] styles extracted
    - Font weights: 4 (400, 500, 600, 700) ✓ EXTRACTED
    - Shadows: 4 levels ✓ EXTRACTED
-   - Border radius: 3 sizes (4px, 8px, 12px) ✓ EXTRACTED
+   - Border radius: 3 sizes ✓ EXTRACTED
 
-🎨 Design Style: Modern Professional
+🎨 Design Style: [style]
 
 🔍 Extraction Method:
    ✅ Chrome DevTools MCP (computed styles)
-   ✅ Screenshots taken (3 images)
+   ✅ Screenshots taken ([count] images)
    ✅ Interactive states tested (hover, focus)
-   ✅ Responsive breakpoints tested (3 sizes)
+   ✅ Responsive breakpoints tested ([count] sizes)
    ✅ Data-driven (no assumptions)
 
-🎯 Guide Quality:
-   ✅ Concise: 1,850 lines (not 5,000+)
-   ✅ Accurate: All claims extracted
-   ✅ Actionable: [MANDATORY] rules included
-   ✅ Architecture-specific: [Framework] examples
-
 💡 Next Steps:
-   1. Review guide at design-system/STYLE_GUIDE.md
+   1. Review: design-system/STYLE_GUIDE.md
    2. Run /psetup (if needed)
    3. Start development: /csetup {change-id}
-   4. Agents will auto-discover this style guide
 
 🚀 Ready for production!
 ```
