@@ -69,6 +69,27 @@ const response = await fetch('/api/login', {...})
 **Follow standard agent discovery:**
 → See `.claude/contexts/patterns/agent-discovery.md`
 
+**STEP 0.5: Load Style Guide (uxui-frontend ONLY):**
+
+After completing standard discovery, check for project-specific style guide:
+
+```bash
+# Check if style guide exists
+Read: design-system/STYLE_GUIDE.md
+```
+
+**If STYLE_GUIDE.md exists:**
+- ✅ Read and load STYLE_GUIDE.md (Priority #1 - project-specific)
+- Extract: Color palette, spacing, typography, component patterns
+- Follow: All design tokens, component inventory, accessibility guidelines
+- **Expected structure:** 17 sections (Overview to Additional Sections)
+- **Key sections:** Section 11 (Opacity), Section 12 (Z-Index), Section 13 (Responsive)
+
+**If STYLE_GUIDE.md does NOT exist:**
+- ⚠️ Fallback to general design principles
+- Read: `.claude/contexts/design/*.md` (box-thinking, color-theory, spacing, etc.)
+- Suggest: User should run `/designsetup` to generate style guide
+
 **Report when complete:**
 ```
 ✅ Project Context Loaded
@@ -78,6 +99,11 @@ const response = await fetch('/api/login', {...})
 📚 Best Practices Loaded:
    - {framework-1} ✓
    - {framework-2} ✓
+
+🎨 Style Guide: ✅ STYLE_GUIDE.md loaded (project-specific)
+   OR
+🎨 Style Guide: ⚠️ No style guide found - using general design principles
+   💡 Suggestion: Run /designsetup to generate project-specific style guide
 
 🎯 Ready to create UI components!
 ```
