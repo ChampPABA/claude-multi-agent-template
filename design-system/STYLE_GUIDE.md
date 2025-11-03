@@ -1,99 +1,43 @@
-# REDITO Design System - Style Guide (Neo-Brutalism)
+# Cacao Craft - Design System Style Guide
 
-> **Source:** Based on MotherDuck Neo-Brutalist design, customized for REDITO
-> **Date:** 2025-11-03
-> **Design Style:** Neo-Brutalist / Retro Computing - Bold, unapologetic, document-focused
-> **Tech Stack:** Universal (Framework-agnostic)
-> **Primary Color:** REDITO Golden Yellow (#FFCF32)
+> **Style Direction:** Warm Artisan
+> **Generated:** 2025-11-03
+> **Version:** 1.0.0
+> **Sources:** Synthesized from Airbnb (warmth) + Stripe (sophistication) + Custom earthy palette
 
 ---
 
-## Quick Reference
+## Quick Start
 
-### Most Used Patterns
+**Brand Colors:**
+- Primary: Cacao Brown `#6B4423`
+- Background: Cream `#F5F1E8`
+- Text: Deep Brown `#3E2723`
+- Accent: Forest Green `#4A7C59`, Terracotta `#C17853`
 
-| Pattern | Code |
-|---------|------|
-| Primary Button (Yellow) | `className="px-4 py-3 bg-primary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base hover:shadow-brutal transition-shadow"` |
-| Secondary Button (Blue) | `className="px-4 py-3 bg-secondary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base hover:shadow-brutal transition-shadow"` |
-| Card (Brutalist) | `className="p-8 bg-white rounded-[2px] shadow-brutal border-2 border-foreground"` |
-| Section Label | `className="text-sm font-normal uppercase tracking-normal text-muted-foreground mb-4"` |
-| Heading 1 | `className="text-[72px] leading-[1.2] font-normal uppercase tracking-[1.44px] text-foreground"` |
-| Heading 2 | `className="text-[32px] font-normal uppercase text-foreground"` |
-| Body Text | `className="text-[15px] leading-[18px] text-black"` |
+**Typography:**
+- Headings: EB Garamond (serif)
+- Body: Inter (sans-serif)
 
-### Design Tokens Summary
-
-```json
-{
-  "colors": {
-    "primary": "#FFCF32",
-    "secondary": "#6FC2FF",
-    "background": "#F4EFEA",
-    "foreground": "#383838",
-    "black": "#000000",
-    "white": "#FFFFFF",
-    "mutedForeground": "#A1A1A1",
-    "border": "#383838",
-    "teal": "#53DBC9",
-    "lightBlue": "#EBFAFF",
-    "lightGreen": "#E8F5E9",
-    "lightPurple": "#F7F1FF",
-    "lightYellow": "#F9FBE7",
-    "lightOrange": "#FFF9E7",
-    "red": "#FF7169"
-  },
-  "spacing": {
-    "buttonPadding": "11.5px 18px",
-    "xs": "0.25rem",
-    "sm": "0.5rem",
-    "md": "1rem",
-    "lg": "1.5rem",
-    "xl": "2rem",
-    "2xl": "3rem"
-  },
-  "typography": {
-    "fontFamily": "Noto Sans Thai, sans-serif",
-    "fontSize": {
-      "xs": "12px",
-      "sm": "15px",
-      "base": "16px",
-      "lg": "18px",
-      "xl": "24px",
-      "2xl": "32px",
-      "h1": "72px"
-    },
-    "fontWeight": {
-      "normal": 400
-    },
-    "letterSpacing": {
-      "h1": "1.44px",
-      "button": "0.32px"
-    }
-  },
-  "borderRadius": {
-    "minimal": "2px",
-    "pill": "50%"
-  },
-  "shadows": {
-    "brutal": "-12px 12px 0 0 rgb(56, 56, 56)"
-  }
-}
-```
+**Key Patterns:**
+- Border Radius: 20px (buttons), 12px (cards)
+- Shadows: Multi-layer, soft (Stripe-inspired)
+- Spacing: 8px grid system
+- Transitions: 0.2s smooth
 
 ---
 
 ## Table of Contents
 
-1.  [Overview](#1-overview)
-2.  [Design Philosophy](#2-design-philosophy)
-3.  [Color Palette](#3-color-palette)
-4.  [Typography](#4-typography)
-5.  [Spacing System](#5-spacing-system)
-6.  [Component Styles](#6-component-styles)
-7.  [Shadows & Elevation](#7-shadows--elevation)
-8.  [Animations & Transitions](#8-animations--transitions)
-9.  [Border Styles](#9-border-styles)
+1. [Overview](#1-overview)
+2. [Design Philosophy](#2-design-philosophy)
+3. [Color Palette](#3-color-palette)
+4. [Typography](#4-typography)
+5. [Spacing System](#5-spacing-system)
+6. [Component Styles](#6-component-styles)
+7. [Shadows & Elevation](#7-shadows--elevation)
+8. [Animations & Transitions](#8-animations--transitions)
+9. [Border Styles](#9-border-styles)
 10. [Border Radius](#10-border-radius)
 11. [Opacity & Transparency](#11-opacity--transparency)
 12. [Z-Index Layers](#12-z-index-layers)
@@ -107,75 +51,78 @@
 
 ## 1. Overview
 
-**Summary:**
-This design system is based on **Neo-Brutalism** / **Retro Computing** aesthetics, customized for REDITO with golden yellow as the primary brand color. It features bold colors, hard shadows, minimal border radius (2px), and a distinctive brutalist approach to UI design, optimized for Thai language support.
+### Project Description
 
-**Key Characteristics:**
-- **Neo-Brutalist**: Hard shadows (-12px 12px), sharp 2px borders, bold color blocks
-- **Retro Computing**: Minimal styling, functional aesthetic
-- **Bold Colors**: Golden Yellow (#FFCF32), Blue (#6FC2FF), Warm beige background (#F4EFEA)
-- **Minimal Radius**: Almost all elements use 2px border-radius (barely rounded)
-- **Hard Shadows**: Offset shadows instead of soft blur (brutalist style)
-- **Functional Typography**: Normal font weight (400), uppercase headings, generous letter-spacing
-- **Thai-Optimized**: Noto Sans Thai for perfect Thai character rendering
+**Cacao Craft** is a premium organic cacao café and product retailer, specializing in high-quality, pesticide-free cacao products. Think specialty coffee shop, but entirely focused on cacao - from artisan beverages to bean-to-bar chocolates.
 
-**Tech Stack:**
-- Framework: Universal (React, Vue, Svelte, vanilla HTML)
-- Styling: Tailwind CSS recommended (CSS variables provided)
-- Font: **Noto Sans Thai** (Google Fonts - optimized for Thai language)
-- UI Library: Custom components based on Neo-Brutalism patterns
-- Icons: Custom illustrations + standard icon library
+**Product Lines:**
+- Cacao Beverages (hot, iced, specialty drinks)
+- Cacao Mass (pure cacao paste)
+- Artisan Chocolate (bean-to-bar, truffles, bonbons)
+- Raw Ingredients (cacao nibs, powder)
+- Gift Sets (curated collections)
 
-**Goals:**
-- Stand out from generic SaaS designs with bold, unapologetic aesthetics
-- Create memorable brand experience through distinctive brutalist style
-- Make document tools feel fresh, modern, and approachable
-- Balance playfulness with technical professionalism
-- Ensure excellent Thai language readability
+### Target Audience
+
+- **Age:** 25-45 years old
+- **Demographics:** Urban professionals, health-conscious consumers
+- **Psychographics:** Value organic/sustainable products, appreciate artisan craftsmanship, willing to pay premium for quality
+
+### Brand Personality
+
+**Core Values:** Premium, Natural, Healthy, Artisan, Warm, Earthy, Sophisticated but approachable
+
+**NOT:** Corporate, Mass-market, Clinical, Overly luxurious
+
+### Design Style Classification
+
+**Warm Artisan** - A photo-forward, café-inspired aesthetic combining:
+- Airbnb's warmth & approachability (rounded corners, generous spacing)
+- Stripe's professional sophistication (multi-layer shadows, polished details)
+- Custom earthy color palette (rich browns, warm creams, natural greens)
+
+**Emotional Goals:**
+1. Trust (organic, safe, high-quality)
+2. Health (nutritious, beneficial)
+3. Warmth (welcoming café atmosphere)
+4. Discovery (learn about cacao benefits)
+5. Indulgence (premium, treat yourself)
 
 ---
 
 ## 2. Design Philosophy
 
-**Core Principles:**
+### Core Principles
 
-1. **Neo-Brutalism**
-   - **Honest materials**: No gradients, no soft shadows, no unnecessary ornamentation
-   - **Bold contrasts**: Strong black borders, hard shadows, vibrant colors
-   - **Functional first**: Form follows function, minimal decoration
-   - **Anti-polish**: Deliberately rough edges, 2px corners instead of smooth curves
+#### 1. "Natural is Beautiful"
+- Use earthy, organic colors that reflect real cacao
+- Avoid artificial or overly vibrant colors
+- Let product photography shine (minimal UI decoration)
+- Textures and materials feel tactile and real
 
-2. **Retro Computing Aesthetic**
-   - **Clean typography**: Noto Sans Thai throughout (optimized for Thai)
-   - **System colors**: Bright yellow, cyan blue (reminiscent of old CRT monitors)
-   - **Functional layout**: Grid-based, structured, no organic shapes
-   - **Nostalgic**: Evokes 80s/90s computing without being dated
+#### 2. "Warm Welcome"
+- Rounded corners create approachability (20px for buttons, 12px for cards)
+- Generous spacing provides breathing room (8px grid system)
+- Soft shadows add depth without harshness
+- Color palette evokes warmth (browns, creams, not cold grays)
 
-3. **Clarity Through Contrast**
-   - **High contrast**: Dark text (#383838) on light background (#F4EFEA)
-   - **Strong borders**: 2px borders define everything clearly
-   - **Hard shadows**: Offset shadows create depth without softness
-   - **Color blocking**: Bold color fields, no subtle transitions
+#### 3. "Premium but Approachable"
+- Professional polish (Stripe-inspired shadows and details)
+- But not intimidating (Airbnb-inspired warmth)
+- Quality is visible but not ostentatious
+- Sophisticated typography balanced with readability
 
-4. **Playful Professionalism**
-   - **Bold colors**: Yellow and blue are energetic but not unprofessional
-   - **Serious typography**: Clean font keeps it technical and credible
-   - **Balance**: Playful elements don't compromise usability
+#### 4. "Photos Tell the Story"
+- Product imagery is hero, UI recedes
+- Large, high-quality photos dominate layouts
+- Card-based design showcases products visually
+- Minimal text overlay on images
 
-**Visual Identity:**
-
-REDITO's design rejects the "soft, rounded, gradient-heavy" trend of modern SaaS in favor of **bold, unapologetic brutalism**. This creates instant memorability and positions the product as innovative, confident, and different.
-
-**Key Differentiators:**
-- **Hard shadows** instead of soft blur (unique in SaaS)
-- **2px border radius** instead of 8-16px (deliberately minimal)
-- **Bold color blocks** instead of subtle pastels (confident, energetic)
-- **Thai-optimized typography** (Noto Sans Thai)
-
-**User Experience Goals:**
-- **First Impression**: "This is completely different - I need to pay attention"
-- **During Use**: "This is fast, clear, and surprisingly delightful"
-- **Long-term**: "This tool has personality and respects my intelligence"
+#### 5. "Crafted with Care"
+- Attention to small details (subtle shadows, precise spacing)
+- Consistent patterns create rhythm
+- Smooth transitions feel polished
+- Every element serves the experience
 
 ---
 
@@ -183,128 +130,80 @@ REDITO's design rejects the "soft, rounded, gradient-heavy" trend of modern SaaS
 
 ### Primary Colors
 
-**Primary (REDITO Golden Yellow)**
-- **Color**: `#FFCF32` (rgb(255, 207, 50))
-- **Usage**: Primary CTAs, highlights, brand moments, accent color
-- **Psychology**: Energy, optimism, quality, attention-grabbing
-- **CSS Variable**: `var(--color-primary)`
-- **Tailwind**: `bg-primary`, `text-primary`, `border-primary`
-- **Contrast**: Use dark text (#383838) on yellow backgrounds (AAA rating)
+#### Cacao Brown `#6B4423`
+**Usage:** Primary brand color, buttons, CTAs, headers
+**Psychology:** Rich, warm, natural - evokes roasted cacao beans
+**Accessibility:** ✅ On white (#FFFFFF): Contrast 8.2:1 (AA Large)
 
-**Secondary (Sky Blue)**
-- **Color**: `#6FC2FF` (rgb(111, 194, 255))
-- **Usage**: Secondary CTAs, information sections, accents
-- **Psychology**: Trust, clarity, data-focused, friendly
-- **CSS Variable**: `var(--color-secondary)`
-- **Tailwind**: `bg-secondary`, `text-secondary`, `border-secondary`
-- **Contrast**: Use dark text (#383838) on blue backgrounds
+#### Cream `#F5F1E8`
+**Usage:** Primary background, sections, cards
+**Psychology:** Warm, natural - like cacao butter
+**Accessibility:** ✅ With deep brown text (#3E2723): Contrast 9.5:1 (AAA)
 
-**Teal (Accent)**
-- **Color**: `#53DBC9` (rgb(83, 219, 201))
-- **Usage**: Tertiary accents, illustrations, visual variety
-- **CSS Variable**: `var(--color-teal)`
+#### Deep Brown `#3E2723`
+**Usage:** Headings, body text, icons
+**Psychology:** Grounding, rich - like dark chocolate
 
 ---
 
-### Background & Text Colors
+### Secondary Colors
 
-**Background (Warm Beige)**
-- **Color**: `#F4EFEA` (rgb(244, 239, 234))
-- **Usage**: Page background, default background for all pages
-- **Rationale**: Softer than white, reduces eye strain, warm and inviting
-- **CSS Variable**: `var(--color-background)`
-- **Tailwind**: `bg-background`
+#### Forest Green `#4A7C59`
+**Usage:** Organic/health highlights, secondary CTAs, icons
+**Psychology:** Natural, healthy, sustainable
 
-**Foreground (Dark Gray)**
-- **Color**: `#383838` (rgb(56, 56, 56))
-- **Usage**: Primary text, borders, UI elements, button borders
-- **CSS Variable**: `var(--color-foreground)`
-- **Tailwind**: `text-foreground`, `border-foreground`
+#### Warm Beige `#E8DCC4`
+**Usage:** Subtle backgrounds, sections, hover states
+**Psychology:** Neutral, warm, inviting
 
-**Black**
-- **Color**: `#000000` (rgb(0, 0, 0))
-- **Usage**: Body text, high-emphasis text
-- **CSS Variable**: `var(--color-black)`
-- **Tailwind**: `text-black`
-
-**White**
-- **Color**: `#FFFFFF` (rgb(255, 255, 255))
-- **Usage**: Card backgrounds, elevated surfaces
-- **CSS Variable**: `var(--color-white)`
-- **Tailwind**: `bg-white`
-
-**Muted Foreground (Light Gray)**
-- **Color**: `#A1A1A1` (rgb(161, 161, 161))
-- **Usage**: Secondary text, labels, placeholders, muted elements
-- **CSS Variable**: `var(--color-muted-foreground)`
-- **Tailwind**: `text-muted-foreground`
+#### Terracotta `#C17853`
+**Usage:** Accent color, secondary CTAs, highlights
+**Psychology:** Earthy, warm, energetic
 
 ---
 
-### Pastel Accent Colors (Background Tints)
+### Semantic Colors
 
-These are used for colored background sections with very light tints:
-
-- **Light Blue**: `#EBFAFF` (rgb(235, 250, 255))
-- **Light Green**: `#E8F5E9` (rgb(232, 245, 233))
-- **Light Purple**: `#F7F1FF` (rgb(247, 241, 255))
-- **Light Yellow**: `#F9FBE7` (rgb(249, 251, 231))
-- **Light Orange**: `#FFF9E7` (rgb(255, 249, 231))
-
-**Usage**: Section backgrounds, feature cards, visual variety
+- **Success Green:** `#68A357` - Success messages, confirmations, badges
+- **Warning Gold:** `#D4A574` - Warning messages, important notices
+- **Error Red:** `#C85A54` - Error messages, alerts, validation
 
 ---
 
-### Functional Colors
+### Neutral Scale
 
-**Success (Green)**
-- **Color**: `#10B981` (Emerald 500)
-- **Usage**: Success messages, positive states
-- **Tailwind**: `bg-success`, `text-success`
+```css
+/* Text Colors */
+--text-primary: #3E2723;     /* Deep Brown - headings, body */
+--text-secondary: #6B4423;   /* Cacao Brown - muted text */
+--text-tertiary: #8B7355;    /* Light Brown - captions, metadata */
+--text-disabled: #B8A89D;    /* Warm Gray - disabled state */
 
-**Warning (Orange)**
-- **Color**: `#F59E0B` (Amber 500)
-- **Usage**: Warning messages, caution states
-- **Tailwind**: `bg-warning`, `text-warning`
+/* Background Colors */
+--bg-primary: #FFFFFF;       /* White - main background */
+--bg-secondary: #F5F1E8;     /* Cream - sections, alternating */
+--bg-tertiary: #E8DCC4;      /* Warm Beige - subtle highlights */
 
-**Error (Red)**
-- **Color**: `#FF7169` (rgb(255, 113, 105))
-- **Usage**: Error messages, destructive actions
-- **Tailwind**: `bg-error`, `text-error`
-
----
-
-### Color Palette Grid
-
-| Color Name | HEX | RGB | Usage | Tailwind Class |
-|------------|-----|-----|-------|----------------|
-| Primary (Yellow) | #FFCF32 | rgb(255, 207, 50) | Primary CTAs | `bg-primary` |
-| Secondary (Blue) | #6FC2FF | rgb(111, 194, 255) | Secondary CTAs | `bg-secondary` |
-| Teal | #53DBC9 | rgb(83, 219, 201) | Accent | `bg-teal` |
-| Background | #F4EFEA | rgb(244, 239, 234) | Page background | `bg-background` |
-| Foreground | #383838 | rgb(56, 56, 56) | Text, borders | `text-foreground` |
-| Black | #000000 | rgb(0, 0, 0) | Body text | `text-black` |
-| White | #FFFFFF | rgb(255, 255, 255) | Cards | `bg-white` |
-| Muted | #A1A1A1 | rgb(161, 161, 161) | Secondary text | `text-muted-foreground` |
-| Red | #FF7169 | rgb(255, 113, 105) | Error states | `bg-error` |
+/* Border Colors */
+--border-subtle: #E8DCC4;    /* Warm Beige - subtle dividers */
+--border-default: #C8B8A4;   /* Medium Beige - standard borders */
+--border-strong: #6B4423;    /* Cacao Brown - emphasis */
+```
 
 ---
 
-### Color Usage Guidelines
+### Color Usage Guide
 
 **DO:**
-- ✅ Use golden yellow (#FFCF32) for primary CTAs
-- ✅ Use sky blue (#6FC2FF) for secondary CTAs
-- ✅ Use warm beige (#F4EFEA) background instead of white
-- ✅ Use dark gray (#383838) for borders and text (not pure black for borders)
-- ✅ Use pure black (#000000) for high-emphasis body text
-- ✅ Use pastel backgrounds for section variety
+- ✅ Use Cacao Brown (#6B4423) for primary CTAs
+- ✅ Use Cream (#F5F1E8) for main backgrounds
+- ✅ Use Deep Brown (#3E2723) for text
+- ✅ Use Forest Green (#4A7C59) to emphasize organic/health benefits
 
 **DON'T:**
-- ❌ Don't use gradients (not brutalist style)
-- ❌ Don't use soft, muted colors (go bold or go home)
-- ❌ Don't use pure white background (use warm beige #F4EFEA)
-- ❌ Don't use subtle color variations (strong contrast is key)
+- ❌ Use pure black (#000000) - use Deep Brown instead
+- ❌ Use cool grays - stick to warm beiges/browns
+- ❌ Overuse Forest Green - it's an accent, not primary
 
 ---
 
@@ -312,379 +211,292 @@ These are used for colored background sections with very light tints:
 
 ### Font Families
 
-**Sans (Primary)**
+**Headings:** EB Garamond (Serif)
 ```css
-font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
+font-family: 'EB Garamond', 'Georgia', serif;
 ```
-- **Usage**: ALL text (headings, body, UI)
-- **Characteristics**: Excellent Thai character support, clean and modern
-- **Fallback**: ui-sans-serif, system-ui
-- **Loading**: Google Fonts or local font files
+Classic, artisan feel. Evokes craftsmanship and premium quality.
 
-**⚠️ Important**: This design uses **Noto Sans Thai** for optimal Thai language support while maintaining the brutalist aesthetic through font-weight and uppercase transformations.
+**Body:** Inter (Sans-serif)
+```css
+font-family: 'Inter', 'system-ui', sans-serif;
+```
+Clean, readable, modern. Excellent for long-form content.
+
+---
+
+### Type Scale
+
+#### Display (Hero Headlines)
+```css
+font-size: 72px;
+font-weight: 500;
+line-height: 1.1;
+letter-spacing: -0.02em;
+font-family: 'EB Garamond', serif;
+```
+**Usage:** Landing page hero, major announcements
+
+#### H1 (Page Titles)
+```css
+font-size: 48px;
+font-weight: 500;
+line-height: 1.2;
+letter-spacing: -0.01em;
+```
+**Usage:** Page headings, section headers
+
+#### H2 (Section Headers)
+```css
+font-size: 36px;
+font-weight: 500;
+line-height: 1.3;
+```
+
+#### H3 (Subsection Headers)
+```css
+font-size: 28px;
+font-weight: 600;
+line-height: 1.4;
+```
+
+#### H4 (Component Headers)
+```css
+font-size: 24px;
+font-weight: 600;
+line-height: 1.4;
+font-family: 'Inter', sans-serif;
+```
+
+#### Body (Default)
+```css
+font-size: 16px;
+font-weight: 400;
+line-height: 1.6;
+```
+
+#### Caption
+```css
+font-size: 12px;
+font-weight: 400;
+line-height: 1.4;
+text-transform: uppercase;
+letter-spacing: 0.05em;
+```
 
 ---
 
 ### Font Weights
 
-**REDITO uses only ONE font weight:**
-
-| Weight | Value | Usage | Tailwind Class |
-|--------|-------|-------|----------------|
-| Normal | 400 | Everything (headings, body, buttons, labels) | `font-normal` |
-
-**⚠️ Critical**: Do NOT use bold (700) or semibold (600). REDITO achieves hierarchy through:
-- **Size** (72px vs 32px vs 15px)
-- **Uppercase** transformation
-- **Letter-spacing** (1.44px for H1)
-- **Color** (black vs gray)
-
----
-
-### Text Styles
-
-#### Headings
-
-**H1 - Hero Heading**
-```html
-<h1 className="text-[72px] leading-[1.2] font-normal uppercase tracking-[1.44px] text-foreground">
-  ออกเอกสารถูกต้อง ครบถ้วน
-</h1>
-```
-- **Size**: 72px
-- **Line Height**: 1.2 (86.4px)
-- **Weight**: Normal (400) - NOT BOLD
-- **Transform**: UPPERCASE
-- **Letter Spacing**: 1.44px (extra wide)
-- **Color**: #383838 (dark gray)
-- **Usage**: Page hero sections, main value propositions
-
-**H2 - Section Heading**
-```html
-<h2 className="text-[32px] font-normal uppercase text-foreground">
-  ฟีเจอร์ทั้งหมด
-</h2>
-```
-- **Size**: 32px
-- **Weight**: Normal (400) - NOT BOLD
-- **Transform**: UPPERCASE
-- **Color**: #383838 (dark gray)
-- **Usage**: Major section headings
-
-**H3 - Subsection Heading**
-```html
-<h3 className="text-[24px] font-normal uppercase text-foreground">
-  ใบเสนอราคา
-</h3>
-```
-- **Size**: 24px
-- **Weight**: Normal (400)
-- **Transform**: UPPERCASE or Title Case
-- **Usage**: Card titles, feature headings
-
----
-
-#### Body Text
-
-**Body Text (Default)**
-```html
-<p className="text-[15px] leading-[18px] text-black">
-  ข้อความปกติสำหรับอธิบายรายละเอียด
-</p>
-```
-- **Size**: 15px
-- **Line Height**: 18px (tight!)
-- **Weight**: Normal (400)
-- **Color**: #000000 (pure black)
-- **Usage**: Main content, descriptions
-
-**Small Body (Secondary)**
-```html
-<p className="text-[13px] leading-[16px] text-muted-foreground">
-  ข้อมูลเพิ่มเติม
-</p>
-```
-- **Size**: 13px
-- **Line Height**: 16px
-- **Color**: #A1A1A1 (gray)
-- **Usage**: Captions, metadata, secondary information
-
----
-
-#### Labels & Buttons
-
-**Button Text**
-```html
-<span className="text-base font-normal uppercase tracking-[0.32px]">
-  ลงทะเบียนฟรี
-</span>
-```
-- **Size**: 16px
-- **Weight**: Normal (400) - NOT BOLD
-- **Transform**: UPPERCASE
-- **Letter Spacing**: 0.32px
-- **Usage**: Button labels, CTAs
-
-**Section Label**
-```html
-<span className="text-sm font-normal uppercase text-muted-foreground">
-  ฟีเจอร์
-</span>
-```
-- **Size**: 14px (sm)
-- **Weight**: Normal (400)
-- **Transform**: UPPERCASE
-- **Color**: #A1A1A1 (gray)
-- **Usage**: Section labels, category tags
-
----
-
-### Typography Scale
-
-| Name | Size (px) | Line Height | Tailwind | Usage |
-|------|-----------|-------------|----------|-------|
-| xs | 12 | 14px | `text-xs` | Very small labels |
-| sm | 14 | 17px | `text-sm` | Section labels |
-| base | 15-16 | 18-19px | `text-[15px]` or `text-base` | Body text |
-| lg | 18 | 22px | `text-lg` | Large body |
-| xl | 24 | 29px | `text-[24px]` | H3 |
-| 2xl | 32 | 38px | `text-[32px]` | H2 |
-| h1 | 72 | 86px | `text-[72px]` | H1 |
-
----
-
-### Typography Best Practices
-
-**DO:**
-- ✅ Use font-weight 400 (normal) for EVERYTHING
-- ✅ Use UPPERCASE for headings and labels (creates hierarchy)
-- ✅ Use Noto Sans Thai for all text (Thai language support)
-- ✅ Increase letter-spacing on headings (1.44px for H1, 0.32px for buttons)
-- ✅ Use tight line-height (18px for 15px text = 1.2)
-- ✅ Use pure black (#000000) for body text
-- ✅ Use dark gray (#383838) for headings
-
-**DON'T:**
-- ❌ Don't use bold (700) or semibold (600) - hierarchy comes from size
-- ❌ Don't use italic (not part of this design system)
-- ❌ Don't use relaxed line-height (1.75) - keep it tight (1.2)
+- **Light (300):** Decorative use only
+- **Regular (400):** Body text, paragraphs
+- **Medium (500):** Serif headings (Display, H1, H2)
+- **Semi-bold (600):** Sans headings (H3, H4), emphasis
+- **Bold (700):** Strong emphasis, buttons (rare)
 
 ---
 
 ## 5. Spacing System
 
-### Spacing Scale
+### Grid Base: 8px
 
-REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
+All spacing follows an 8px grid system for consistency.
 
-**Button Padding (Extracted from Design):**
-- **Primary/Secondary Button**: `11.5px 18px` (vertical: 11.5px, horizontal: 18px)
-
-**Standard Spacing Scale:**
-
-| Token | Value | Pixels | Tailwind | Common Usage |
-|-------|-------|--------|----------|--------------|
-| xs | 0.25rem | 4px | `p-1`, `m-1`, `gap-1` | Tight spacing |
-| sm | 0.5rem | 8px | `p-2`, `m-2`, `gap-2` | Small gaps |
-| md | 1rem | 16px | `p-4`, `m-4`, `gap-4` | Default spacing |
-| lg | 1.5rem | 24px | `p-6`, `m-6`, `gap-6` | Section spacing |
-| xl | 2rem | 32px | `p-8`, `m-8`, `gap-8` | Large spacing |
-| 2xl | 3rem | 48px | `p-12`, `m-12`, `gap-12` | Very large spacing |
+```css
+--space-1: 8px;
+--space-2: 16px;
+--space-3: 24px;
+--space-4: 32px;
+--space-6: 48px;
+--space-8: 64px;
+--space-10: 80px;
+--space-12: 96px;
+--space-16: 128px;
+```
 
 ---
 
-### Application Examples
+### Component Spacing
 
-#### Button Padding
+**Buttons:** `padding: 12px 24px;`
+**Cards:** `padding: 24px; gap: 16px;`
+**Sections:** `padding-block: 80px;`
+**Containers:** `max-width: 1280px; padding-inline: 24px (mobile), 48px (desktop);`
 
-**Primary/Secondary Button (Actual)**
-```html
-<button className="px-[18px] py-[11.5px]">
-  <!-- Exact padding from design -->
-</button>
-```
+---
 
-**Simplified (Tailwind)**
-```html
-<button className="px-4 py-3">
-  <!-- px-4 = 16px, py-3 = 12px (close approximation) -->
-</button>
-```
+### Vertical Rhythm
+
+- **Related items:** 8px-16px
+- **Sections:** 40px-64px
+- **Major sections:** 80px-128px
 
 ---
 
 ## 6. Component Styles
 
-### 6.1 Component Inventory
+### Primary Button
 
-| Component | Variants | States | Priority | Notes |
-|-----------|----------|--------|----------|-------|
-| Button | Primary (Yellow), Secondary (Blue), Ghost | default, hover | **Must-use** | Hard borders, minimal radius |
-| Card | Brutalist (with shadow) | default, hover | **Must-use** | 2px border, hard shadow |
-| Input | Default, Error | default, focus, error | **Must-use** | Minimal styling |
-| Badge | Default, Colored | - | Optional | Status indicators |
+```css
+/* Base */
+background: #6B4423;
+color: #FFFFFF;
+padding: 12px 24px;
+border-radius: 20px;
+font-size: 16px;
+font-weight: 600;
+box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 8px,
+            rgba(0, 0, 0, 0.05) 0px 1px 2px;
+transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+
+/* Hover */
+background: #5A3A1E;
+box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 12px;
+transform: translateY(-1px);
+```
+
+**Tailwind Example:**
+```jsx
+<button className="bg-cacao-brown text-white px-6 py-3 rounded-[20px] font-semibold shadow-md hover:shadow-lg hover:-translate-y-px transition">
+  Shop Now
+</button>
+```
 
 ---
 
-### 6.2 Button Component
+### Secondary Button
 
-#### Variants
+```css
+background: transparent;
+color: #6B4423;
+border: 2px solid #6B4423;
+padding: 12px 24px;
+border-radius: 20px;
 
-**Primary Button (Yellow - Actual Styles)**
-```tsx
-<button className="px-[18px] py-[11.5px] bg-primary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base tracking-[0.32px] hover:shadow-brutal transition-shadow">
-  ลงทะเบียนฟรี
-</button>
+/* Hover */
+background: #F5F1E8;
 ```
-- **Background**: REDITO Golden yellow (#FFCF32)
-- **Text**: Dark gray (#383838)
-- **Padding**: 18px horizontal, 11.5px vertical (exact from design)
-- **Border**: 2px solid #383838
-- **Border Radius**: 2px (minimal)
-- **Font**: Normal weight (400), uppercase, 16px, letter-spacing 0.32px
-- **Shadow**: None (default) → Hard shadow on hover
-- **Usage**: Primary CTAs ("ลงทะเบียนฟรี", "เริ่มใช้งาน")
-
-**Secondary Button (Blue - Actual Styles)**
-```tsx
-<button className="px-[18px] py-[11.5px] bg-secondary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base tracking-[0.32px] hover:shadow-brutal transition-shadow">
-  เรียนรู้เพิ่มเติม
-</button>
-```
-- **Background**: Sky blue (#6FC2FF)
-- **Styling**: Identical to primary, different color
-- **Usage**: Secondary CTAs
-
-**Ghost Button (Minimal)**
-```tsx
-<button className="px-4 py-2 bg-transparent text-foreground rounded-[2px] font-normal uppercase text-base hover:bg-foreground/5 transition-colors">
-  ยกเลิก
-</button>
-```
-- **Background**: Transparent
-- **Border**: None
-- **Usage**: Navigation links, minimal actions
 
 ---
 
-#### Button States
+### Product Card
 
-| State | Behavior | Implementation |
-|-------|----------|----------------|
-| Default | No shadow | Base classes |
-| Hover | Hard shadow appears | `hover:shadow-brutal` |
-| Active | (Same as hover) | - |
-| Focus | Outline (accessibility) | `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground` |
-| Disabled | Reduced opacity | `disabled:opacity-50 disabled:cursor-not-allowed` |
+```css
+background: #FFFFFF;
+border-radius: 12px;
+padding: 0;
+box-shadow: rgba(0, 0, 0, 0.04) 0px 2px 6px,
+            rgba(0, 0, 0, 0.02) 0px 0px 0px 1px;
+overflow: hidden;
+transition: all 0.2s;
+
+/* Hover */
+box-shadow: rgba(0, 0, 0, 0.1) 0px 8px 24px;
+transform: translateY(-2px);
+```
 
 ---
 
-### 6.3 Card Component
+### Text Input
 
-**Brutalist Card (with Hard Shadow)**
-```tsx
-<div className="p-8 bg-white rounded-[2px] shadow-brutal border-2 border-foreground hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-brutal-lg transition-all">
-  <h3 className="text-[24px] font-normal uppercase text-foreground mb-4">
-    ใบเสนอราคา
-  </h3>
-  <p className="text-[15px] leading-[18px] text-black">
-    สร้างใบเสนอราคาได้ภายใน 5 นาที
-  </p>
-</div>
+```css
+background: #FFFFFF;
+border: 2px solid #E8DCC4;
+border-radius: 12px;
+padding: 12px 16px;
+
+/* Focus */
+border-color: #6B4423;
+outline: none;
+box-shadow: 0 0 0 3px rgba(107, 68, 35, 0.1);
 ```
-- **Background**: White (#FFFFFF)
-- **Padding**: 32px all around
-- **Border**: 2px solid #383838
-- **Border Radius**: 2px (minimal)
-- **Shadow**: `-12px 12px 0 0 rgb(56, 56, 56)` (hard, offset shadow)
-- **Hover**: Moves slightly (-4px, -4px), shadow increases
+
+---
+
+### Badge
+
+```css
+background: #E8DCC4;
+color: #6B4423;
+padding: 4px 12px;
+border-radius: 9999px;
+font-size: 12px;
+font-weight: 600;
+text-transform: uppercase;
+```
 
 ---
 
 ## 7. Shadows & Elevation
 
-### Shadow Scale (Brutalist Style)
+### Shadow Scale (Stripe-inspired multi-layer)
 
-REDITO uses **hard, offset shadows** (NO BLUR) - this is the signature brutalist style.
-
-| Token | CSS Value | Tailwind | Usage |
-|-------|-----------|----------|-------|
-| None | none | `shadow-none` | Flat elements |
-| Brutal (Default) | `-12px 12px 0 0 rgb(56, 56, 56)` | `shadow-brutal` | Cards, buttons (hover) |
-| Brutal Large | `-16px 16px 0 0 rgb(56, 56, 56)` | `shadow-brutal-lg` | Emphasized cards (hover) |
-| Brutal XL | `-24px 24px 0 0 rgb(56, 56, 56)` | `shadow-brutal-xl` | Modals, large elements |
-
-**Key Characteristics:**
-- **No blur**: Third value (blur radius) is always 0
-- **Hard edges**: Shadow has sharp, defined borders
-- **Offset**: Shadow is positioned bottom-right (-12px left, +12px down)
-- **Solid color**: rgb(56, 56, 56) - no opacity, no gradient
-
----
-
-### Usage Examples
-
-**Card with Hard Shadow**
-```html
-<div className="shadow-brutal">
-  <!-- -12px 12px 0 0 hard shadow -->
-</div>
+#### Shadow XS
+```css
+box-shadow: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px;
 ```
 
-**Card Hover Effect (Lifts + Shadow Grows)**
-```html
-<div className="shadow-brutal hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-brutal-lg transition-all">
-  <!-- Shadow grows as card moves up-left -->
-</div>
+#### Shadow SM
+```css
+box-shadow: rgba(0, 0, 0, 0.04) 0px 2px 6px 0px,
+            rgba(0, 0, 0, 0.02) 0px 0px 0px 1px;
 ```
 
----
+#### Shadow MD
+```css
+box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px 0px,
+            rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
+```
 
-### Tailwind Config for Hard Shadows
+#### Shadow LG
+```css
+box-shadow: rgba(0, 0, 0, 0.1) 0px 8px 24px 0px,
+            rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
+```
 
-```js
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      boxShadow: {
-        'brutal': '-12px 12px 0 0 rgb(56, 56, 56)',
-        'brutal-lg': '-16px 16px 0 0 rgb(56, 56, 56)',
-        'brutal-xl': '-24px 24px 0 0 rgb(56, 56, 56)',
-      }
-    }
-  }
-}
+#### Shadow XL
+```css
+box-shadow: rgba(0, 0, 0, 0.15) 0px 12px 32px 0px,
+            rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
 ```
 
 ---
 
 ## 8. Animations & Transitions
 
-### Transition Durations
+### Transition Timing (Airbnb-inspired)
 
-| Speed | Value | Tailwind | Usage |
-|-------|-------|----------|-------|
-| Fast | 150ms | `duration-150` | Quick interactions |
-| Normal | 200ms | `duration-200` | Default transitions |
-| Medium | 300ms | `duration-300` | Shadow changes |
+```css
+/* Default */
+transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+
+/* Fast */
+transition: color 0.15s ease;
+
+/* Slow */
+transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+```
 
 ---
 
-### Common Transitions
+### Component Animations
 
-**Shadow (Button Hover)**
-```html
-<button className="hover:shadow-brutal transition-shadow duration-200">
-  Hover me
-</button>
+**Button Hover:**
+```css
+transform: translateY(-1px);
+box-shadow: enhanced;
 ```
 
-**Card Lift + Shadow**
-```html
-<div className="shadow-brutal hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-brutal-lg transition-all duration-300">
-  Card lifts up-left on hover
-</div>
+**Card Hover:**
+```css
+transform: translateY(-2px);
+box-shadow: enhanced;
+```
+
+**Link Hover:**
+```css
+text-decoration-color: #6B4423;
+transition: 0.15s;
 ```
 
 ---
@@ -693,174 +505,134 @@ module.exports = {
 
 ### Border Widths
 
-| Token | Value | Tailwind | Usage |
-|-------|-------|----------|-------|
-| Default | 1px | `border` | Subtle borders |
-| Emphasis | 2px | `border-2` | Buttons, cards, strong emphasis |
-
-**REDITO uses 2px borders almost everywhere** (buttons, cards, sections).
+- **1px:** Subtle dividers, table borders
+- **2px:** Input borders, card outlines, buttons
+- **3px:** Emphasis borders, focus states
 
 ---
 
 ### Border Colors
 
-```html
-<!-- Default border (dark gray) -->
-<div className="border-2 border-foreground">...</div>
+```css
+/* Subtle */
+border: 1px solid #E8DCC4;
 
-<!-- Black border -->
-<div className="border-2 border-black">...</div>
+/* Default */
+border: 2px solid #C8B8A4;
+
+/* Strong */
+border: 2px solid #6B4423;
 ```
 
 ---
 
 ## 10. Border Radius
 
-### Radius Scale
+### Scale (Airbnb-inspired rounded)
 
-**REDITO uses MINIMAL border radius:**
-
-| Token | Value | Tailwind | Usage |
-|-------|-------|----------|-------|
-| Minimal | 2px | `rounded-[2px]` | Everything (buttons, cards, inputs) |
-| Pill | 50% | `rounded-full` | Avatars, circular elements only |
-
-**⚠️ Critical**: Do NOT use `rounded-md` (6px) or `rounded-lg` (8px). REDITO uses **2px for almost everything**.
+```css
+--radius-sm: 8px;
+--radius-md: 12px;
+--radius-lg: 20px;
+--radius-xl: 32px;
+--radius-full: 9999px;
+```
 
 ---
 
-### Usage Examples
+### Usage
 
-**Button (2px Radius)**
-```html
-<button className="rounded-[2px]">
-  <!-- Barely rounded -->
-</button>
-```
-
-**Card (2px Radius)**
-```html
-<div className="rounded-[2px]">
-  <!-- Minimal rounding -->
-</div>
-```
-
-**Avatar (Full Radius)**
-```html
-<img className="rounded-full w-12 h-12" src="/avatar.jpg" alt="User" />
-```
+- **Buttons:** 20px
+- **Cards:** 12px
+- **Inputs:** 12px
+- **Badges:** 9999px (pill)
+- **Images:** 12px
 
 ---
 
 ## 11. Opacity & Transparency
 
-### Opacity Scale
-
-| Token | Value | Tailwind | Usage |
-|-------|-------|----------|-------|
-| 0 | 0 | `opacity-0` | Hidden |
-| 50 | 0.5 | `opacity-50` | Disabled states |
-| 70 | 0.7 | `opacity-70` | Semi-transparent overlays |
-| 100 | 1 | `opacity-100` | Fully visible |
+```css
+--opacity-0: 0;
+--opacity-40: 0.4;   /* Disabled */
+--opacity-50: 0.5;   /* Overlays */
+--opacity-70: 0.7;   /* Muted text */
+--opacity-100: 1;
+```
 
 ---
 
 ## 12. Z-Index Layers
 
-### Z-Index Scale
-
-| Layer | Value | Usage |
-|-------|-------|-------|
-| Base | 0 | Normal content |
-| Dropdown | 10 | Dropdown menus |
-| Sticky | 20 | Sticky headers |
-| Modal Backdrop | 40 | Modal overlays |
-| Modal | 50 | Modal dialogs |
-| Toast | 70 | Notifications |
+```css
+--z-base: 0;
+--z-dropdown: 1000;
+--z-sticky: 1100;
+--z-overlay: 1200;
+--z-modal: 1300;
+--z-toast: 1400;
+--z-tooltip: 1500;
+```
 
 ---
 
 ## 13. Responsive Breakpoints
 
-### Breakpoint Scale
+```css
+--screen-sm: 640px;
+--screen-md: 768px;
+--screen-lg: 1024px;
+--screen-xl: 1280px;
+--screen-2xl: 1536px;
+```
 
-| Breakpoint | Min Width | Tailwind Prefix | Target Devices |
-|------------|-----------|-----------------|----------------|
-| xs | 0px | (default) | Mobile (320-639px) |
-| sm | 640px | `sm:` | Mobile landscape |
-| md | 768px | `md:` | Tablet |
-| lg | 1024px | `lg:` | Laptop |
-| xl | 1280px | `xl:` | Desktop |
-| 2xl | 1536px | `2xl:` | Large desktop |
+**Mobile-first approach**
 
 ---
 
 ## 14. CSS Variables / Tailwind Theme
 
-### 14.1 CSS Variables
-
-```css
-:root {
-  /* Colors */
-  --color-primary: #FFCF32;
-  --color-secondary: #6FC2FF;
-  --color-teal: #53DBC9;
-  --color-background: #F4EFEA;
-  --color-foreground: #383838;
-  --color-black: #000000;
-  --color-white: #FFFFFF;
-  --color-muted-foreground: #A1A1A1;
-  --color-border: #383838;
-  --color-error: #FF7169;
-
-  /* Typography */
-  --font-sans: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
-
-  /* Shadows */
-  --shadow-brutal: -12px 12px 0 0 rgb(56, 56, 56);
-  --shadow-brutal-lg: -16px 16px 0 0 rgb(56, 56, 56);
-  --shadow-brutal-xl: -24px 24px 0 0 rgb(56, 56, 56);
-
-  /* Border Radius */
-  --radius-minimal: 2px;
-}
-```
-
----
-
-### 14.2 Tailwind Config
+### Tailwind Config
 
 ```js
-// tailwind.config.js
 module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#FFCF32',
-        secondary: '#6FC2FF',
-        teal: '#53DBC9',
-        background: '#F4EFEA',
-        foreground: '#383838',
-        'muted-foreground': '#A1A1A1',
-        error: '#FF7169',
+        'cacao-brown': '#6B4423',
+        'cacao-dark': '#5A3A1E',
+        'cream': '#F5F1E8',
+        'deep-brown': '#3E2723',
+        'forest-green': '#4A7C59',
+        'warm-beige': '#E8DCC4',
+        'terracotta': '#C17853',
+        'success': '#68A357',
+        'warning': '#D4A574',
+        'error': '#C85A54',
       },
       fontFamily: {
-        sans: ['Noto Sans Thai', 'ui-sans-serif', 'sans-serif', 'system-ui'],
+        'serif': ['EB Garamond', 'Georgia', 'serif'],
+        'sans': ['Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display': ['72px', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'h1': ['48px', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        'h2': ['36px', { lineHeight: '1.3' }],
+        'h3': ['28px', { lineHeight: '1.4' }],
+        'h4': ['24px', { lineHeight: '1.4' }],
       },
       borderRadius: {
-        'minimal': '2px',
+        'md': '12px',
+        'lg': '20px',
+        'xl': '32px',
       },
       boxShadow: {
-        'brutal': '-12px 12px 0 0 rgb(56, 56, 56)',
-        'brutal-lg': '-16px 16px 0 0 rgb(56, 56, 56)',
-        'brutal-xl': '-24px 24px 0 0 rgb(56, 56, 56)',
-      },
-      fontWeight: {
-        normal: 400,
+        'sm': 'rgba(0,0,0,0.04) 0px 2px 6px, rgba(0,0,0,0.02) 0px 0px 0px 1px',
+        'md': 'rgba(0,0,0,0.1) 0px 4px 12px, rgba(0,0,0,0.04) 0px 0px 0px 1px',
+        'lg': 'rgba(0,0,0,0.1) 0px 8px 24px, rgba(0,0,0,0.04) 0px 0px 0px 1px',
       },
     },
   },
-  plugins: [],
 }
 ```
 
@@ -868,85 +640,102 @@ module.exports = {
 
 ## 15. Layout Patterns
 
-### Container Widths
+### Container
 
-```html
-<div className="max-w-7xl mx-auto px-6">
-  <!-- Centered container -->
+```jsx
+<div className="container mx-auto px-6 lg:px-12 max-w-7xl">
+  {/* Content */}
 </div>
 ```
 
 ---
 
-### Grid Systems
+### Grid Layout (Product Gallery)
 
-```html
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-  <div>Item 1</div>
-  <div>Item 2</div>
-  <div>Item 3</div>
+```jsx
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <ProductCard />
+  <ProductCard />
+  <ProductCard />
 </div>
+```
+
+---
+
+### Hero Section
+
+```jsx
+<section className="relative min-h-screen flex items-center justify-center bg-cream">
+  <div className="container mx-auto px-6 lg:px-12">
+    <div className="max-w-3xl mx-auto text-center">
+      <h1 className="text-display font-medium text-deep-brown mb-6">
+        Artisan Cacao, Naturally Grown
+      </h1>
+      <p className="text-lg text-cacao-brown mb-8">
+        Organic, pesticide-free cacao from farm to cup.
+      </p>
+      <div className="flex gap-4 justify-center">
+        <button>Shop Products</button>
+        <button>Visit Café</button>
+      </div>
+    </div>
+  </div>
+</section>
 ```
 
 ---
 
 ## 16. Example Component Reference
 
-### Complete Button Component (React + Tailwind)
+### Product Card Component (React + Tailwind)
 
-```tsx
-// components/ui/button.tsx
-import { ButtonHTMLAttributes, forwardRef } from 'react';
-import { cn } from '@/lib/utils';
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
-}
-
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', children, ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          // Base styles (Brutalist)
-          'inline-flex items-center justify-center font-normal uppercase tracking-[0.32px] rounded-[2px] transition-shadow border-2',
-          'focus-visible:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-
-          // Variants
-          variant === 'primary' && 'bg-primary text-foreground border-foreground hover:shadow-brutal',
-          variant === 'secondary' && 'bg-secondary text-foreground border-foreground hover:shadow-brutal',
-          variant === 'ghost' && 'bg-transparent text-foreground border-transparent hover:bg-foreground/5',
-
-          // Size (fixed from design)
-          'px-[18px] py-[11.5px] text-base',
-
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  }
-);
-
-Button.displayName = 'Button';
-
-export { Button };
-```
-
-**Usage:**
-```tsx
-import { Button } from '@/components/ui/button';
-
-function Example() {
+```jsx
+export function ProductCard({ product }) {
   return (
-    <div className="flex gap-4">
-      <Button variant="primary">ลงทะเบียนฟรี</Button>
-      <Button variant="secondary">เรียนรู้เพิ่มเติม</Button>
-      <Button variant="ghost">ยกเลิก</Button>
+    <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group">
+      {/* Image */}
+      <div className="relative aspect-square overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+
+        {/* Badge */}
+        {product.isOrganic && (
+          <span className="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+            Organic
+          </span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        {/* Category */}
+        <p className="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">
+          {product.category}
+        </p>
+
+        {/* Title */}
+        <h3 className="text-h4 font-semibold text-deep-brown mb-2">
+          {product.name}
+        </h3>
+
+        {/* Description */}
+        <p className="text-sm text-cacao-brown mb-4">
+          {product.description}
+        </p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          <span className="text-2xl font-bold text-deep-brown">
+            ${product.price}
+          </span>
+          <button className="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+            Add to Cart
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -954,112 +743,240 @@ function Example() {
 
 ---
 
-### Complete Card Component
+### Hero Section Component
 
-```tsx
-// components/ui/card.tsx
-import { HTMLAttributes, forwardRef } from 'react';
-import { cn } from '@/lib/utils';
+```jsx
+export function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/images/hero-cacao-farm.jpg"
+          alt="Cacao farm"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-deep-brown/40 to-deep-brown/60" />
+      </div>
 
-const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'p-8 bg-white rounded-[2px] shadow-brutal border-2 border-foreground',
-        'hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-brutal-lg transition-all duration-300',
-        className
-      )}
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-6 lg:px-12">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          {/* Badge */}
+          <span className="inline-block bg-forest-green/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold uppercase tracking-wide mb-6">
+            100% Organic • Pesticide-Free
+          </span>
+
+          {/* Heading */}
+          <h1 className="text-display font-medium mb-6">
+            Artisan Cacao,<br />Naturally Grown
+          </h1>
+
+          {/* Subheading */}
+          <p className="text-xl mb-10 max-w-2xl mx-auto">
+            From our organic farms to your cup. Experience the pure, rich flavor of premium cacao.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button className="bg-cacao-brown text-white px-8 py-4 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-px transition">
+              Shop Products
+            </button>
+            <button className="bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition">
+              Visit Our Café
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+```
+
+---
+
+### Button Component
+
+```jsx
+export function Button({ variant = 'primary', size = 'md', children, ...props }) {
+  const variants = {
+    primary: 'bg-cacao-brown text-white shadow-md hover:bg-cacao-dark hover:shadow-lg hover:-translate-y-px',
+    secondary: 'bg-transparent text-cacao-brown border-2 border-cacao-brown hover:bg-cream',
+    tertiary: 'bg-forest-green text-white shadow-md hover:bg-forest-green/90',
+  };
+
+  const sizes = {
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-6 py-3 text-base',
+    lg: 'px-8 py-4 text-lg',
+  };
+
+  return (
+    <button
+      className={`font-semibold rounded-lg transition-all duration-200 ${variants[variant]} ${sizes[size]}`}
       {...props}
-    />
-  )
-);
-
-Card.displayName = 'Card';
-
-export { Card };
+    >
+      {children}
+    </button>
+  );
+}
 ```
 
 ---
 
 ## 17. Additional Sections
 
-### 17.1 Implementation Best Practices
+### 17.1 Best Practices
 
-**Design Token Usage:**
-- ✅ Use Noto Sans Thai font for everything (Thai language support)
-- ✅ Use font-weight 400 (normal) only - NO BOLD
-- ✅ Use 2px border-radius for almost everything
-- ✅ Use hard shadows (-12px 12px 0 0) - NO BLUR
-- ✅ Use 2px borders everywhere
-- ✅ Use uppercase for headings and labels
-- ❌ Never use gradients
-- ❌ Never use soft shadows (blur > 0)
-- ❌ Never use large border-radius (8px+)
-- ❌ Never use bold fonts (defeats the brutalist aesthetic)
+**Component Reusability:**
+- ✅ Create reusable components (Button, Card, Badge)
+- ✅ Use composition over duplication
+
+**Performance:**
+- ✅ Optimize images (WebP format, lazy loading)
+- ✅ Use CSS transitions over JavaScript animations
+- ✅ Minimize shadow/blur usage on large areas
+
+**Consistency:**
+- ✅ Follow spacing scale strictly (8px grid)
+- ✅ Use design tokens instead of hardcoded values
+- ✅ Maintain visual hierarchy
 
 ---
 
-### 17.2 Accessibility Guidelines
+### 17.2 Accessibility
 
 **Color Contrast:**
-- Primary yellow (#FFCF32) + dark gray (#383838): **8.2:1** ✅ (AAA)
-- Secondary blue (#6FC2FF) + dark gray (#383838): **5.2:1** ✅ (AA)
-- Background (#F4EFEA) + foreground (#383838): **11.8:1** ✅ (AAA)
+- ✅ All text meets WCAG AA standards (4.5:1 minimum)
+- ✅ Interactive elements have clear focus states
+
+**Focus States:**
+```css
+:focus-visible {
+  outline: 3px solid #6B4423;
+  outline-offset: 2px;
+}
+```
+
+**Semantic HTML:**
+- ✅ Use proper heading hierarchy (h1 → h2 → h3)
+- ✅ Use button for buttons, a for links
+- ✅ Include alt text for all images
 
 **Keyboard Navigation:**
-- All buttons have focus states (2px outline)
-- Tab order follows visual order
+- ✅ All interactive elements are keyboard accessible
+- ✅ Tab order follows visual order
 
 ---
 
-### 17.3 Font Loading
+### 17.3 Icon System
 
-**Noto Sans Thai** can be loaded via Google Fonts:
+**Recommended Library:** Lucide Icons or Heroicons
 
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400&display=swap" rel="stylesheet">
-```
-
-Or via CSS:
+**Icon Sizes:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400&display=swap');
+--icon-xs: 12px;
+--icon-sm: 16px;
+--icon-md: 20px;
+--icon-lg: 24px;
+--icon-xl: 32px;
 ```
 
-**Fallback:** If Noto Sans Thai fails to load, use system sans-serif fonts.
+**Icon Colors:** Match text color classes
 
 ---
 
-## 🎉 End of Style Guide
+### 17.4 Image Guidelines
 
-**Key Takeaways:**
-1. **Neo-Brutalism**: Hard shadows, 2px borders, minimal radius
-2. **Thai-Optimized**: Noto Sans Thai for perfect Thai character rendering
-3. **Normal Weight Only**: Font-weight 400 for all text (NO BOLD)
-4. **Bold Colors**: Golden Yellow (#FFCF32), Blue (#6FC2FF), Warm beige background
-5. **Hard Shadows**: -12px 12px 0 0 (no blur!)
-6. **2px Everything**: Border-radius 2px (not 8px or 16px)
+**Product Photography:**
+- Aspect Ratio: 1:1 (square) or 4:3
+- Resolution: Minimum 800x800px
+- Format: WebP (with JPEG fallback)
+- Background: White or natural/wooden surfaces
+- Lighting: Soft, natural light
 
-**Critical Rules:**
-- ❌ NO soft shadows (blur must be 0)
-- ❌ NO rounded corners (use 2px only)
-- ❌ NO bold fonts (use size for hierarchy)
-- ❌ NO gradients (flat colors only)
-- ✅ YES to uppercase headings
-- ✅ YES to hard shadows
-- ✅ YES to Noto Sans Thai font
-- ✅ YES to bold color blocking
-
-**Next Steps:**
-1. Load Noto Sans Thai font (critical!)
-2. Configure Tailwind with brutalist shadows
-3. Build components with brutalist aesthetics
-4. Use #FFCF32 as primary brand color
+**Hero Images:**
+- Aspect Ratio: 16:9 or wider
+- Resolution: Minimum 1920x1080px
+- Subject: Cacao farms, products, café atmosphere
+- Overlay: Gradient from transparent to 60% Deep Brown
 
 ---
 
-*Customized for REDITO from Neo-Brutalist design principles*
-*Date: 2025-11-03*
-*All values based on brutalist design patterns with REDITO branding*
+### 17.5 Responsive Design Guidelines
+
+**Mobile-First Approach:**
+1. Design for mobile (375px) first
+2. Add breakpoints for tablet (768px) and desktop (1024px+)
+3. Test on real devices
+
+**Touch Targets:**
+- Minimum 44x44px for all interactive elements
+- Increase button padding on mobile
+
+**Typography Scaling:**
+- Reduce heading sizes by 25-33% on mobile
+- Keep body text at 16px minimum
+
+---
+
+### 17.6 Motion Design Principles
+
+**When to Animate:**
+- ✅ Button/link hover states
+- ✅ Card hover effects
+- ✅ Modal open/close
+- ✅ Page transitions
+
+**When NOT to Animate:**
+- ❌ Long scrolling pages (parallax)
+- ❌ Autoplay carousels
+- ❌ Infinite loops
+- ❌ Heavy animations on mobile
+
+---
+
+## Quick Reference
+
+### Color Swatches
+
+```
+Cacao Brown:   #6B4423
+Cream:         #F5F1E8
+Deep Brown:    #3E2723
+Forest Green:  #4A7C59
+Warm Beige:    #E8DCC4
+Terracotta:    #C17853
+```
+
+### Typography Scale
+
+```
+Display: 72px/1.1 | EB Garamond Medium
+H1:      48px/1.2 | EB Garamond Medium
+H2:      36px/1.3 | EB Garamond Medium
+H3:      28px/1.4 | EB Garamond Semibold
+H4:      24px/1.4 | Inter Semibold
+Body:    16px/1.6 | Inter Regular
+Caption: 12px/1.4 | Inter Regular (uppercase)
+```
+
+### Spacing Scale
+
+```
+8px  → space-1  | p-1
+16px → space-2  | p-2
+24px → space-3  | p-3
+32px → space-4  | p-4
+48px → space-6  | p-6
+64px → space-8  | p-8
+80px → space-10 | p-10
+```
+
+---
+
+**End of Style Guide**
+
+*Generated by /designsetup using multi-source design synthesis*
+*Sources: Airbnb (warmth) + Stripe (sophistication) + Custom earthy palette*
+*Version: 1.0.0 | Date: 2025-11-03*
