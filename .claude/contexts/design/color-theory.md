@@ -5,6 +5,27 @@
 
 ---
 
+## ⚠️ Priority: Project-Specific vs Generic
+
+**This file contains GENERIC color theory principles.**
+
+**If your project has a STYLE_GUIDE.md:**
+→ STYLE_GUIDE.md colors take **priority** (use exact hex values from it)
+→ This file = **reference** for color theory concepts only
+
+**Check:** `.claude/contexts/domain/{project}/STYLE_GUIDE.md`
+
+**Priority order:**
+1. `STYLE_GUIDE.md` (project-specific hex values) ← **Use this if exists!**
+2. Existing components (brownfield) ← Extract colors from code
+3. This file (generic principles) ← Theory and fallback defaults
+
+**When using this file:**
+- Apply **concepts** (60-30-10 rule, accessibility, harmony)
+- Don't use **example colors** if STYLE_GUIDE.md exists
+
+---
+
 ## Table of Contents
 
 1. [Color Palette Structure](#color-palette-structure)
