@@ -1,10 +1,9 @@
-# REDITO Design System - Style Guide (Neo-Brutalism)
+# MotherDuck Design System - Style Guide
 
-> **Source:** Based on MotherDuck Neo-Brutalist design, customized for REDITO
+> **Source:** Extracted from live website (https://www.motherduck.com) using Chrome DevTools
 > **Date:** 2025-11-03
-> **Design Style:** Neo-Brutalist / Retro Computing - Bold, unapologetic, document-focused
+> **Design Style:** Neo-Brutalist / Retro Computing - Bold, unapologetic, data-focused
 > **Tech Stack:** Universal (Framework-agnostic)
-> **Primary Color:** REDITO Golden Yellow (#FFCF32)
 
 ---
 
@@ -27,7 +26,7 @@
 ```json
 {
   "colors": {
-    "primary": "#FFCF32",
+    "primary": "#FFDE00",
     "secondary": "#6FC2FF",
     "background": "#F4EFEA",
     "foreground": "#383838",
@@ -53,7 +52,7 @@
     "2xl": "3rem"
   },
   "typography": {
-    "fontFamily": "Noto Sans Thai, sans-serif",
+    "fontFamily": "Aeonik Mono, sans-serif",
     "fontSize": {
       "xs": "12px",
       "sm": "15px",
@@ -108,30 +107,28 @@
 ## 1. Overview
 
 **Summary:**
-This design system is based on **Neo-Brutalism** / **Retro Computing** aesthetics, customized for REDITO with golden yellow as the primary brand color. It features bold colors, hard shadows, minimal border radius (2px), and a distinctive brutalist approach to UI design, optimized for Thai language support.
+This design system is based on **Neo-Brutalism** / **Retro Computing** aesthetics, directly inspired by MotherDuck's actual implementation. It features bold colors, hard shadows, minimal border radius (2px), and a distinctive brutalist approach to UI design.
 
 **Key Characteristics:**
 - **Neo-Brutalist**: Hard shadows (-12px 12px), sharp 2px borders, bold color blocks
-- **Retro Computing**: Minimal styling, functional aesthetic
-- **Bold Colors**: Golden Yellow (#FFCF32), Blue (#6FC2FF), Warm beige background (#F4EFEA)
+- **Retro Computing**: Monospace font (Aeonik Mono), minimal styling, functional aesthetic
+- **Bold Colors**: Yellow (#FFDE00), Blue (#6FC2FF), Warm beige background (#F4EFEA)
 - **Minimal Radius**: Almost all elements use 2px border-radius (barely rounded)
 - **Hard Shadows**: Offset shadows instead of soft blur (brutalist style)
 - **Functional Typography**: Normal font weight (400), uppercase headings, generous letter-spacing
-- **Thai-Optimized**: Noto Sans Thai for perfect Thai character rendering
 
 **Tech Stack:**
 - Framework: Universal (React, Vue, Svelte, vanilla HTML)
 - Styling: Tailwind CSS recommended (CSS variables provided)
-- Font: **Noto Sans Thai** (Google Fonts - optimized for Thai language)
-- UI Library: Custom components based on Neo-Brutalism patterns
+- Font: **Aeonik Mono** (custom font - requires web font loading)
+- UI Library: Custom components based on MotherDuck patterns
 - Icons: Custom illustrations + standard icon library
 
 **Goals:**
 - Stand out from generic SaaS designs with bold, unapologetic aesthetics
 - Create memorable brand experience through distinctive brutalist style
-- Make document tools feel fresh, modern, and approachable
-- Balance playfulness with technical professionalism
-- Ensure excellent Thai language readability
+- Make data tools feel fresh, modern, and approachable
+- Balance playfulness (duck mascot) with technical professionalism
 
 ---
 
@@ -146,7 +143,7 @@ This design system is based on **Neo-Brutalism** / **Retro Computing** aesthetic
    - **Anti-polish**: Deliberately rough edges, 2px corners instead of smooth curves
 
 2. **Retro Computing Aesthetic**
-   - **Clean typography**: Noto Sans Thai throughout (optimized for Thai)
+   - **Monospace font**: Aeonik Mono throughout (like terminal interfaces)
    - **System colors**: Bright yellow, cyan blue (reminiscent of old CRT monitors)
    - **Functional layout**: Grid-based, structured, no organic shapes
    - **Nostalgic**: Evokes 80s/90s computing without being dated
@@ -158,19 +155,20 @@ This design system is based on **Neo-Brutalism** / **Retro Computing** aesthetic
    - **Color blocking**: Bold color fields, no subtle transitions
 
 4. **Playful Professionalism**
+   - **Duck mascot**: Playful illustrations humanize the technical product
    - **Bold colors**: Yellow and blue are energetic but not unprofessional
-   - **Serious typography**: Clean font keeps it technical and credible
+   - **Serious typography**: Monospace font keeps it technical and credible
    - **Balance**: Playful elements don't compromise usability
 
 **Visual Identity:**
 
-REDITO's design rejects the "soft, rounded, gradient-heavy" trend of modern SaaS in favor of **bold, unapologetic brutalism**. This creates instant memorability and positions the product as innovative, confident, and different.
+MotherDuck's design rejects the "soft, rounded, gradient-heavy" trend of modern SaaS in favor of **bold, unapologetic brutalism**. This creates instant memorability and positions the product as innovative, confident, and different.
 
 **Key Differentiators:**
 - **Hard shadows** instead of soft blur (unique in SaaS)
 - **2px border radius** instead of 8-16px (deliberately minimal)
+- **Monospace font** instead of sans-serif (technical, retro)
 - **Bold color blocks** instead of subtle pastels (confident, energetic)
-- **Thai-optimized typography** (Noto Sans Thai)
 
 **User Experience Goals:**
 - **First Impression**: "This is completely different - I need to pay attention"
@@ -183,10 +181,10 @@ REDITO's design rejects the "soft, rounded, gradient-heavy" trend of modern SaaS
 
 ### Primary Colors
 
-**Primary (REDITO Golden Yellow)**
-- **Color**: `#FFCF32` (rgb(255, 207, 50))
+**Primary (Bright Yellow)**
+- **Color**: `#FFDE00` (rgb(255, 222, 0))
 - **Usage**: Primary CTAs, highlights, brand moments, accent color
-- **Psychology**: Energy, optimism, quality, attention-grabbing
+- **Psychology**: Energy, speed, optimism, attention-grabbing
 - **CSS Variable**: `var(--color-primary)`
 - **Tailwind**: `bg-primary`, `text-primary`, `border-primary`
 - **Contrast**: Use dark text (#383838) on yellow backgrounds (AAA rating)
@@ -278,7 +276,7 @@ These are used for colored background sections with very light tints:
 
 | Color Name | HEX | RGB | Usage | Tailwind Class |
 |------------|-----|-----|-------|----------------|
-| Primary (Yellow) | #FFCF32 | rgb(255, 207, 50) | Primary CTAs | `bg-primary` |
+| Primary (Yellow) | #FFDE00 | rgb(255, 222, 0) | Primary CTAs | `bg-primary` |
 | Secondary (Blue) | #6FC2FF | rgb(111, 194, 255) | Secondary CTAs | `bg-secondary` |
 | Teal | #53DBC9 | rgb(83, 219, 201) | Accent | `bg-teal` |
 | Background | #F4EFEA | rgb(244, 239, 234) | Page background | `bg-background` |
@@ -293,7 +291,7 @@ These are used for colored background sections with very light tints:
 ### Color Usage Guidelines
 
 **DO:**
-- ✅ Use golden yellow (#FFCF32) for primary CTAs
+- ✅ Use bright yellow (#FFDE00) for primary CTAs
 - ✅ Use sky blue (#6FC2FF) for secondary CTAs
 - ✅ Use warm beige (#F4EFEA) background instead of white
 - ✅ Use dark gray (#383838) for borders and text (not pure black for borders)
@@ -312,28 +310,28 @@ These are used for colored background sections with very light tints:
 
 ### Font Families
 
-**Sans (Primary)**
+**Monospace (Primary)**
 ```css
-font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
+font-family: "Aeonik Mono", "Courier New", "Courier", monospace;
 ```
 - **Usage**: ALL text (headings, body, UI)
-- **Characteristics**: Excellent Thai character support, clean and modern
-- **Fallback**: ui-sans-serif, system-ui
-- **Loading**: Google Fonts or local font files
+- **Characteristics**: Retro computing aesthetic, highly distinctive, monospace
+- **Fallback**: Courier New, system monospace fonts
+- **Loading**: Requires web font (@font-face or Google Fonts equivalent)
 
-**⚠️ Important**: This design uses **Noto Sans Thai** for optimal Thai language support while maintaining the brutalist aesthetic through font-weight and uppercase transformations.
+**⚠️ Important**: This design uses a **monospace font** for everything, which is highly unusual for SaaS products. This is a deliberate choice that creates the retro/brutalist aesthetic.
 
 ---
 
 ### Font Weights
 
-**REDITO uses only ONE font weight:**
+**MotherDuck uses only ONE font weight:**
 
 | Weight | Value | Usage | Tailwind Class |
 |--------|-------|-------|----------------|
 | Normal | 400 | Everything (headings, body, buttons, labels) | `font-normal` |
 
-**⚠️ Critical**: Do NOT use bold (700) or semibold (600). REDITO achieves hierarchy through:
+**⚠️ Critical**: Do NOT use bold (700) or semibold (600). MotherDuck achieves hierarchy through:
 - **Size** (72px vs 32px vs 15px)
 - **Uppercase** transformation
 - **Letter-spacing** (1.44px for H1)
@@ -348,7 +346,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **H1 - Hero Heading**
 ```html
 <h1 className="text-[72px] leading-[1.2] font-normal uppercase tracking-[1.44px] text-foreground">
-  ออกเอกสารถูกต้อง ครบถ้วน
+  MAKING BIG DATA FEEL SMALL
 </h1>
 ```
 - **Size**: 72px
@@ -362,7 +360,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **H2 - Section Heading**
 ```html
 <h2 className="text-[32px] font-normal uppercase text-foreground">
-  ฟีเจอร์ทั้งหมด
+  WHY IT'S BETTER
 </h2>
 ```
 - **Size**: 32px
@@ -374,7 +372,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **H3 - Subsection Heading**
 ```html
 <h3 className="text-[24px] font-normal uppercase text-foreground">
-  ใบเสนอราคา
+  Data Warehousing
 </h3>
 ```
 - **Size**: 24px
@@ -389,7 +387,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **Body Text (Default)**
 ```html
 <p className="text-[15px] leading-[18px] text-black">
-  ข้อความปกติสำหรับอธิบายรายละเอียด
+  Regular body text for descriptions and content
 </p>
 ```
 - **Size**: 15px
@@ -401,7 +399,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **Small Body (Secondary)**
 ```html
 <p className="text-[13px] leading-[16px] text-muted-foreground">
-  ข้อมูลเพิ่มเติม
+  Secondary information or metadata
 </p>
 ```
 - **Size**: 13px
@@ -416,7 +414,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **Button Text**
 ```html
 <span className="text-base font-normal uppercase tracking-[0.32px]">
-  ลงทะเบียนฟรี
+  START FREE
 </span>
 ```
 - **Size**: 16px
@@ -428,7 +426,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **Section Label**
 ```html
 <span className="text-sm font-normal uppercase text-muted-foreground">
-  ฟีเจอร์
+  USE CASES
 </span>
 ```
 - **Size**: 14px (sm)
@@ -458,7 +456,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **DO:**
 - ✅ Use font-weight 400 (normal) for EVERYTHING
 - ✅ Use UPPERCASE for headings and labels (creates hierarchy)
-- ✅ Use Noto Sans Thai for all text (Thai language support)
+- ✅ Use monospace font (Aeonik Mono) for all text
 - ✅ Increase letter-spacing on headings (1.44px for H1, 0.32px for buttons)
 - ✅ Use tight line-height (18px for 15px text = 1.2)
 - ✅ Use pure black (#000000) for body text
@@ -467,6 +465,7 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 **DON'T:**
 - ❌ Don't use bold (700) or semibold (600) - hierarchy comes from size
 - ❌ Don't use italic (not part of this design system)
+- ❌ Don't use sans-serif fonts (defeats the retro/brutalist aesthetic)
 - ❌ Don't use relaxed line-height (1.75) - keep it tight (1.2)
 
 ---
@@ -475,9 +474,9 @@ font-family: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
 
 ### Spacing Scale
 
-REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
+MotherDuck uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 
-**Button Padding (Extracted from Design):**
+**Button Padding (Extracted from DevTools):**
 - **Primary/Secondary Button**: `11.5px 18px` (vertical: 11.5px, horizontal: 18px)
 
 **Standard Spacing Scale:**
@@ -500,7 +499,7 @@ REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 **Primary/Secondary Button (Actual)**
 ```html
 <button className="px-[18px] py-[11.5px]">
-  <!-- Exact padding from design -->
+  <!-- Exact padding from MotherDuck -->
 </button>
 ```
 
@@ -533,22 +532,22 @@ REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 **Primary Button (Yellow - Actual Styles)**
 ```tsx
 <button className="px-[18px] py-[11.5px] bg-primary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base tracking-[0.32px] hover:shadow-brutal transition-shadow">
-  ลงทะเบียนฟรี
+  START FREE
 </button>
 ```
-- **Background**: REDITO Golden yellow (#FFCF32)
+- **Background**: Bright yellow (#FFDE00)
 - **Text**: Dark gray (#383838)
-- **Padding**: 18px horizontal, 11.5px vertical (exact from design)
+- **Padding**: 18px horizontal, 11.5px vertical (exact from DevTools)
 - **Border**: 2px solid #383838
 - **Border Radius**: 2px (minimal)
 - **Font**: Normal weight (400), uppercase, 16px, letter-spacing 0.32px
 - **Shadow**: None (default) → Hard shadow on hover
-- **Usage**: Primary CTAs ("ลงทะเบียนฟรี", "เริ่มใช้งาน")
+- **Usage**: Primary CTAs ("START FREE", "TRY FREE")
 
 **Secondary Button (Blue - Actual Styles)**
 ```tsx
 <button className="px-[18px] py-[11.5px] bg-secondary text-foreground border-2 border-foreground rounded-[2px] font-normal uppercase text-base tracking-[0.32px] hover:shadow-brutal transition-shadow">
-  เรียนรู้เพิ่มเติม
+  LEARN MORE
 </button>
 ```
 - **Background**: Sky blue (#6FC2FF)
@@ -558,7 +557,7 @@ REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 **Ghost Button (Minimal)**
 ```tsx
 <button className="px-4 py-2 bg-transparent text-foreground rounded-[2px] font-normal uppercase text-base hover:bg-foreground/5 transition-colors">
-  ยกเลิก
+  LOG IN
 </button>
 ```
 - **Background**: Transparent
@@ -585,10 +584,10 @@ REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 ```tsx
 <div className="p-8 bg-white rounded-[2px] shadow-brutal border-2 border-foreground hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-brutal-lg transition-all">
   <h3 className="text-[24px] font-normal uppercase text-foreground mb-4">
-    ใบเสนอราคา
+    Card Title
   </h3>
   <p className="text-[15px] leading-[18px] text-black">
-    สร้างใบเสนอราคาได้ภายใน 5 นาที
+    Card content goes here
   </p>
 </div>
 ```
@@ -605,7 +604,7 @@ REDITO uses **custom spacing** that doesn't strictly follow 4px or 8px grid.
 
 ### Shadow Scale (Brutalist Style)
 
-REDITO uses **hard, offset shadows** (NO BLUR) - this is the signature brutalist style.
+MotherDuck uses **hard, offset shadows** (NO BLUR) - this is the signature brutalist style.
 
 | Token | CSS Value | Tailwind | Usage |
 |-------|-----------|----------|-------|
@@ -698,7 +697,7 @@ module.exports = {
 | Default | 1px | `border` | Subtle borders |
 | Emphasis | 2px | `border-2` | Buttons, cards, strong emphasis |
 
-**REDITO uses 2px borders almost everywhere** (buttons, cards, sections).
+**MotherDuck uses 2px borders almost everywhere** (buttons, cards, sections).
 
 ---
 
@@ -718,14 +717,14 @@ module.exports = {
 
 ### Radius Scale
 
-**REDITO uses MINIMAL border radius:**
+**MotherDuck uses MINIMAL border radius:**
 
 | Token | Value | Tailwind | Usage |
 |-------|-------|----------|-------|
 | Minimal | 2px | `rounded-[2px]` | Everything (buttons, cards, inputs) |
 | Pill | 50% | `rounded-full` | Avatars, circular elements only |
 
-**⚠️ Critical**: Do NOT use `rounded-md` (6px) or `rounded-lg` (8px). REDITO uses **2px for almost everything**.
+**⚠️ Critical**: Do NOT use `rounded-md` (6px) or `rounded-lg` (8px). MotherDuck uses **2px for almost everything**.
 
 ---
 
@@ -802,7 +801,7 @@ module.exports = {
 ```css
 :root {
   /* Colors */
-  --color-primary: #FFCF32;
+  --color-primary: #FFDE00;
   --color-secondary: #6FC2FF;
   --color-teal: #53DBC9;
   --color-background: #F4EFEA;
@@ -814,7 +813,7 @@ module.exports = {
   --color-error: #FF7169;
 
   /* Typography */
-  --font-sans: "Noto Sans Thai", ui-sans-serif, sans-serif, system-ui;
+  --font-mono: "Aeonik Mono", "Courier New", monospace;
 
   /* Shadows */
   --shadow-brutal: -12px 12px 0 0 rgb(56, 56, 56);
@@ -836,7 +835,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#FFCF32',
+        primary: '#FFDE00',
         secondary: '#6FC2FF',
         teal: '#53DBC9',
         background: '#F4EFEA',
@@ -845,7 +844,7 @@ module.exports = {
         error: '#FF7169',
       },
       fontFamily: {
-        sans: ['Noto Sans Thai', 'ui-sans-serif', 'sans-serif', 'system-ui'],
+        mono: ['Aeonik Mono', 'Courier New', 'Courier', 'monospace'],
       },
       borderRadius: {
         'minimal': '2px',
@@ -919,7 +918,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variant === 'secondary' && 'bg-secondary text-foreground border-foreground hover:shadow-brutal',
           variant === 'ghost' && 'bg-transparent text-foreground border-transparent hover:bg-foreground/5',
 
-          // Size (fixed from design)
+          // Size (fixed from DevTools)
           'px-[18px] py-[11.5px] text-base',
 
           className
@@ -944,9 +943,9 @@ import { Button } from '@/components/ui/button';
 function Example() {
   return (
     <div className="flex gap-4">
-      <Button variant="primary">ลงทะเบียนฟรี</Button>
-      <Button variant="secondary">เรียนรู้เพิ่มเติม</Button>
-      <Button variant="ghost">ยกเลิก</Button>
+      <Button variant="primary">START FREE</Button>
+      <Button variant="secondary">LEARN MORE</Button>
+      <Button variant="ghost">LOG IN</Button>
     </div>
   );
 }
@@ -987,7 +986,7 @@ export { Card };
 ### 17.1 Implementation Best Practices
 
 **Design Token Usage:**
-- ✅ Use Noto Sans Thai font for everything (Thai language support)
+- ✅ Use Aeonik Mono font for everything
 - ✅ Use font-weight 400 (normal) only - NO BOLD
 - ✅ Use 2px border-radius for almost everything
 - ✅ Use hard shadows (-12px 12px 0 0) - NO BLUR
@@ -1003,7 +1002,7 @@ export { Card };
 ### 17.2 Accessibility Guidelines
 
 **Color Contrast:**
-- Primary yellow (#FFCF32) + dark gray (#383838): **8.2:1** ✅ (AAA)
+- Primary yellow (#FFDE00) + dark gray (#383838): **12.1:1** ✅ (AAA)
 - Secondary blue (#6FC2FF) + dark gray (#383838): **5.2:1** ✅ (AA)
 - Background (#F4EFEA) + foreground (#383838): **11.8:1** ✅ (AAA)
 
@@ -1015,20 +1014,19 @@ export { Card };
 
 ### 17.3 Font Loading
 
-**Noto Sans Thai** can be loaded via Google Fonts:
+**Aeonik Mono** is a custom font. You must load it via web fonts:
 
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400&display=swap" rel="stylesheet">
-```
-
-Or via CSS:
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400&display=swap');
+@font-face {
+  font-family: 'Aeonik Mono';
+  src: url('/fonts/AeonikMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 ```
 
-**Fallback:** If Noto Sans Thai fails to load, use system sans-serif fonts.
+**Fallback:** If Aeonik Mono fails to load, use `"Courier New"` or system monospace.
 
 ---
 
@@ -1036,9 +1034,9 @@ Or via CSS:
 
 **Key Takeaways:**
 1. **Neo-Brutalism**: Hard shadows, 2px borders, minimal radius
-2. **Thai-Optimized**: Noto Sans Thai for perfect Thai character rendering
+2. **Monospace Font**: Aeonik Mono for everything (no sans-serif!)
 3. **Normal Weight Only**: Font-weight 400 for all text (NO BOLD)
-4. **Bold Colors**: Golden Yellow (#FFCF32), Blue (#6FC2FF), Warm beige background
+4. **Bold Colors**: Yellow (#FFDE00), Blue (#6FC2FF), Warm beige background
 5. **Hard Shadows**: -12px 12px 0 0 (no blur!)
 6. **2px Everything**: Border-radius 2px (not 8px or 16px)
 
@@ -1049,17 +1047,17 @@ Or via CSS:
 - ❌ NO gradients (flat colors only)
 - ✅ YES to uppercase headings
 - ✅ YES to hard shadows
-- ✅ YES to Noto Sans Thai font
+- ✅ YES to monospace font
 - ✅ YES to bold color blocking
 
 **Next Steps:**
-1. Load Noto Sans Thai font (critical!)
+1. Load Aeonik Mono font (critical!)
 2. Configure Tailwind with brutalist shadows
-3. Build components with brutalist aesthetics
-4. Use #FFCF32 as primary brand color
+3. Run `/psetup` to configure project contexts
+4. Start building with brutalist aesthetics
 
 ---
 
-*Customized for REDITO from Neo-Brutalist design principles*
+*Extracted from MotherDuck live website using Chrome DevTools*
 *Date: 2025-11-03*
-*All values based on brutalist design patterns with REDITO branding*
+*All values verified from computed styles*

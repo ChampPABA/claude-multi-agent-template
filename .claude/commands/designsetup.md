@@ -2,7 +2,7 @@
 
 You are an expert UX/UI and systems designer with experience at FANG-level companies.
 
-Your task is to generate a comprehensive `STYLE_GUIDE.md` file using **Chrome DevTools MCP** to extract accurate computed styles from live websites or localhost.
+Your task is to generate a comprehensive `STYLE_GUIDE.md` file using **Chrome DevTools MCP** to extract accurate computed styles from live websites, local HTML files, or localhost.
 
 ---
 
@@ -14,6 +14,10 @@ Your task is to generate a comprehensive `STYLE_GUIDE.md` file using **Chrome De
 # Mode 1: Live Website (Reference Design)
 /designsetup https://motherduck.com
 
+# Mode 1b: Local HTML File
+/designsetup E:/designs/reference.html
+/designsetup /Users/me/designs/index.html
+
 # Mode 2: Localhost (Brownfield - Reverse Engineering)
 /designsetup localhost:3000
 /designsetup http://localhost:5173
@@ -23,9 +27,10 @@ Your task is to generate a comprehensive `STYLE_GUIDE.md` file using **Chrome De
 ```
 
 **Detection Logic:**
-- If URL starts with `https://` → **Path 1** (Live Website)
-- If URL contains `localhost` → **Path 2** (Localhost)
-- If NO URL provided → **Path 3** (Interactive Greenfield)
+- If starts with `https://` or `http://` → **Path 1** (Live Website)
+- If file path (starts with `/`, `C:/`, `E:/`) → **Path 1** (Local HTML File, convert to `file:///`)
+- If contains `localhost` → **Path 2** (Localhost)
+- If NO argument → **Path 3** (Interactive Greenfield)
 
 ---
 
@@ -34,25 +39,34 @@ Your task is to generate a comprehensive `STYLE_GUIDE.md` file using **Chrome De
 Generate a production-ready style guide at: `design-system/STYLE_GUIDE.md`
 
 **Key Principles:**
-1. **Data-Driven**: Every color, font, spacing MUST be extracted from computed styles
-2. **Accurate**: Use Chrome DevTools MCP for 98% accuracy (vs 75% HTML parsing)
-3. **Concise**: 1500-2000 lines (not 5000+ generic fluff)
-4. **Actionable**: [MANDATORY] rules, anti-patterns, component mapping
-5. **Comprehensive**: All 17 sections included
+1. **CSS First**: Extract CSS via DevTools BEFORE screenshot analysis
+2. **Screenshot Validates**: Use screenshot to validate CSS findings and identify design style
+3. **Data-Driven**: Every color, font, spacing from computed styles (98% accuracy)
+4. **LLM Analyzes**: AI determines design style from screenshot (no user questions for Path 1)
+5. **Comprehensive**: All 17 sections, 1500-2000 lines
+
+**Critical Flow:**
+```
+DevTools (CSS data) → Screenshot (validate + style detection) → Pondering → Generate
+```
 
 ---
 
-## 🔍 STEP 0: Detect Mode from URL Parameter
+## 🔍 STEP 0: Detect Mode from Input
 
-**Parse user input to determine which path to use:**
+**Parse user input:**
 
 ```javascript
 const input = userInput.trim();
 
-if (input.startsWith('https://')) {
+if (input.startsWith('https://') || input.startsWith('http://')) {
   // Path 1: Live Website
   mode = 'live-website';
   url = input;
+} else if (input.match(/^[A-Z]:/i) || input.startsWith('/')) {
+  // Path 1: Local HTML File
+  mode = 'local-html';
+  url = input.startsWith('file:///') ? input : 'file:///' + input.replace(/\\/g, '/');
 } else if (input.includes('localhost') || input.startsWith('http://localhost')) {
   // Path 2: Localhost (Brownfield)
   mode = 'localhost';
@@ -62,12 +76,11 @@ if (input.startsWith('https://')) {
   mode = 'interactive';
   url = null;
 } else {
-  // Invalid input
-  error('Invalid URL format. Use: https://, localhost:PORT, or no URL');
+  error('Invalid input. Use: https://, file path, localhost:PORT, or no argument');
 }
 ```
 
-**Report to user:**
+**Report:**
 ```
 🔍 Mode Detected: [mode]
 📍 URL: [url or "Interactive mode"]
@@ -77,619 +90,656 @@ if (input.startsWith('https://')) {
 
 ---
 
-## 📋 PATH 1: Live Website Analysis (Chrome DevTools MCP)
+## 📋 PATH 1: Reference Design Analysis (Chrome DevTools)
 
-**Use Chrome DevTools MCP to extract accurate computed styles from live website.**
+**Use Chrome DevTools MCP to extract CSS from live website or local HTML file.**
 
 ---
 
-### Step 1: Open Website in Chrome
+### Step 1: Navigate to URL
 
 ```javascript
-// 1. Create new page
-mcp__chrome-devtools__new_page({
-  url: userProvidedUrl  // e.g., "https://motherduck.com"
+// Open page with Chrome DevTools
+mcp__chrome-devtools__navigate_page({
+  url: normalizedUrl  // e.g., "https://motherduck.com" or "file:///E:/designs/index.html"
 })
 
-// 2. Wait for page load (critical!)
-// Try to detect main heading or fallback to timeout
+// Wait for load
 try {
-  // Take quick snapshot to find main content
   const snapshot = mcp__chrome-devtools__take_snapshot({ verbose: false });
-  const mainHeading = detectMainHeading(snapshot); // Find first h1 text
+  const mainText = detectMainContent(snapshot);
 
   mcp__chrome-devtools__wait_for({
-    text: mainHeading,
+    text: mainText,
     timeout: 15000
   });
 } catch {
-  // Fallback: just wait 5 seconds
-  await sleep(5000);
+  await sleep(5000); // Fallback
 }
-
-// 3. Take initial snapshot
-mcp__chrome-devtools__take_snapshot({
-  verbose: true
-})
 ```
 
 **Report:**
 ```
 🎨 Design Extraction Started
 
-🌐 Opening: https://motherduck.com
+🌐 Opening: [URL]
 ⏳ Waiting for page load...
 ✅ Page loaded successfully
-📸 Snapshot taken
 
-🔄 Extracting design tokens...
+🔄 Extracting CSS data (Source of Truth)...
 ```
 
 ---
 
-### Step 2: Extract Design Tokens
+### Step 2: Extract CSS Data (Source of Truth)
 
-**Use `evaluate_script` to extract CSS Variables, Colors, Typography, Spacing, and Effects.**
+**Run 5-6 `evaluate_script` calls to extract ALL CSS data FIRST (before screenshot):**
 
-#### A. CSS Variables
-- Loop through `document.documentElement` computed styles
-- Find all properties starting with `--`
-- Return object with variable names and values
+#### Call #1: All Unique Colors
 
-#### B. Color Palette (RGB → HEX)
-- Extract from all elements: `backgroundColor`, `color`, `borderColor`, `boxShadow`
-- Filter out transparent/default values
-- Convert RGB to HEX using helper function: `rgb(59, 130, 246)` → `#3B82F6`
-- Group by usage: backgrounds, texts, borders, accents
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    const allElements = document.querySelectorAll('*');
+    const bgColors = new Set();
+    const textColors = new Set();
+    const borderColors = new Set();
 
-#### C. Typography System
-- Query text elements: `h1-h6, p, span, a, button`
-- Extract: `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`
-- Sort font sizes numerically
-- Return unique values only
+    allElements.forEach(el => {
+      const s = window.getComputedStyle(el);
+      if (s.backgroundColor && s.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+        bgColors.add(s.backgroundColor);
+      }
+      if (s.color) {
+        textColors.add(s.color);
+      }
+      if (s.borderColor && s.borderColor !== 'rgba(0, 0, 0, 0)') {
+        borderColors.add(s.borderColor);
+      }
+    });
 
-#### D. Spacing System
-- Extract from all elements: `padding`, `margin`, `gap`
-- Split compound values: `"16px 24px"` → `["16px", "24px"]`
-- Filter out `0px` values
-- Sort numerically
-- Detect grid pattern (multiples of 4 or 8)
-
-#### E. Visual Effects
-- Extract: `boxShadow`, `transition`, `borderRadius`, `animation`
-- Filter out default values (`none`, `all 0s ease 0s`)
-- Return unique values only
-
-**Report Progress:**
+    return {
+      backgrounds: Array.from(bgColors).slice(0, 30),
+      texts: Array.from(textColors).slice(0, 20),
+      borders: Array.from(borderColors).slice(0, 15)
+    };
+  }`
+})
 ```
-✅ Design Tokens Extracted!
+
+#### Call #2: All Effects (shadows, radius, borders)
+
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    const allElements = document.querySelectorAll('*');
+    const shadows = new Set();
+    const borderRadii = new Set();
+    const borderWidths = new Set();
+
+    allElements.forEach(el => {
+      const s = window.getComputedStyle(el);
+      if (s.boxShadow && s.boxShadow !== 'none') {
+        shadows.add(s.boxShadow);
+      }
+      if (s.borderRadius && s.borderRadius !== '0px') {
+        borderRadii.add(s.borderRadius);
+      }
+      if (s.borderWidth && s.borderWidth !== '0px') {
+        borderWidths.add(s.borderWidth);
+      }
+    });
+
+    return {
+      shadows: Array.from(shadows).slice(0, 15),
+      borderRadii: Array.from(borderRadii).slice(0, 15),
+      borderWidths: Array.from(borderWidths).slice(0, 10)
+    };
+  }`
+})
+```
+
+#### Call #3: Typography Details
+
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    return {
+      h1: Array.from(document.querySelectorAll('h1')).slice(0, 3).map(h => {
+        const s = window.getComputedStyle(h);
+        return {
+          text: h.textContent.trim().substring(0, 50),
+          fontSize: s.fontSize,
+          fontWeight: s.fontWeight,
+          fontFamily: s.fontFamily,
+          lineHeight: s.lineHeight,
+          letterSpacing: s.letterSpacing,
+          textTransform: s.textTransform,
+          color: s.color
+        };
+      }),
+      h2: Array.from(document.querySelectorAll('h2')).slice(0, 3).map(h => {
+        const s = window.getComputedStyle(h);
+        return {
+          text: h.textContent.trim().substring(0, 50),
+          fontSize: s.fontSize,
+          fontWeight: s.fontWeight,
+          fontFamily: s.fontFamily,
+          textTransform: s.textTransform,
+          color: s.color
+        };
+      }),
+      body: Array.from(document.querySelectorAll('p')).slice(0, 5).map(p => {
+        const s = window.getComputedStyle(p);
+        return {
+          fontSize: s.fontSize,
+          lineHeight: s.lineHeight,
+          fontFamily: s.fontFamily,
+          color: s.color
+        };
+      })
+    };
+  }`
+})
+```
+
+#### Call #4: Primary CTA Buttons
+
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    const ctaButtons = Array.from(document.querySelectorAll('a, button'))
+      .filter(el => {
+        const text = el.textContent.trim().toUpperCase();
+        return text.includes('FREE') || text.includes('START') ||
+               text.includes('TRY') || text.includes('DEMO') ||
+               text.includes('SIGN UP') || text.includes('GET') ||
+               text.includes('BUY') || text.includes('LEARN');
+      });
+
+    return ctaButtons.slice(0, 5).map(btn => {
+      const s = window.getComputedStyle(btn);
+      return {
+        text: btn.textContent.trim(),
+        backgroundColor: s.backgroundColor,
+        color: s.color,
+        padding: s.padding,
+        paddingTop: s.paddingTop,
+        paddingRight: s.paddingRight,
+        paddingBottom: s.paddingBottom,
+        paddingLeft: s.paddingLeft,
+        border: s.border,
+        borderWidth: s.borderWidth,
+        borderColor: s.borderColor,
+        borderRadius: s.borderRadius,
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        textTransform: s.textTransform,
+        letterSpacing: s.letterSpacing,
+        boxShadow: s.boxShadow
+      };
+    });
+  }`
+})
+```
+
+#### Call #5: Card/Container Styles
+
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    const selectors = [
+      '[class*="card"]', '[class*="Card"]',
+      '[class*="container"]', '[class*="Container"]',
+      '[class*="box"]', '[class*="Box"]'
+    ];
+
+    const cards = Array.from(document.querySelectorAll(selectors.join(', ')))
+      .slice(0, 10);
+
+    return cards.map(card => {
+      const s = window.getComputedStyle(card);
+      return {
+        className: card.className,
+        backgroundColor: s.backgroundColor,
+        padding: s.padding,
+        border: s.border,
+        borderRadius: s.borderRadius,
+        boxShadow: s.boxShadow
+      };
+    });
+  }`
+})
+```
+
+#### Call #6: Body & Background
+
+```javascript
+mcp__chrome-devtools__evaluate_script({
+  function: `() => {
+    const body = document.body;
+    const bodyStyles = window.getComputedStyle(body);
+
+    return {
+      body: {
+        backgroundColor: bodyStyles.backgroundColor,
+        color: bodyStyles.color,
+        fontFamily: bodyStyles.fontFamily,
+        fontSize: bodyStyles.fontSize,
+        lineHeight: bodyStyles.lineHeight
+      }
+    };
+  }`
+})
+```
+
+**Report:**
+```
+✅ CSS Data Extracted!
 
 📊 Summary:
-   - CSS Variables: 24 found
-   - Colors: 8 unique colors
-     • Backgrounds: 3 colors
-     • Text: 2 colors
-     • Borders: 2 colors
-     • Accents: 1 color
-   - Typography: 2 font families, 4 weights, 6 sizes
-   - Spacing: 12 unique values (8px grid detected)
-   - Effects: 4 shadows, 8 transitions, 3 border radii
+   - Colors: [count] unique colors
+     • Backgrounds: [count] colors
+     • Text: [count] colors
+     • Borders: [count] colors
+   - Typography: [count] font families, [count] weights, [count] sizes
+   - Shadows: [count] unique shadows
+   - Border Radius: [count] unique values
+   - Border Width: [count] unique values
+   - Buttons: [count] CTA styles extracted
+   - Cards: [count] container styles extracted
+
+🔄 Proceeding to screenshot capture...
 ```
 
 ---
 
-### Step 3: Extract Component Styles
+### Step 3: Take Screenshot & Save to Disk
 
-**Use `evaluate_script` with `querySelector` to extract styles from common components:**
+**Save screenshots to disk to avoid size limits:**
 
-**Component Selectors:**
-- **Buttons:** `button[class*="primary"]`, `.btn-primary`, `[class*="Button--primary"]`
-- **Cards:** `[class*="card"]`, `.card`, `[class*="Card"]`
-- **Typography:** `h1`, `h2`, `h3`, `p`
-- **Inputs:** `input[type="text"]`, `input[type="email"]`
-- **Navigation:** `nav`, `nav a`
+```javascript
+// Create temp directory
+Bash: mkdir -p design-system/.temp
 
-**Extract Properties:**
-- Layout: `display`, `gap`, `padding`, `margin`
-- Colors: `backgroundColor`, `color`, `border`
-- Typography: `fontSize`, `fontWeight`, `fontFamily`, `lineHeight`
-- Effects: `borderRadius`, `boxShadow`, `transition`
+// Take fullpage screenshot (or element-based if fullpage times out)
+try {
+  mcp__chrome-devtools__take_screenshot({
+    fullPage: true,
+    format: "png",
+    filePath: "design-system/.temp/screenshot-fullpage.png"
+  });
+} catch {
+  // Fallback: viewport only
+  mcp__chrome-devtools__take_screenshot({
+    fullPage: false,
+    format: "png",
+    filePath: "design-system/.temp/screenshot-viewport.png"
+  });
+}
+```
 
 **Report:**
 ```
-✅ Component Styles Extracted!
+✅ Screenshot captured
 
-📦 Components Found:
-   - Buttons: Primary, Secondary
-   - Cards: Base card style
-   - Typography: h1, h2, h3, p
-   - Inputs: Text input
-   - Navigation: Nav bar, Links
+📸 Files created:
+   - design-system/.temp/screenshot-fullpage.png [✓ / fallback: viewport]
+
+🔄 Reading screenshot for visual analysis...
 ```
 
 ---
 
-### Step 4: Test Interactive States & Responsive
+### Step 4: Read Screenshot & Analyze Design Style
 
-**Test hover/focus states and responsive breakpoints:**
+**CRITICAL: Read the screenshot file using Read tool:**
 
-#### A. Interactive States
-1. **Button Hover:** Use `hover({ uid })` + wait 300ms + extract styles
-   - Properties: `backgroundColor`, `color`, `transform`, `boxShadow`
-2. **Input Focus:** Use `click({ uid })` + wait 200ms + extract styles
-   - Properties: `outline`, `borderColor`, `boxShadow`
+```javascript
+Read({
+  file_path: "design-system/.temp/screenshot-fullpage.png"
+})
+// OR
+Read({
+  file_path: "design-system/.temp/screenshot-viewport.png"
+})
+```
 
-#### B. Responsive Breakpoints
-1. **Mobile (375px):** Resize + wait 500ms + extract nav/h1/container styles
-2. **Tablet (768px):** Resize + wait 500ms + extract same
-3. **Desktop (1440px):** Resize + wait 500ms + extract same
+**Analyze and determine (LLM does this automatically - NO user questions):**
+
+1. **Design Style Classification:**
+   - **Neo-Brutalism**: Hard shadows (no blur), minimal radius (2px), bold borders (2px), monospace fonts, bold colors
+   - **Neumorphic**: Soft shadows (blur 10px+), medium radius (8-12px), subtle colors, depth illusion
+   - **Minimalist**: White space, thin borders (1px), subtle shadows, clean sans-serif, muted colors
+   - **Modern SaaS**: Rounded (8-16px), soft shadows, gradient accents, sans-serif, vibrant
+   - **Glassmorphism**: Blur effects, transparency (opacity 70%), layered, frosted glass
+   - **Retro Computing**: Monospace fonts, CRT colors (yellow/cyan), pixelated, nostalgic
+
+2. **Visual Evidence:**
+   - Shadow style: Hard edges (no blur) or soft blur?
+   - Corner style: Sharp (0-2px), rounded (6-8px), or very rounded (12px+)?
+   - Color approach: Bold blocks or subtle gradients?
+   - Typography: Sans-serif, monospace, or serif?
+   - Border style: Thick (2px+) or thin (1px)?
+
+3. **Design Philosophy:**
+   - What makes it visually appealing?
+   - What emotions does it evoke? (trust, speed, playfulness, technical, friendly)
+   - What principles guide it? (clarity, boldness, simplicity, elegance)
+   - How does it differ from typical sites in this category?
+
+4. **User Experience Goals:**
+   - First impression? (different, familiar, innovative, classic, bold, subtle)
+   - During use? (fast, delightful, efficient, calming, energetic)
+   - Long-term? (memorable, trustworthy, professional, playful)
 
 **Report:**
 ```
-✅ Interactive & Responsive Testing Complete!
+✅ Visual Analysis Complete!
 
-🎭 Interactive States:
-   - Button Hover: backgroundColor changes, transform scale(1.05)
-   - Input Focus: borderColor blue, boxShadow glow
+🎨 Design Style Detected: [Neo-Brutalism / Neumorphic / Minimalist / Modern SaaS / etc.]
 
-📱 Responsive Breakpoints:
-   - Mobile (375px): Nav hidden, h1 24px, padding 16px
-   - Tablet (768px): Nav visible, h1 32px, padding 24px
-   - Desktop (1440px): Nav expanded, h1 48px, padding 40px
-```
+📐 Visual Evidence:
+   - Shadows: [Hard edges, no blur / Soft blur 10px / None]
+   - Corners: [Sharp 2px / Rounded 8px / Very rounded 16px]
+   - Colors: [Bold blocks / Subtle gradients / Muted pastels]
+   - Typography: [Monospace / Sans-serif / Serif]
+   - Borders: [Thick 2px / Thin 1px / None]
 
----
-
-### Step 5: Screenshots & Final Report
-
-**Take screenshots using `take_screenshot`:**
-- Full page: `{ fullPage: true, format: "png" }`
-- Hero section: Find uid from snapshot + `{ uid: heroUid }`
-- Primary button: `{ uid: buttonUid }`
-
-**Final Report:**
-```
-✅ Extraction Complete!
-
-📊 Full Summary:
-   - CSS Variables: 24 found
-   - Colors: 8 unique (3 bg, 2 text, 2 border, 1 accent)
-   - Typography: 2 families, 4 weights, 6 sizes
-   - Spacing: 12 values (8px grid)
-   - Effects: 4 shadows, 8 transitions, 3 radii
-   - Components: 10 styles extracted
-   - Interactive: Hover/Focus captured
-   - Responsive: 3 breakpoints tested
-   - Screenshots: 3 images saved
+🎯 Design Philosophy:
+   - Core: [e.g., "Honest materials, bold contrasts, functional-first"]
+   - Mood: [e.g., "Confident, technical, playful"]
+   - Differentiator: [e.g., "Rejects soft/rounded trends, embraces brutalism"]
 
 🔄 Proceeding to pondering phase...
 ```
 
 ---
 
-### Step 6: Pondering Phase
+### Step 5: Pondering Phase (Mandatory)
 
-**Wrap analysis in `<pondering>` tags:**
+**Wrap analysis in `<pondering>` tags with this EXACT structure:**
 
 ```xml
 <pondering>
-# Design Analysis (Chrome DevTools Extraction)
+# Design Analysis - [Site Name]
 
-## Extraction Results
+## Part 1: CSS Data Extracted (Source of Truth)
 
-### CSS Variables
-- [List all --var-name: value pairs found]
-- Primary color variable: --color-primary
-- Spacing scale: --spacing-[size]
+### Colors Found:
+[List ALL extracted colors with rgb/hex values]
 
-### Color Palette (EXTRACTED from computed styles)
-- Background Colors:
-  - Primary: #FFFFFF (white)
-  - Secondary: #F9FAFB (light gray)
-  - Accent: #3B82F6 (blue)
+**Analysis:**
+- Primary: [color] ([psychology: e.g., energy, trust, etc.])
+- Secondary: [color] ([usage context])
+- Background: [color] ([reasoning: softer than white, warm, etc.])
+- Foreground: [color] ([contrast ratio: e.g., 12:1 AAA])
+- [... all other colors ...]
 
-- Text Colors:
-  - Primary: #111827 (dark)
-  - Secondary: #6B7280 (gray)
+### Typography Found:
+[List ALL extracted font data]
 
-- Border Colors:
-  - Default: #E5E7EB (light gray)
-  - Focus: #3B82F6 (blue)
+**Analysis:**
+- Font Family: [name] ([why? e.g., monospace = technical/retro])
+- Weight Usage: [e.g., "Only 400 used - hierarchy through SIZE not weight"]
+- Size Scale: [list all sizes found]
+- Line Height: [tight/normal/relaxed - e.g., "1.2 = compact, functional"]
+- Letter Spacing: [values found - e.g., "1.44px on H1 = strong separation"]
 
-### Typography (EXTRACTED)
-- Font Families:
-  - Primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
-  - Monospace: "Fira Code", Consolas, Monaco, monospace (if found)
+### Effects Found:
+[List ALL shadows, border-radius, border-width]
 
-- Font Weights:
-  - Regular: 400 (most common)
-  - Medium: 500
-  - Semibold: 600
-  - Bold: 700
+**Analysis:**
+- Shadow Style: [e.g., "-12px 12px 0 0 = HARD SHADOW, no blur, offset bottom-right"]
+- Border Radius: [e.g., "2px everywhere = minimal, anti-smooth, brutalist"]
+- Border Width: [e.g., "2px consistent = bold definition"]
 
-- Font Sizes (6-level scale detected):
-  - xs: 12px
-  - sm: 14px
-  - base: 16px
-  - lg: 18px
-  - xl: 20px
-  - 2xl: 24px
-  - 3xl: 30px
-  - 4xl: 36px
+### Button Styles:
+[Exact extracted values]
+- Padding: [e.g., "11.5px 18px"]
+- Border: [e.g., "2px solid #383838"]
+- Background: [colors]
+- Shadow: [value or "none"]
 
-### Spacing System (EXTRACTED)
-- Grid: 8px base detected (values divisible by 8)
-- Common values: 8px, 16px, 24px, 32px, 40px, 48px, 64px
-- Likely using: 0.5rem, 1rem, 1.5rem, 2rem, 2.5rem, 3rem, 4rem
+### Card Styles:
+[Exact extracted values]
 
-### Visual Effects (EXTRACTED)
-- Shadows (4 levels detected):
-  - sm: 0 1px 2px rgba(0,0,0,0.05)
-  - md: 0 4px 6px rgba(0,0,0,0.07)
-  - lg: 0 10px 15px rgba(0,0,0,0.1)
-  - xl: 0 20px 25px rgba(0,0,0,0.15)
+---
 
-- Border Radius (3 sizes):
-  - sm: 4px
-  - md: 8px
-  - lg: 12px
+## Part 2: Visual Analysis (from Screenshot)
 
-- Transitions:
-  - Duration: 200ms, 300ms (most common)
-  - Timing: ease, ease-in-out
+### Design Style Identified: **[Neo-Brutalism / Neumorphic / etc.]**
 
-### Component Styles (EXTRACTED)
-- Button (Primary):
-  - Background: #3B82F6
-  - Color: #FFFFFF
-  - Padding: 12px 24px
-  - Border Radius: 8px
-  - Hover: Background darken to #2563EB
+**Visual Evidence:**
+1. **[Observation 1]:**
+   - [Detailed description]
+   - [Why it matters for classification]
 
-- Card:
-  - Background: #FFFFFF
-  - Border: 1px solid #E5E7EB
-  - Border Radius: 12px
-  - Padding: 24px
-  - Shadow: 0 1px 3px rgba(0,0,0,0.1)
+2. **[Observation 2]:**
+   - [Detailed description]
+   - [Why it matters]
 
-### Architecture Detection
-- Tailwind CSS: [Check for utility class patterns in class names]
-- styled-components: [Check for sc-* pattern]
-- CSS Modules: [Check for _[hash] pattern]
-- Vanilla CSS: [Check for semantic class names]
+3. **[Observation 3]:**
+   - [Detailed description]
+   - [Why it matters]
 
-### Responsive Behavior
-- Mobile (375px): Compact layout, smaller text, reduced padding
-- Tablet (768px): Medium layout, standard text, comfortable padding
-- Desktop (1440px): Spacious layout, larger text, generous padding
+### What Makes It Appealing?
 
-## Design Philosophy (INFERRED)
+1. **[Quality 1 - e.g., Memorable & Unique]:**
+   - [Why it's appealing]
+   - [How it achieves this]
+
+2. **[Quality 2 - e.g., Confident & Bold]:**
+   - [Why it's appealing]
+   - [How it achieves this]
+
+### Design Philosophy Detected:
 
 **Core Principles:**
-- Clean, modern, professional aesthetic
-- 8px spacing grid for consistency
-- Limited color palette (8 colors max)
-- Subtle shadows and transitions
-- Accessibility-focused (high contrast ratios)
+1. **[Principle 1]** - [Description]
+2. **[Principle 2]** - [Description]
+3. **[Principle 3]** - [Description]
 
-**Visual Identity:**
-- [Describe overall design style: Minimalist, Modern, Neo-Brutalism, etc.]
-- [Describe mood: Professional, Playful, Technical, Friendly, etc.]
-- [Key visual patterns: Rounded corners, Bold borders, Soft shadows, etc.]
+**User Experience Goals:**
+- First impression: [description]
+- During use: [description]
+- Long-term: [description]
 
-## Technical Stack
+---
 
-**Detected Framework:**
-- [Tailwind CSS / styled-components / CSS Modules / Vanilla CSS]
-- Class pattern: [Describe pattern found]
-- Component structure: [Describe organization]
+## Part 3: Validation (CSS matches Visual?)
 
-**Not Using:**
-- [List frameworks NOT detected]
+| Aspect | CSS Data | Visual Shows | Match? |
+|--------|----------|--------------|--------|
+| Shadows | [exact value] | [visual description] | ✅/⚠️ |
+| Radius | [exact value] | [visual description] | ✅/⚠️ |
+| Font | [exact value] | [visual description] | ✅/⚠️ |
+| Weight | [exact value] | [visual description] | ✅/⚠️ |
+| Colors | [exact values] | [visual description] | ✅/⚠️ |
+| Borders | [exact value] | [visual description] | ✅/⚠️ |
 
-## Accessibility
+**Validation Result:** [CSS perfectly matches / Minor discrepancies / Major differences]
 
-**Contrast Ratios:**
-- Text on background: [Calculate ratio] (WCAG [AA/AAA])
-- Links: [Calculate ratio]
-- Buttons: [Calculate ratio]
+---
 
-**Focus States:**
-- Visible outline detected: [Yes/No]
-- Focus ring color: [Color]
+## Part 4: Key Differentiators
 
-## Key Patterns Summary
+**[Site Name] vs. Typical [Industry] Sites:**
+- ❌ [Common pattern] → ✅ [This site's approach]
+- ❌ [Common pattern] → ✅ [This site's approach]
+- ❌ [Common pattern] → ✅ [This site's approach]
 
-1. **Colors**: 8-color palette (minimal, focused)
-2. **Typography**: 2 families, 4 weights, 8 sizes
-3. **Spacing**: 8px grid (0.5rem to 4rem)
-4. **Effects**: 4 shadow levels, 3 border radii
-5. **Components**: 10+ component styles extracted
-6. **Interactive**: Smooth transitions (200-300ms)
-7. **Responsive**: 3 breakpoints (mobile, tablet, desktop)
+**Why This Works:**
+- [Reason 1: competitive advantage]
+- [Reason 2: user psychology]
+- [Reason 3: technical execution]
+
+---
+
+## Conclusion: Generate [Design Style] Style Guide
+
+**Key Features to Include:**
+1. [Feature 1] - [exact CSS value]
+2. [Feature 2] - [exact CSS value]
+3. [Feature 3] - [exact CSS value]
+4. [... all critical features with exact values ...]
+
+**Design Philosophy Section:**
+- [Style name] aesthetic (e.g., Neo-Brutalism)
+- [Core principles from Part 2]
+- [UX goals]
+
+**Critical Rules:**
+- ❌ NO [anti-pattern] (e.g., "NO soft shadows - blur must be 0")
+- ❌ NO [anti-pattern] (e.g., "NO rounded corners - use 2px only")
+- ✅ YES to [best practice] (e.g., "YES to hard shadows")
+- ✅ YES to [best practice] (e.g., "YES to monospace font")
 </pondering>
+```
+
+**Report:**
+```
+✅ Pondering Complete!
+
+🧠 Analysis Summary:
+   - CSS Data: [count] data points extracted
+   - Design Style: [style name] ✓ IDENTIFIED
+   - Validation: CSS ↔ Visual alignment ✓ [Perfect / Good / Needs adjustment]
+   - Philosophy: [3 core principles identified]
+
+🔄 Proceeding to STYLE_GUIDE.md generation...
+```
+
+---
+
+### Step 6: Generate STYLE_GUIDE.md
+
+**Generate comprehensive 17-section guide (1500-2000 lines) using:**
+- CSS data as PRIMARY source (exact values)
+- Screenshot analysis for design philosophy & style classification
+- Pondering conclusions for structure & critical rules
+
+**Output file:** `design-system/STYLE_GUIDE.md`
+
+**All 17 sections must include:**
+1. Overview (detected style, tech stack)
+2. Design Philosophy (from pondering Part 2)
+3. Color Palette (from CSS extraction, exact HEX values)
+4. Typography (from CSS extraction, exact sizes/weights)
+5. Spacing System (detected from padding/margin patterns)
+6. Component Styles (Button, Card, Input - from extraction)
+7. Shadows & Elevation (exact CSS values)
+8. Animations & Transitions (extracted transition values)
+9. Border Styles (extracted border-width values)
+10. Border Radius (extracted values)
+11. Opacity & Transparency (if used)
+12. Z-Index Layers (standard scale)
+13. Responsive Breakpoints (standard or extracted)
+14. CSS Variables / Tailwind Theme (design tokens in JSON)
+15. Layout Patterns (container, grid examples)
+16. Example Component Reference (React + Tailwind code)
+17. Additional Sections (accessibility, best practices, critical rules)
+
+**Report:**
+```
+✅ Design Setup Complete!
+
+📁 Generated: design-system/STYLE_GUIDE.md ([line count] lines)
+
+📊 Summary:
+   - Design Style: [Neo-Brutalism / Neumorphic / etc.]
+   - Colors: [count] extracted (HEX values) ✓
+   - Typography: [font name], [count] weights, [count] sizes ✓
+   - Shadows: [count] unique values ✓
+   - Border Radius: [primary value - e.g., 2px / 8px] ✓
+   - Components: Button, Card, Input, Badge styles ✓
+   - All 17 sections: Complete ✓
+
+🎯 Key Features:
+   [Feature 1: e.g., "Hard shadows (-12px 12px 0 0)"]
+   [Feature 2: e.g., "Minimal radius (2px)"]
+   [Feature 3: e.g., "Monospace font (Aeonik Mono)"]
+
+🔍 Extraction Method:
+   ✅ Chrome DevTools MCP (computed styles)
+   ✅ Screenshot analyzed (design style detection)
+   ✅ CSS → Visual validation ✓
+   ✅ Data-driven (no guessing)
+
+💡 Next Steps:
+   1. Review: design-system/STYLE_GUIDE.md
+   2. Run /psetup (if needed)
+   3. Start development: /csetup {change-id}
 ```
 
 ---
 
 ## 📋 PATH 2: Localhost Analysis (Brownfield)
 
-**Use Chrome DevTools MCP on localhost + scan codebase for inconsistencies.**
+**Same as Path 1 (Steps 1-6) + codebase inconsistency detection:**
 
----
+1. Navigate to localhost URL
+2. Extract CSS data (6 calls)
+3. Take screenshot
+4. Read & analyze screenshot
+5. Pondering phase
+6. Generate STYLE_GUIDE.md
 
-### Step 1: Validate Localhost URL
-
-```javascript
-const url = userProvidedUrl; // e.g., "localhost:3000" or "http://localhost:5173"
-const normalizedUrl = url.startsWith('http') ? url : `http://${url}`;
-
-// Try to connect
-try {
-  const response = await fetch(normalizedUrl);
-  if (!response.ok) {
-    throw new Error('Server not responding');
-  }
-} catch (error) {
-  // Server not running
-  reportError(`
-❌ Cannot connect to ${normalizedUrl}
-
-Please start your dev server first:
-  • npm run dev
-  • npm start
-  • yarn dev
-
-Then run /designsetup again.
-  `);
-  return;
-}
-```
-
-**Report:**
-```
-✅ Localhost server detected!
-
-🌐 URL: http://localhost:3000
-🔌 Status: Running
-🚀 Starting extraction...
-```
-
----
-
-### Step 2: Extract from Localhost
-
-**Use same extraction as Path 1 (Steps 1-6):**
-1. Open page with `mcp__chrome-devtools__new_page`
-2. Extract CSS Variables, Colors, Typography, Spacing, Effects
-3. Extract Component Styles
-4. Test Interactive States & Responsive
-5. Take Screenshots
-6. Pondering Phase
-
----
-
-### Step 3: Scan Codebase (Additional Analysis)
-
-**Detect architecture and find component files:**
+**Additional: Codebase Scan**
 
 ```bash
-# 1. Detect architecture
-Grep pattern: 'className=' in src/
-
-# Patterns to detect:
-# - Tailwind: className="flex p-4 bg-blue-500"
-# - styled-components: className="sc-abc123-0 xyz"
-# - CSS Modules: className={styles.button}
-
-# 2. Find all component files
+# Detect inconsistencies
 Glob: src/**/*.{tsx,jsx,vue,svelte}
+Grep: className= patterns
 
-# 3. Map components
-# Create mapping: ComponentName → File Path → Extracted Styles
+# Find:
+- Duplicate components (Button variants)
+- Hardcoded colors vs theme
+- Inconsistent spacing (not on 8px grid)
+- Unused theme colors
 ```
 
-**Report:**
-```
-📊 Codebase Analysis
-
-🏗️ Architecture Detected: Tailwind CSS
-   - Utility classes found in 95% of components
-   - tailwind.config.js found
-   - postcss.config.js found
-
-📁 Components Found: 24 files
-   • src/components/Button.tsx
-   • src/components/Card.tsx
-   • src/components/Input.tsx
-   • [... 21 more ...]
-
-🔍 Component Mapping:
-   Button.tsx → .btn-primary (extracted styles: bg-blue-500, px-4, py-2)
-   Card.tsx → .card (extracted styles: bg-white, rounded-lg, shadow-md)
-   [... mapping for all components ...]
-```
-
----
-
-### Step 4: Detect Inconsistencies
-
-**Compare codebase with extracted styles:**
-
-```javascript
-// Find inconsistencies:
-// 1. Hardcoded colors vs theme colors
-// 2. Duplicate component styles
-// 3. Unused colors in config
-// 4. Inconsistent spacing (not following 8px grid)
-
-const inconsistencies = {
-  duplicateStyles: [],
-  unusedColors: [],
-  hardcodedValues: [],
-  namingInconsistencies: []
-};
-
-// Example detection logic:
-// - Find all bg-blue-* classes, count variants
-// - Compare with tailwind.config.js colors
-// - Flag if > 3 blue variants used
-```
-
-**Report:**
-```
-⚠️ Inconsistencies Detected:
-
-1. **Duplicate Button Styles (4 variants)**
-   • src/components/Button.tsx: bg-blue-500
-   • src/components/PrimaryButton.tsx: bg-blue-600
-   • src/pages/Home.tsx (inline): bg-primary
-   • src/pages/About.tsx (inline): bg-[#3b82f6]
-
-   💡 Recommendation: Consolidate into single Button component
-
-2. **Unused Colors in Config (3 colors)**
-   • colors.yellow.500: Defined but never used
-   • colors.pink.400: Defined but never used
-   • colors.purple.700: Defined but never used
-
-   💡 Recommendation: Remove from tailwind.config.js
-
-3. **Hardcoded Values (8 instances)**
-   • margin-left: 17px (not on 8px grid)
-   • padding: 13px (not on 8px grid)
-
-   💡 Recommendation: Use spacing scale (p-3, p-4)
-
-4. **Naming Inconsistencies (2 patterns)**
-   • Some components: PascalCase (Button.tsx)
-   • Other components: kebab-case (nav-bar.tsx)
-
-   💡 Recommendation: Standardize to PascalCase
-```
-
----
-
-### Step 5: Generate Style Guide with Cleanup Notes
-
-**Include all extracted data + inconsistencies + refactoring suggestions:**
-
+**Include in guide:**
 ```markdown
 ## ⚠️ Current State Analysis (Brownfield)
 
-**Project:** [Auto-detected from package.json name]
-**Architecture:** Tailwind CSS
-**Components:** 24 files analyzed
-
-### Inconsistencies Found
-
-[... Include full inconsistency report from Step 4 ...]
-
-### Refactoring Opportunities
-
-1. **Component Consolidation**
-   - Merge 4 button variants → single Button component with variants prop
-   - Merge 3 card variants → single Card component
-   - Estimated time saved: 30 minutes
-
-2. **Color Cleanup**
-   - Remove 3 unused colors from config
-   - Replace hardcoded blues with theme color
-   - Estimated bundle size reduction: 2KB
-
-3. **Spacing Standardization**
-   - Replace 8 hardcoded values with spacing scale
-   - Use Tailwind spacing utilities (p-4, m-6)
-   - Improves consistency across app
-
-4. **Naming Standardization**
-   - Rename 12 files to PascalCase
-   - Update imports (can be automated)
-   - Improves code clarity
+### Inconsistencies Found:
+1. Duplicate Button styles (4 variants) → Consolidate
+2. Hardcoded colors (8 instances) → Use theme
+3. Inconsistent spacing (not on 8px grid) → Standardize
 ```
 
 ---
 
 ## 📋 PATH 3: Interactive Greenfield
 
-**🚨 ALLOWS USER QUESTIONS for greenfield projects! 🚨**
-
-**When no URL is provided, enter interactive mode to gather requirements.**
-
----
+**🚨 ONLY Path 3 uses AskUserQuestion tool! 🚨**
 
 ### Step 1: Ask User Questions
 
-**Use `AskUserQuestion` tool with 4 questions:**
+Use `AskUserQuestion` tool with 4 questions:
 
 1. **Application Type** (header: "App Type")
-   - Options: SaaS Dashboard, Marketing Website, E-commerce Store, Documentation Site, Admin Panel
+   - Options: SaaS Dashboard, Marketing Website, E-commerce Store, Admin Panel
 
 2. **Design Style** (header: "Design Style")
    - Options: Minimalist, Neo-Brutalism, Modern Professional, Glassmorphism
 
 3. **Primary Color** (header: "Primary Color")
-   - Options: Blue (#3B82F6), Green (#10B981), Purple (#8B5CF6), Orange (#F59E0B)
+   - Options: Blue, Green, Purple, Orange
 
 4. **CSS Stack** (header: "CSS Stack")
-   - Options: Tailwind CSS, styled-components, CSS Modules, Vanilla CSS
+   - Options: Tailwind CSS, styled-components, CSS Modules
 
----
+### Step 2: Generate AI-Based Style Guide
 
-### Step 2: Process User Answers
+Based on user answers, generate modern best-practice guide:
 
-```javascript
-const answers = {
-  appType: "SaaS Dashboard",
-  designStyle: "Modern Professional",
-  primaryColor: "Blue",
-  cssStack: "Tailwind CSS"
-};
-
-// Map to design tokens
-const designConfig = {
-  colors: {
-    primary: answers.primaryColor === "Blue" ? "#3B82F6" :
-             answers.primaryColor === "Green" ? "#10B981" :
-             answers.primaryColor === "Purple" ? "#8B5CF6" : "#F59E0B"
-  },
-  style: answers.designStyle,
-  appType: answers.appType,
-  framework: answers.cssStack
-};
-```
-
-**Report:**
-```
-✅ Requirements Gathered!
-
-📋 Configuration:
-   - Application Type: SaaS Dashboard
-   - Design Style: Modern Professional
-   - Primary Color: Blue (#3B82F6)
-   - CSS Stack: Tailwind CSS
-
-🎨 Generating AI-based style guide...
-```
-
----
-
-### Step 3: Generate AI-Based Style Guide
-
-**Use modern best practices based on user answers:**
-
-**Generation Rules:**
-
-1. **Color Palette:** Primary + 5 shades, Gray scale (10 levels), Semantic colors (success/warning/error)
-2. **Typography Scale:** Base size varies by app type (SaaS: 14px, Marketing: 16px, E-commerce: 15px)
-3. **Spacing System:** 8px grid (4px to 64px), maps to 0.25rem to 4rem
-4. **Component Styles:** Vary by design style (Minimalist, Neo-Brutalism, Modern Professional, Glassmorphism)
-5. **Code Examples:** Tailored to CSS stack (Tailwind, styled-components, CSS Modules, Vanilla)
-
----
-
-### Step 4: Output Complete Style Guide
+- Color palette: Primary + shades + grayscale + semantic
+- Type scale: Varies by app type (SaaS: 14px, Marketing: 16px)
+- Spacing: 8px grid (0.5rem to 4rem)
+- Components: Tailored to design style
+- Code examples: Match CSS stack
 
 **Report:**
 ```
@@ -697,177 +747,29 @@ const designConfig = {
 
 📁 design-system/STYLE_GUIDE.md (1,650 lines)
 
-📊 Generated Configuration:
-   - Application: SaaS Dashboard
-   - Style: Modern Professional
-   - Primary Color: Blue (#3B82F6)
-   - Stack: Tailwind CSS
+📊 Configuration:
+   - Application: [user choice]
+   - Style: [user choice]
+   - Primary: [user choice]
+   - Stack: [user choice]
 
-🎨 Included Features:
-   - 8-color palette (primary + shades)
-   - Gray scale (10 levels)
-   - Semantic colors (success, warning, error)
-   - Type scale (6 levels, 14px base)
-   - 8px spacing grid (9 levels)
-   - 12 component styles (Button, Card, Input, Badge, etc.)
-   - 4 shadow levels
-   - 3 border radius sizes (4px, 8px, 12px)
-   - Responsive breakpoints (sm: 640px, md: 768px, lg: 1024px)
-   - Dark mode support (CSS variables)
-   - Accessibility guidelines (WCAG AAA)
-   - 15 code examples (Tailwind syntax)
-
-🚀 Ready for greenfield development!
-
-💡 Next Steps:
-   1. Review guide: design-system/STYLE_GUIDE.md
-   2. Run /psetup (if needed)
-   3. Start building: /csetup feature-name
-```
-
----
-
-## 📝 Generate STYLE_GUIDE.md
-
-**Output:** Comprehensive 17-section style guide (1500-2000 lines) based on extracted data.
-
-**Requirements:**
-- Mark all computed style data with **[EXTRACTED]**
-- Include source indicators (CSS variables, getComputedStyle, etc.)
-- Use actual component selectors from extraction
-- Include [MANDATORY] rules to prevent anti-patterns
-- Match detected CSS architecture
-
-**Structure (17 sections):**
-
-```markdown
-# [Project Name] Design System - Style Guide
-
-> **Source:** [Live Website / Localhost / AI-Generated]
-> **Date:** [Current date]
-> **Architecture:** [Detected CSS framework]
-> **Design Style:** [Auto-detected or user-selected style]
-
----
-
-## Quick Reference
-Design Tokens JSON with all extracted values: colors, typography, spacing, effects
-
-## 1. Overview
-Tech stack, detected architecture, class patterns, icons
-
-## 2. Design Philosophy
-Core principles (2-3), visual identity, aesthetic description
-
-## 3. Color Palette (EXTRACTED)
-Primary, text, background, border colors with:
-- HEX values (RGB → HEX conversion)
-- Usage context
-- Contrast ratios (WCAG)
-- Extraction method noted
-- Color usage summary table
-
-## 4. Typography (EXTRACTED)
-Font families, weights (400/500/600/700), sizes table (xs-4xl) with line heights
-
-## 5. Spacing System (EXTRACTED)
-Grid base (4px or 8px), spacing scale table (1-16 with px/rem), mark primary value
-
-## 6. Component Styles (EXTRACTED)
-For each: Button, Card, Input, Badge, etc.
-- Extracted CSS with actual selectors
-- Hover/focus states
-- Code examples (Tailwind + styled-components)
-
-## 7. Shadows & Elevation (EXTRACTED)
-4 levels (sm/md/lg/xl) with CSS values, usage context
-
-## 8. Animations & Transitions (EXTRACTED)
-Durations (150ms/200ms/300ms), timing functions, common patterns
-
-## 9. Border Styles (EXTRACTED)
-Widths (1px/2px), colors (default/focus/error)
-
-## 10. Border Radius (EXTRACTED)
-Size table (sm/md/lg/full), usage examples
-
-## 11. Responsive Breakpoints (EXTRACTED)
-Breakpoint values, responsive patterns per device
-
-## 12. Dark Mode (if detected)
-CSS Variables pattern with example
-
-## 13. Anti-Patterns & [MANDATORY] Rules
-Critical rules for:
-- Colors: ❌ hardcoded → ✅ theme tokens
-- Spacing: ❌ arbitrary → ✅ scale
-- Typography: ❌ arbitrary sizes → ✅ type scale
-- Components: ❌ duplicates → ✅ reuse
-
-## 14. Accessibility Guidelines
-Contrast ratios (WCAG AAA), focus states, keyboard navigation
-
-## 15. Code Examples
-Button, Card, Input components (Tailwind + styled-components examples)
-
-## 16. Verification Checklist
-10-point checklist before implementing components
-
-## 17. Additional Resources
-Design tokens JSON, component library links, Figma files
-
----
-
-## 🎉 End of Style Guide
-Generated by, source, method, date
+🎨 Features: 17 sections complete ✓
 ```
 
 ---
 
 ## 🎯 Success Criteria
 
-Verify before reporting:
+Verify:
 
-1. **Data Quality:** All values extracted via getComputedStyle (RGB → HEX)
-2. **Guide Length:** 1500-2000 lines (concise, data-focused)
-3. **Actionability:** [MANDATORY] rules + anti-patterns included
-4. **Accuracy:** Chrome DevTools MCP used, interactive states tested
-
----
-
-## 📢 Final Output
-
-```
-✅ Design Setup Complete!
-
-📁 Generated: design-system/STYLE_GUIDE.md ([line count] lines)
-
-📊 Extraction Summary:
-   - Colors extracted: [count] unique colors
-   - Primary color: [HEX] ✓ EXTRACTED
-   - Architecture: [framework] ✓ DETECTED
-   - Components: [count] styles extracted
-   - Font weights: 4 (400, 500, 600, 700) ✓ EXTRACTED
-   - Shadows: 4 levels ✓ EXTRACTED
-   - Border radius: 3 sizes ✓ EXTRACTED
-
-🎨 Design Style: [style]
-
-🔍 Extraction Method:
-   ✅ Chrome DevTools MCP (computed styles)
-   ✅ Screenshots taken ([count] images)
-   ✅ Interactive states tested (hover, focus)
-   ✅ Responsive breakpoints tested ([count] sizes)
-   ✅ Data-driven (no assumptions)
-
-💡 Next Steps:
-   1. Review: design-system/STYLE_GUIDE.md
-   2. Run /psetup (if needed)
-   3. Start development: /csetup {change-id}
-
-🚀 Ready for production!
-```
+1. ✅ CSS extracted BEFORE screenshot
+2. ✅ Screenshot analyzed for design style (LLM, not user)
+3. ✅ Pondering has 4 parts (CSS → Visual → Validation → Conclusion)
+4. ✅ STYLE_GUIDE.md has all 17 sections
+5. ✅ Exact CSS values used (not approximations)
+6. ✅ Design philosophy matches visual analysis
+7. ✅ Critical rules included (DO's and DON'Ts)
 
 ---
 
-**Now execute the detected path based on user input.**
+**Now execute the detected path.**
