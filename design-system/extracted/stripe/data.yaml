@@ -1,0 +1,243 @@
+meta:
+  site_name: stripe
+  url: https://stripe.com
+  extracted_at: 2025-11-03T10:30:00Z
+  extractor_version: 2.0.0
+  coverage:
+    total_sections: 17
+    detected_sections: 15
+    percentage: 88
+
+sections:
+  overview:
+    detected: true
+    style: Modern SaaS
+    tech_stack: Framework-agnostic
+
+  design_philosophy:
+    detected: true
+    from_analysis: true
+
+  color_palette:
+    detected: true
+    primary:
+      - rgb: rgb(99, 91, 255)
+        hex: '#635BFF'
+        usage: Primary brand color
+      - rgb: rgb(10, 37, 64)
+        hex: '#0A2540'
+        usage: Dark text
+      - rgb: rgb(255, 255, 255)
+        hex: '#FFFFFF'
+        usage: White backgrounds
+      - rgb: rgb(246, 249, 252)
+        hex: '#F6F9FC'
+        usage: Light backgrounds
+      - rgb: rgb(0, 115, 230)
+        hex: '#0073E6'
+        usage: Accent blue
+    secondary:
+      - rgb: rgb(153, 102, 255)
+        hex: '#9966FF'
+        usage: Purple accent
+      - rgb: rgb(0, 196, 196)
+        hex: '#00C4C4'
+        usage: Cyan accent
+      - rgb: rgb(21, 190, 83)
+        hex: '#15BE53'
+        usage: Success green
+    text_colors:
+      - rgb: rgb(66, 84, 102)
+        hex: '#425466'
+        usage: Body text
+      - rgb: rgb(10, 37, 64)
+        hex: '#0A2540'
+        usage: Headings
+      - rgb: rgb(114, 127, 150)
+        hex: '#727F96'
+        usage: Muted text
+    border_colors:
+      - rgb: rgb(189, 198, 210)
+        hex: '#BDC6D2'
+        usage: Subtle borders
+
+  typography:
+    detected: true
+    fonts:
+      - sohne-var, "Helvetica Neue", Arial, sans-serif
+    weights:
+      - '300'
+      - '425'
+      - '500'
+      - '700'
+    sizes:
+      - 10px
+      - 13px
+      - 16px
+      - 18px
+      - 32px
+    h1:
+      - fontSize: 32px
+        fontWeight: '700'
+        fontFamily: sohne-var, "Helvetica Neue", Arial, sans-serif
+        lineHeight: normal
+        letterSpacing: normal
+    h2:
+      - fontSize: 18px
+        fontWeight: '500'
+        fontFamily: sohne-var, "Helvetica Neue", Arial, sans-serif
+        lineHeight: 28px
+        letterSpacing: 0.2px
+    body:
+      - fontSize: 16px
+        fontWeight: '300'
+        fontFamily: sohne-var, "Helvetica Neue", Arial, sans-serif
+        lineHeight: normal
+
+  spacing_system:
+    detected: true
+    grid_base: 8
+    paddings:
+      - 10px 20px
+      - 3px 12px 6px 16px
+      - 0px 16px
+    margins: []
+    gaps: []
+    common_values:
+      - 3
+      - 6
+      - 10
+      - 12
+      - 16
+      - 20
+
+  component_styles:
+    detected: true
+    buttons:
+      - id: button-0
+        text: Products
+        backgroundColor: rgba(0, 0, 0, 0)
+        color: rgb(255, 255, 255)
+        padding: 10px 20px
+        borderRadius: 0px
+        fontSize: 15px
+        fontWeight: '500'
+        transition: color 0.15s cubic-bezier(0.215, 0.61, 0.355, 1)
+      - id: button-5
+        text: Contact sales
+        backgroundColor: rgb(255, 255, 255)
+        color: rgb(255, 255, 255)
+        padding: 3px 12px 6px 16px
+        borderRadius: 16.5px
+        fontSize: 15px
+        fontWeight: '425'
+        transition: background-color 0.15s cubic-bezier(0.215, 0.61, 0.355, 1)
+        animation:
+          type: button
+          states:
+            default:
+              background: rgb(255, 255, 255)
+              boxShadow: none
+            hover:
+              background: rgb(255, 255, 255)
+              boxShadow: none
+          changes:
+            background_changed: false
+            shadow_changed: false
+          description: Subtle opacity change
+
+  shadows_elevation:
+    detected: true
+    values:
+      - rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px
+      - rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px
+      - rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px
+      - rgba(50, 50, 93, 0.07) 0px 0px 0px 1px, rgba(50, 50, 93, 0.12) 0px 2px 3px -1px
+
+  animations_transitions:
+    detected: true
+    transitions:
+      - property: color
+        duration: 0.15s
+        timing: cubic-bezier(0.215, 0.61, 0.355, 1)
+      - property: background-color
+        duration: 0.15s
+        timing: cubic-bezier(0.215, 0.61, 0.355, 1)
+      - property: opacity
+        duration: 0.15s
+        timing: cubic-bezier(0.215, 0.61, 0.355, 1)
+
+  border_styles:
+    detected: true
+    widths:
+      - 1px
+      - 2px
+      - 0px
+
+  border_radius:
+    detected: true
+    values:
+      - 16.5px
+      - 16px
+      - 8px
+      - 4px
+      - 3px
+      - 32px
+      - 9999px
+
+  opacity_transparency:
+    detected: true
+    values:
+      - 0.2
+      - 0.3
+      - 0.5
+      - 0.7
+      - 1.0
+
+  z_index_layers:
+    detected: false
+    fallback: standard
+
+  responsive_breakpoints:
+    detected: false
+    fallback: standard
+
+  css_variables:
+    generated: true
+
+  layout_patterns:
+    detected: true
+    container_width: 1280px
+    grid_columns: 12
+
+  example_components:
+    generated: true
+
+  additional_sections:
+    accessibility:
+      detected: true
+    best_practices:
+      generated: true
+
+animations:
+  button-5:
+    type: button
+    states:
+      default:
+        background: rgb(255, 255, 255)
+        color: rgb(255, 255, 255)
+        boxShadow: none
+        transform: none
+        opacity: '1'
+      hover:
+        background: rgb(255, 255, 255)
+        color: rgb(255, 255, 255)
+        boxShadow: none
+        transform: none
+        opacity: '1'
+    changes:
+      background_changed: false
+      shadow_changed: false
+      transform_changed: false
+    transition: background-color 0.15s cubic-bezier(0.215, 0.61, 0.355, 1)
+    description: Subtle background lightening on hover

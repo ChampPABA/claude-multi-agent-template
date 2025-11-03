@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cacao Craft - โกโก้ออร์แกนิกคุณภาพพรีเมียม</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Prompt (Thai Sans-serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Custom Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cacao-brown': '#6B4423',
+            'cacao-dark': '#5A3A1E',
+            'cream': '#F5F1E8',
+            'deep-brown': '#3E2723',
+            'forest-green': '#4A7C59',
+            'warm-beige': '#E8DCC4',
+            'terracotta': '#C17853',
+          },
+          fontFamily: {
+            'sans': ['Prompt', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-white text-deep-brown">
+
+  <!-- 1. HERO SECTION -->
+  <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.unsplash.com/photo-1511381939415-e44015466834?w=1920&q=80"
+           alt="Chocolate" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-b from-deep-brown/40 to-deep-brown/60"></div>
+    </div>
+    <div class="relative z-10 container mx-auto px-6 lg:px-12 max-w-4xl text-center text-white">
+      <span class="inline-block bg-forest-green/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold uppercase tracking-wide mb-6">
+        100% Organic • Pesticide-Free
+      </span>
+      <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+        Artisan Cacao,<br>Naturally Grown
+      </h1>
+      <p class="text-xl mb-10 max-w-2xl mx-auto">
+        จากไร่เกษตรอินทรีย์สู่ถ้วยของคุณ สัมผัสรสชาติโกโก้พรีเมียมคุณภาพเยี่ยม
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button class="bg-cacao-brown text-white px-8 py-4 rounded-[20px] font-semibold shadow-lg hover:bg-cacao-dark hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+          Shop Products
+        </button>
+        <button class="bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 rounded-[20px] font-semibold hover:bg-white/20 transition-all duration-200">
+          Visit Our Café
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ABOUT SECTION -->
+  <section class="py-20 bg-cream">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-4xl md:text-5xl font-bold mb-6 text-deep-brown">Crafted with Care, Grown with Love</h2>
+          <p class="text-lg mb-6 text-cacao-brown">
+            ที่ Cacao Craft เราเชื่อมั่นในพลังของการเกษตรอินทรีย์ที่ปลอดสารพิษ ฝักโกโก้ทุกฝักได้รับการคัดสรรอย่างพิถีพิถันจากไร่ยั่งยืนของเรา เพื่อให้มั่นใจในคุณภาพสูงสุดและรสชาติที่แท้จริงที่สุด
+          </p>
+          <p class="text-lg mb-6 text-cacao-brown">
+            แนวทางช่างฝีมือของเราผสมผสานวิธีการดั้งเดิมเข้ากับแนวคิดสุขภาพสมัยใหม่ มอบผลิตภัณฑ์โกโก้ที่ดีต่อสุขภาพพร้อมรสชาติเยี่ยม
+          </p>
+          <div class="flex gap-4 flex-wrap">
+            <span class="bg-warm-beige px-4 py-2 rounded-full text-sm font-semibold text-cacao-brown">Organic</span>
+            <span class="bg-warm-beige px-4 py-2 rounded-full text-sm font-semibold text-cacao-brown">Artisan</span>
+            <span class="bg-warm-beige px-4 py-2 rounded-full text-sm font-semibold text-cacao-brown">Sustainable</span>
+          </div>
+        </div>
+        <div class="rounded-xl overflow-hidden shadow-lg">
+          <img src="https://images.unsplash.com/photo-1606312619070-d48b4aa42f37?w=800&q=80"
+               alt="Cocoa pods" class="w-full h-full object-cover">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. PRODUCTS SECTION -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-deep-brown">Our Products</h2>
+        <p class="text-lg text-cacao-brown">จากไร่สู่ถ้วย ค้นพบคอลเลกชั่นโกโก้พรีเมียมของเรา</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Product 1: Hot Cacao -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1542843137-8791a6904d14?w=600&q=80"
+                 alt="Hot Cacao" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Organic
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Beverages</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Hot Cacao Latte</h3>
+            <p class="text-sm text-cacao-brown mb-4">โกโก้ร้อนเข้มข้นครีมมี่จากโกโก้แท้ 100% และนมออร์แกนิก</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿195</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 2: Cacao Mass -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80"
+                 alt="Cacao Powder" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Organic
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Cacao Mass</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Pure Cacao Paste</h3>
+            <p class="text-sm text-cacao-brown mb-4">เนื้อโกโก้บริสุทธิ์ 100% เหมาะสำหรับปรุงอาหารและทำเบเกอรี่</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿540</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 3: Dark Chocolate -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=600&q=80"
+                 alt="Dark Chocolate" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Organic
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Artisan Chocolate</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Dark Chocolate 70%</h3>
+            <p class="text-sm text-cacao-brown mb-4">ช็อกโกแลตเข้มข้นนุ่มลื่นพร้อมโกโก้เข้มข้น 70%</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿360</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 4: Cacao Nibs -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1558736227-2f2c9d9c3c50?w=600&q=80"
+                 alt="Cacao Nibs" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Organic
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Raw Ingredients</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Cacao Nibs</h3>
+            <p class="text-sm text-cacao-brown mb-4">เมล็ดโกโก้คั่วกรอบ เหมาะสำหรับทำสมูทตี้และรับประทานเล่น</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿450</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 5: Gift Set -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=600&q=80"
+                 alt="Gift Set" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-terracotta text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Bestseller
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Gift Sets</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Premium Collection</h3>
+            <p class="text-sm text-cacao-brown mb-4">ชุดของขวัญคัดสรรผลิตภัณฑ์โกโก้ชั้นเลิศในกล่องสวยหรู</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿1,350</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product 6: Drinking Chocolate -->
+        <div class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group">
+          <div class="relative aspect-square overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1499638309848-e9968540da83?w=600&q=80"
+                 alt="Chocolate" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute top-4 right-4 bg-forest-green text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+              Organic
+            </span>
+          </div>
+          <div class="p-6">
+            <p class="text-xs uppercase tracking-wide text-terracotta font-semibold mb-2">Beverages</p>
+            <h3 class="text-2xl font-semibold text-deep-brown mb-2">Drinking Chocolate</h3>
+            <p class="text-sm text-cacao-brown mb-4">ผงโกโก้ผสมพรีเมียม รสชาติเข้มข้นหรูหรา</p>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl font-bold text-deep-brown">฿660</span>
+              <button class="bg-cacao-brown text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-cacao-dark transition">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. BENEFITS SECTION -->
+  <section class="py-20 bg-warm-beige">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-deep-brown">Why Cacao?</h2>
+        <p class="text-lg text-cacao-brown">ค้นพบประโยชน์ด้านสุขภาพที่น่าทึ่งของโกโก้ออร์แกนิก</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Benefit 1 -->
+        <div class="bg-white p-6 rounded-xl text-center">
+          <div class="w-16 h-16 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-forest-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-deep-brown mb-2">Natural Energy</h3>
+          <p class="text-cacao-brown">เพิ่มพลังงานอย่างต่อเนื่องโดยไม่มีอาการเพลียเหมือนคาเฟอีน</p>
+        </div>
+
+        <!-- Benefit 2 -->
+        <div class="bg-white p-6 rounded-xl text-center">
+          <div class="w-16 h-16 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-forest-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-deep-brown mb-2">Heart Health</h3>
+          <p class="text-cacao-brown">อุดมด้วยฟลาโวนอยด์ที่ช่วยสนับสนุนสุขภาพหัวใจและหลอดเลือด</p>
+        </div>
+
+        <!-- Benefit 3 -->
+        <div class="bg-white p-6 rounded-xl text-center">
+          <div class="w-16 h-16 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-forest-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-deep-brown mb-2">Mood Boost</h3>
+          <p class="text-cacao-brown">สารธรรมชาติช่วยเพิ่มอารมณ์ดีและลดความเครียด</p>
+        </div>
+
+        <!-- Benefit 4 -->
+        <div class="bg-white p-6 rounded-xl text-center">
+          <div class="w-16 h-16 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-forest-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-deep-brown mb-2">Antioxidants</h3>
+          <p class="text-cacao-brown">เต็มไปด้วยสารต้านอนุมูลอิสระที่มีประสิทธิภาพเพื่อสุขภาพโดยรวม</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. PROCESS SECTION -->
+  <section class="py-20 bg-cream">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-deep-brown">Farm-to-Cup Journey</h2>
+        <p class="text-lg text-cacao-brown">ทุกขั้นตอนสร้างสรรค์ด้วยความใส่ใจและความเชี่ยวชาญ</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Step 1 -->
+        <div class="text-center">
+          <div class="w-20 h-20 bg-cacao-brown text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+            1
+          </div>
+          <h3 class="text-2xl font-semibold text-deep-brown mb-2">Farm</h3>
+          <p class="text-cacao-brown">ฝักโกโก้ออร์แกนิกปลูกในไร่ยั่งยืนโดยปราศจากสารพิษ</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="text-center">
+          <div class="w-20 h-20 bg-cacao-brown text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+            2
+          </div>
+          <h3 class="text-2xl font-semibold text-deep-brown mb-2">Harvest</h3>
+          <p class="text-cacao-brown">คัดสรรด้วยมือในช่วงที่สุกงอมเพื่อรสชาติและคุณภาพที่ดีที่สุด</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="text-center">
+          <div class="w-20 h-20 bg-cacao-brown text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+            3
+          </div>
+          <h3 class="text-2xl font-semibold text-deep-brown mb-2">Roast</h3>
+          <p class="text-cacao-brown">คั่วอย่างพิถีพิถันเพื่อดึงรสชาติที่เข้มข้นและซับซ้อน</p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="text-center">
+          <div class="w-20 h-20 bg-cacao-brown text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+            4
+          </div>
+          <h3 class="text-2xl font-semibold text-deep-brown mb-2">Craft</h3>
+          <p class="text-cacao-brown">งานฝีมือช่างเปลี่ยนโกโก้ให้เป็นผลิตภัณฑ์พรีเมียม</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. TESTIMONIALS SECTION -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 text-deep-brown">What Our Customers Say</h2>
+        <p class="text-lg text-cacao-brown">รีวิวจริงจากชุมชนคนรักโกโก้ของเรา</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Testimonial 1 -->
+        <div class="bg-cream p-8 rounded-xl">
+          <div class="flex gap-1 mb-4">
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+          </div>
+          <p class="text-cacao-brown mb-6 italic">"โกโก้ร้อนที่อร่อยที่สุดที่เคยดื่มมา! สัมผัสได้ถึงคุณภาพและความใส่ใจในทุกแก้ว ติดใจมากค่ะ!"</p>
+          <div class="flex items-center gap-4">
+            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80"
+                 alt="Customer" class="w-12 h-12 rounded-full object-cover">
+            <div>
+              <p class="font-semibold text-deep-brown">กมลวรรณ ศรีสุข</p>
+              <p class="text-sm text-cacao-brown">ลูกค้าประจำ</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 -->
+        <div class="bg-cream p-8 rounded-xl">
+          <div class="flex gap-1 mb-4">
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+          </div>
+          <p class="text-cacao-brown mb-6 italic">"ชอบมากที่รู้ว่าได้สนับสนุนเกษตรอินทรีย์ พร้อมกับได้ทานช็อกโกแลตอร่อย ชุดของขวัญเป็นของขวัญที่สมบูรณ์แบบเลยครับ!"</p>
+          <div class="flex items-center gap-4">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"
+                 alt="Customer" class="w-12 h-12 rounded-full object-cover">
+            <div>
+              <p class="font-semibold text-deep-brown">ธนากร วงศ์ไทย</p>
+              <p class="text-sm text-cacao-brown">คนรักสุขภาพ</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 3 -->
+        <div class="bg-cream p-8 rounded-xl">
+          <div class="flex gap-1 mb-4">
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+            <svg class="w-5 h-5 text-terracotta fill-current" viewBox="0 0 20 20">
+              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+            </svg>
+          </div>
+          <p class="text-cacao-brown mb-6 italic">"บรรยากาศคาเฟ่อบอุ่นและเป็นกันเองมาก เป็นสถานที่โปรดปรานของดิฉันสำหรับผ่อนคลายและเพลิดเพลินกับเครื่องดื่มโกโก้พรีเมียม!"</p>
+          <div class="flex items-center gap-4">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80"
+                 alt="Customer" class="w-12 h-12 rounded-full object-cover">
+            <div>
+              <p class="font-semibold text-deep-brown">ปิยะนุช จันทร์งาม</p>
+              <p class="text-sm text-cacao-brown">คอคาเฟ่</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. FINAL CTA SECTION -->
+  <section class="py-32 bg-gradient-to-br from-cacao-brown to-cacao-dark">
+    <div class="container mx-auto px-6 lg:px-12 max-w-4xl text-center text-white">
+      <h2 class="text-4xl md:text-6xl font-bold mb-6">Experience Pure Cacao</h2>
+      <p class="text-xl mb-10 max-w-2xl mx-auto">
+        ค้นพบรสชาติเข้มข้นและประโยชน์ต่อสุขภาพจากผลิตภัณฑ์โกโก้ออร์แกนิกหัตถกรรมของเรา
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button class="bg-white text-cacao-brown px-10 py-5 rounded-[20px] font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-200">
+          Shop Now
+        </button>
+        <button class="bg-transparent text-white border-2 border-white px-10 py-5 rounded-[20px] font-bold text-lg hover:bg-white/10 transition-all duration-200">
+          Visit Our Café
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. FOOTER -->
+  <footer class="py-16 bg-deep-brown text-cream">
+    <div class="container mx-auto px-6 lg:px-12 max-w-7xl">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <!-- Brand Column -->
+        <div class="md:col-span-1">
+          <h3 class="text-2xl font-bold mb-4">Cacao Craft</h3>
+          <p class="text-warm-beige mb-4">โกโก้หัตถกรรมออร์แกนิกจากไร่สู่ถ้วย</p>
+        </div>
+
+        <!-- Links Column -->
+        <div>
+          <h4 class="font-semibold mb-4 text-lg">Products</h4>
+          <ul class="space-y-2 text-warm-beige">
+            <li><a href="#" class="hover:text-white transition">เครื่องดื่ม</a></li>
+            <li><a href="#" class="hover:text-white transition">เนื้อโกโก้</a></li>
+            <li><a href="#" class="hover:text-white transition">ช็อกโกแลตหัตถกรรม</a></li>
+            <li><a href="#" class="hover:text-white transition">ชุดของขวัญ</a></li>
+          </ul>
+        </div>
+
+        <!-- Company Column -->
+        <div>
+          <h4 class="font-semibold mb-4 text-lg">Company</h4>
+          <ul class="space-y-2 text-warm-beige">
+            <li><a href="#" class="hover:text-white transition">เกี่ยวกับเรา</a></li>
+            <li><a href="#" class="hover:text-white transition">เรื่องราวของเรา</a></li>
+            <li><a href="#" class="hover:text-white transition">เยี่ยมชมคาเฟ่</a></li>
+            <li><a href="#" class="hover:text-white transition">ติดต่อเรา</a></li>
+          </ul>
+        </div>
+
+        <!-- Newsletter Column -->
+        <div>
+          <h4 class="font-semibold mb-4 text-lg">Newsletter</h4>
+          <p class="text-warm-beige mb-4 text-sm">รับข่าวสารสินค้าใหม่และโปรโมชั่นพิเศษ</p>
+          <div class="flex gap-2">
+            <input type="email" placeholder="อีเมลของคุณ"
+                   class="flex-1 px-4 py-2 rounded-lg bg-warm-beige/10 border border-warm-beige/20 text-white placeholder-warm-beige focus:outline-none focus:border-cream">
+            <button class="bg-cacao-brown px-4 py-2 rounded-lg font-semibold hover:bg-cacao-dark transition">
+              Subscribe
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Copyright -->
+      <div class="border-t border-warm-beige/20 pt-8 text-center text-warm-beige">
+        <p>&copy; 2025 Cacao Craft. All rights reserved. สร้างสรรค์ด้วยความรักและโกโก้ออร์แกนิก</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

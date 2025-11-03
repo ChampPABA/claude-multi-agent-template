@@ -1,0 +1,208 @@
+meta:
+  site_name: linear
+  url: https://linear.app
+  extracted_at: 2025-11-03T11:00:00Z
+  extractor_version: 2.0.0
+  coverage:
+    total_sections: 17
+    detected_sections: 15
+    percentage: 88
+
+sections:
+  overview:
+    detected: true
+    style: Dark Mode Product Tool
+    tech_stack: Framework-agnostic
+
+  design_philosophy:
+    detected: true
+    from_analysis: true
+
+  color_palette:
+    detected: true
+    primary:
+      - rgb: rgb(94, 106, 210)
+        hex: '#5E6AD2'
+        usage: Primary brand purple
+      - rgb: rgb(8, 9, 10)
+        hex: '#08090A'
+        usage: Dark background
+      - rgb: rgb(247, 248, 248)
+        hex: '#F7F8F8'
+        usage: Light text
+    secondary:
+      - rgb: rgb(104, 204, 88)
+        hex: '#68CC58'
+        usage: Success green
+      - rgb: rgb(236, 106, 94)
+        hex: '#EC6A5E'
+        usage: Error red
+      - rgb: rgb(212, 177, 68)
+        hex: '#D4B144'
+        usage: Warning yellow
+      - rgb: rgb(2, 184, 204)
+        hex: '#02B8CC'
+        usage: Info cyan
+    text_colors:
+      - rgb: rgb(247, 248, 248)
+        hex: '#F7F8F8'
+        usage: Primary text (light)
+      - rgb: rgb(138, 143, 152)
+        hex: '#8A8F98'
+        usage: Secondary text (muted)
+      - rgb: rgb(98, 102, 109)
+        hex: '#62666D'
+        usage: Tertiary text
+    background_colors:
+      - rgb: rgb(8, 9, 10)
+        hex: '#08090A'
+        usage: Main background
+      - rgb: rgb(20, 21, 22)
+        hex: '#141516'
+        usage: Secondary background
+      - rgb: rgb(38, 38, 38)
+        hex: '#262626'
+        usage: Card background
+    border_colors:
+      - rgb: rgba(255, 255, 255, 0.05)
+        hex: '#FFFFFF'
+        usage: Subtle borders (5% opacity)
+      - rgb: rgba(255, 255, 255, 0.1)
+        hex: '#FFFFFF'
+        usage: Medium borders (10% opacity)
+
+  typography:
+    detected: true
+    fonts:
+      - Inter, system-ui, sans-serif
+    weights:
+      - '400'
+      - '510'
+      - '600'
+    sizes:
+      - 13px
+      - 14px
+      - 16px
+      - 18px
+      - 24px
+      - 32px
+
+  spacing_system:
+    detected: true
+    grid_base: 8
+    paddings:
+      - 0px 12px
+      - 8px
+      - 16px
+    margins: []
+    gaps:
+      - 8px
+      - 12px
+      - 16px
+    common_values:
+      - 8
+      - 12
+      - 16
+      - 24
+      - 32
+
+  component_styles:
+    detected: true
+    buttons:
+      - id: button-0
+        text: Product
+        backgroundColor: rgba(0, 0, 0, 0)
+        color: rgb(138, 143, 152)
+        padding: 0px 12px
+        borderRadius: 8px
+        fontSize: 13px
+        fontWeight: '510'
+        transition: color 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+      - id: button-7
+        text: Open app
+        backgroundColor: rgb(230, 230, 230)
+        color: rgb(8, 9, 10)
+        padding: 0px 12px
+        border: 1px solid rgb(230, 230, 230)
+        borderRadius: 8px
+        fontSize: 13px
+        fontWeight: '510'
+        boxShadow: rgba(0, 0, 0, 0) 0px 8px 2px 0px, rgba(0, 0, 0, 0.01) 0px 5px 2px 0px, rgba(0, 0, 0, 0.04) 0px 3px 2px 0px
+        transition: border 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.16s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+
+  shadows_elevation:
+    detected: true
+    values:
+      - rgba(0, 0, 0, 0.2) 0px 4px 24px 0px
+      - rgba(0, 0, 0, 0.35) 0px 7px 32px 0px
+      - rgba(255, 255, 255, 0.04) 0px 1.503px 5.261px 0px inset, rgba(255, 255, 255, 0.1) 0px -0.752px 0.752px 0px inset
+      - rgba(0, 0, 0, 0) 0px 8px 2px 0px, rgba(0, 0, 0, 0.01) 0px 5px 2px 0px, rgba(0, 0, 0, 0.04) 0px 3px 2px 0px
+
+  animations_transitions:
+    detected: true
+    transitions:
+      - property: color, background
+        duration: 0.1s
+        timing: cubic-bezier(0.25, 0.46, 0.45, 0.94)
+      - property: border, background-color, box-shadow
+        duration: 0.16s
+        timing: cubic-bezier(0.25, 0.46, 0.45, 0.94)
+
+  border_styles:
+    detected: true
+    widths:
+      - 1px
+      - 2px
+      - 0px
+
+  border_radius:
+    detected: true
+    values:
+      - 4px
+      - 5px
+      - 6px
+      - 8px
+      - 10px
+      - 16px
+      - 18px
+      - 30px
+      - 50%
+      - 9999px
+
+  opacity_transparency:
+    detected: true
+    values:
+      - 0.05
+      - 0.1
+      - 0.2
+      - 0.4
+      - 0.5
+      - 0.8
+
+  z_index_layers:
+    detected: false
+    fallback: standard
+
+  responsive_breakpoints:
+    detected: false
+    fallback: standard
+
+  css_variables:
+    generated: true
+
+  layout_patterns:
+    detected: true
+    container_width: 1280px
+    grid_columns: 12
+    dark_mode: true
+
+  example_components:
+    generated: true
+
+  additional_sections:
+    accessibility:
+      detected: true
+    best_practices:
+      generated: true
+
+animations: {}

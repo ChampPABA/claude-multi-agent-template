@@ -1,0 +1,179 @@
+meta:
+  site_name: airbnb
+  url: https://airbnb.com
+  extracted_at: 2025-11-03T10:45:00Z
+  extractor_version: 2.0.0
+  coverage:
+    total_sections: 17
+    detected_sections: 14
+    percentage: 82
+
+sections:
+  overview:
+    detected: true
+    style: Modern Marketplace
+    tech_stack: Framework-agnostic
+
+  design_philosophy:
+    detected: true
+    from_analysis: true
+
+  color_palette:
+    detected: true
+    primary:
+      - rgb: rgb(255, 56, 92)
+        hex: '#FF385C'
+        usage: Airbnb Red (primary brand)
+      - rgb: rgb(34, 34, 34)
+        hex: '#222222'
+        usage: Dark text/UI
+      - rgb: rgb(255, 255, 255)
+        hex: '#FFFFFF'
+        usage: White backgrounds
+    secondary:
+      - rgb: rgb(242, 242, 242)
+        hex: '#F2F2F2'
+        usage: Light gray background
+      - rgb: rgb(247, 247, 247)
+        hex: '#F7F7F7'
+        usage: Subtle backgrounds
+      - rgb: rgb(235, 235, 235)
+        hex: '#EBEBEB'
+        usage: Borders/dividers
+    text_colors:
+      - rgb: rgb(34, 34, 34)
+        hex: '#222222'
+        usage: Primary text
+      - rgb: rgb(106, 106, 106)
+        hex: '#6A6A6A'
+        usage: Secondary text
+      - rgb: rgb(193, 193, 193)
+        hex: '#C1C1C1'
+        usage: Disabled/muted
+    border_colors:
+      - rgb: rgb(221, 221, 221)
+        hex: '#DDDDDD'
+        usage: Subtle borders
+
+  typography:
+    detected: true
+    fonts:
+      - Airbnb Cereal, Circular, system-ui
+    weights:
+      - '400'
+      - '500'
+      - '600'
+    sizes:
+      - 12px
+      - 14px
+      - 16px
+      - 18px
+      - 24px
+      - 32px
+
+  spacing_system:
+    detected: true
+    grid_base: 8
+    paddings:
+      - 11px 12px
+      - 2px 0px 0px
+    margins: []
+    gaps:
+      - 8px
+      - 12px
+      - 16px
+    common_values:
+      - 8
+      - 12
+      - 16
+      - 20
+      - 24
+
+  component_styles:
+    detected: true
+    buttons:
+      - id: button-1
+        text: Become a host
+        backgroundColor: rgba(0, 0, 0, 0)
+        color: rgb(34, 34, 34)
+        padding: 11px 12px
+        borderRadius: 20px
+        fontSize: 14px
+        fontWeight: '500'
+        transition: box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.1s cubic-bezier(0.2, 0, 0, 1)
+      - id: button-2
+        text: Icon button
+        backgroundColor: rgb(242, 242, 242)
+        color: rgb(34, 34, 34)
+        borderRadius: 50%
+        transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1)
+
+  shadows_elevation:
+    detected: true
+    values:
+      - rgba(0, 0, 0, 0.1) 0px 8px 24px 0px, rgba(0, 0, 0, 0.02) 0px 0px 0px 1px
+      - rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px 0px, rgba(0, 0, 0, 0.1) 0px 4px 8px 0px
+      - rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 8px 24px 0px
+
+  animations_transitions:
+    detected: true
+    transitions:
+      - property: box-shadow
+        duration: 0.2s
+        timing: cubic-bezier(0.2, 0, 0, 1)
+      - property: transform
+        duration: 0.1s - 0.25s
+        timing: cubic-bezier(0.2, 0, 0, 1)
+
+  border_styles:
+    detected: true
+    widths:
+      - 1px
+      - 2px
+
+  border_radius:
+    detected: true
+    values:
+      - 8px
+      - 12px
+      - 14px
+      - 20px
+      - 32px
+      - 50px
+      - 100px
+      - 50%
+
+  opacity_transparency:
+    detected: true
+    values:
+      - 0.25
+      - 0.5
+      - 0.8
+
+  z_index_layers:
+    detected: false
+    fallback: standard
+
+  responsive_breakpoints:
+    detected: false
+    fallback: standard
+
+  css_variables:
+    generated: true
+
+  layout_patterns:
+    detected: true
+    container_width: 1280px
+    grid_columns: 12
+    card_layout: image + content
+
+  example_components:
+    generated: true
+
+  additional_sections:
+    accessibility:
+      detected: true
+    best_practices:
+      generated: true
+
+animations: {}
