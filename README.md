@@ -1,6 +1,6 @@
 # Claude Agent Kit
 
-> 🤖 Universal multi-agent template for Claude Code - AI-assisted development with specialized agents
+> 🤖 **Multi-Agent Implementation Engine** - The perfect companion for [OpenSpec](https://github.com/Fission-AI/OpenSpec) spec-driven development
 
 [![npm version](https://badge.fury.io/js/@champpaba%2Fclaude-agent-kit.svg)](https://www.npmjs.com/package/@champpaba/claude-agent-kit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,144 +10,555 @@
 
 ## 🎯 What is this?
 
-A **production-ready CLI package** that sets up a multi-agent system for building software with AI:
+**Claude Agent Kit picks up where OpenSpec planning ends.**
 
-- ✅ **6 Specialized Agents** - Integration, UX/UI Frontend, Test/Debug, Frontend, Backend, Database
-- ✅ **Auto-Generated Best Practices** - Uses Context7 MCP to fetch latest framework docs
-- ✅ **3-Level Project Indexing** - Agents auto-discover your project context
-- ✅ **Universal Patterns** - Logging, testing, error handling, task classification
-- ✅ **Design Foundation** - Color theory, spacing, typography, accessibility
-- ✅ **Framework Agnostic** - Works with Next.js, React, Vue, FastAPI, Django, etc.
+While OpenSpec handles **alignment** (Draft Proposal → Review & Align), Claude Agent Kit handles **implementation** (Implement Tasks → Archive & Update) with specialized AI agents.
+
+### The Complete Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    OpenSpec Planning                        │
+│  (Spec-Driven Development for AI Coding Assistants)        │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+              Generates: proposal.md + tasks.md
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Claude Agent Kit Implementation                │
+│         (Multi-Agent Execution with 6 Specialists)          │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+              Completes: All tasks with quality gates
+```
+
+---
+
+## 🔄 How They Work Together
+
+| Stage | Tool | What Happens | Output |
+|-------|------|--------------|--------|
+| **1. Draft Proposal** | OpenSpec | Human requests change, AI scaffolds structure | `proposal.md` + `tasks.md` |
+| **2. Review & Align** | OpenSpec | Team iterates until consensus | Approved specs |
+| **2.5. Page Planning** | **Claude Agent Kit** | *(UI tasks only)* Generate content & component plan | `page-plan.md` |
+| **3. Setup Context** | **Claude Agent Kit** | Classify tasks, generate workflow | `workflow.md` |
+| **4. Implement Tasks** | **Claude Agent Kit** | 6 specialized agents execute work | Working code + tests |
+| **5. Archive & Update** | OpenSpec | Merge changes back to specs | Updated `specs/` |
+
+### What OpenSpec Generates
+
+**proposal.md** - Business case and scope
+```markdown
+# Change Proposal: User Authentication System
+
+## Motivation
+Users need secure login functionality...
+
+## Scope
+- Email/password authentication
+- JWT token generation
+- Protected routes middleware
+```
+
+**tasks.md** - Implementation checklist
+```markdown
+## Database Setup
+- [ ] Create User model with email, password fields
+- [ ] Add unique constraint on email
+
+## Backend Implementation
+- [ ] POST /api/auth/login endpoint
+- [ ] Password hashing with bcrypt
+- [ ] JWT token generation
+
+## Frontend Implementation
+- [ ] Login form component
+- [ ] Form validation
+- [ ] Token storage
+```
+
+### What Claude Agent Kit Does
+
+**Input:** Reads `proposal.md` + `tasks.md` from OpenSpec
+
+**Process:**
+1. `/pageplan` *(UI tasks only)* - Generate content & component reuse plan
+2. `/csetup {change-id}` - Analyze tasks, classify by agent, generate workflow
+3. `/cdev {change-id}` - Execute with 6 specialized agents in phases:
+   - **Phase 1:** UI with mock data (uxui-frontend)
+   - **Phase 2:** Real API + database (backend + database, parallel)
+   - **Phase 2.5:** Validate contracts (integration)
+   - **Phase 3:** Connect UI to API (frontend)
+   - **Phase 4:** Tests + bug fixes (test-debug)
+
+**Output:** Working implementation ready for review
+
+---
+
+## 🎨 NEW: Page Planning for UI Tasks
+
+**Problem:** Before `/pageplan`, agents would:
+- ❌ Create duplicate components (3 different Navbar components!)
+- ❌ Use inconsistent colors (`#0d7276` on landing, `#4f46e5` on dashboard)
+- ❌ Generate lorem ipsum instead of real content
+- ❌ Waste time searching for components during implementation
+
+**Solution:** `/pageplan` command analyzes BEFORE implementing
+
+### How It Works
+
+```bash
+# Step 1: OpenSpec generates tasks
+User: "Build landing page for TOEIC app"
+→ Creates: .changes/landing-page/proposal.md + tasks.md
+
+# Step 2: Generate page plan (NEW!)
+User: /pageplan @prd.md @project_brief.md
+
+# What it does:
+# 1. Reads user-specified files (PRD, brief)
+# 2. Reads proposal.md (technical architecture)
+# 3. Reads STYLE_GUIDE.md (visual design)
+# 4. Searches existing components (Navbar, Footer, etc.)
+# 5. AI drafts real content from PRD
+# 6. Generates: .changes/landing-page/page-plan.md
+```
+
+### page-plan.md Output
+
+```markdown
+# Page Plan: Landing Page
+
+## 1. Component Plan
+🔄 Reuse: Navbar, Footer (found in codebase)
+✅ New Shared: (none)
+✅ New Specific: HeroSection, FeatureGrid, TestimonialCarousel
+
+## 2. Page Structure
+<Layout>
+  <Navbar /> {/* Reuse */}
+  <HeroSection /> {/* New - see content below */}
+  <FeatureGrid />
+  <TestimonialCarousel />
+  <Footer /> {/* Reuse */}
+</Layout>
+
+## 3. Assets to Prepare
+- [ ] hero-image.jpg (1920x1080)
+- [ ] logo.svg (200x60)
+- [ ] feature-icons (3x 24x24 SVG)
+
+## 4. Content Draft (AI-Generated - Please Review & Edit)
+**Headline:** "Master TOEIC with AI-Powered Tests"
+**Subheadline:** "Experience exam-quality questions with instant AI scoring"
+**CTA:** "Start Free Test"
+
+**Features:**
+- Real TOEIC-style questions
+- Instant AI scoring
+- Progress tracking dashboard
+```
+
+### Step 3: User Prepares
+
+- ✅ Review content draft (edit as needed)
+- ✅ Prepare assets (images, icons)
+- ✅ Approve `page-plan.md`
+
+### Step 4: Implementation
+
+```bash
+/csetup landing-page
+/cdev landing-page
+
+# uxui-frontend agent automatically:
+# - STEP 0.5: Reads page-plan.md ✅
+# - STEP 3: SKIP component search (already done!) ⚡ 25% faster
+# - Uses: Real content from page-plan
+# - Reuses: Navbar, Footer (no duplicates)
+# - Creates: HeroSection, FeatureGrid, TestimonialCarousel
+# - Applies: Colors/spacing from STYLE_GUIDE.md
+```
+
+### Benefits
+
+| Before (No page-plan) | After (With page-plan) |
+|----------------------|------------------------|
+| ❌ Agent searches during implementation | ✅ Search done once upfront (25% faster) |
+| ❌ Duplicate components created | ✅ Clear reuse plan |
+| ❌ Lorem ipsum content | ✅ Real content from PRD |
+| ❌ Missing assets mid-work | ✅ Asset checklist prepared |
+| ❌ Inconsistent design | ✅ Synced with STYLE_GUIDE |
+| ❌ Agent guesses structure | ✅ Clear component hierarchy |
+
+### When to Use /pageplan
+
+```
+✅ Use for:
+- Landing pages
+- Dashboards
+- Multi-section UI pages
+- Any task with multiple components
+
+❌ Skip for:
+- Backend API endpoints
+- Database schemas
+- Single-component tasks
+- Non-UI work
+```
+
+---
+
+## 🤖 The 6 Specialized Agents
+
+| Agent | Color | Responsibility | Phase |
+|-------|-------|---------------|-------|
+| **uxui-frontend** | 🔵 Blue | Design UI components with mock data | 1 |
+| **backend** | 🟣 Purple | Create API endpoints with validation | 2 |
+| **database** | 🩷 Pink | Design schemas, migrations, queries | 2 |
+| **integration** | 🟠 Orange | Validate API contracts before connecting | 2.5 |
+| **frontend** | 🟢 Green | Connect UI to backend APIs | 3 |
+| **test-debug** | 🔴 Red | Run tests and fix bugs (max 3-4 iterations) | 1,3,4 |
+
+Each agent:
+- ✅ Auto-discovers your project context (tech stack, best practices)
+- ✅ Follows framework-specific patterns from Context7 MCP
+- ✅ Maintains design consistency across the codebase
+- ✅ Reports progress with detailed logging
 
 ---
 
 ## 📦 Installation
 
-### Using npm (recommended):
 ```bash
 npm install -g @champpaba/claude-agent-kit
 ```
 
-### Using pnpm:
-```bash
-pnpm add -g @champpaba/claude-agent-kit
-```
+### Alternative Package Managers
 
-### Using yarn:
 ```bash
+# Using pnpm
+pnpm add -g @champpaba/claude-agent-kit
+
+# Using yarn
 yarn global add @champpaba/claude-agent-kit
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (with OpenSpec)
 
-### Step 1: Initialize in Your Project
+### Step 1: OpenSpec Planning
 
 ```bash
-# Go to your project directory
-cd my-awesome-project
+# In your OpenSpec-enabled project
+cd my-app
 
-# Initialize Claude Agent Kit
+# Draft a change proposal (OpenSpec handles this)
+"I want to build a landing page for my TOEIC app"
+# → Generates: .changes/landing-page/proposal.md + tasks.md
+```
+
+### Step 2: Initialize Claude Agent Kit
+
+```bash
+# Initialize the agent system
 cak init
 
-# Or use the full command
-claude-agent-kit init
-```
-
-**This will create a `.claude/` folder with:**
-- 6 specialized agents
-- Universal development patterns
-- Design foundation
-- Slash commands for workflows
-
----
-
-### Step 2: Setup Context7 MCP (Optional but Recommended)
-
-Context7 MCP provides up-to-date documentation for your framework/libraries.
-
-1. Open Claude Code Settings → MCP Servers
-2. Add this configuration:
-
-```json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@context7/mcp"]
-    }
-  }
-}
-```
-
-3. Restart Claude Code
-4. Verify: Type `/mcp` → should see `context7`
-
----
-
-### Step 3: Setup Your Project
-
-Run the project setup command in Claude Code:
-
-```bash
+# Setup project context (detects tech stack)
+# In Claude Code:
 /psetup
 ```
 
-This will:
-- Detect your tech stack (Next.js, Prisma, FastAPI, etc.)
-- Create project-specific context files
-- Fetch relevant documentation from Context7
-
----
-
-### Step 4: Start Using Agents!
-
-Invoke agents directly or use the orchestrator:
+### Step 3: Generate Page Plan (UI tasks only)
 
 ```bash
-# Invoke specific agent
-/agents uxui-frontend
+# In Claude Code:
+/pageplan @prd.md @project_brief.md
 
-# Or ask Claude to select the right agent
-"Build a login form with Next.js and Prisma"
+# → Generates: .changes/landing-page/page-plan.md
+# → Review content, prepare assets
 ```
 
-Claude will automatically:
-1. Read task classification patterns
-2. Select the appropriate agent(s)
-3. Execute in the correct sequence
-4. Update progress tracking
+### Step 4: Setup Change Context
+
+```bash
+/csetup landing-page
+```
+
+**What happens:**
+- Reads `.changes/landing-page/proposal.md` (business context)
+- Reads `.changes/landing-page/tasks.md` (implementation checklist)
+- Reads `.changes/landing-page/page-plan.md` (if exists - content plan)
+- Classifies tasks by agent (database, backend, frontend, etc.)
+- Generates `workflow.md` (execution plan)
+
+### Step 5: Execute Implementation
+
+```bash
+/cdev landing-page
+```
+
+**What happens:**
+1. **Phase 1:** uxui-frontend reads `page-plan.md` → creates UI with real content
+2. **Phase 2:** backend + database create APIs + models (parallel, if needed)
+3. **Phase 2.5:** integration validates API contracts
+4. **Phase 3:** frontend connects UI to APIs (if needed)
+5. **Phase 4:** test-debug runs tests, fixes bugs
+
+### Step 6: Monitor Progress
+
+```bash
+# View detailed progress
+/cview landing-page
+
+# Quick status check
+/cstatus landing-page
+# → Phase 1/4 - UI Implementation (100%)
+```
 
 ---
 
-## 📚 CLI Commands
+## 🎯 Complete Workflow Examples
+
+### Workflow A: UI Feature (with /pageplan)
+
+```bash
+# 1. OpenSpec Planning
+User: "Build landing page for TOEIC app"
+→ Creates: proposal.md + tasks.md
+
+# 2. Page Planning (NEW!)
+/pageplan @prd.md @project_brief.md
+→ Creates: page-plan.md
+→ User reviews content & prepares assets
+
+# 3. Setup Context
+/csetup landing-page
+→ Reads: proposal.md, tasks.md, page-plan.md
+→ Generates: workflow.md
+
+# 4. Implementation
+/cdev landing-page
+→ uxui-frontend reads page-plan.md (STEP 0.5)
+→ Skips redundant component search
+→ Uses real content + reuse plan
+→ 25% faster implementation
+
+# 5. Monitor
+/cview landing-page
+```
+
+### Workflow B: Backend Feature (skip /pageplan)
+
+```bash
+# 1. OpenSpec Planning
+User: "Add payment processing API"
+→ Creates: proposal.md + tasks.md
+
+# 2. Setup Context (skip /pageplan - not UI work)
+/csetup payment-api
+
+# 3. Implementation
+/cdev payment-api
+→ Phase 2: backend + database agents (parallel)
+→ Phase 2.5: integration validates contracts
+→ Phase 3: frontend connects (if UI exists)
+→ Phase 4: test-debug validates
+
+# 4. Monitor
+/cview payment-api
+```
+
+### Workflow C: Full-Stack Feature (with /pageplan)
+
+```bash
+# 1. OpenSpec Planning
+User: "Build user authentication system"
+→ Creates: proposal.md + tasks.md
+
+# 2. Page Planning (for login UI only)
+/pageplan @prd.md
+→ Creates: page-plan.md (login form content + components)
+
+# 3. Setup Context
+/csetup auth-system
+
+# 4. Implementation
+/cdev auth-system
+→ Phase 1: uxui-frontend (login form, reads page-plan.md)
+→ Phase 2: backend (POST /api/auth/login) + database (User model)
+→ Phase 2.5: integration (validate contract)
+→ Phase 3: frontend (connect form to API)
+→ Phase 4: test-debug (E2E tests)
+
+# 5. Monitor
+/cview auth-system
+```
+
+---
+
+## 📁 Project Structure After Init
+
+```
+your-project/
+├── openspec/
+│   ├── specs/                       # Source of truth (OpenSpec)
+│   └── changes/
+│       └── landing-page/
+│           ├── proposal.md          ← OpenSpec generates
+│           ├── tasks.md             ← OpenSpec generates
+│           ├── page-plan.md         ← /pageplan generates (UI tasks)
+│           ├── workflow.md          ← /csetup generates
+│           └── flags.json           ← /cdev tracks progress
+│
+├── design-system/
+│   └── STYLE_GUIDE.md               ← /designsetup generates
+│
+└── .claude/
+    ├── CLAUDE.md                    # Navigation guide
+    │
+    ├── agents/                      # 6 specialized agents
+    │   ├── 01-integration.md
+    │   ├── 02-uxui-frontend.md
+    │   ├── 03-test-debug.md
+    │   ├── 04-frontend.md
+    │   ├── 05-backend.md
+    │   └── 06-database.md
+    │
+    ├── commands/                    # Slash commands
+    │   ├── designsetup.md           # Generate style guide
+    │   ├── pageplan.md              # Generate page plan (NEW!)
+    │   ├── psetup.md                # Project setup
+    │   ├── csetup.md                # Change setup
+    │   ├── cdev.md                  # Change development
+    │   ├── cview.md                 # View progress
+    │   └── cstatus.md               # Quick status
+    │
+    ├── contexts/
+    │   ├── design/                  # Design foundation
+    │   ├── patterns/                # Universal patterns
+    │   └── domain/                  # Project context
+    │
+    └── lib/                         # Implementation logic
+        ├── agent-executor.md
+        ├── tdd-classifier.md
+        ├── flags-updater.md
+        └── agent-router.md
+```
+
+---
+
+## 🎯 Why Use Claude Agent Kit?
+
+### Without Claude Agent Kit (Manual Implementation)
+
+```
+❌ You manually interpret tasks.md
+❌ You context-switch between frontend/backend/database
+❌ You might forget edge cases or tests
+❌ Inconsistent code patterns across features
+❌ No systematic error handling
+❌ Duplicate components everywhere
+❌ Lorem ipsum content in UI
+```
+
+### With Claude Agent Kit
+
+```
+✅ Agents auto-classify and execute tasks
+✅ Each agent focuses on its specialty
+✅ Built-in validation gates (integration agent)
+✅ Consistent patterns via auto-discovery
+✅ Automatic retry with escalation
+✅ Component reuse plan (/pageplan)
+✅ Real content from PRD
+✅ 25% faster UI implementation
+```
+
+---
+
+## 📚 Key Features
+
+### ✅ Seamless OpenSpec Integration
+
+- Reads `proposal.md` for business context
+- Parses `tasks.md` for implementation checklist
+- Generates `page-plan.md` for UI tasks (NEW!)
+- Tracks progress in `flags.json`
+- Updates completion status back to OpenSpec
+
+### ✅ Auto-Generated Best Practices
+
+Uses Context7 MCP to fetch latest framework docs:
+
+```bash
+/psetup
+# → Detects: Next.js 15, React 18, Prisma 6
+# → Generates: .claude/contexts/domain/{project}/best-practices/
+#    - nextjs-15.md
+#    - react-18.md
+#    - prisma-6.md
+```
+
+### ✅ 3-Level Project Indexing
+
+Agents auto-discover context:
+
+```
+1. Read: domain/index.md → Get current project
+2. Read: domain/{project}/README.md → Get tech stack
+3. Read: domain/{project}/best-practices/index.md → Load patterns
+```
+
+### ✅ Design Foundation
+
+Universal design principles:
+- Color theory (WCAG AAA contrast)
+- Typography scales
+- 8px spacing grid (8, 16, 24, 32, 40, 48px)
+- 4-level shadow system
+- Box thinking framework
+- Accessibility (WCAG 2.1 AA)
+
+### ✅ Quality Gates
+
+- **TDD for critical paths** (auth, payments, data transforms)
+- **Test-alongside for simple code** (CRUD, UI components)
+- **Max 3-4 retry iterations** before escalation
+- **Integration validation** before connecting UI to API
+
+---
+
+## 🔧 CLI Commands
 
 ### `cak init`
-Initialize Claude Agent Kit template in current project
+Initialize agent system in current project
 
-**Options:**
-- `--force` - Overwrite existing `.claude/` folder
-
-**Example:**
 ```bash
 cak init
-cak init --force
+cak init --force  # Overwrite existing .claude/
 ```
+
+**Creates:**
+- `.claude/` folder with 6 agents
+- Slash commands (`/psetup`, `/csetup`, `/cdev`, etc.)
+- Universal patterns & design foundation
 
 ---
 
 ### `cak update`
-Update template files to the latest version
+Update to latest agent templates
 
-**Options:**
-- `--backup` - Create backup before updating
-
-**Example:**
 ```bash
 cak update
-cak update --backup
+cak update --backup  # Create .claude.backup/ first
 ```
+
+**What it does:**
+- Updates all template files to latest version
+- Preserves your customizations in `domain/`
+- Creates backup before updating (with `--backup` flag)
 
 ---
 
@@ -170,108 +581,164 @@ cak --help
 
 ---
 
-## 🤖 Available Agents
+## 🔄 Workflow Commands (in Claude Code)
 
-| Agent | Color | When to Use | Phase |
-|-------|-------|-------------|-------|
-| **integration** | 🟠 Orange | Validate API contracts before connecting | 2.5 |
-| **uxui-frontend** | 🔵 Blue | Design UI components with mock data | 1 |
-| **test-debug** | 🔴 Red | Run tests and fix bugs (max 3-4 iterations) | 1,3,4 |
-| **frontend** | 🟢 Green | Connect UI to backend APIs | 3 |
-| **backend** | 🟣 Purple | Create API endpoints with validation | 2 |
-| **database** | 🩷 Pink | Design schemas, migrations, complex queries | 2 |
+### `/designsetup` - Generate style guide (one-time)
+
+```bash
+/designsetup
+```
+
+**Auto-detects from:**
+1. `reference/` folder → Extract design from HTML/screenshots
+2. Existing codebase → Reverse engineer patterns
+3. AI generation → Modern best practices
+
+**Creates:** `design-system/STYLE_GUIDE.md`
 
 ---
 
-## 📁 Project Structure After Init
+### `/pageplan` - Generate page plan (UI tasks only) 🆕
 
+```bash
+/pageplan @prd.md @project_brief.md
 ```
-your-project/
-├── .claude/
-│   ├── CLAUDE.md                    # Navigation guide
-│   ├── agents/                      # 6 specialized agents
-│   │   ├── 01-integration.md
-│   │   ├── 02-uxui-frontend.md
-│   │   ├── 03-test-debug.md
-│   │   ├── 04-frontend.md
-│   │   ├── 05-backend.md
-│   │   └── 06-database.md
-│   │
-│   ├── commands/                    # Slash commands
-│   │   ├── psetup.md               # Project setup
-│   │   ├── agentsetup.md           # Auto-detect tech stack
-│   │   ├── csetup.md               # Change setup (OpenSpec)
-│   │   ├── cdev.md                 # Change development
-│   │   ├── cview.md                # View change progress
-│   │   └── cstatus.md              # Quick status
-│   │
-│   ├── contexts/
-│   │   ├── design/                  # Design foundation
-│   │   │   ├── index.md
-│   │   │   ├── box-thinking.md
-│   │   │   ├── color-theory.md
-│   │   │   ├── spacing.md
-│   │   │   ├── typography.md
-│   │   │   ├── shadows.md
-│   │   │   ├── accessibility.md
-│   │   │   ├── layout.md
-│   │   │   └── responsive.md
-│   │   │
-│   │   ├── patterns/                # Universal patterns
-│   │   │   ├── task-classification.md
-│   │   │   ├── agent-coordination.md
-│   │   │   ├── error-recovery.md
-│   │   │   ├── logging.md
-│   │   │   ├── testing.md
-│   │   │   ├── task-breakdown.md
-│   │   │   ├── code-standards.md
-│   │   │   └── ... (and more)
-│   │   │
-│   │   └── domain/                  # Your project context
-│   │       └── README.md
-│   │
-│   ├── lib/                         # Implementation logic
-│   │   ├── agent-executor.md        # Retry & escalation
-│   │   ├── tdd-classifier.md        # TDD classification
-│   │   ├── flags-updater.md         # Progress tracking
-│   │   └── agent-router.md          # Agent routing rules
-│   │
-│   └── templates/                   # OpenSpec templates
-│       └── ... (workflow templates)
+
+**What it does:**
+- Reads user-specified files (PRD, brief)
+- Reads `proposal.md` + `STYLE_GUIDE.md`
+- Searches existing components
+- AI drafts real content from PRD
+- Generates asset checklist
+
+**Creates:** `page-plan.md`
+- Component reuse plan (🔄 Reuse vs ✅ New)
+- Page structure (component hierarchy)
+- Assets to prepare (images, icons)
+- Content draft (headlines, descriptions)
+
+---
+
+### `/psetup` - Setup project (one-time)
+
+```bash
+/psetup
+```
+
+**What it does:**
+- Detects tech stack (Next.js, React, Prisma, etc.)
+- Creates `domain/{project}/README.md`
+- Generates best practices via Context7 MCP
+
+---
+
+### `/csetup {change-id}` - Setup change context
+
+```bash
+/csetup landing-page
+```
+
+**What it does:**
+- Reads `proposal.md` (business context)
+- Reads `tasks.md` (implementation checklist)
+- Reads `page-plan.md` (if exists - UI content plan)
+- Classifies tasks by agent
+- Generates `workflow.md` (execution plan)
+
+---
+
+### `/cdev {change-id}` - Execute implementation
+
+```bash
+/cdev landing-page
+```
+
+**What it does:**
+- Runs agents in phases (1 → 2 → 2.5 → 3 → 4)
+- uxui-frontend auto-reads `page-plan.md` (STEP 0.5)
+- Updates `flags.json` (progress tracking)
+- Reports completion status
+
+---
+
+### `/cview {change-id}` - View detailed progress
+
+```bash
+/cview landing-page
+```
+
+**Shows:**
+- Completed/pending tasks
+- Agent activity log
+- Current phase
+- Error messages (if any)
+
+---
+
+### `/cstatus {change-id}` - Quick status
+
+```bash
+/cstatus landing-page
+# → Phase 2/4 - Backend Implementation (75%)
 ```
 
 ---
 
-## 🎨 Design System
+## 🎨 Design System Integration
 
-The template includes **universal design foundation**:
+### Auto-Generate Style Guide
 
-- **Color Theory** - Harmony, WCAG AAA contrast, shade generation
-- **Typography** - Font scales, hierarchy, readability
-- **Spacing** - 8px grid system (8, 16, 24, 32, 40, 48px)
-- **Shadows** - 4-level elevation system
-- **Layout** - Grid, flexbox, responsive patterns
-- **Box Thinking** - Systematic layout analysis framework
-- **Accessibility** - ARIA, keyboard nav, WCAG 2.1 AA compliance
+```bash
+/designsetup
+```
 
-Agents follow these foundations automatically to ensure visual consistency.
+**Detection priority:**
+1. **reference/ folder** (HTML/screenshots) → Extract design style
+2. **Existing codebase** (>10 components) → Reverse engineer patterns
+3. **AI generation** → Modern best practices
+
+**Output:** `design-system/STYLE_GUIDE.md`
+
+**17 Comprehensive Sections:**
+1. Overview
+2. Design Philosophy
+3. Color Palette (HEX codes, usage, Tailwind classes)
+4. Typography (headings, body, weights)
+5. Spacing System (4px/8px grid)
+6. Component Styles (Button, Card, Input, Badge, etc.)
+7. Shadows & Elevation
+8. Animations & Transitions
+9. Border Styles
+10. Border Radius
+11. Opacity & Transparency
+12. Z-Index Layers
+13. Responsive Breakpoints
+14. CSS Variables / Tailwind Theme (Design Tokens)
+15. Layout Patterns
+16. Example Component Reference (React + Tailwind code)
+17. Additional Sections (Best Practices, Accessibility, Icon System)
+
+**Agents automatically use `STYLE_GUIDE.md` for:**
+- Color palette (no hardcoded colors)
+- Spacing scale (consistent gaps/padding)
+- Typography (font hierarchy)
+- Component patterns (reuse before create)
 
 ---
 
 ## 🧪 Testing Philosophy
 
-### TDD for Critical Paths (Required)
-- Business logic calculations
-- API endpoints with validation
-- External service integrations
-- Data transformations
+**Agents follow TDD classification:**
 
-### Test-Alongside for Simple Code
-- CRUD operations
-- UI components (presentational)
-- Configuration files
+| Code Type | Approach | Example |
+|-----------|----------|---------|
+| **Critical paths** | TDD (Red-Green-Refactor) | Auth logic, payments, calculations |
+| **Simple code** | Test-alongside | CRUD, UI components, config |
 
-**Test-Debug agent** runs tests automatically and fixes bugs (max 3-4 iterations, then escalates).
+**Test-debug agent:**
+- Runs tests automatically after implementation
+- Fixes bugs (max 3-4 iterations)
+- Escalates if stuck (reports to user)
 
 ---
 
@@ -295,52 +762,70 @@ Agents auto-detect your stack via Context7 MCP:
 
 ## 📖 Usage Examples
 
-### Example 1: Simple Task
+### Example 1: Simple UI Task (with /pageplan)
 
 ```bash
 # In Claude Code
 "Build a user profile page with edit functionality"
+
+# If it's a UI task, optionally run:
+/pageplan @prd.md
+
+# Then execute:
+/csetup profile-page
+/cdev profile-page
 ```
 
 Claude will:
 1. Read `task-classification.md`
 2. Select agents: `uxui-frontend` → `backend` → `frontend` → `test-debug`
-3. Execute in sequence
-4. Report completion
+3. uxui-frontend reads `page-plan.md` (if exists)
+4. Execute in sequence
+5. Report completion
 
 ---
 
-### Example 2: Complex Multi-Agent Workflow
+### Example 2: Complex Multi-Agent Workflow (OpenSpec)
 
-Using OpenSpec workflow (`/csetup` command):
+Using OpenSpec workflow:
 
 ```bash
-# Setup change context
-/csetup login-system
+# 1. OpenSpec generates proposal + tasks
+"I want to add a dashboard with analytics"
+# → proposal.md + tasks.md created
 
-# Start development
-/cdev login-system
+# 2. Generate page plan
+/pageplan @prd.md @analytics_spec.md
 
-# View progress
-/cview login-system
+# 3. Setup change context
+/csetup analytics-dashboard
+
+# 4. Start development
+/cdev analytics-dashboard
+
+# 5. View progress
+/cview analytics-dashboard
 ```
 
 This follows a structured 4-phase approach:
-1. **MVT** (Minimum Viable Test) - UI with mock data
-2. **Complexity** - Real API + database
-3. **Scale** - Full features + optimization
-4. **Deploy** - Production-ready
+1. **Phase 1:** UI with mock data (uxui-frontend reads page-plan.md)
+2. **Phase 2:** Real API + database (backend + database)
+3. **Phase 2.5:** Validate contracts (integration)
+4. **Phase 3:** Connect UI to API (frontend)
+5. **Phase 4:** Tests + bug fixes (test-debug)
 
 ---
 
 ## 🔄 Updating to Latest Version
 
 ### Method 1: Update the npm package
+
 ```bash
 npm update -g @champpaba/claude-agent-kit
 ```
 
 ### Method 2: Update template in project
+
 ```bash
 cd your-project
 cak update --backup
@@ -384,45 +869,25 @@ Agents will auto-discover and use these patterns.
 
 ---
 
-## 📊 What's Included?
+## 🔗 Ecosystem
 
-### ✅ Universal Patterns
-- Task classification (how to choose agents)
-- Agent coordination (parallel/sequential execution)
-- Error recovery (retry logic, escalation)
-- Logging (structured JSON logging)
-- Testing (TDD, Red-Green-Refactor)
-- Code standards (naming, structure, comments)
+**Claude Agent Kit works with:**
 
-### ✅ Design Foundation
-- Color theory & harmony
-- Typography scales
-- Spacing system
-- Shadow elevation
-- Responsive layouts
-- Accessibility (WCAG 2.1 AA)
-- Box thinking framework
-
-### ✅ Implementation Logic
-- Agent retry & escalation
-- TDD classification
-- Progress tracking (flags.json)
-- Agent routing rules
-
-### ✅ Workflow Templates
-- OpenSpec multi-agent workflow
-- Phase templates (MVT → Complexity → Scale → Deploy)
-- Validation gates
+| Tool | Purpose | Integration |
+|------|---------|-------------|
+| **OpenSpec** | Spec-driven planning | Reads `proposal.md` + `tasks.md` |
+| **Context7 MCP** | Always-updated docs | Auto-generates best practices |
+| **Claude Code** | AI coding assistant | Execution environment |
 
 ---
 
 ## 🤝 Contributing
 
-This is an open-source project! Contributions welcome:
+We welcome contributions!
 
-- Report bugs via [GitHub Issues](https://github.com/ChampPABA/claude-multi-agent-template/issues)
-- Submit feature requests
-- Send pull requests
+- Report bugs: [GitHub Issues](https://github.com/ChampPABA/claude-multi-agent-template/issues)
+- Feature requests: [Discussions](https://github.com/ChampPABA/claude-multi-agent-template/discussions)
+- Pull requests: Follow [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
@@ -435,47 +900,89 @@ MIT License - see [LICENSE](LICENSE)
 ## 🙏 Credits
 
 Built with:
-- [Claude Code](https://claude.com/claude-code) - AI-powered coding assistant
-- [Context7 MCP](https://context7.com) - Always up-to-date library documentation
+- [OpenSpec](https://github.com/Fission-AI/OpenSpec) - Spec-driven development framework
+- [Claude Code](https://claude.com/claude-code) - AI coding assistant
+- [Context7 MCP](https://context7.com) - Always up-to-date library docs
 
 ---
 
 ## 🔗 Links
 
 - **npm Package:** https://www.npmjs.com/package/@champpaba/claude-agent-kit
-- **GitHub Repository:** https://github.com/ChampPABA/claude-multi-agent-template
-- **Issues & Support:** https://github.com/ChampPABA/claude-multi-agent-template/issues
+- **GitHub:** https://github.com/ChampPABA/claude-multi-agent-template
+- **OpenSpec:** https://github.com/Fission-AI/OpenSpec
+- **Issues:** https://github.com/ChampPABA/claude-multi-agent-template/issues
 
 ---
 
-## 💡 Tips
+## 💡 Quick Tips
 
-1. **Always use `--backup` when updating:**
-   ```bash
-   cak update --backup
-   ```
-
-2. **Set up Context7 MCP for best results:**
-   - Agents get latest framework docs
-   - No manual docs updates needed
-
-3. **Use `/psetup` after init:**
-   - Auto-detects your tech stack
-   - Creates project-specific context
-
-4. **Read `.claude/CLAUDE.md` for navigation:**
-   - Comprehensive guide to all features
-   - Links to all contexts and patterns
+1. **Run `/designsetup` FIRST** - Ensures visual consistency from day 1
+2. **Use `/pageplan` for UI tasks** - 25% faster implementation, better content
+3. **Review `page-plan.md` before `/cdev`** - Edit content, prepare assets
+4. **Setup Context7 MCP** - Agents get latest framework docs automatically
+5. **Use OpenSpec for complex features** - Better alignment before implementation
+6. **Monitor with `/cview`** - See exactly what agents are doing
+7. **Always use `--backup` when updating** - Protects your customizations
 
 ---
 
-**Ready to supercharge your development?** 🚀
+## 📋 Complete Flow Summary
 
-```bash
-npm install -g @champpaba/claude-agent-kit
-cd your-project
-cak init
-/psetup
+```
+1️⃣ OpenSpec Planning
+   → proposal.md + tasks.md
+
+2️⃣ Generate Style Guide (one-time)
+   /designsetup
+   → STYLE_GUIDE.md
+
+3️⃣ Setup Project (one-time)
+   /psetup
+   → domain/{project}/best-practices/
+
+4️⃣ Generate Page Plan (UI tasks only)
+   /pageplan @prd.md
+   → page-plan.md (content + component plan)
+
+5️⃣ Setup Change Context
+   /csetup {change-id}
+   → workflow.md
+
+6️⃣ Execute Implementation
+   /cdev {change-id}
+   → Working code + tests
+
+7️⃣ Monitor Progress
+   /cview {change-id}
+   → Detailed progress report
+
+8️⃣ OpenSpec Archive & Update
+   → Merge to specs/
 ```
 
-Let AI agents handle the implementation while you focus on the big picture!
+---
+
+**Ready to implement with confidence?** 🚀
+
+```bash
+# Install globally
+npm install -g @champpaba/claude-agent-kit
+
+# Initialize in your project
+cd your-project
+cak init
+
+# Setup project context
+/psetup
+
+# Generate style guide (optional but recommended)
+/designsetup
+
+# Start building (after OpenSpec planning)
+/pageplan @prd.md           # UI tasks only
+/csetup your-feature
+/cdev your-feature
+```
+
+Let specialized agents handle implementation while you focus on specs and architecture!
