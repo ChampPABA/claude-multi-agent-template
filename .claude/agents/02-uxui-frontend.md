@@ -69,6 +69,42 @@ const response = await fetch('/api/login', {...})
 **Follow standard agent discovery:**
 → See `.claude/contexts/patterns/agent-discovery.md`
 
+**STEP 0.5: Load Design & Content Plan (uxui-frontend ONLY):**
+
+After completing standard discovery, check for project-specific resources:
+
+```bash
+# Check if style guide exists
+Read: design-system/STYLE_GUIDE.md
+
+# Check if page plan exists (from /pageplan command)
+Read: .changes/{change-id}/page-plan.md
+```
+
+**If STYLE_GUIDE.md exists:**
+- ✅ Read and load STYLE_GUIDE.md (Priority #1 - project-specific)
+- Extract: Color palette, spacing, typography, component patterns
+- Follow: All design tokens, component inventory, accessibility guidelines
+- **Expected structure:** 17 sections (Overview to Additional Sections)
+- **Key sections:** Section 11 (Opacity), Section 12 (Z-Index), Section 13 (Responsive)
+
+**If STYLE_GUIDE.md does NOT exist:**
+- ⚠️ Fallback to general design principles
+- Read: `.claude/contexts/design/*.md` (box-thinking, color-theory, spacing, etc.)
+- Suggest: User should run `/designsetup` to generate style guide
+
+**If page-plan.md exists:**
+- ✅ Read and load page-plan.md (contains component reuse plan, content draft, assets)
+- Extract:
+  - Component reuse list (which components already exist)
+  - Component new list (which to create)
+  - Content draft (headlines, descriptions, copy)
+  - Asset paths (images, icons locations)
+- **OPTIMIZATION:** Skip STEP 3 (component search) - page-plan already did this!
+
+**If page-plan.md does NOT exist:**
+- ℹ️ No page plan - will search for components manually in STEP 3
+
 **Report when complete:**
 ```
 ✅ Project Context Loaded
@@ -78,6 +114,16 @@ const response = await fetch('/api/login', {...})
 📚 Best Practices Loaded:
    - {framework-1} ✓
    - {framework-2} ✓
+
+🎨 Style Guide: ✅ STYLE_GUIDE.md loaded (project-specific)
+   OR
+🎨 Style Guide: ⚠️ No style guide found - using general design principles
+   💡 Suggestion: Run /designsetup to generate project-specific style guide
+
+📋 Page Plan: ✅ page-plan.md loaded (3 reuse, 2 new, 4 assets)
+   → Will skip component search (STEP 3)
+   OR
+📋 Page Plan: ℹ️ Not found - will search components in STEP 3
 
 🎯 Ready to create UI components!
 ```
@@ -120,9 +166,19 @@ Relationships:
 - Responsive: [stack/merge/compress behavior]
 ```
 
-### 📋 Step 3: Search Existing Components (REQUIRED)
+### 📋 Step 3: Search Existing Components (CONDITIONAL)
 
-Before creating anything new:
+**⚡ OPTIMIZATION: Skip this step if page-plan.md was loaded in STEP 0.5**
+
+**If page-plan.md exists:**
+- ✅ Component list already provided in page-plan.md
+- ✅ Reuse decisions already made
+- ✅ Skip to STEP 4 (Extract Design Tokens)
+- Report: "📋 Using component plan from page-plan.md (skip search)"
+
+**If page-plan.md does NOT exist:**
+- ❌ Must search manually
+- Before creating anything new:
 ```bash
 Glob: "**/*{Keyword}*.{tsx,jsx,vue}"
 Grep: "[pattern]"
