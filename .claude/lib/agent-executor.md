@@ -44,7 +44,7 @@ Provides resilient agent execution that:
 
 **Main Claude should follow this flow in `/cdev` command:**
 
-### Step 1: Build Prompt
+### Step 1: Build Prompt with Approval Context
 
 ```markdown
 Include in prompt:
@@ -52,33 +52,58 @@ Include in prompt:
 - Phase-specific instructions
 - TDD requirements (if phase.tdd_required)
 - Validation checkpoint reminder
+- Approval context (if user approved workflow) ← NEW!
 ```
+
+**Approval Context Format:**
+
+```
+[AUTO-PROCEED: YES]
+User has approved this workflow. After completing pre-work validation,
+proceed immediately to implementation without asking for confirmation.
+```
+
+**When to include:**
+- ✅ User ran `/cdev` command → Auto-approve (implicit approval for all phases)
+- ✅ User said "continue", "proceed", "yes", "ลุยเลย" → Auto-approve
+- ❌ Agent previously failed → Skip (need explicit approval)
+- ❌ Manual intervention mode → Skip (user wants control)
 
 ### Step 2: Execute with Retry Loop
 
 ```
 attempt = 0
 max_retries = 2
+auto_proceed = userApprovalGranted()  // Check if user approved workflow
 
 while (attempt <= max_retries):
 
   1. Invoke agent:
-     Task(agent=agentType, model='haiku', prompt=buildPrompt())
+     Task(agent=agentType, model='haiku', prompt=buildPrompt(auto_proceed))
 
-  2. Validate pre-work (see validation-framework.md):
+  2. Handle agent questions (NEW!):
+     If agent asks "Should I proceed?" or "Continue?":
+       - If auto_proceed === true:
+         → Answer agent: "YES, proceed immediately"
+         → Continue waiting for implementation result
+       - Else:
+         → Ask user: "Agent ready. Proceed? (yes/no)"
+         → Wait for user response
+
+  3. Validate pre-work (see validation-framework.md):
      - Check for required checklist items
      - If missing → reject and retry
 
-  3. Validate output quality:
+  4. Validate output quality:
      - Check for completion markers (✅, Done, Complete)
      - Check for code blocks (if code agent)
      - Check for test results (if test agent)
      - If incomplete → send feedback and retry
 
-  4. If validation passed:
+  5. If validation passed:
      → SUCCESS! Return result
 
-  5. If validation failed:
+  6. If validation failed:
      - If attempt < max_retries:
        → Send feedback, increment attempt, retry
      - Else:
@@ -242,16 +267,50 @@ Please provide complete output including:
 ```markdown
 Step 4: Invoke Agent with Retry
 
-1. Build prompt (include validation requirements)
-2. Execute retry loop (max 2 retries):
+1. Check user approval status:
+   - User ran /cdev → auto_proceed = true
+   - User said "continue" → auto_proceed = true
+   - Otherwise → auto_proceed = false
+
+2. Build prompt (include validation requirements + approval context)
+
+3. Execute retry loop (max 2 retries):
    - Invoke agent
+   - Handle agent questions (auto-answer if approved)
    - Validate pre-work
    - Validate output quality
    - If failed → retry or escalate
-3. Handle result:
+
+4. Handle result:
    - Success → update flags.json, move to next phase
    - Failed → escalate to user (retry/skip/abort)
 ```
+
+---
+
+## 🎯 Auto-Proceed Decision Tree
+
+```
+User Action → auto_proceed?
+─────────────────────────────
+/cdev         → YES (implicit approval for all phases)
+"continue"    → YES (explicit approval)
+"proceed"     → YES (explicit approval)
+"yes"         → YES (explicit approval)
+"ลุยเลย"      → YES (explicit approval)
+/cdev retry   → NO  (need confirmation after failure)
+Manual mode   → NO  (user wants control)
+```
+
+**When auto_proceed = YES:**
+- Agent asks "Proceed?" → Main Claude answers "YES" immediately
+- No double-confirmation with user
+- Faster workflow execution
+
+**When auto_proceed = NO:**
+- Agent asks "Proceed?" → Main Claude asks user
+- Manual confirmation at each step
+- Slower but more controlled
 
 ---
 
