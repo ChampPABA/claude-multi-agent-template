@@ -196,29 +196,99 @@ function generateMitigation(risk: RiskLevel, task: Task): string[] {
 
 ### 4. Research Requirements Detection
 
+> **Integration with /pageplan (v1.4.0):**
+> - `/pageplan` handles: Component reuse analysis + Content drafting + Asset checklist
+> - `TaskMaster` handles: Technical research (libraries, APIs, migrations)
+> - **No overlap:** UX/accessibility research is skipped if `page-plan.md` exists
+
+**Decision Matrix:**
+
+| Task Type | Has page-plan.md | Research Triggered |
+|-----------|------------------|--------------------|
+| UI Landing | ✅ Yes | ❌ Skip UX patterns<br>❌ Skip accessibility<br>✅ Check library/migration |
+| UI Landing | ❌ No | ✅ UX patterns research<br>✅ Accessibility research<br>✅ Check library |
+| API Integration | ✅ Yes | ✅ Integration research (not affected) |
+| Database Migration | ❌ No | ✅ Migration research (not affected) |
+
+**Why this separation?**
+- `/pageplan` = **Design-level** (which components, what content, what assets)
+- `TaskMaster` = **Technical-level** (how to implement, which libraries, what patterns)
+- Avoids redundant "landing page best practices" research when page structure is already planned
+
 **Detection Logic:**
 ```typescript
-function detectResearchNeeds(task: Task): ResearchRequirement | null {
+function detectResearchNeeds(task: Task, changeContext: any): ResearchRequirement | null {
+  // Check if page-plan.md exists (skip UX/accessibility research)
+  const hasPagePlan = fileExists(`.changes/${changeContext.changeId}/page-plan.md`)
+
   const researchIndicators = {
+    // Technical research (always check)
     newTechnology: /new|latest|modern|upgrade|v\d+/i,
     bestPractices: /best practice|pattern|approach|strategy|how to/i,
     integration: /integrate|connect|setup|configure/i,
     performance: /optimi[sz]e|performance|speed|faster/i,
-    migration: /migrat|upgrade|convert/i
+    migration: /migrat|upgrade|convert/i,
+
+    // UX research (skip if page-plan exists)
+    uxPatterns: hasPagePlan ? null : /dashboard|landing|e-commerce|checkout|wizard|onboarding/i,
+    accessibility: hasPagePlan ? null : /form|input|modal|navigation|menu|dialog|button/i,
+
+    // Design system (always check)
+    componentLibrary: /component library|ui library|design system/i,
+    designGuidelines: /brand|style|visual|aesthetic|appearance/i
   }
 
+  // Check for multiple patterns (prioritize by order)
+  const detectedPatterns = []
+
   for (const [category, pattern] of Object.entries(researchIndicators)) {
-    if (pattern.test(task.description)) {
-      return {
+    if (pattern && pattern.test(task.description)) {
+      detectedPatterns.push({
         category,
         reason: `Task involves ${category} - requires research phase`,
         suggestedQueries: generateResearchQueries(task, category),
-        estimatedTime: 15 // minutes
-      }
+        estimatedTime: getEstimatedResearchTime(category)
+      })
     }
   }
 
-  return null
+  // Special case: If no design system exists and UI work detected
+  if (task.type === 'uxui-frontend' && !fileExists('design-system/STYLE_GUIDE.md')) {
+    detectedPatterns.push({
+      category: 'missingDesignSystem',
+      reason: 'No design system found - component library selection needed',
+      suggestedQueries: [
+        'shadcn/ui vs Radix UI comparison 2025',
+        'React component library recommendations',
+        'Headless UI libraries for Tailwind CSS'
+      ],
+      estimatedTime: 10
+    })
+  }
+
+  // Log skipped research
+  if (hasPagePlan && detectedPatterns.length === 0) {
+    console.log(`ℹ️ UX/accessibility research skipped (page-plan.md exists)`)
+  }
+
+  // Return highest priority research need
+  return detectedPatterns[0] || null
+}
+
+function getEstimatedResearchTime(category: string): number {
+  const timeMap = {
+    newTechnology: 15,
+    bestPractices: 10,
+    integration: 20,
+    performance: 10,
+    migration: 15,
+    uxPatterns: 10,
+    accessibility: 5,
+    componentLibrary: 10,
+    designGuidelines: 5,
+    missingDesignSystem: 10
+  }
+  return timeMap[category] || 15
 }
 
 function generateResearchQueries(task: Task, category: string): string[] {
@@ -245,7 +315,66 @@ function generateResearchQueries(task: Task, category: string): string[] {
     queries.push(`Benchmarking and profiling tools`)
   }
 
+  if (category === 'migration') {
+    const tech = extractTechnology(task.description)
+    queries.push(`${tech} migration guide 2025`)
+    queries.push(`Breaking changes and upgrade path`)
+    queries.push(`Data migration strategies and best practices`)
+  }
+
+  if (category === 'uxPatterns') {
+    const pageType = extractPageType(task.description)
+    queries.push(`${pageType} best practices 2025`)
+    queries.push(`${pageType} UX patterns and examples`)
+    queries.push(`${pageType} conversion optimization techniques`)
+  }
+
+  if (category === 'accessibility') {
+    const component = extractComponent(task.description)
+    queries.push(`${component} accessibility best practices`)
+    queries.push(`WCAG 2.1 guidelines for ${component}`)
+    queries.push(`Screen reader support for ${component}`)
+    queries.push(`Keyboard navigation patterns`)
+  }
+
+  if (category === 'componentLibrary') {
+    queries.push('shadcn/ui vs Radix UI comparison 2025')
+    queries.push('React component library recommendations')
+    queries.push('Headless UI libraries for Tailwind CSS')
+    queries.push('Component library installation and setup')
+  }
+
+  if (category === 'designGuidelines') {
+    queries.push('Modern design trends 2025')
+    queries.push('Color palette generation tools')
+    queries.push('Typography pairing recommendations')
+    queries.push('Design system structure and organization')
+  }
+
   return queries
+}
+
+// Helper functions
+function extractPageType(desc: string): string {
+  const pageTypes = {
+    'dashboard': 'Dashboard',
+    'landing': 'Landing page',
+    'e-commerce': 'E-commerce product page',
+    'checkout': 'Checkout flow',
+    'wizard': 'Multi-step wizard',
+    'onboarding': 'User onboarding'
+  }
+
+  for (const [key, value] of Object.entries(pageTypes)) {
+    if (desc.toLowerCase().includes(key)) return value
+  }
+  return 'Page'
+}
+
+function extractComponent(desc: string): string {
+  const components = ['form', 'input', 'modal', 'navigation', 'menu', 'dialog', 'button', 'table', 'dropdown']
+  const found = components.find(c => desc.toLowerCase().includes(c))
+  return found ? found.charAt(0).toUpperCase() + found.slice(1) : 'Component'
 }
 ```
 

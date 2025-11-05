@@ -224,30 +224,6 @@ if (!contextAnalysis.has_context) {
 
 ## STEP 2: Style Direction Analysis (AI Pondering)
 
-```javascript
-const ponderingPrompt = `
-You are a design systems architect creating style direction recommendations.
-
-Extracted Sites Summary:
-${Object.entries(extractedData).map(([site, data]) => `
-## ${site}
-- Style: ${data.sections.overview.style || 'Unknown'}
-- Colors: ${data.sections.color_palette.primary.slice(0, 3).map(c => c.hex).join(', ')}
-- Shadows: ${data.sections.shadows_elevation.values.slice(0, 2).join(', ')}
-- Border Radius: ${data.sections.border_radius.values.slice(0, 3).join(', ')}
-- Typography: ${data.sections.typography.fonts.slice(0, 2).join(', ')}
-- Button Animation: ${Object.values(data.animations).find(a => a.type === 'button')?.description || 'N/A'}
-- Card Animation: ${Object.values(data.animations).find(a => a.type === 'card')?.description || 'N/A'}
-`).join('\n')}
-
-Project Context:
-- Product: ${contextAnalysis.product_type}
-- Target Audience: ${contextAnalysis.target_audience.demographics} (tech-savvy: ${contextAnalysis.target_audience.tech_savvy})
-- Brand Personality: ${contextAnalysis.brand_personality.join(', ')}
-- Market Position: ${contextAnalysis.market_position || 'Not specified'}
-
-Task: Generate 2-3 style direction options ranked by fit.
-
 Instructions:
 1. Wrap thinking in <pondering> tags
 2. Consider:
@@ -400,6 +376,91 @@ Return only the YAML content.
 
 ---
 
+## STEP 3.5: Quick User Input (🆕 v1.4.0)
+
+> **NEW:** Ask user for quick feedback before presenting options
+
+```javascript
+output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 Quick Question
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`)
+
+const userFeedback = await AskUserQuestion({
+  questions: [{
+    question: "มีอะไรอยากปรับหรือเน้นเป็นพิเศษไหม? (optional)",
+    header: "Preferences",
+    multiSelect: false,
+    options: [
+      { label: "ไม่มี ใช้ AI แนะนำ", description: "ให้ AI เลือกสิ่งที่เหมาะสมที่สุด" },
+      { label: "มีสี CI ของตัวเอง", description: "ระบุสีแบรนด์" },
+      { label: "ชอบ component เฉพาะ", description: "ชอบ button/card ของเว็บใดเป็นพิเศษ" },
+      { label: "ปรับอื่นๆ", description: "Typography, shadows, หรืออื่นๆ" }
+    ]
+  }]
+})
+
+let userPreferences = { type: 'none' }
+
+// Process user feedback
+if (userFeedback.answers["Preferences"] === "มีสี CI ของตัวเอง") {
+  output(`
+กรุณาระบุสี (HEX format, คั่นด้วย comma):
+ตัวอย่าง: #0d7276, #f97316
+
+สีของคุณ:
+  `)
+
+  const colorInput = await getUserTextInput()
+  const colors = colorInput.split(',').map(s => s.trim()).filter(s => s.match(/^#[0-9A-Fa-f]{6}$/))
+
+  if (colors.length > 0) {
+    userPreferences = {
+      type: 'custom_colors',
+      colors: {
+        primary: colors[0],
+        secondary: colors[1] || null,
+        accent: colors[2] || null
+      }
+    }
+    output(`✅ รับสีแล้ว: ${colors.join(', ')}`)
+  }
+
+} else if (userFeedback.answers["Preferences"] === "ชอบ component เฉพาะ") {
+  output(`
+ระบุความชอบ (ตัวอย่าง: "ชอบ button ของ motherduck, card ของ gitingest"):
+  `)
+
+  const preferenceText = await getUserTextInput()
+  userPreferences = {
+    type: 'component_preference',
+    text: preferenceText
+  }
+  output(`✅ บันทึกความชอบแล้ว`)
+
+} else if (userFeedback.answers["Preferences"] === "ปรับอื่นๆ") {
+  output(`
+ระบุสิ่งที่อยากปรับ (ตัวอย่าง: "ใช้ font Inter, shadow แบบ soft"):
+  `)
+
+  const adjustmentText = await getUserTextInput()
+  userPreferences = {
+    type: 'other_adjustment',
+    text: adjustmentText
+  }
+  output(`✅ บันทึกการปรับแต่งแล้ว`)
+}
+
+output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔄 กำลังสร้าง style options (พร้อม preferences ของคุณ)...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`)
+```
+
+---
+
 ## STEP 4: Present Options to User
 
 ```javascript
@@ -413,6 +474,7 @@ Based on:
 ✓ Target: ${contextAnalysis.target_audience.demographics}
 ✓ Brand: ${contextAnalysis.brand_personality.join(', ')}
 ✓ Product: ${contextAnalysis.product_type}
+${userPreferences.type !== 'none' ? `✓ User preferences: ${JSON.stringify(userPreferences)}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
@@ -816,18 +878,144 @@ Task: Extract ALL design tokens into JSON format following this exact structure:
     "install_command": "[extract]",
     "common_components": [extract array]
   },
+  "component_patterns": {
+    "button": {
+      "primary": "[extract full Tailwind classes from Button component section - exact copy of primary button pattern]",
+      "secondary": "[extract secondary button pattern]",
+      "ghost": "[extract ghost button pattern]",
+      "outline": "[extract outline button pattern]",
+      "destructive": "[extract destructive/danger button pattern]",
+      "link": "[extract link button pattern]",
+      "icon": "[extract icon-only button pattern]",
+      "sizes": {
+        "sm": "[extract small button classes]",
+        "md": "[extract medium/default button classes]",
+        "lg": "[extract large button classes]"
+      },
+      "states": {
+        "default": "[base classes]",
+        "hover": "[hover state classes]",
+        "active": "[active/pressed state classes]",
+        "disabled": "[disabled state classes]",
+        "loading": "[loading state classes with spinner]"
+      }
+    },
+    "card": {
+      "default": "[extract default card pattern with border/shadow/padding]",
+      "elevated": "[extract elevated card with larger shadow]",
+      "outlined": "[extract outlined card variant]",
+      "interactive": "[extract interactive card with hover effects]",
+      "composition": {
+        "header": "[extract card header classes]",
+        "content": "[extract card content/body classes]",
+        "footer": "[extract card footer classes]",
+        "image": "[extract card image wrapper classes]"
+      }
+    },
+    "input": {
+      "base": "[extract base input field classes]",
+      "variants": {
+        "default": "[extract default input]",
+        "error": "[extract error state input with red border]",
+        "success": "[extract success state input]",
+        "disabled": "[extract disabled input]"
+      },
+      "sizes": {
+        "sm": "[extract small input]",
+        "md": "[extract medium input]",
+        "lg": "[extract large input]"
+      }
+    },
+    "form_field": {
+      "wrapper": "[extract form field wrapper classes]",
+      "label": "[extract label classes]",
+      "input": "[reference to input.base]",
+      "helper_text": "[extract helper text classes]",
+      "error_message": "[extract error message classes with red text]",
+      "composition": "[extract full form field pattern: label + input + helper + error]"
+    },
+    "badge": {
+      "default": "[extract default badge]",
+      "variants": {
+        "primary": "[extract primary badge]",
+        "secondary": "[extract secondary badge]",
+        "success": "[extract success/green badge]",
+        "warning": "[extract warning/yellow badge]",
+        "error": "[extract error/red badge]",
+        "outline": "[extract outline badge]"
+      }
+    },
+    "alert": {
+      "base": "[extract base alert classes]",
+      "variants": {
+        "info": "[extract info alert with blue accent]",
+        "success": "[extract success alert with green accent]",
+        "warning": "[extract warning alert with yellow accent]",
+        "error": "[extract error alert with red accent]"
+      },
+      "composition": {
+        "wrapper": "[alert container classes]",
+        "icon": "[icon wrapper classes]",
+        "content": "[content wrapper classes]",
+        "title": "[alert title classes]",
+        "description": "[alert description classes]",
+        "actions": "[action buttons wrapper classes]"
+      }
+    }
+  },
+  "layout_patterns": {
+    "container": {
+      "default": "[extract default container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8]",
+      "narrow": "[extract narrow container: max-w-4xl]",
+      "wide": "[extract wide container: max-w-screen-2xl]",
+      "full": "[extract full-width: w-full]",
+      "fluid": "[extract fluid container with responsive padding]"
+    },
+    "grid": {
+      "auto": "[extract auto-fit grid: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6]",
+      "feature": "[extract feature grid: grid grid-cols-1 md:grid-cols-3 gap-8]",
+      "dashboard": "[extract dashboard grid: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4]",
+      "gallery": "[extract gallery grid: grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2]",
+      "masonry": "[extract masonry-style grid classes]"
+    },
+    "flex": {
+      "row_center": "[extract centered row: flex items-center justify-center]",
+      "row_between": "[extract space-between row: flex items-center justify-between]",
+      "row_start": "[extract left-aligned row: flex items-center justify-start]",
+      "col_center": "[extract centered column: flex flex-col items-center justify-center]",
+      "col_start": "[extract top-aligned column: flex flex-col items-start]"
+    },
+    "section_spacing": {
+      "tight": "[extract tight section spacing: py-8 md:py-12]",
+      "normal": "[extract normal section spacing: py-12 md:py-16]",
+      "loose": "[extract loose section spacing: py-16 md:py-24]",
+      "hero": "[extract hero section spacing: py-20 md:py-32]"
+    },
+    "page_layouts": {
+      "landing": "[extract landing page layout structure]",
+      "dashboard": "[extract dashboard layout: sidebar + main content]",
+      "auth": "[extract auth page layout: centered card]",
+      "settings": "[extract settings page layout: tabs + content]"
+    }
+  },
   "critical_rules": {
     "colors": [
-      "❌ NO hardcoded hex values",
-      "✅ USE theme tokens"
+      "❌ NO hardcoded hex values (#64748b)",
+      "✅ USE theme tokens (text-foreground/70)",
+      "❌ NO random opacity values",
+      "✅ USE consistent opacity scale (/50, /70, /90)"
     ],
     "spacing": [
-      "❌ NO arbitrary values",
-      "✅ USE spacing scale"
+      "❌ NO arbitrary values (p-5, gap-7, mt-15)",
+      "✅ USE spacing scale (p-4, p-6, gap-8, mt-16)",
+      "❌ NO hardcoded px values",
+      "✅ USE Tailwind scale"
     ],
     "consistency": [
-      "❌ NO mixing patterns",
-      "✅ USE consistent patterns"
+      "❌ NO mixing patterns (shadow-sm on Card A, shadow-lg on Card B)",
+      "✅ USE consistent patterns (all cards use shadow-md)",
+      "❌ NO mixing border radius (rounded-md vs rounded-lg)",
+      "✅ USE same border radius for similar components"
     ]
   }
 }
