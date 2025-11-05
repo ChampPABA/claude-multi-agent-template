@@ -153,79 +153,31 @@ Report steps 1-3 BEFORE writing tests.
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (test-debug):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
+### Test Framework Detection & Documentation
+**After Level 0 discovery, detect test framework:**
+
+```
+package.json contains "vitest" → Testing = Vitest
+package.json contains "jest" → Testing = Jest
+package.json contains "@playwright/test" → E2E = Playwright
+requirements.txt contains "pytest" → Testing = Pytest
 ```
 
-**Extract:**
-1. **Framework** (Next.js, FastAPI, Vue, etc.)
-2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
-3. **Dependencies** (specific to this agent's role)
+**Then query Context7:**
+- **Topic:** "testing, expect, assertions, mocking, fixtures"
+- **Tokens:** 2000
 
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
+**Additional Patterns (Always):**
+- @.claude/contexts/patterns/testing.md (MUST READ THOROUGHLY!)
 
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/testing.md
-- @.claude/contexts/patterns/error-handling.md
-- @.claude/contexts/patterns/logging.md
-
-### Step 2: Detect Test Framework
-```
-Read package.json:
-- Found "vitest" → Testing framework = Vitest
-- Found "jest" → Testing framework = Jest
-- Found "@playwright/test" → E2E framework = Playwright
-
-Read requirements.txt:
-- Found "pytest" → Testing framework = Pytest
-```
-
-### Step 3: Load Framework Docs (Context7 - Dynamic)
-
-**IF Vitest:**
-```
-Use Context7 MCP:
-mcp__context7__get-library-docs("/vitest-dev/vitest", {
-  topic: "testing, expect, assertions, mocking",
-  tokens: 2000
-})
-```
-
-**IF Jest:**
-```
-Use Context7 MCP:
-mcp__context7__get-library-docs("/jestjs/jest", {
-  topic: "testing, matchers, mocking, setup",
-  tokens: 2000
-})
-```
-
-**IF Playwright:**
-```
-Use Context7 MCP:
-mcp__context7__get-library-docs("/microsoft/playwright", {
-  topic: "e2e testing, page object, assertions",
-  tokens: 2000
-})
-```
-
-**IF Pytest:**
-```
-Use Context7 MCP:
-mcp__context7__get-library-docs("/pytest-dev/pytest", {
-  topic: "fixtures, assertions, parametrize",
-  tokens: 2000
-})
-```
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🔍 Patterns: testing.md, error-handling.md, logging.md (universal)
+- 🧪 Test Framework: Vitest, Jest, Playwright, Pytest (from Context7)
 
 ## Workflow
 
@@ -481,53 +433,25 @@ Recommendation:
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, TEST_REPORT.md, DEBUG_LOG.md, or any other .md documentation files
-- DO NOT create: Test documentation files, debugging guides, or summary files
-- Exception: ONLY when user explicitly says "create test documentation" or "write a test report"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - Test results (passed/failed counts)
-  - Iterations performed
-  - Fixes applied with explanations
-  - Final status and coverage
-  - Recommendations for next steps
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write TEST_RESULTS.md with detailed test logs
-       Write DEBUG_REPORT.md with fix history
-
-✅ GOOD: Return detailed test summary in final message
-       Include all info but as response, not files
-```
+**Quick Reference:**
+- ❌ NEVER create documentation files unless explicitly requested
+- ❌ NO TEST_REPORT.md, DEBUG_LOG.md, TEST_RESULTS.md, etc.
+- ✅ Return comprehensive text reports in your final message instead
+- ✅ Exception: Only when user explicitly says "create documentation"
 
 ## Rules
 
 ### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: pnpm (JavaScript)
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0 (Package Manager Discovery)
 
-✅ CORRECT: pnpm test
-✅ CORRECT: pnpm add -D vitest
-❌ WRONG: npm test (ignored tech-stack.md!)
-❌ WRONG: bun test (tech-stack says pnpm!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Reference:**
+- ✅ ALWAYS read `tech-stack.md` before ANY install/run commands
+- ✅ Use exact package manager from tech-stack.md (pnpm, npm, bun, uv, poetry, pip)
+- ❌ NEVER assume or hardcode package manager
+- ❌ If tech-stack.md missing → warn user to run `/agentsetup`
 
 ### Testing Standards
 - ✅ Run tests automatically (no manual testing)
@@ -669,91 +593,24 @@ Update current phase:
 
 ---
 
-## Handoff to Next Agent (Optional but Recommended)
+## Handoff to Next Agent
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete templates
 
-### Template:
+**Common Handoff Path (test-debug agent):**
 
-```markdown
-## ✅ Task Complete: [Task Name]
+### test-debug → Main Claude (orchestrator)
+**Purpose:** Report test results and feature completion status
 
-**Agent:** test-debug
+**What to include:**
+- Test results summary (passed/failed counts, coverage percentage)
+- Iterations performed (how many fix attempts)
+- Fixes applied (what was changed and why)
+- Feature status (✅ Complete, ⚠️ Partial, ❌ Blocked)
+- Known issues or limitations
+- Next steps or optional enhancements
+- Files modified during debugging
 
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
-
-**For Next Agent:**
-
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (Test-Debug → Main Claude):
-
-```markdown
-## ✅ Task Complete: Fix login test failures
-
-**Agent:** test-debug
-
-**What I Did:**
-- Fixed 3 failing tests in tests/auth/login.test.tsx
-- Issue was: mock API response format didn't match real API
-- Updated mocks to return {token, user} instead of just {token}
-- All tests now passing (12/12)
-
-**Test Results:**
-
-\`\`\`bash
-✅ test_login_success (PASS)
-✅ test_login_invalid_credentials (PASS)
-✅ test_login_validation_error (PASS)
-✅ test_login_network_error (PASS)
-✅ test_logout_clears_state (PASS)
-✅ test_protected_route_redirect (PASS)
-... (6 more tests)
-
-Total: 12 passed, 0 failed
-Coverage: 87% (target: 85%)
-\`\`\`
-
-**For Main Claude:**
-
-**Feature Status:** ✅ Complete and tested
-
-**What Works:**
-- Login form validates and submits correctly
-- API integration works (POST /api/auth/login)
-- Auth state management (Zustand)
-- Protected routes redirect to login
-- Error handling for all edge cases
-
-**Known Issues:** None
-
-**Next Steps (if any):**
-- [ ] Add "Remember Me" checkbox (optional)
-- [ ] Add "Forgot Password" link (future feature)
-- [ ] Add auto-refresh token logic (expires in 7 days)
-
-**Files Fixed:**
-- tests/auth/login.test.tsx (updated mocks)
-- tests/mocks/api.ts (fixed response format)
-
-**Iterations:** 2 (first fix: wrong mock format, second fix: added missing test)
-```
-
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+**Template:** See `lib/handoff-protocol.md` → "test-debug → orchestrator"
 
 ---

@@ -173,66 +173,21 @@ Report steps 1-4 BEFORE coding.
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (frontend):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
-```
+### State Management Libraries (Context7)
+**Topic:** "hooks, state, mutations, queries, caching"
+**Tokens:** 2000
 
-**Extract:**
-1. **Framework** (Next.js, FastAPI, Vue, etc.)
-2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
-3. **Dependencies** (specific to this agent's role)
-
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
-
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/testing.md
-- @.claude/contexts/patterns/logging.md
-- @.claude/contexts/patterns/error-handling.md
+**Additional Patterns:**
 - @.claude/contexts/patterns/state-management.md
-- @.claude/contexts/patterns/task-classification.md
 
-### Step 2: Detect Tech Stack & Load Docs (Context7)
-
-**IF Next.js:**
-```
-mcp__context7__get-library-docs("/vercel/next.js", {
-  topic: "app router, server components, server actions, data fetching",
-  tokens: 3000
-})
-```
-
-**IF React + TanStack Query:**
-```
-mcp__context7__get-library-docs("/tanstack/query", {
-  topic: "useQuery, useMutation, query invalidation",
-  tokens: 2000
-})
-```
-
-**IF Vue:**
-```
-mcp__context7__get-library-docs("/vuejs/vue", {
-  topic: "composition api, reactive, computed, watch",
-  tokens: 3000
-})
-```
-
-**IF Zustand:**
-```
-mcp__context7__get-library-docs("/pmndrs/zustand", {
-  topic: "create store, persist, middleware",
-  tokens: 2000
-})
-```
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🔍 Patterns: error-handling.md, logging.md, testing.md (universal)
+- 🎨 State: TanStack Query, Zustand, Redux (from Context7)
 
 ## TDD Decision Logic
 
@@ -256,316 +211,28 @@ mcp__context7__get-library-docs("/pmndrs/zustand", {
 
 ---
 
-## TDD Workflow: Red-Green-Refactor
+## TDD Workflow
 
-**Use when:** `tdd_required: true`
+**→ See:** `.claude/lib/tdd-workflow.md` for complete Red-Green-Refactor cycle
 
-**Common scenarios:**
-- External API integrations (payment, analytics, etc.)
-- Business logic functions (discount calculations, etc.)
+**When to use:**
+- ✅ If `tdd_required: true` → Use TDD (Red-Green-Refactor)
+- ❌ If `tdd_required: false` → Use Test-Alongside (implementation first)
+
+**Common TDD scenarios for frontend:**
+- External API integrations (payment, analytics)
+- Business logic (discount calculations, transformations)
 - Complex form validation
 - Data transformations
 
-### Step 1: RED Phase - Write Test First
-
-**Important:** Test MUST be written BEFORE any implementation code.
-
-**Example: Stripe Payment Integration**
-
-```typescript
-// __tests__/lib/payment.test.ts (WRITE THIS FIRST!)
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { processPayment } from '@/lib/payment'
-import Stripe from 'stripe'
-
-// Mock Stripe
-vi.mock('stripe', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    charges: {
-      create: vi.fn()
-    }
-  }))
-}))
-
-describe('processPayment', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('should process payment and return transaction ID', async () => {
-    /**
-     * Test successful payment flow.
-     *
-     * This test MUST FAIL initially (function doesn't exist).
-     */
-    const mockCharge = {
-      id: 'ch_test123',
-      status: 'succeeded',
-      amount: 10000
-    }
-
-    const stripeMock = new Stripe('test_key')
-    vi.mocked(stripeMock.charges.create).mockResolvedValue(mockCharge as any)
-
-    const result = await processPayment({
-      amount: 100,
-      currency: 'USD',
-      cardToken: 'tok_visa'
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.transactionId).toBe('ch_test123')
-    expect(stripeMock.charges.create).toHaveBeenCalledWith({
-      amount: 10000,
-      currency: 'USD',
-      source: 'tok_visa'
-    })
-  })
-
-  it('should handle payment failure', async () => {
-    /**
-     * Test error handling for declined payment.
-     */
-    const stripeMock = new Stripe('test_key')
-    vi.mocked(stripeMock.charges.create).mockRejectedValue(
-      new Error('Card declined')
-    )
-
-    const result = await processPayment({
-      amount: 100,
-      currency: 'USD',
-      cardToken: 'tok_chargeDeclined'
-    })
-
-    expect(result.success).toBe(false)
-    expect(result.error).toContain('declined')
-  })
-
-  it('should validate payment amount', async () => {
-    /**
-     * Test validation for invalid amounts.
-     */
-    await expect(
-      processPayment({
-        amount: -10,
-        currency: 'USD',
-        cardToken: 'tok_visa'
-      })
-    ).rejects.toThrow('Amount must be positive')
-  })
-})
+**Quick Reference (TDD):**
+```
+1. 🔴 RED: Write test first → verify it FAILS
+2. 🟢 GREEN: Minimal code → make tests PASS
+3. 🔵 REFACTOR: Add quality → tests still PASS
 ```
 
-**Run tests:**
-```bash
-pnpm test -- payment.test.ts --run
-
-# Expected output:
-# ❌ FAILED - Cannot find module '@/lib/payment'
-# ✅ This is CORRECT! Test should fail in RED phase.
-```
-
-**Log RED phase:**
-```json
-{
-  "event": "tdd_red_phase",
-  "task": "Integrate Stripe payment",
-  "test_file": "__tests__/lib/payment.test.ts",
-  "tests_written": 3,
-  "status": "fail",
-  "expected": "Tests should fail - module doesn't exist yet"
-}
-```
-
----
-
-### Step 2: GREEN Phase - Minimal Implementation
-
-**Goal:** Write just enough code to make tests pass.
-
-```typescript
-// lib/payment.ts (NOW create implementation)
-export interface PaymentData {
-  amount: number
-  currency: string
-  cardToken: string
-}
-
-export interface PaymentResult {
-  success: boolean
-  transactionId?: string
-  error?: string
-}
-
-export async function processPayment(data: PaymentData): Promise<PaymentResult> {
-  /**
-   * Minimal implementation - just make tests pass.
-   * Will refactor with real Stripe integration later.
-   */
-
-  // Validation (to pass validation test)
-  if (data.amount <= 0) {
-    throw new Error('Amount must be positive')
-  }
-
-  // Simulate payment processing
-  try {
-    // Hardcoded success for now
-    if (data.cardToken === 'tok_chargeDeclined') {
-      return {
-        success: false,
-        error: 'Card declined'
-      }
-    }
-
-    return {
-      success: true,
-      transactionId: 'ch_test123'
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }
-  }
-}
-```
-
-**Run tests:**
-```bash
-pnpm test -- payment.test.ts --run
-
-# Expected output:
-# ✅ PASSED should process payment and return transaction ID
-# ✅ PASSED should handle payment failure
-# ✅ PASSED should validate payment amount
-```
-
-**Log GREEN phase:**
-```json
-{
-  "event": "tdd_green_phase",
-  "task": "Integrate Stripe payment",
-  "tests_passed": 3,
-  "implementation": "lib/payment.ts",
-  "status": "pass",
-  "note": "Minimal implementation complete, refactor needed"
-}
-```
-
----
-
-### Step 3: REFACTOR Phase - Add Real Logic
-
-**Goal:** Integrate real Stripe SDK while keeping tests green.
-
-```typescript
-// lib/payment.ts (Refactor with real Stripe integration)
-import Stripe from 'stripe'
-import { logger } from '@/lib/logger'
-
-export interface PaymentData {
-  amount: number
-  currency: string
-  cardToken: string
-  metadata?: Record<string, string>
-}
-
-export interface PaymentResult {
-  success: boolean
-  transactionId?: string
-  error?: string
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-})
-
-export async function processPayment(data: PaymentData): Promise<PaymentResult> {
-  /**
-   * Process payment using Stripe API.
-   *
-   * @throws Error if amount is invalid
-   */
-
-  // Validation
-  if (data.amount <= 0) {
-    logger.error('payment_validation_error', {
-      amount: data.amount,
-      reason: 'negative_amount'
-    })
-    throw new Error('Amount must be positive')
-  }
-
-  logger.info('payment_processing_start', {
-    amount: data.amount,
-    currency: data.currency
-  })
-
-  try {
-    // Create charge with Stripe
-    const charge = await stripe.charges.create({
-      amount: Math.round(data.amount * 100), // Convert to cents
-      currency: data.currency.toLowerCase(),
-      source: data.cardToken,
-      metadata: data.metadata
-    })
-
-    logger.info('payment_success', {
-      transaction_id: charge.id,
-      amount: data.amount,
-      status: charge.status
-    })
-
-    return {
-      success: true,
-      transactionId: charge.id
-    }
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
-    logger.error('payment_failure', {
-      error: errorMessage,
-      amount: data.amount,
-      currency: data.currency
-    })
-
-    return {
-      success: false,
-      error: errorMessage
-    }
-  }
-}
-```
-
-**Run tests again:**
-```bash
-pnpm test -- payment.test.ts --run
-
-# Expected output:
-# ✅ PASSED should process payment and return transaction ID (still passing!)
-# ✅ PASSED should handle payment failure (still passing!)
-# ✅ PASSED should validate payment amount (still passing!)
-```
-
-**Log REFACTOR phase:**
-```json
-{
-  "event": "tdd_refactor_phase",
-  "task": "Integrate Stripe payment",
-  "tests_passing": 3,
-  "improvements": [
-    "Added real Stripe SDK integration",
-    "Added amount conversion to cents",
-    "Added structured logging (start, success, failure)",
-    "Added error handling with detailed messages",
-    "Added metadata support",
-    "Added JSDoc documentation"
-  ],
-  "status": "complete"
-}
-```
+**Examples:** See `lib/tdd-workflow.md` → TypeScript/Next.js, JavaScript/React
 
 ---
 
@@ -871,145 +538,50 @@ test('failed login shows error message', async () => {
 
 ---
 
-## Handoff to Next Agent (Optional but Recommended)
+## Handoff to Next Agent
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete templates
 
-### Template:
+**Common Handoff Paths (frontend agent):**
 
-```markdown
-## ✅ Task Complete: [Task Name]
+### frontend → test-debug
+**Purpose:** Hand off API-integrated components for testing
 
-**Agent:** frontend
+**What to include:**
+- API endpoints connected (with request/response formats)
+- State management implementation (Zustand/Redux stores)
+- Error handling patterns used
+- Test scenarios to cover (success, failure, edge cases)
+- Protected routes or auth flows
+- Files modified/created
 
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
+**Template:** See `lib/handoff-protocol.md` → "frontend → test-debug"
 
-**For Next Agent:**
-
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (Frontend → Test-Debug):
-
-```markdown
-## ✅ Task Complete: Connect login form to API
-
-**Agent:** frontend
-
-**What I Did:**
-- Replaced mock data with real API calls to POST /api/auth/login
-- Added Zustand store for auth state (token + user)
-- Implemented login/logout actions
-- Added token persistence (localStorage)
-- Added error handling for API failures
-
-**For Next Agent (Test-Debug):**
-
-**What to Test:**
-
-**1. Login Flow:**
-- [ ] Valid credentials → Success (200, token returned)
-- [ ] Invalid credentials → Error (401, error message shown)
-- [ ] Missing fields → Error (422, validation error shown)
-- [ ] Network error → Error message shown
-- [ ] Token stored in localStorage after success
-- [ ] User redirected to /dashboard after success
-
-**2. State Management:**
-- [ ] User object stored in Zustand after login
-- [ ] Token accessible from auth store
-- [ ] Logout clears token and user from store
-- [ ] Logout clears localStorage
-
-**3. Protected Routes:**
-- [ ] /dashboard requires authentication
-- [ ] Redirect to /login if not authenticated
-- [ ] Token sent in Authorization header for API calls
-
-**Test Files:**
-- tests/auth/login.test.tsx (component test)
-- tests/store/auth.test.ts (store test)
-- e2e/login.spec.ts (end-to-end test)
-
-**Important Notes:**
-- Token expires in 7 days (no auto-refresh yet - add later)
-- If 401 on any API call, logout and redirect to login
-- CORS already configured on backend (no issues expected)
-
-**Files Modified:**
-- components/LoginForm.tsx (added API call)
-- store/auth.ts (new Zustand store)
-- hooks/useAuth.ts (custom hook for auth state)
-- middleware/auth.ts (protected route middleware)
-```
-
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+---
 
 ---
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, IMPLEMENTATION_GUIDE.md, FRONTEND_DOCS.md, or any other .md documentation files
-- DO NOT create: Component documentation files, API integration guides, or state management docs
-- Exception: ONLY when user explicitly says "create documentation" or "write a README"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - Components created/modified
-  - API integrations completed
-  - State management implementation
-  - Test results and coverage
-  - Next steps
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write FRONTEND_IMPLEMENTATION.md (500 lines)
-       Write STATE_MANAGEMENT_GUIDE.md (300 lines)
-
-✅ GOOD: Return detailed implementation summary in final message
-       Include all details but as response, not files
-```
+**Quick Reference:**
+- ❌ NEVER create documentation files unless explicitly requested
+- ❌ NO README.md, IMPLEMENTATION_GUIDE.md, API_DOCS.md, etc.
+- ✅ Return comprehensive text reports in your final message instead
+- ✅ Exception: Only when user explicitly says "create documentation"
 
 ## Rules
 
 ### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: pnpm (JavaScript)
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0 (Package Manager Discovery)
 
-✅ CORRECT: pnpm install
-✅ CORRECT: pnpm add zustand
-❌ WRONG: npm install (ignored tech-stack.md!)
-❌ WRONG: bun add zustand (tech-stack says pnpm!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Reference:**
+- ✅ ALWAYS read `tech-stack.md` before ANY install/run commands
+- ✅ Use exact package manager from tech-stack.md (pnpm, npm, bun, uv, poetry, pip)
+- ❌ NEVER assume or hardcode package manager
+- ❌ If tech-stack.md missing → warn user to run `/agentsetup`
 
 ### TDD Compliance
 - ✅ Check `tdd_required` flag from Orchestrator

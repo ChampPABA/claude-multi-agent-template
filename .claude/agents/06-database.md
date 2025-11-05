@@ -169,35 +169,13 @@ Report steps 1-4 BEFORE coding.
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (database):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
-```
+### ORM Detection & Documentation (Context7)
+**After Level 0 discovery, detect ORM:**
 
-**Extract:**
-1. **Framework** (Next.js, FastAPI, Vue, etc.)
-2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
-3. **Dependencies** (specific to this agent's role)
-
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
-
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/logging.md
-- @.claude/contexts/patterns/error-handling.md
-- @.claude/contexts/patterns/testing.md
-- @.claude/contexts/patterns/task-classification.md
-
-### Step 2: Detect ORM & Load Docs (Context7)
-
-**Detect from package files:**
 ```
 package.json contains "@prisma/client" → ORM = Prisma
 requirements.txt contains "sqlalchemy" → ORM = SQLAlchemy
@@ -205,21 +183,14 @@ package.json contains "typeorm" → ORM = TypeORM
 requirements.txt contains "tortoise-orm" → ORM = Tortoise ORM
 ```
 
-**IF Prisma:**
-```
-mcp__context7__get-library-docs("/prisma/prisma", {
-  topic: "schema design, relations, migrations, prisma client",
-  tokens: 3000
-})
-```
+**Then query Context7:**
+- **Topic:** "schema design, relations, migrations, client usage"
+- **Tokens:** 3000
 
-**IF SQLAlchemy:**
-```
-mcp__context7__get-library-docs("/sqlalchemy/sqlalchemy", {
-  topic: "declarative models, async session, relationships, migrations",
-  tokens: 3000
-})
-```
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🔍 Patterns: error-handling.md, logging.md, testing.md (universal)
+- 🗄️ ORM: Prisma, SQLAlchemy, TypeORM (from Context7)
 
 ## TDD Decision Logic
 
@@ -628,171 +599,48 @@ users = await db.execute(
 
 ---
 
-## Handoff to Next Agent (Optional but Recommended)
+## Handoff to Next Agent
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete templates
 
-### Template:
+**Common Handoff Path (database agent):**
 
-```markdown
-## ✅ Task Complete: [Task Name]
+### database → backend
+**Purpose:** Hand off schema and query functions to backend for API implementation
 
-**Agent:** database
+**What to include:**
+- Schema overview (models, fields, types, relationships)
+- Query examples (CRUD operations with ORM syntax)
+- Indexes added (foreign keys, frequently queried fields)
+- Migration details (file path, how to run)
+- Performance notes (N+1 prevention, eager loading)
+- Important constraints (CASCADE delete, unique fields)
 
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
-
-**For Next Agent:**
-
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (Database → Backend):
-
-```markdown
-## ✅ Task Complete: Create User and Post tables
-
-**Agent:** database
-
-**What I Did:**
-- Created User table with email, password, name fields
-- Created Post table with title, content, authorId fields
-- Added 1:N relationship (User → Posts)
-- Created migration file
-- Added indexes on foreign keys
-
-**For Next Agent (Backend):**
-
-**Schema Overview:**
-
-**User Table:**
-\`\`\`typescript
-{
-  id: string (UUID, primary key)
-  email: string (unique, indexed)
-  password: string (bcrypt hash)
-  name: string | null
-  createdAt: DateTime
-  updatedAt: DateTime
-  posts: Post[] (1:N relationship)
-}
-\`\`\`
-
-**Post Table:**
-\`\`\`typescript
-{
-  id: string (UUID, primary key)
-  title: string
-  content: string
-  authorId: string (foreign key → User.id, indexed)
-  createdAt: DateTime
-  updatedAt: DateTime
-  author: User (N:1 relationship)
-}
-\`\`\`
-
-**Query Examples:**
-
-\`\`\`python
-# Find user by email (for login)
-user = await db.execute(
-  select(User).where(User.email == email)
-)
-
-# Get user with all posts (eager loading, prevents N+1)
-user = await db.execute(
-  select(User).options(selectinload(User.posts)).where(User.id == user_id)
-)
-
-# Create new post
-post = Post(title=title, content=content, authorId=user_id)
-await db.add(post)
-await db.commit()
-\`\`\`
-
-**Important Notes:**
-- Email is indexed (fast lookups for login)
-- authorId is indexed (fast post queries by author)
-- Use eager loading (selectinload) to prevent N+1 queries
-- Password should be hashed with bcrypt (never store plain text)
-- CASCADE delete: If user deleted, all posts deleted too
-
-**Migration File:**
-- migrations/001_create_users_and_posts.py
-
-**Run Migration:**
-\`\`\`bash
-uv run alembic upgrade head
-\`\`\`
-```
-
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+**Template:** See `lib/handoff-protocol.md` → "database → backend"
 
 ---
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, SCHEMA_DOCUMENTATION.md, DATABASE_GUIDE.md, or any other .md documentation files
-- DO NOT create: Migration documentation files, query guides, or schema design docs
-- Exception: ONLY when user explicitly says "create documentation" or "write schema docs"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - Models/schemas created
-  - Relationships defined
-  - Migrations applied
-  - Indexes added
-  - Query functions implemented
-  - Test results
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write DATABASE_SCHEMA.md with all models
-       Write MIGRATION_GUIDE.md with schema changes
-
-✅ GOOD: Return detailed schema summary in final message
-       Include all details but as response, not files
-```
+**Quick Reference:**
+- ❌ NEVER create documentation files unless explicitly requested
+- ❌ NO SCHEMA_DOCUMENTATION.md, DATABASE_GUIDE.md, MIGRATION_GUIDE.md, etc.
+- ✅ Return comprehensive text reports in your final message instead
+- ✅ Exception: Only when user explicitly says "create documentation"
 
 ## Rules
 
 ### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: pnpm (JavaScript)
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0 (Package Manager Discovery)
 
-✅ CORRECT: pnpm prisma migrate dev
-✅ CORRECT: pnpm add @prisma/client
-❌ WRONG: npm prisma migrate dev (ignored tech-stack.md!)
-❌ WRONG: npx prisma migrate dev (tech-stack says pnpm!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Reference:**
+- ✅ ALWAYS read `tech-stack.md` before ANY install/run commands
+- ✅ Use exact package manager from tech-stack.md (pnpm, npm, bun, uv, poetry, pip)
+- ❌ NEVER assume or hardcode package manager
+- ❌ If tech-stack.md missing → warn user to run `/agentsetup`
 
 ### TDD Compliance
 - ✅ Check `tdd_required` flag from Orchestrator

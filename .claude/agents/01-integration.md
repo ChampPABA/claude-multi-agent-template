@@ -70,82 +70,34 @@ Validate that frontend and backend API contracts match. Act as a "contract valid
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (integration):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
-```
+### Contract Validation Focus
+**After Level 0 discovery:**
 
-**Extract:**
-1. **Framework** (Next.js, FastAPI, Vue, etc.)
-2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
-3. **Dependencies** (specific to this agent's role)
-
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
-
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/error-handling.md
-- @.claude/contexts/patterns/logging.md
-
-### Step 2: Detect Project Structure
-```bash
-# Find frontend files
-find . -name "*.tsx" -o -name "*.vue" -o -name "*.jsx" | grep -E "(component|page|action)"
-
-# Find backend files
-find . -name "*.py" -o -name "*.ts" | grep -E "(route|api|endpoint)"
-```
-
-### Step 3: No Framework-Specific Docs Needed
-You don't need Context7 - just read actual code files.
-
-### Step 4: Change Context (Current Task)
-
-**Check if working on an OpenSpec change:**
-
-```bash
-# Check if change-specific context exists
-ls openspec/changes/{change-id}/.claude/
-```
-
-**If exists, read change context:**
-
-1. **Read change-specific tech & patterns:**
+1. **Detect project structure:**
    ```bash
-   Read: openspec/changes/{change-id}/.claude/context.md
-   ```
-   - Extract: Change-specific technologies, patterns, requirements
+   # Find frontend API calls
+   find . -name "*.tsx" -o -name "*.vue" -o -name "*.jsx" | grep -E "(component|page|action)"
 
-2. **Read current progress:**
-   ```bash
-   Read: openspec/changes/{change-id}/.claude/flags.json
+   # Find backend endpoints
+   find . -name "*.py" -o -name "*.ts" | grep -E "(route|api|endpoint)"
    ```
-   - Extract: Current phase, progress, completed phases
 
-3. **Read current phase instructions:**
-   ```bash
-   Read: openspec/changes/{change-id}/.claude/phases.md
-   ```
-   - Find: Current phase section only (based on flags.json)
-   - Extract: Specific instructions for current phase
+2. **No Context7 needed** - read actual code files to extract contracts
 
-4. **Read OpenSpec files:**
-   ```bash
-   Read: openspec/changes/{change-id}/proposal.md
-   Read: openspec/changes/{change-id}/tasks.md
-   Read: openspec/changes/{change-id}/design.md (if exists)
-   ```
-   - Extract: Business requirements, task list, technical decisions
+3. **OpenSpec change context (if exists):**
+   - Read: `openspec/changes/{change-id}/.claude/context.md`
+   - Read: `openspec/changes/{change-id}/.claude/flags.json`
+   - Read: `openspec/changes/{change-id}/.claude/phases.md`
+   - Read: `openspec/changes/{change-id}/proposal.md`, `tasks.md`, `design.md`
 
-**If change context doesn't exist:**
-- Skip Step 4 (working on general task, not OpenSpec change)
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🔍 Patterns: error-handling.md, logging.md (universal)
+- 🔗 Validation: Read actual frontend/backend code (no docs needed)
 
 ---
 
@@ -538,125 +490,43 @@ Frontend expects `email` but backend doesn't return it.
 
 ---
 
-## Handoff to Next Agent (Optional but Recommended)
+## Handoff to Next Agent
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete templates
 
-### Template:
+**Common Handoff Paths (integration agent):**
 
-```markdown
-## ✅ Task Complete: [Task Name]
+### integration → frontend
+**Purpose:** Hand off validated contracts (or mismatches) before UI connection
 
-**Agent:** integration
+**What to include:**
+- Validation results (contracts matched or mismatches found)
+- Endpoints analyzed with status (✅ OK, ❌ MISMATCH, ⚠️ WARNING)
+- Specific fix recommendations (Option A vs B with file paths)
+- Expected vs actual response formats (side-by-side comparison)
+- File references (frontend files, backend files, line numbers)
 
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
+**Template:** See `lib/handoff-protocol.md` → "integration → frontend"
 
-**For Next Agent:**
+### integration → backend (if mismatches require backend fixes)
+**Purpose:** Report contract mismatches that require backend changes
 
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (Integration → Frontend):
-
-```markdown
-## ✅ Task Complete: Verify API contracts
-
-**Agent:** integration
-
-**What I Did:**
-- Validated frontend expectations vs backend responses
-- Checked all 3 endpoints: POST /api/login, GET /api/posts, POST /api/posts
-- Found 1 mismatch (fixed - see below)
-
-**Contract Validation Results:**
-
-**POST /api/auth/login:**
-- ✅ Request format matches
-- ✅ Success response matches (200, {token, user})
-- ✅ Error response matches (401, {detail})
-
-**GET /api/posts:**
-- ✅ Response format matches
-- ⚠️ **MISMATCH FOUND:** Backend returns `author_id`, frontend expects `authorId`
-
-**POST /api/posts:**
-- ✅ Request format matches
-- ✅ Response format matches
-
-**For Next Agent (Frontend):**
-
-**Fix Required:**
-
-**File:** components/PostList.tsx
-
-**Change this:**
-\`\`\`typescript
-// Current (wrong - expects authorId):
-const authorId = post.authorId
-
-// Fix to:
-const authorId = post.author_id
-\`\`\`
-
-**Or better:** Update backend to use camelCase (authorId) instead of snake_case
-
-**Recommendation:** Use camelCase consistently across frontend + backend
-- Frontend: JavaScript convention (camelCase)
-- Backend (Python): Python convention (snake_case)
-- **Solution:** Add serializer on backend to convert snake_case → camelCase in responses
-
-**Important Notes:**
-- All other contracts match ✅
-- This is the only mismatch found
-- Fix this before proceeding to avoid runtime errors
-
-**Files Checked:**
-- Frontend: components/LoginForm.tsx, components/PostList.tsx, components/CreatePost.tsx
-- Backend: app/api/auth.py, app/api/posts.py
-- Contracts: Compared request/response formats
-```
-
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+**What to include:**
+- Same as above, but focus on backend-side fixes
 
 ---
 
 ## Rules
 
 ### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: pnpm (JavaScript)
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0 (Package Manager Discovery)
 
-✅ CORRECT: pnpm install
-✅ CORRECT: pnpm add <package>
-❌ WRONG: npm install (ignored tech-stack.md!)
-❌ WRONG: bun add <package> (tech-stack says pnpm!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Reference:**
+- ✅ ALWAYS read `tech-stack.md` before ANY install/run commands
+- ✅ Use exact package manager from tech-stack.md (pnpm, npm, bun, uv, poetry, pip)
+- ❌ NEVER assume or hardcode package manager
+- ❌ If tech-stack.md missing → warn user to run `/agentsetup`
 
 ### Validation Standards
 - ✅ Read ACTUAL code files (don't guess or assume)
@@ -770,28 +640,12 @@ Found: 3 endpoints
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, INTEGRATION_REPORT.md, CONTRACT_ANALYSIS.md, or any other .md documentation files
-- DO NOT create: API contract documentation files, integration guides, or validation reports
-- Exception: ONLY when user explicitly says "create documentation" or "write a report file"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - Endpoints analyzed
-  - Contract mismatches found (expected vs actual)
-  - File paths and line numbers
-  - Recommended fixes
-  - Status summary
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write INTEGRATION_REPORT.md with validation results
-       Write API_CONTRACTS.md with contract specs
-
-✅ GOOD: Return detailed validation report in final message
-       Include all mismatch details as response text
-```
+**Quick Reference:**
+- ❌ NEVER create documentation files unless explicitly requested
+- ❌ NO INTEGRATION_REPORT.md, CONTRACT_ANALYSIS.md, API_CONTRACTS.md, etc.
+- ✅ Return comprehensive text reports in your final message instead
+- ✅ Exception: Only when user explicitly says "create documentation"
 
 ---
