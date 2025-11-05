@@ -163,78 +163,22 @@ Report steps 1-4 BEFORE coding.
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (backend):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
-```
+### Framework Docs (Context7)
+**Topic:** "routing, validation, middleware, error handling, async"
+**Tokens:** 3000
 
-**Extract:**
-1. **Framework** (FastAPI, Express, Next.js, Django)
-2. **Package Manager** (uv, poetry, pip, npm, pnpm, bun, yarn)
-3. **Database ORM** (Prisma, SQLAlchemy, TypeORM)
-4. **Testing Framework** (Pytest, Vitest, Jest)
+**ORM/Database (if applicable):**
+**Topic:** "queries, relationships, transactions"
+**Tokens:** 2000
 
-**Example tech-stack.md:**
-```markdown
-## Stack Overview
-| Category | Library | Version |
-|----------|---------|---------|
-| Backend  | FastAPI | 0.104.1 |
-| Database | SQLAlchemy | 2.0.23 |
-
-## Package Manager
-### Python
-- Tool: uv
-- Install: uv pip install <package>
-- Run: uv run <script>
-```
-
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
-
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/logging.md
-- @.claude/contexts/patterns/error-handling.md
-- @.claude/contexts/patterns/testing.md
-- @.claude/contexts/patterns/task-classification.md
-
-### Step 2: Load Tech Stack Docs from Context7
-
-**IF FastAPI (Python):**
-```
-mcp__context7__get-library-docs("/fastapi/fastapi", {
-  topic: "routing, dependency injection, pydantic validation, async",
-  tokens: 3000
-})
-
-mcp__context7__get-library-docs("/pydantic/pydantic", {
-  topic: "models, validation, serialization",
-  tokens: 2000
-})
-```
-
-**IF Express (Node.js):**
-```
-mcp__context7__get-library-docs("/expressjs/express", {
-  topic: "routing, middleware, error handling",
-  tokens: 2000
-})
-```
-
-**IF Next.js API Routes:**
-```
-mcp__context7__get-library-docs("/vercel/next.js", {
-  topic: "api routes, route handlers, server actions",
-  tokens: 2000
-})
-```
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🔍 Patterns: error-handling.md, logging.md (universal)
+- 🧪 Testing: Load testing framework docs from Context7
 
 ## TDD Decision Logic
 
@@ -258,310 +202,22 @@ mcp__context7__get-library-docs("/vercel/next.js", {
 
 ---
 
-## TDD Workflow: Red-Green-Refactor
+## TDD Workflow
 
-**Use when:** `tdd_required: true`
+**→ See:** `.claude/lib/tdd-workflow.md` for complete Red-Green-Refactor cycle
 
-### Step 1: RED Phase - Write Test First
+**When to use:**
+- ✅ If `tdd_required: true` → Use TDD (Red-Green-Refactor)
+- ❌ If `tdd_required: false` → Use Test-Alongside (implementation first)
 
-**Important:** Test MUST be written BEFORE any implementation code.
-
-**FastAPI Example:**
-
-```python
-# tests/test_auth.py (WRITE THIS FIRST!)
-import pytest
-from httpx import AsyncClient
-
-@pytest.mark.asyncio
-async def test_login_success(client: AsyncClient):
-    """
-    Test successful login with valid credentials.
-
-    This test MUST FAIL initially (endpoint doesn't exist yet).
-    """
-    response = await client.post("/api/auth/login", json={
-        "email": "test@example.com",
-        "password": "password123"
-    })
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "token" in data
-    assert data["user"]["email"] == "test@example.com"
-
-@pytest.mark.asyncio
-async def test_login_invalid_credentials(client: AsyncClient):
-    """Test that invalid credentials return 401"""
-    response = await client.post("/api/auth/login", json={
-        "email": "wrong@example.com",
-        "password": "wrongpass"
-    })
-
-    assert response.status_code == 401
-    assert "invalid" in response.json()["detail"].lower()
-
-@pytest.mark.asyncio
-async def test_login_validation_error(client: AsyncClient):
-    """Test validation on missing fields"""
-    response = await client.post("/api/auth/login", json={
-        "email": "not-an-email"
-        # Missing password
-    })
-
-    assert response.status_code == 422  # Validation error
+**Quick Reference (TDD):**
+```
+1. 🔴 RED: Write test first → verify it FAILS
+2. 🟢 GREEN: Minimal code → make tests PASS
+3. 🔵 REFACTOR: Add quality → tests still PASS
 ```
 
-**Run tests:**
-```bash
-pytest tests/test_auth.py -v
-
-# Expected output:
-# ❌ FAILED - Connection refused OR 404 Not Found
-# ✅ This is CORRECT! Test should fail in RED phase.
-```
-
-**Log RED phase:**
-```json
-{
-  "event": "tdd_red_phase",
-  "task": "Implement POST /api/auth/login",
-  "test_file": "tests/test_auth.py",
-  "tests_written": 3,
-  "status": "fail",
-  "expected": "Tests should fail - endpoint not implemented yet"
-}
-```
-
----
-
-### Step 2: GREEN Phase - Minimal Implementation
-
-**Goal:** Write just enough code to make tests pass.
-
-```python
-# app/api/auth.py (NOW write implementation)
-from fastapi import APIRouter, HTTPException
-
-router = APIRouter()
-
-@router.post("/api/auth/login")
-async def login(email: str, password: str):
-    """Minimal implementation - just make tests pass"""
-
-    # Hardcoded for now (will refactor later)
-    if email == "test@example.com" and password == "password123":
-        return {
-            "token": "fake-token-123",
-            "user": {"email": email}
-        }
-
-    # Invalid credentials
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-```
-
-**Run tests:**
-```bash
-pytest tests/test_auth.py -v
-
-# Expected output:
-# ✅ PASSED test_login_success
-# ✅ PASSED test_login_invalid_credentials
-# ⚠️ test_login_validation_error might still fail (need Pydantic)
-```
-
-**Log GREEN phase:**
-```json
-{
-  "event": "tdd_green_phase",
-  "task": "Implement POST /api/auth/login",
-  "tests_passed": 2,
-  "tests_failed": 1,
-  "implementation": "app/api/auth.py",
-  "status": "partial_pass",
-  "note": "Minimal implementation complete, refactor needed"
-}
-```
-
----
-
-### Step 3: REFACTOR Phase - Add Real Logic
-
-**Goal:** Improve code quality while keeping tests green.
-
-```python
-# app/api/auth.py (Refactor with real logic)
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.lib.logger import logger
-from app.lib.auth import verify_password, create_jwt_token
-from app.db import get_db
-from app.models.user import User
-
-router = APIRouter()
-
-class LoginRequest(BaseModel):
-    """Login request validation schema"""
-    email: EmailStr
-    password: str
-
-class LoginResponse(BaseModel):
-    """Login response schema"""
-    token: str
-    user: dict
-
-@router.post("/api/auth/login", response_model=LoginResponse)
-async def login(
-    data: LoginRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Authenticate user and return JWT token.
-
-    Raises:
-        HTTPException 401: Invalid credentials
-        HTTPException 500: Server error
-    """
-
-    # Log entry
-    logger.info("api_route_entry", extra={
-        "route": "/api/auth/login",
-        "method": "POST",
-        "email": data.email
-    })
-
-    try:
-        # Query database
-        result = await db.execute(
-            select(User).where(User.email == data.email)
-        )
-        user = result.scalar_one_or_none()
-
-        # Verify credentials
-        if not user or not verify_password(data.password, user.hashed_password):
-            logger.warning("login_failed", extra={
-                "email": data.email,
-                "reason": "invalid_credentials"
-            })
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid credentials"
-            )
-
-        # Generate JWT token
-        token = create_jwt_token(user.id)
-
-        # Log success
-        logger.info("login_success", extra={
-            "user_id": user.id,
-            "email": data.email
-        })
-
-        return LoginResponse(
-            token=token,
-            user={
-                "id": user.id,
-                "email": user.email,
-                "name": user.name
-            }
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("login_error", extra={
-            "error": str(e),
-            "email": data.email
-        })
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error"
-        )
-```
-
-**Run tests again:**
-```bash
-pytest tests/test_auth.py -v
-
-# Expected output:
-# ✅ PASSED test_login_success (still passing!)
-# ✅ PASSED test_login_invalid_credentials (still passing!)
-# ✅ PASSED test_login_validation_error (now passing!)
-```
-
-**Log REFACTOR phase:**
-```json
-{
-  "event": "tdd_refactor_phase",
-  "task": "Implement POST /api/auth/login",
-  "tests_passing": 3,
-  "improvements": [
-    "Added Pydantic validation schema",
-    "Added database integration",
-    "Added JWT token generation",
-    "Added structured logging (entry, success, failure, error)",
-    "Added proper error handling",
-    "Added type hints and docstrings"
-  ],
-  "status": "complete"
-}
-```
-
----
-
-## Standard Workflow: Test-Alongside
-
-**Use when:** `tdd_required: false`
-
-### Step 1: Write Implementation First
-
-```python
-# app/api/users.py
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.db import get_db
-from app.models.user import User
-
-router = APIRouter()
-
-@router.get("/api/users")
-async def list_users(db: AsyncSession = Depends(get_db)):
-    """List all users (simple read-only operation)"""
-    result = await db.execute(select(User))
-    users = result.scalars().all()
-
-    return {
-        "users": [
-            {
-                "id": user.id,
-                "email": user.email,
-                "name": user.name
-            }
-            for user in users
-        ]
-    }
-```
-
-### Step 2: Write Tests
-
-```python
-# tests/test_users.py
-import pytest
-from httpx import AsyncClient
-
-@pytest.mark.asyncio
-async def test_list_users(client: AsyncClient, test_users):
-    """Test listing all users"""
-    response = await client.get("/api/users")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "users" in data
-    assert len(data["users"]) > 0
-```
+**Examples:** See `lib/tdd-workflow.md` → Python/FastAPI, TypeScript/Next.js, JavaScript/Express
 
 ---
 
@@ -897,163 +553,57 @@ Response: { token: string, user: { id, email, name } }
 
 ## Handoff to Next Agent (Optional but Recommended)
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete template
 
-### Template:
-
-```markdown
-## ✅ Task Complete: [Task Name]
-
-**Agent:** backend
-
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
-
-**For Next Agent:**
-
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (Backend → Frontend):
+**Quick Reference for backend → frontend:**
 
 ```markdown
-## ✅ Task Complete: Create POST /api/auth/login
-
-**Agent:** backend
-
-**What I Did:**
-- Created POST /api/auth/login endpoint
-- Added email/password validation with Pydantic
-- Implemented JWT token generation
-- Added error handling (401 for invalid credentials)
+## ✅ Task Complete: {Endpoint Name}
 
 **For Next Agent (Frontend):**
 
 **API Contract:**
-- **Endpoint:** POST /api/auth/login
-- **Request Body:**
-  \`\`\`json
-  {
-    "email": "string (required, must be valid email)",
-    "password": "string (required, min 8 chars)"
-  }
-  \`\`\`
-- **Success Response (200):**
-  \`\`\`json
-  {
-    "token": "string (JWT token, expires in 7 days)",
-    "user": {
-      "id": "string (UUID)",
-      "email": "string",
-      "name": "string | null"
-    }
-  }
-  \`\`\`
-- **Error Response (401):**
-  \`\`\`json
-  {
-    "detail": "Invalid credentials"
-  }
-  \`\`\`
-- **Error Response (422):**
-  \`\`\`json
-  {
-    "detail": [
-      {
-        "loc": ["body", "email"],
-        "msg": "field required",
-        "type": "value_error.missing"
-      }
-    ]
-  }
-  \`\`\`
+- **Endpoint:** {METHOD} {path}
+- **Request Body:** {JSON schema}
+- **Success Response ({code}):** {JSON schema}
+- **Error Response ({code}):** {JSON schema}
+- **Authentication Required:** {Yes/No + header format}
 
 **Important Notes:**
-- Store JWT token in localStorage or httpOnly cookie
-- Include token in Authorization header: "Bearer {token}"
-- Token expires in 7 days - handle refresh or re-login
-- Validate email format on frontend before sending (better UX)
-
-**Files Created:**
-- app/api/auth.py (endpoint handler)
-- app/models/user.py (User model)
-- tests/test_auth.py (unit tests)
+- {validation-rules}
+- {rate-limiting}
+- {special-cases}
 ```
 
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+**Full examples:** See `lib/handoff-protocol.md` → backend section
 
 ---
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, API_DOCUMENTATION.md, BACKEND_GUIDE.md, or any other .md documentation files
-- DO NOT create: Endpoint documentation files, authentication guides, or implementation summaries
-- Exception: ONLY when user explicitly says "create documentation" or "write API docs"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - Endpoints created (routes, methods, validation)
-  - Request/response schemas
-  - Authentication/authorization logic
-  - Test results
-  - API contracts
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write API_DOCUMENTATION.md with all endpoints
-       Write IMPLEMENTATION_NOTES.md with technical details
-
-✅ GOOD: Return detailed endpoint summary in final message
-       Include all specs but as response, not files
-```
+**Quick Rule:**
+- ❌ **NEVER** create .md documentation files (README, API_DOCS, etc.)
+- ✅ **ALWAYS** report results as verbose text output in final message
+- Exception: ONLY when user explicitly requests documentation
 
 ## Rules
 
 ### TDD Compliance
-- ✅ Check `tdd_required` flag from Orchestrator
-- ✅ If `true`: MUST use Red-Green-Refactor workflow
-- ✅ RED: Write test FIRST, verify it FAILS
-- ✅ GREEN: Write minimal code to pass
-- ✅ REFACTOR: Add logging, error handling, keep tests green
-- ✅ If `false`: Test-Alongside OK (implementation first, then tests)
-- ✅ Log each TDD phase (red, green, refactor)
+**→ See:** `.claude/lib/tdd-workflow.md` for complete workflow
 
-### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem (JS vs Python)
+**Quick Rule:**
+- If `tdd_required: true` → RED-GREEN-REFACTOR (tests first)
+- If `tdd_required: false` → Test-Alongside (implementation first)
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: uv (Python)
+### Package Manager
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0
 
-✅ CORRECT: uv pip install fastapi
-❌ WRONG: pip install fastapi (ignored tech-stack.md!)
-❌ WRONG: pnpm add fastapi (fastapi is Python, not JS!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Rule:**
+- ✅ Read `tech-stack.md` BEFORE any install/run commands
+- ✅ Use detected package manager (uv, pip, poetry, npm, etc.)
+- ❌ NEVER hardcode package manager
 
 ### Implementation Standards
 - ✅ Validate ALL inputs (Pydantic/Zod)

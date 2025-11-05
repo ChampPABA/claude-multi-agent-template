@@ -217,80 +217,33 @@ Provide complete analysis covering steps 1-4 BEFORE writing code.
 
 ## Context Loading Strategy
 
-### Step 0: Read Tech Stack & Package Manager (CRITICAL!)
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
 
-**BEFORE doing anything, read tech-stack.md:**
+**Agent-Specific Additions (uxui-frontend):**
 
-```bash
-# Check if tech-stack.md exists
-.claude/contexts/domain/{project-name}/tech-stack.md
-```
-
-**Extract:**
-1. **Framework** (Next.js, FastAPI, Vue, etc.)
-2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
-3. **Dependencies** (specific to this agent's role)
-
-**Action:**
-- Store framework → Use for Context7 search
-- Store package manager → **USE THIS for all install/run commands**
-
-**CRITICAL:** Never use `npm`, `pip`, or any other package manager without checking tech-stack.md first!
-
-### Step 1: Load Universal Patterns (Always)
-- @.claude/contexts/patterns/ui-component-consistency.md (CRITICAL - Check existing components!)
-- @.claude/contexts/patterns/testing.md
-- @.claude/contexts/patterns/logging.md
-- @.claude/contexts/patterns/code-standards.md
-- @.claude/contexts/patterns/task-classification.md
-
-### Step 2: Load Design Foundation (Always)
+### Additional Design Contexts (Always Load)
 - @.claude/contexts/design/index.md
+- @.claude/contexts/design/box-thinking.md
 - @.claude/contexts/design/color-theory.md
 - @.claude/contexts/design/spacing.md
 - @.claude/contexts/design/shadows.md
 - @.claude/contexts/design/accessibility.md
+- @.claude/contexts/patterns/ui-component-consistency.md (CRITICAL!)
+- @.claude/contexts/patterns/frontend-component-strategy.md
 
-### Step 3: Load Tech Stack Docs (Context7 - Dynamic)
+### Project-Specific (If Exists)
+- `design-system/STYLE_GUIDE.md` (Priority #1 - loaded in STEP 0.5)
+- `design-system/STYLE_TOKENS.json` (lightweight tokens)
+- `.changes/{change-id}/page-plan.md` (from /pageplan command)
 
-**IF project uses Next.js:**
-```
-Use Context7 MCP:
-1. Resolve: mcp__context7__resolve-library-id("nextjs")
-2. Get docs: mcp__context7__get-library-docs("/vercel/next.js", {
-     topic: "app router, server components, client components",
-     tokens: 3000
-   })
-3. Cache result for this session
-```
+### Framework Docs (Context7)
+**Topic:** "components, hooks, state management, routing, styling"
+**Tokens:** 3000
 
-**IF project uses React (standalone):**
-```
-Use Context7 MCP:
-1. Resolve: mcp__context7__resolve-library-id("react")
-2. Get docs: mcp__context7__get-library-docs("/facebook/react", {
-     topic: "hooks, components, useState, useEffect",
-     tokens: 3000
-   })
-```
-
-**IF project uses Vue:**
-```
-Use Context7 MCP:
-1. Resolve: mcp__context7__resolve-library-id("vue")
-2. Get docs: mcp__context7__get-library-docs("/vuejs/vue", {
-     topic: "composition api, components, reactive",
-     tokens: 3000
-   })
-```
-
-### Step 4: Load Domain Contexts (If Exists)
-```
-Check: .claude/contexts/domain/{project}/
-IF exists:
-  → Load domain-specific design tokens
-  → Example: domain/ielts/design-tokens.md
-```
+**Quick Reference:**
+- 📦 Package Manager: Read from `tech-stack.md` (see protocol)
+- 🎨 Design Tokens: `design-system/STYLE_TOKENS.json`
+- 🧩 Patterns: Universal + Design-specific
 
 ---
 
@@ -716,154 +669,55 @@ Return to Orchestrator:
 
 ## Handoff to Next Agent (Optional but Recommended)
 
-**When completing a task, provide context for the next agent:**
+**→ See:** `.claude/lib/handoff-protocol.md` for complete template
 
-### Template:
-
-```markdown
-## ✅ Task Complete: [Task Name]
-
-**Agent:** uxui-frontend
-
-**What I Did:**
-- {summary-of-work-done}
-- {key-changes-made}
-- {files-created-or-modified}
-
-**For Next Agent:**
-
-{agent-specific-handoff-info}
-
-**Important Notes:**
-- {any-gotchas-or-warnings}
-- {configuration-needed}
-- {things-to-watch-out-for}
-```
-
-### Example Handoff (UX-UI Frontend → Frontend):
+**Quick Reference for uxui-frontend → frontend:**
 
 ```markdown
-## ✅ Task Complete: Create login form UI
-
-**Agent:** uxui-frontend
-
-**What I Did:**
-- Created LoginForm component with email/password inputs
-- Added form validation (required, email format)
-- Created submit button with loading state
-- Using mock data for now (hardcoded credentials)
+## ✅ Task Complete: {Component Name}
 
 **For Next Agent (Frontend):**
 
-**Component Location:**
-- components/LoginForm.tsx
+**Component Location:** {path}
 
 **Current Mock Implementation:**
-\`\`\`typescript
-// Remove this mock logic:
-const mockLogin = (email: string, password: string) => {
-  if (email === 'test@example.com' && password === 'password123') {
-    return { token: 'mock-token', user: { id: '1', email } }
-  }
-  throw new Error('Invalid credentials')
-}
-\`\`\`
+// Code to remove (mock data)
 
 **Replace With:**
-\`\`\`typescript
-// Real API call:
-const response = await fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-})
-
-if (!response.ok) {
-  const error = await response.json()
-  throw new Error(error.detail || 'Login failed')
-}
-
-const data = await response.json()
-// data = { token: string, user: { id, email, name } }
-\`\`\`
+// Real API integration
 
 **State Management Needed:**
-- Store JWT token (localStorage or cookie)
-- Store user object (global state - Zustand/Redux)
-- Add logout action (clear token + user)
+- Store {what} ({where})
+- Add {actions}
 
 **Important Notes:**
-- Form already validates email format (client-side)
-- Loading state already handled (disable button during submit)
-- Error messages displayed below form (update with API error)
-- Success: redirect to dashboard or home page
-
-**Files Created:**
-- components/LoginForm.tsx
-- components/ui/Input.tsx (reusable)
-- components/ui/Button.tsx (reusable)
+- Form/UI already handles {what}
+- Loading/error states ready
+- Success action: {redirect/update}
 ```
 
-### Why This Helps:
-- ✅ Next agent doesn't need to read all your code
-- ✅ API contracts/interfaces are clear
-- ✅ Prevents miscommunication
-- ✅ Saves time (no need to reverse-engineer your work)
-
-**Note:** This handoff format is optional but highly recommended for multi-agent workflows.
+**Full examples:** See `lib/handoff-protocol.md` → uxui-frontend section
 
 ---
 
 ## Documentation Policy
 
-### ❌ NEVER Create Documentation Files Unless Explicitly Requested
-- DO NOT create: README.md, IMPLEMENTATION_SUMMARY.md, DOCS.md, GUIDE.md, or any other .md documentation files
-- DO NOT create: API documentation files, component documentation files, or tutorial files
-- Exception: ONLY when user explicitly says "create documentation", "write a README", or "generate docs"
+**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
 
-### ✅ Report Results as Verbose Text Output Instead
-- Return comprehensive text reports in your final message (not separate files)
-- Include all important details:
-  - What was implemented (components, features)
-  - File paths created/modified
-  - Technical decisions and rationale
-  - Test results and coverage
-  - Next steps and recommendations
-- Format: Use markdown in your response text, NOT separate .md files
-
-**Example:**
-```
-❌ BAD: Write LANDING_PAGE_DOCS.md (680 lines)
-       Write IMPLEMENTATION_SUMMARY.md (600 lines)
-       Write LANDING_PAGE_README.md (200 lines)
-
-✅ GOOD: Return detailed summary in final message text
-       Include all info but as response, not files
-```
+**Quick Rule:**
+- ❌ **NEVER** create .md documentation files (README, DOCS, GUIDE, etc.)
+- ✅ **ALWAYS** report results as verbose text output in final message
+- Exception: ONLY when user explicitly requests documentation
 
 ## Rules
 
-### Package Manager (CRITICAL!)
-- ✅ **ALWAYS read tech-stack.md** before running ANY install/run commands
-- ✅ Use package manager specified in tech-stack.md
-- ✅ Never assume `npm`, `pip`, or any other package manager
-- ✅ For monorepos: use correct package manager for ecosystem
+### Package Manager
+**→ See:** `.claude/lib/context-loading-protocol.md` → Level 0
 
-**Example:**
-```markdown
-# tech-stack.md shows:
-Package Manager: pnpm (JavaScript)
-
-✅ CORRECT: pnpm install
-✅ CORRECT: pnpm add <package>
-❌ WRONG: npm install (ignored tech-stack.md!)
-❌ WRONG: bun add <package> (tech-stack says pnpm!)
-```
-
-**If tech-stack.md doesn't exist:**
-- Warn user to run `/agentsetup` first
-- Ask user which package manager to use
-- DO NOT proceed with hardcoded package manager
+**Quick Rule:**
+- ✅ Read `tech-stack.md` BEFORE any install/run commands
+- ✅ Use detected package manager (pnpm, npm, bun, etc.)
+- ❌ NEVER hardcode package manager
 
 ### TDD Compliance (Only for Complex UI)
 - ✅ Check `tdd_required` flag from Orchestrator
