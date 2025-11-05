@@ -21,7 +21,8 @@
 1. **Reads User-Specified Context:**
    - Only reads files that user mentions with `@` prefix
    - Always reads `.changes/{change-id}/proposal.md` (if exists)
-   - Always reads `design-system/STYLE_GUIDE.md` (if exists)
+   - **Always reads `design-system/STYLE_TOKENS.json`** (lightweight, ~500 tokens) ✅
+   - Validates `design-system/STYLE_GUIDE.md` exists (doesn't load full content)
 
 2. **Searches Existing Components:**
    - Glob: `**/{Navbar,Footer,Sidebar,Header}*.{tsx,jsx,vue}`
@@ -64,16 +65,34 @@ const userFiles = extractMentionedFiles(userMessage) // @prd.md, @brief.md
 
 // Always read (if exists)
 const proposalPath = `.changes/${changeId}/proposal.md`
-const styleGuidePath = `design-system/STYLE_GUIDE.md`
+const tokensPath = `design-system/STYLE_TOKENS.json` // 🆕 Lightweight tokens
+const styleGuidePath = `design-system/STYLE_GUIDE.md` // Validate only, don't load
 
 const contextFiles = [
   ...userFiles,
-  proposalPath,
-  styleGuidePath
+  proposalPath
 ].filter(fileExists)
 
 // Read all context
-const context = contextFiles.map(readFile).join('\n\n---\n\n')
+let context = contextFiles.map(readFile).join('\n\n---\n\n')
+
+// 🆕 Load design tokens (lightweight)
+if (fileExists(tokensPath)) {
+  const tokens = JSON.parse(Read(tokensPath))
+  context += `\n\n---\n\n# Design Tokens (STYLE_TOKENS.json)\n\n`
+  context += `Primary Color: ${tokens.tokens.colors.primary.DEFAULT}\n`
+  context += `Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px\n`
+  context += `Component Library: ${tokens.component_library.name}\n`
+  context += `Shadows: ${Object.keys(tokens.tokens.shadows).join(', ')}\n`
+}
+
+// Validate STYLE_GUIDE.md exists (don't load!)
+const hasStyleGuide = fileExists(styleGuidePath)
+if (!hasStyleGuide) {
+  warn(`⚠️ No STYLE_GUIDE.md found - run /designsetup first`)
+}
+
+// Total context: ~1.5K tokens (vs 5K+ if loading full STYLE_GUIDE.md)
 ```
 
 ### STEP 3: Search Existing Components
@@ -181,11 +200,22 @@ _([length] chars - based on [source])_
 ---
 
 ## 5. Design Notes
-- Follow \`design-system/STYLE_GUIDE.md\`:
-  - Primary color: [from STYLE_GUIDE]
-  - Font family: [from STYLE_GUIDE]
-  - Spacing scale: [from STYLE_GUIDE]
-  - Component library: [from STYLE_GUIDE]
+
+**Design System Files:**
+- Tokens (lightweight): \`design-system/STYLE_TOKENS.json\`
+- Full guide (reference): \`design-system/STYLE_GUIDE.md\`
+
+**Key Design Tokens:**
+- Primary color: [from STYLE_TOKENS.json]
+- Font family: [from STYLE_TOKENS.json]
+- Spacing scale: [from STYLE_TOKENS.json]
+- Component library: [from STYLE_TOKENS.json]
+- Shadows: [from STYLE_TOKENS.json]
+
+**Agent Instructions:**
+- uxui-frontend MUST read STYLE_TOKENS.json in STEP 0.5
+- Use theme tokens (text-foreground/70), NOT hardcoded colors
+- Use spacing scale (p-4, p-6), NOT arbitrary values (p-5)
 
 ## 6. Implementation Notes
 

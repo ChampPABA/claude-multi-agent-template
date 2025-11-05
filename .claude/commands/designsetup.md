@@ -720,6 +720,144 @@ Write('design-system/STYLE_GUIDE.md', styleGuideMD);
 
 ---
 
+## STEP 5.5: Generate STYLE_TOKENS.json (Context Optimization)
+
+> **New in v1.2.0:** Generate lightweight design tokens file for token-efficient loading
+
+```javascript
+output(`
+🔄 Extracting design tokens for efficient loading...
+`);
+
+// Extract design tokens from STYLE_GUIDE.md
+const tokensPrompt = `
+You are extracting design tokens from the STYLE_GUIDE.md into a lightweight JSON format.
+
+Source: STYLE_GUIDE.md content below
+${styleGuideMD}
+
+Task: Extract ALL design tokens into JSON format following this exact structure:
+
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "version": "1.0.0",
+  "meta": {
+    "generated_at": "${new Date().toISOString()}",
+    "generated_by": "/designsetup command",
+    "source": "design-system/STYLE_GUIDE.md",
+    "design_style": "${selectedOption.name}",
+    "description": "Lightweight design tokens extracted from STYLE_GUIDE.md (~500 tokens vs ~5000 tokens for full guide)"
+  },
+  "tokens": {
+    "colors": {
+      "primary": {
+        "DEFAULT": "[extract from guide]",
+        "foreground": "[extract]",
+        "hover": "[extract or generate]",
+        "description": "Primary brand color for CTAs, links, and accents",
+        "tailwind": "bg-primary, text-primary, border-primary"
+      },
+      "secondary": { ... },
+      "background": { ... },
+      "foreground": { ... },
+      "border": { ... },
+      "semantic": {
+        "success": "[extract]",
+        "warning": "[extract]",
+        "error": "[extract]",
+        "info": "[extract]"
+      }
+    },
+    "spacing": {
+      "scale": [extract spacing scale array],
+      "description": "4px or 8px base unit spacing scale",
+      "tailwind_mapping": { ... },
+      "common_patterns": {
+        "component_padding": "p-4 (16px) or p-6 (24px)",
+        "section_gap": "gap-8 (32px) or gap-12 (48px)",
+        "layout_margin": "mt-16 (64px) or mt-24 (96px)"
+      }
+    },
+    "typography": {
+      "font_family": { ... },
+      "font_size": { ... },
+      "font_weight": { ... },
+      "line_height": { ... },
+      "headings": { ... }
+    },
+    "shadows": {
+      "sm": "[extract]",
+      "DEFAULT": "[extract]",
+      "md": "[extract]",
+      "lg": "[extract]",
+      "xl": "[extract]",
+      "usage": {
+        "cards": "shadow-md",
+        "dropdowns": "shadow-lg",
+        "modals": "shadow-xl",
+        "buttons_hover": "shadow-sm"
+      }
+    },
+    "borders": {
+      "radius": { ... },
+      "width": { ... },
+      "usage": { ... }
+    },
+    "animation": {
+      "duration": { ... },
+      "easing": { ... },
+      "common": { ... }
+    },
+    "breakpoints": { ... },
+    "z_index": { ... }
+  },
+  "component_library": {
+    "name": "[extract from guide]",
+    "install_command": "[extract]",
+    "common_components": [extract array]
+  },
+  "critical_rules": {
+    "colors": [
+      "❌ NO hardcoded hex values",
+      "✅ USE theme tokens"
+    ],
+    "spacing": [
+      "❌ NO arbitrary values",
+      "✅ USE spacing scale"
+    ],
+    "consistency": [
+      "❌ NO mixing patterns",
+      "✅ USE consistent patterns"
+    ]
+  }
+}
+
+IMPORTANT:
+- Extract ALL values from STYLE_GUIDE.md (don't use placeholders)
+- If a value isn't in the guide, infer it logically (e.g., hover = 10% darker than DEFAULT)
+- Keep descriptions concise but clear
+- Return ONLY valid JSON (no markdown, no explanations)
+`;
+
+const tokensJSON = await LLM({
+  prompt: tokensPrompt,
+  max_tokens: 4000,
+  temperature: 0.1 // Low temperature for consistent extraction
+});
+
+// Validate JSON
+try {
+  JSON.parse(tokensJSON);
+  Write('design-system/STYLE_TOKENS.json', tokensJSON);
+  output(`✅ STYLE_TOKENS.json generated (~500 tokens)`);
+} catch (e) {
+  warn(`⚠️ Failed to generate STYLE_TOKENS.json: ${e.message}`);
+  warn(`Continuing without tokens file...`);
+}
+```
+
+---
+
 ## STEP 6: Final Report
 
 ```
@@ -740,7 +878,8 @@ Write('design-system/STYLE_GUIDE.md', styleGuideMD);
 ${selectedOption.advantages.slice(0, 4).map(a => `   ✓ ${a}`).join('\n')}
 
 📦 Files Created:
-   ✓ design-system/STYLE_GUIDE.md (final guide)
+   ✓ design-system/STYLE_GUIDE.md (final guide, ~2000 lines)
+   ✓ design-system/STYLE_TOKENS.json (lightweight tokens, ~500 tokens) 🆕
    ✓ design-system/synthesis/options/ (${styleOptions.options.length} YAMLs)
 
 ⚠️ Trade-offs:
@@ -756,17 +895,21 @@ ${selectedOption.disadvantages.slice(0, 2).map(d => `   • ${d}`).join('\n')}
 
 🚀 Next Steps:
 
-1. Review STYLE_GUIDE.md:
-   cat design-system/STYLE_GUIDE.md | head -100
+1. Review generated files:
+   - Full guide: cat design-system/STYLE_GUIDE.md | head -100
+   - Tokens: cat design-system/STYLE_TOKENS.json
 
-2. Setup project (if needed):
+2. Setup project (generates design-context.md):
    /psetup
 
 3. Start development:
    /csetup feature-login
    /cdev feature-login
 
-4. Agents will automatically use STYLE_GUIDE.md ✓
+4. Context Optimization (v1.2.0):
+   ✅ Commands use STYLE_TOKENS.json (~500 tokens, not full guide ~5K)
+   ✅ Agents load design-context.md + STYLE_TOKENS.json (~1.5K total)
+   ✅ 70% token reduction while maintaining quality ✨
 ```
 
 ---

@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "version": "1.0.0",
+  "meta": {
+    "generated_at": "2025-01-05T00:00:00Z",
+    "generated_by": "/designsetup command",
+    "source": "design-system/STYLE_GUIDE.md",
+    "description": "Lightweight design tokens extracted from STYLE_GUIDE.md. Use this for quick reference in commands and agents (~500 tokens vs ~5000 tokens for full guide)."
+  },
+  "tokens": {
+    "colors": {
+      "primary": {
+        "DEFAULT": "#0d7276",
+        "foreground": "#ffffff",
+        "hover": "#0a5a5d",
+        "description": "Primary brand color for CTAs, links, and accents",
+        "tailwind": "bg-primary, text-primary, border-primary"
+      },
+      "secondary": {
+        "DEFAULT": "#64748b",
+        "foreground": "#ffffff",
+        "hover": "#475569",
+        "description": "Secondary actions and less prominent elements"
+      },
+      "background": {
+        "DEFAULT": "#ffffff",
+        "muted": "#f1f5f9",
+        "subtle": "#f8fafc"
+      },
+      "foreground": {
+        "DEFAULT": "#0a0a0a",
+        "muted": "#64748b",
+        "subtle": "#94a3b8"
+      },
+      "border": {
+        "DEFAULT": "#e2e8f0",
+        "hover": "#cbd5e1",
+        "focus": "#0d7276"
+      },
+      "semantic": {
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+        "info": "#3b82f6"
+      }
+    },
+    "spacing": {
+      "scale": [4, 8, 12, 16, 24, 32, 40, 48, 64, 80, 96],
+      "description": "4px base unit spacing scale",
+      "tailwind_mapping": {
+        "1": "4px",
+        "2": "8px",
+        "3": "12px",
+        "4": "16px",
+        "6": "24px",
+        "8": "32px",
+        "10": "40px",
+        "12": "48px",
+        "16": "64px",
+        "20": "80px",
+        "24": "96px"
+      },
+      "common_patterns": {
+        "component_padding": "p-4 (16px) or p-6 (24px)",
+        "section_gap": "gap-8 (32px) or gap-12 (48px)",
+        "layout_margin": "mt-16 (64px) or mt-24 (96px)"
+      }
+    },
+    "typography": {
+      "font_family": {
+        "sans": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        "mono": "'Fira Code', 'Courier New', monospace"
+      },
+      "font_size": {
+        "xs": "12px",
+        "sm": "14px",
+        "base": "16px",
+        "lg": "18px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "30px",
+        "4xl": "36px",
+        "5xl": "48px"
+      },
+      "font_weight": {
+        "normal": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
+      },
+      "line_height": {
+        "tight": "1.25",
+        "normal": "1.5",
+        "relaxed": "1.75"
+      },
+      "headings": {
+        "h1": "text-5xl font-bold",
+        "h2": "text-4xl font-bold",
+        "h3": "text-3xl font-semibold",
+        "h4": "text-2xl font-semibold",
+        "h5": "text-xl font-medium",
+        "h6": "text-lg font-medium"
+      }
+    },
+    "shadows": {
+      "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "DEFAULT": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+      "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+      "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+      "usage": {
+        "cards": "shadow-md",
+        "dropdowns": "shadow-lg",
+        "modals": "shadow-xl",
+        "buttons_hover": "shadow-sm"
+      }
+    },
+    "borders": {
+      "radius": {
+        "sm": "0.25rem (4px)",
+        "DEFAULT": "0.375rem (6px)",
+        "md": "0.5rem (8px)",
+        "lg": "0.75rem (12px)",
+        "xl": "1rem (16px)",
+        "full": "9999px"
+      },
+      "width": {
+        "DEFAULT": "1px",
+        "2": "2px",
+        "4": "4px"
+      },
+      "usage": {
+        "inputs": "rounded-md border",
+        "buttons": "rounded-lg",
+        "cards": "rounded-xl",
+        "avatars": "rounded-full"
+      }
+    },
+    "animation": {
+      "duration": {
+        "fast": "150ms",
+        "normal": "200ms",
+        "slow": "300ms"
+      },
+      "easing": {
+        "in": "ease-in",
+        "out": "ease-out",
+        "in_out": "ease-in-out"
+      },
+      "common": {
+        "button_hover": "transition-all duration-200 ease-in-out",
+        "dropdown": "transition-opacity duration-150 ease-out",
+        "modal": "transition-transform duration-300 ease-in-out"
+      }
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px",
+      "2xl": "1536px"
+    },
+    "z_index": {
+      "dropdown": "10",
+      "sticky": "20",
+      "fixed": "30",
+      "modal_backdrop": "40",
+      "modal": "50",
+      "popover": "60",
+      "tooltip": "70"
+    }
+  },
+  "component_library": {
+    "name": "shadcn/ui",
+    "install_command": "npx shadcn-ui@latest init",
+    "common_components": [
+      "button",
+      "card",
+      "input",
+      "select",
+      "dialog",
+      "dropdown-menu",
+      "badge",
+      "avatar",
+      "tooltip"
+    ]
+  },
+  "critical_rules": {
+    "colors": [
+      "❌ NO hardcoded hex values (e.g., #64748b)",
+      "✅ USE theme tokens (e.g., text-foreground, bg-muted)"
+    ],
+    "spacing": [
+      "❌ NO arbitrary values (e.g., p-5, gap-7)",
+      "✅ USE spacing scale (e.g., p-4, p-6, gap-8)"
+    ],
+    "consistency": [
+      "❌ NO mixing shadow sizes (shadow-sm on some cards, shadow-lg on others)",
+      "✅ USE consistent patterns (all cards use shadow-md)"
+    ]
+  }
+}

@@ -94,7 +94,92 @@ See: `.claude/lib/agent-executor.md` for full implementation
 ```typescript
 // Step 4: Invoke Agent with Retry & Validation
 
-// 4.1: Build agent prompt
+// 4.1: Build agent prompt (with design reference - Context Optimization v1.2.0)
+function buildAgentPrompt(phase, changeContext) {
+  let prompt = `
+# Phase ${phase.phase_number}: ${phase.name}
+
+## Change Context
+${changeContext.proposal}
+
+## Tasks
+${changeContext.tasks}
+
+${phase.instructions}
+`
+
+  // 🆕 Add design reference for uxui-frontend agent (not full content!)
+  if (phase.agent === 'uxui-frontend') {
+    const tokensPath = 'design-system/STYLE_TOKENS.json'
+    const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+    const hasTokens = fileExists(tokensPath)
+    const hasStyleGuide = fileExists(styleGuidePath)
+
+    if (hasTokens || hasStyleGuide) {
+      prompt += `
+
+---
+
+## 🎨 Design System (MANDATORY Reading - STEP 0.5)
+
+**Required Files (YOU MUST READ in STEP 0.5):**
+
+${hasTokens ? `
+1. **STYLE_TOKENS.json** (~500 tokens) ✅ REQUIRED
+   \`\`\`
+   Read: design-system/STYLE_TOKENS.json
+   \`\`\`
+   Contains: Colors, spacing, typography, shadows, borders, animations
+` : ''}
+
+${hasStyleGuide ? `
+2. **STYLE_GUIDE.md** (selective sections ~2K tokens) 📖 OPTIONAL
+   \`\`\`
+   Read: design-system/STYLE_GUIDE.md
+   \`\`\`
+   Load only sections you need:
+   - Section 6: Component Styles
+   - Section 15: Layout Patterns
+   - Section 16: Example Component Reference
+` : ''}
+
+**Critical Rules:**
+- ❌ **NO** hardcoded colors: \`text-gray-500\`, \`#64748b\`
+- ✅ **USE** theme tokens: \`text-foreground/70\`, \`bg-muted\`
+- ❌ **NO** arbitrary spacing: \`p-5\`, \`gap-7\`
+- ✅ **USE** spacing scale: \`p-4\`, \`p-6\`, \`gap-8\`
+- ❌ **NO** inconsistent shadows: mixing \`shadow-sm\` and \`shadow-lg\`
+- ✅ **USE** consistent patterns: all cards use \`shadow-md\`
+
+**YOU MUST REPORT:**
+\`\`\`
+✅ Design System Loaded
+   - STYLE_TOKENS.json ✓
+   - Design Tokens Extracted: [list key tokens]
+\`\`\`
+
+If you skip this, your work will be REJECTED!
+
+---
+`
+    } else {
+      prompt += `
+
+---
+
+⚠️ **WARNING:** No design system found!
+Using fallback: .claude/contexts/design/*.md (universal principles)
+
+Run \`/designsetup\` to generate project-specific design system.
+
+---
+`
+    }
+  }
+
+  return prompt
+}
+
 const prompt = buildAgentPrompt(phase, changeContext)
 
 // 4.2: Execute agent with retry & validation

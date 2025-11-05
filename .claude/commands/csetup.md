@@ -42,6 +42,60 @@ Read in order:
 2. `openspec/changes/{change-id}/tasks.md`
 3. `openspec/changes/{change-id}/design.md` (if exists)
 
+---
+
+### Step 2.5: Validate Design System (Context Optimization v1.2.0)
+
+> **New:** Validate design files exist for UI work
+
+```typescript
+// Detect if change involves UI/frontend work
+const tasksContent = Read('openspec/changes/{change-id}/tasks.md')
+const hasFrontend = tasksContent.toLowerCase().match(/(ui|component|page|frontend|design|responsive)/i)
+
+if (hasFrontend) {
+  output(`\n🎨 UI work detected - validating design system...`)
+
+  const tokensPath = 'design-system/STYLE_TOKENS.json'
+  const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+
+  const hasTokens = fileExists(tokensPath)
+  const hasStyleGuide = fileExists(styleGuidePath)
+
+  if (!hasTokens || !hasStyleGuide) {
+    warn(`
+⚠️ WARNING: UI work detected but design system incomplete!
+
+Found:
+  ${hasStyleGuide ? '✅' : '❌'} STYLE_GUIDE.md
+  ${hasTokens ? '✅' : '❌'} STYLE_TOKENS.json
+
+This may result in:
+  - Inconsistent colors (random hex codes)
+  - Arbitrary spacing (p-5, gap-7)
+  - Duplicate components
+
+Recommendation:
+  1. Run: /designsetup
+  2. Then: /csetup ${changeId}
+
+Continue anyway? (yes/no)
+    `)
+
+    const answer = await askUser()
+    if (answer === 'no') {
+      return error('Setup cancelled. Run /designsetup first.')
+    }
+  } else {
+    output(`✅ Design System Ready`)
+    output(`   - STYLE_GUIDE.md ✓`)
+    output(`   - STYLE_TOKENS.json ✓`)
+  }
+}
+```
+
+---
+
 ### Step 3: Analyze Tasks
 
 **Parse tasks.md content and detect keywords:**
@@ -237,6 +291,41 @@ const projectTech = Read('.claude/contexts/domain/project/tech-stack.md')
 // Detect additional tech from proposal/tasks
 const additionalTech = detectAdditionalTech(proposalContent, tasksContent)
 
+// 🆕 Load design info (if UI work)
+let designInfo = ''
+if (hasFrontend) {
+  const tokensPath = 'design-system/STYLE_TOKENS.json'
+
+  if (fileExists(tokensPath)) {
+    const tokens = JSON.parse(Read(tokensPath))
+
+    designInfo = `
+## 🎨 Design System (Context Optimization v1.2.0)
+
+**Design Files (Token-Efficient):**
+- STYLE_TOKENS.json: \`design-system/STYLE_TOKENS.json\` (~500 tokens)
+- STYLE_GUIDE.md: \`design-system/STYLE_GUIDE.md\` (~5000 tokens, load selectively)
+
+**Key Design Tokens:**
+- Primary Color: ${tokens.tokens.colors.primary.DEFAULT}
+- Component Library: ${tokens.component_library.name}
+- Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px
+- Shadows: ${Object.keys(tokens.tokens.shadows).slice(0, 5).join(', ')}
+
+**Agent Loading (STEP 0.5 for uxui-frontend):**
+1. Read: STYLE_TOKENS.json (~500 tokens) ✅
+2. Optional: STYLE_GUIDE.md (selective sections ~2K tokens)
+3. Report: Design tokens extracted
+
+**Critical Rules:**
+- ❌ NO hardcoded colors (text-gray-500)
+- ✅ USE theme tokens (text-foreground/70)
+- ❌ NO arbitrary spacing (p-5)
+- ✅ USE spacing scale (p-4, p-6)
+`
+  }
+}
+
 // Replace placeholders
 contextTemplate = contextTemplate
   .replace('{CHANGE_ID}', changeId)
@@ -249,6 +338,7 @@ contextTemplate = contextTemplate
   .replace('{ADDITIONAL_TECH_LIST}', generateAdditionalTechList(additionalTech))
   .replace('{CURRENT_PHASE}', templateData.phases[0])
   .replace('{STATUS}', 'pending')
+  .replace('{DESIGN_SYSTEM}', designInfo) // 🆕 Add design section
 ```
 
 Write to: `openspec/changes/{change-id}/.claude/context.md`
