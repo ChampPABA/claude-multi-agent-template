@@ -94,16 +94,19 @@ Read: .changes/{change-id}/page-plan.md
 - Suggest: User should run `/designsetup` to generate style guide
 
 **If page-plan.md exists:**
-- ✅ Read and load page-plan.md (contains component reuse plan, content draft, assets)
+- ✅ Read and load page-plan.md (contains component reuse plan, content draft, assets, **animation blueprint**)
 - Extract:
+  - **Section 2.6 - Animation Blueprint** (🆕 animation strategy for all components)
   - Component reuse list (which components already exist)
   - Component new list (which to create)
   - Content draft (headlines, descriptions, copy)
   - Asset paths (images, icons locations)
 - **OPTIMIZATION:** Skip STEP 3 (component search) - page-plan already did this!
+- **CRITICAL:** If Section 2.6 exists, animations are **pre-designed** - follow blueprint exactly
 
 **If page-plan.md does NOT exist:**
 - ℹ️ No page plan - will search for components manually in STEP 3
+- ⚠️ No animation blueprint - fallback to `.claude/contexts/patterns/animation-patterns.md`
 
 **Report when complete:**
 ```
@@ -122,8 +125,10 @@ Read: .changes/{change-id}/page-plan.md
 
 📋 Page Plan: ✅ page-plan.md loaded (3 reuse, 2 new, 4 assets)
    → Will skip component search (STEP 3)
+   🎬 Animation Blueprint: ✅ Section 2.6 loaded (buttons, cards, inputs pre-designed)
    OR
 📋 Page Plan: ℹ️ Not found - will search components in STEP 3
+   🎬 Animation Blueprint: ⚠️ Not found - using animation-patterns.md (fallback)
 
 🎯 Ready to create UI components!
 ```
@@ -198,9 +203,111 @@ const TOKENS = {
   spacing: { padding: '[value]', gap: '[value]' },
   colors: { bg: '[token]', text: '[token]' },
   shadows: '[value]',
-  radius: '[value]'
+  radius: '[value]',
+  // 🆕 Animation tokens (MANDATORY - v1.4.0)
+  animation: {
+    hover: '[classes]',          // e.g., hover:scale-105 hover:shadow-lg
+    focus: '[classes]',          // e.g., focus:ring-2 focus:ring-primary
+    active: '[classes]',         // e.g., active:scale-95
+    transition: '[value]',       // e.g., transition-all duration-150
+    duration: '[token]',         // e.g., 150ms, 300ms, 500ms (from STYLE_TOKENS.json)
+    easing: '[token]',           // e.g., ease-in-out
+    description: '[rationale]'   // Why this animation pattern?
+  }
 }
 ```
+
+**Animation Token Extraction Rules:**
+1. ✅ Extract from reference component (STEP 3 search results)
+2. ✅ Fallback to page-plan.md Section 2.6 (if exists)
+3. ✅ Fallback to animation-patterns.md (component patterns)
+4. ✅ Use durations from STYLE_TOKENS.json (150ms, 300ms, 500ms)
+5. ❌ NO random durations (200ms, 250ms, 400ms)
+6. ❌ NO random patterns (button A scales, button B changes color)
+
+### 📋 Step 4.5: Performance Optimization Checklist (MANDATORY)
+
+**→ See:** `.claude/contexts/patterns/performance-optimization.md` for complete guide
+
+**Before implementing ANY component, apply these optimizations:**
+
+#### **Images (Primary Focus)**
+
+- [ ] **Format:** Use WebP with fallback (NOT JPEG/PNG only)
+  ```tsx
+  // ✅ CORRECT
+  <picture>
+    <source srcset="hero.webp" type="image/webp">
+    <img src="hero.jpg" alt="Hero" loading="lazy" />
+  </picture>
+
+  // ❌ WRONG
+  <img src="hero.jpg" alt="Hero" />
+  ```
+
+- [ ] **Lazy Loading:** `loading="lazy"` for below-fold images
+  ```tsx
+  // ✅ Below fold (most images)
+  <img src="product.webp" alt="Product" loading="lazy" width={400} height={300} />
+
+  // ✅ Above fold (hero only)
+  <img src="hero.webp" alt="Hero" loading="eager" width={1920} height={1080} />
+  ```
+
+- [ ] **Dimensions:** ALWAYS specify width/height (prevent layout shift)
+  ```tsx
+  // ✅ CORRECT (prevents CLS)
+  <img src="product.webp" alt="Product" width={400} height={300} />
+
+  // ❌ WRONG (causes layout shift)
+  <img src="product.webp" alt="Product" />
+  ```
+
+- [ ] **Responsive Images:** Generate 3 sizes for images > 400px width
+  ```tsx
+  // ✅ CORRECT (mobile saves bandwidth)
+  <img
+    src="hero-1920.webp"
+    srcset="hero-768.webp 768w, hero-1024.webp 1024w, hero-1920.webp 1920w"
+    sizes="(max-width: 768px) 100vw, 1920px"
+    alt="Hero"
+    width={1920}
+    height={1080}
+  />
+  ```
+
+#### **Code (Secondary Focus)**
+
+- [ ] **Lazy Load Heavy Components:** Use dynamic imports for charts, modals, editors
+  ```tsx
+  // ✅ CORRECT (only load when needed)
+  const HeavyChart = dynamic(() => import('./HeavyChart'), {
+    loading: () => <div>Loading...</div>,
+    ssr: false
+  })
+  ```
+
+- [ ] **Use React.memo() for expensive components:** Prevent unnecessary re-renders
+  ```tsx
+  // ✅ CORRECT (memoize expensive list)
+  export const ProductList = memo(function ProductList({ products }) {
+    return products.map(product => <ProductCard key={product.id} {...product} />)
+  })
+  ```
+
+#### **Quick Validation**
+
+**Before committing code, verify:**
+1. All images have `width` and `height` attributes ✓
+2. Below-fold images have `loading="lazy"` ✓
+3. Hero images use `loading="eager"` ✓
+4. Using WebP format (with fallback) ✓
+5. No arbitrary spacing values (use spacing scale) ✓
+
+**Performance Impact:**
+- LCP: -50-60% (faster hero image load)
+- Bundle size: -30-40% (code splitting)
+- Image size: -80% (WebP + compression)
 
 ### 📋 Step 5: Pre-Implementation Report (REQUIRED)
 
@@ -230,6 +337,8 @@ Provide complete analysis covering steps 1-4 BEFORE writing code.
 - @.claude/contexts/design/accessibility.md
 - @.claude/contexts/patterns/ui-component-consistency.md (CRITICAL!)
 - @.claude/contexts/patterns/frontend-component-strategy.md
+- @.claude/contexts/patterns/animation-patterns.md (Animations & micro-interactions)
+- @.claude/contexts/patterns/performance-optimization.md (Image optimization, lazy loading)
 
 ### Project-Specific (If Exists)
 - `design-system/STYLE_GUIDE.md` (Priority #1 - loaded in STEP 0.5)

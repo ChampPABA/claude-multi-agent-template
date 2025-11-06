@@ -84,6 +84,49 @@ const LAYOUT_TOKENS = {
 }
 ```
 
+#### Animation Properties (🆕 v1.4.0 - MANDATORY)
+```typescript
+const ANIMATION_TOKENS = {
+  // Hover state
+  hover: {
+    properties: ['transform', 'box-shadow'],  // GPU-accelerated only
+    values: ['scale(1.05)', 'shadow-lg'],
+    duration: '150ms',                         // From STYLE_TOKENS.json
+    easing: 'ease-in-out',
+    classes: 'hover:scale-105 hover:shadow-lg transition-all duration-150'
+  },
+
+  // Focus state (inputs)
+  focus: {
+    properties: ['box-shadow', 'border-color'],
+    values: ['ring-2 ring-primary', 'border-primary'],
+    duration: '200ms',
+    easing: 'ease-in-out',
+    classes: 'focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200'
+  },
+
+  // Active state (press feedback)
+  active: {
+    properties: ['transform'],
+    values: ['scale(0.95)'],
+    duration: '100ms',
+    easing: 'ease-in-out',
+    classes: 'active:scale-95'
+  },
+
+  // Rationale
+  description: 'Button scale + shadow pattern (consistency with other buttons)'
+}
+```
+
+**Critical Rules:**
+1. ✅ Extract animation from reference component (same as colors, spacing)
+2. ✅ Use durations from STYLE_TOKENS.json (150ms, 300ms, 500ms)
+3. ✅ Use GPU-accelerated properties (transform, opacity) - NOT width, height, top, left
+4. ✅ Same component type = same animation pattern (buttons scale, cards elevate shadow)
+5. ❌ NO random durations (200ms, 250ms) - only 150/300/500ms
+6. ❌ NO inconsistent patterns (button A scales, button B changes color)
+
 ---
 
 ### Step 3: Apply Tokens to New Component
@@ -263,11 +306,15 @@ transition: 'transition-colors'
 **Before committing any UI component:**
 
 - [ ] Found similar reference component in codebase
-- [ ] Extracted all design tokens (icon, spacing, colors, states)
-- [ ] Applied tokens exactly (no guessing)
+- [ ] Extracted all design tokens (icon, spacing, colors, states, **animations**)
+- [ ] Extracted animation tokens (hover, focus, active, durations)
+- [ ] Verified durations match STYLE_TOKENS.json (150/300/500ms)
+- [ ] Verified animation properties are GPU-accelerated (transform, opacity)
+- [ ] Applied tokens exactly (no guessing, no random values)
 - [ ] Tested visual appearance in browser
 - [ ] Compared computed CSS values with DevTools
 - [ ] Tested all states (normal, hover, focus, error, disabled)
+- [ ] Tested animation smoothness (60fps, no jank)
 - [ ] Documented reference component in JSDoc
 - [ ] Visually indistinguishable from reference component
 

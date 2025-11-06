@@ -163,20 +163,380 @@ Based on context + found components, generate:
 </Layout>
 \`\`\`
 
-## 3. 📦 Assets to Prepare (คุณต้องเตรียม)
+## 2.5. 📐 Layout Wireframe (Visual Blueprint)
 
-### Images
-- [ ] \`filename.jpg\` (widthxheight, format)
-      → Place at: \`/public/images/filename.jpg\`
-      → Purpose: [description]
+> **Purpose:** Visual representation of page layout for user review BEFORE implementation
+
+### Desktop View (>1024px)
+\`\`\`
+┌────────────────────────────────────────────────────┐
+│ [Logo]        [Nav Menu]           [CTA Button]   │  ← Navbar (h-16, sticky)
+├────────────────────────────────────────────────────┤
+│                                                    │
+│                  Hero Section                      │  ← Full viewport (h-screen)
+│              [Large Headline]                      │     Background image
+│            [Subheadline text]                      │     Centered content
+│              [Primary CTA]                         │
+│                                                    │
+├────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │  Card 1  │  │  Card 2  │  │  Card 3  │        │  ← Feature Grid
+│  │  [Icon]  │  │  [Icon]  │  │  [Icon]  │        │     (grid-cols-3, gap-6)
+│  │  Title   │  │  Title   │  │  Title   │        │     Container: max-w-7xl
+│  │  Desc    │  │  Desc    │  │  Desc    │        │     Padding: py-24
+│  └──────────┘  └──────────┘  └──────────┘        │
+├────────────────────────────────────────────────────┤
+│ [Footer Links]              [Social Icons]        │  ← Footer (h-20)
+└────────────────────────────────────────────────────┘
+\`\`\`
+
+### Tablet View (768-1023px)
+\`\`\`
+┌──────────────────────────────┐
+│ [Logo]   [Nav]      [☰]     │  ← Navbar (collapsed nav)
+├──────────────────────────────┤
+│         Hero Section         │  ← h-[600px]
+│       [Headline]             │     Same layout, smaller
+│       [CTA]                  │
+├──────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐  │
+│  │  Card 1  │ │  Card 2  │  │  ← Feature Grid
+│  └──────────┘ └──────────┘  │     (grid-cols-2, gap-4)
+│  ┌──────────┐               │
+│  │  Card 3  │               │
+│  └──────────┘               │
+├──────────────────────────────┤
+│ Footer (stacked)             │
+└──────────────────────────────┘
+\`\`\`
+
+### Mobile View (<768px)
+\`\`\`
+┌────────────────┐
+│ [Logo]    [☰] │  ← Navbar (hamburger)
+├────────────────┤
+│   Hero         │  ← h-[500px]
+│  [Headline]    │     Smaller text
+│  [CTA]         │     Full-width button
+├────────────────┤
+│ ┌────────────┐ │
+│ │   Card 1   │ │  ← Feature Grid
+│ │   [Icon]   │ │     (grid-cols-1, gap-4)
+│ │   Title    │ │     Full-width cards
+│ └────────────┘ │
+│ ┌────────────┐ │
+│ │   Card 2   │ │
+│ └────────────┘ │
+│ ┌────────────┐ │
+│ │   Card 3   │ │
+│ └────────────┘ │
+├────────────────┤
+│ Footer         │
+│ (stacked)      │
+└────────────────┘
+\`\`\`
+
+### Spacing & Sizing Details
+
+**Containers:**
+- Hero: Full viewport height (h-screen desktop, h-[600px] tablet, h-[500px] mobile)
+- Features: max-w-7xl, px-6, py-24 (desktop) → py-16 (tablet) → py-12 (mobile)
+- Cards: Equal height, p-6 (desktop) → p-4 (mobile)
+
+**Grid Breakpoints:**
+- Desktop (>1024px): 3 columns (grid-cols-3)
+- Tablet (768-1023px): 2 columns (grid-cols-2)
+- Mobile (<768px): 1 column (grid-cols-1)
+
+**Gaps:**
+- Section gaps: gap-24 (desktop) → gap-16 (tablet) → gap-12 (mobile)
+- Card gaps: gap-6 (desktop) → gap-4 (mobile)
+
+### Responsive Behavior
+
+| Element | Desktop | Tablet | Mobile |
+|---------|---------|--------|--------|
+| **Navbar** | Full menu | Collapsed | Hamburger |
+| **Hero** | h-screen | h-[600px] | h-[500px] |
+| **Feature Grid** | 3 cols | 2 cols | 1 col (stack) |
+| **Cards** | Side-by-side | Wrap to 2 cols | Full-width stack |
+| **Footer** | Horizontal | Stacked | Stacked |
+
+---
+
+## 2.6. 🎬 Animation Blueprint (Micro-interactions)
+
+> **Purpose:** Define animation strategy BEFORE implementation to ensure consistency and polish
+> **Source:** `design-system/STYLE_TOKENS.json` (animation tokens)
+> **Philosophy:** Match Flow Engineer Step 3 - Design animations systematically, not randomly
+
+### Animation Principles
+
+**From STYLE_TOKENS.json:**
+- **Durations:** 150ms (quick), 300ms (normal), 500ms (slow)
+- **Easing:** ease-in-out (default), cubic-bezier for custom
+- **Properties:** GPU-accelerated ONLY (transform, opacity) - NOT width, height, top, left
+- **Consistency:** Same component type = same animation pattern
+
+---
+
+### Button Animations
+
+#### Primary CTA Button
+**Hover State:**
+- Properties: `transform` (scale 1.05) + `box-shadow` (md → lg)
+- Duration: 150ms (fast, responsive feel)
+- Easing: ease-in-out
+- Code: `transition-all duration-150 hover:scale-105 hover:shadow-lg`
+
+**Active State:**
+- Properties: `transform` (scale 0.95)
+- Duration: 100ms (immediate feedback)
+- Code: `active:scale-95`
+
+**Loading State:**
+- Properties: `opacity` (text → 70%), spinner fade-in
+- Duration: 300ms
+- Code: `disabled:opacity-70` + spinner component
+
+**Full Example:**
+```tsx
+<button className="px-6 py-3 bg-primary text-primary-foreground rounded-md
+  transition-all duration-150
+  hover:scale-105 hover:shadow-lg
+  active:scale-95
+  disabled:opacity-70">
+  Get Started
+</button>
+```
+
+#### Secondary Button
+**Hover State:**
+- Properties: `background-color` shift, `border-color` shift
+- Duration: 150ms
+- Code: `transition-colors duration-150 hover:bg-secondary/80`
+
+---
+
+### Card Animations
+
+#### Feature Card / Product Card
+**Hover State:**
+- Properties: `box-shadow` elevation (sm → xl)
+- Duration: 300ms (smooth, elegant)
+- Easing: ease-in-out
+- Code: `transition-shadow duration-300 hover:shadow-xl`
+
+**Border Glow (Optional):**
+- Properties: `border-color` subtle shift
+- Duration: 300ms
+- Code: `hover:border-primary/50`
+
+**Full Example:**
+```tsx
+<div className="p-6 bg-card border border-border rounded-lg
+  transition-shadow duration-300
+  hover:shadow-xl hover:border-primary/50">
+  {/* Card content */}
+</div>
+```
+
+#### Interactive Card (Clickable)
+**Hover State:**
+- Same as feature card + cursor pointer
+- Code: `cursor-pointer transition-shadow duration-300 hover:shadow-xl`
+
+**Active State:**
+- Properties: `transform` (scale 0.98) - subtle press feedback
+- Duration: 100ms
+- Code: `active:scale-98`
+
+---
+
+### Input & Form Animations
+
+#### Text Input / Select / Combobox
+**Focus State:**
+- Properties: `box-shadow` (ring-2 appears), `border-color` shift
+- Duration: 200ms (balanced - not too fast, not slow)
+- Easing: ease-in-out
+- Code: `transition-all duration-200 focus:ring-2 focus:ring-primary focus:border-primary`
+
+**Error State:**
+- Properties: `border-color` (→ destructive), optional shake
+- Duration: 300ms
+- Code: `border-destructive` (static) or `animate-shake` (if shake defined)
+
+**Full Example:**
+```tsx
+<input className="w-full px-3 py-2 border border-input rounded-md
+  transition-all duration-200
+  focus:ring-2 focus:ring-primary focus:border-primary
+  placeholder:text-muted-foreground" />
+```
+
+---
+
+### Navigation Animations
+
+#### Desktop Menu Hover
+**Menu Item Hover:**
+- Properties: `background-color` subtle shift
+- Duration: 150ms
+- Code: `transition-colors duration-150 hover:bg-accent`
+
+#### Mobile Menu (Slide-in)
+**Hamburger → Sidebar:**
+- Properties: `transform` (translateX -100% → 0)
+- Duration: 300ms
+- Easing: cubic-bezier(0.4, 0, 0.2, 1)
+- Library: Framer Motion or Tailwind transition
+
+**Example (Framer Motion):**
+```tsx
+<motion.div
+  initial={{ x: "-100%" }}
+  animate={{ x: 0 }}
+  exit={{ x: "-100%" }}
+  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}>
+  {/* Sidebar content */}
+</motion.div>
+```
+
+---
+
+### Icon Animations
+
+#### Chevron / Arrow (Dropdown)
+**Expand/Collapse:**
+- Properties: `transform` (rotate 0deg → 180deg)
+- Duration: 200ms
+- Code: `transition-transform duration-200 [data-state=open]:rotate-180`
+
+#### Loading Spinner
+**Continuous Rotation:**
+- Properties: `transform` (rotate 360deg)
+- Duration: 1000ms (1s per rotation)
+- Easing: linear (consistent speed)
+- Code: `animate-spin` (Tailwind utility)
+
+---
+
+### Modal / Dialog Animations
+
+#### Modal Entrance
+**Background Overlay:**
+- Properties: `opacity` (0 → 100%)
+- Duration: 200ms
+- Code: `transition-opacity duration-200`
+
+**Dialog Content:**
+- Properties: `opacity` + `transform` (scale 0.95 → 1)
+- Duration: 300ms
+- Easing: ease-in-out
+- Library: Framer Motion or Radix UI (built-in)
+
+---
+
+### Performance Rules (CRITICAL!)
+
+**✅ DO USE (GPU-accelerated):**
+- `transform` (translate, scale, rotate)
+- `opacity`
+- `filter` (blur, brightness)
+
+**❌ DON'T USE (CPU-intensive, causes reflow):**
+- `width`, `height` (causes layout recalculation)
+- `top`, `left`, `margin` (use `transform` instead)
+- `font-size` (causes text reflow)
+
+**Example:**
+```tsx
+// ❌ WRONG (causes reflow)
+className="hover:w-full hover:h-auto"
+
+// ✅ CORRECT (GPU-accelerated)
+className="hover:scale-105 transform"
+```
+
+---
+
+### Animation Consistency Checklist
+
+**Before implementing components:**
+- [ ] All buttons use scale + shadow pattern (150ms)
+- [ ] All cards use shadow elevation pattern (300ms)
+- [ ] All inputs use ring pattern (200ms)
+- [ ] All durations from STYLE_TOKENS.json (150/300/500ms)
+- [ ] All properties GPU-accelerated (transform, opacity)
+- [ ] No random durations (e.g., 200ms, 400ms) unless intentional
+- [ ] Tested on mobile (animations not janky)
+
+---
+
+### Design Rationale
+
+**Why these patterns?**
+1. **Scale + Shadow (Buttons):** Creates depth, signals interactivity
+2. **Shadow Elevation (Cards):** Subtle, elegant, matches Material Design
+3. **Ring (Inputs):** Clear focus indicator, accessibility compliant
+4. **Short Durations (150-300ms):** Feels responsive, not sluggish
+5. **GPU Properties:** 60fps smooth animations, no jank
+
+**Inspiration:** Based on extracted animations from reference sites + STYLE_TOKENS.json
+
+---
+
+## 3. 📦 Assets to Prepare (Performance-Optimized)
+
+> **Performance Note:** Follow image optimization best practices for faster load times and better SEO.
+> See: `.claude/contexts/patterns/performance-optimization.md`
+
+### Images (Apply Performance Checklist)
+
+**For each image, provide:**
+
+- [ ] **filename.webp** (1920x1080)
+      → **Source:** filename.jpg (compress to WebP, quality 85%)
+      → **Responsive sizes:** 768w, 1024w, 1920w (generate 3 sizes for responsive)
+      → **Loading strategy:**
+         - `loading="lazy"` (if below fold - most images)
+         - `loading="eager"` (if hero/above fold - rare)
+      → **Alt text:** Descriptive alt text for accessibility
+      → **Place at:** `/public/images/`
+      → **Purpose:** [description - where used on page]
+      → **Estimated size:** ~80KB WebP (was ~450KB JPEG) = **-82% reduction**
+      → **LCP impact:** Hero images affect LCP score - optimize first!
+
+**Example:**
+```
+- [ ] **hero-background.webp** (1920x1080)
+      → Source: hero-background.jpg (compress via TinyPNG/Squoosh)
+      → Sizes: hero-768.webp, hero-1024.webp, hero-1920.webp
+      → Loading: eager (hero image, above fold)
+      → Alt: "Students taking TOEIC exam in modern classroom"
+      → Place: /public/images/
+      → Purpose: Hero section background
+      → Size: 85KB WebP (was 520KB JPEG) = -84%
+```
 
 ### Icons
-- [ ] [description] (size, format)
-      → Place at: \`/public/icons/\`
-      → Style: [match STYLE_GUIDE]
+
+**Preferred format:** SVG (scalable, tiny file size)
+
+- [ ] **[icon-name].svg** (24x24 viewBox)
+      → **Format:** SVG (preferred) or PNG sprite (if 10+ icons)
+      → **Optimization:** Remove unnecessary metadata (use SVGO)
+      → **Place at:** `/public/icons/` or inline in component
+      → **Style:** Match STYLE_GUIDE colors
+      → **Estimated size:** 1-3KB per icon
+
+**If using 10+ icons:** Consider SVG sprite sheet (combine → 1 HTTP request)
 
 ### Other Assets
-[Fonts, videos, etc.]
+- [ ] **Fonts:** Use `font-display: swap` to prevent FOIT (Flash of Invisible Text)
+- [ ] **Videos:** Use lazy loading, provide poster image
+- [ ] **Third-party scripts:** Load async/defer when possible
 
 ---
 

@@ -539,6 +539,364 @@ Product Card Box
 
 ---
 
+## Flexbox vs Grid: Decision Guide
+
+**Core Question:** Is this a 1-dimensional or 2-dimensional layout?
+
+### Rule of Thumb
+
+```
+┌─────────────────────────────────┐
+│  Need to arrange boxes?         │
+└────────┬────────────────────────┘
+         │
+    ┌────▼────┐
+    │ Is it:  │
+    └────┬────┘
+         │
+    ┌────┴────────────────┐
+    │                     │
+  1D Layout          2D Layout
+ (row OR column)   (row AND column)
+    │                     │
+    ▼                     ▼
+Use Flexbox           Use Grid
+```
+
+**1D Layout (Flexbox):** Items flow in one direction (either horizontal OR vertical)
+**2D Layout (Grid):** Items arranged in both directions (rows AND columns simultaneously)
+
+---
+
+### ✅ Use Flexbox When...
+
+#### **1. Navigation Bar**
+**Pattern:** Logo | Nav Menu | Actions (horizontal row)
+
+```css
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+```
+
+**Why Flexbox?**
+- Single row (1D)
+- Content-based sizing (logo + menu + actions)
+- Easy alignment (center vertically)
+
+---
+
+#### **2. Button Group**
+**Pattern:** [Cancel] [Save] [Submit]
+
+```css
+.button-group {
+  display: flex;
+  gap: var(--spacing-2);
+  justify-content: flex-end;
+}
+```
+
+**Why Flexbox?**
+- Single row (1D)
+- Unknown number of buttons
+- Auto-sizing based on content
+
+---
+
+#### **3. Vertical Stack**
+**Pattern:** Title, Description, Button (vertical column)
+
+```css
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+```
+
+**Why Flexbox?**
+- Single column (1D)
+- Content flows vertically
+- Simple stacking
+
+---
+
+#### **4. Form Row (Label + Input)**
+**Pattern:** Label: [Input field-------]
+
+```css
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+```
+
+**Why Flexbox?**
+- Single row (1D)
+- Label + input side-by-side
+- Vertical centering
+
+---
+
+#### **5. Tags/Chips (Wrapping)**
+**Pattern:** [Tag1] [Tag2] [Tag3] [Tag4] (wraps to next line)
+
+```css
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+```
+
+**Why Flexbox?**
+- Unknown number of items
+- Content-based sizing
+- Auto-wrapping
+
+---
+
+### ✅ Use Grid When...
+
+#### **1. Card Grid (Fixed Columns)**
+**Pattern:** 3 equal-width cards in a row
+
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-6);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+**Why Grid?**
+- 2D layout (rows + columns)
+- Fixed column count (3 cols)
+- Equal-width boxes
+
+---
+
+#### **2. Sidebar + Main Layout**
+**Pattern:** [Sidebar: 250px] | [Main: rest of space]
+
+```css
+.layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: var(--spacing-4);
+}
+```
+
+**Why Grid?**
+- 2D layout
+- Fixed sidebar width
+- Main content fills remaining space
+
+---
+
+#### **3. Dashboard (Complex 2D)**
+**Pattern:** Header spanning full width, Sidebar + Main + Right panel, Footer spanning full width
+
+```css
+.dashboard {
+  display: grid;
+  grid-template-areas:
+    "header header header"
+    "sidebar main panel"
+    "footer footer footer";
+  grid-template-columns: 250px 1fr 300px;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--spacing-4);
+}
+
+.header { grid-area: header; }
+.sidebar { grid-area: sidebar; }
+.main { grid-area: main; }
+.panel { grid-area: panel; }
+.footer { grid-area: footer; }
+```
+
+**Why Grid?**
+- Complex 2D layout
+- Elements span multiple columns
+- Explicit row/column placement
+
+---
+
+#### **4. Form Grid (2 Columns)**
+**Pattern:** Fields arranged in 2 columns
+
+```css
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-4);
+}
+
+/* Full-width field */
+.field-full {
+  grid-column: span 2;
+}
+```
+
+**Why Grid?**
+- 2D layout (rows + cols)
+- Fixed column count
+- Some fields span 2 columns
+
+---
+
+#### **5. Image Gallery (Auto-Fill)**
+**Pattern:** Images auto-fit into available space
+
+```css
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+}
+```
+
+**Why Grid?**
+- 2D layout
+- Auto-responsive (no media queries!)
+- Equal-sized images
+
+---
+
+### 📊 Comparison Table
+
+| Use Case | Flexbox | Grid | Winner |
+|----------|---------|------|--------|
+| **Navigation bar** | ✅ Perfect | ⚠️ Overkill | Flexbox 🏆 |
+| **Card grid (3 cols)** | ⚠️ Hacky | ✅ Perfect | Grid 🏆 |
+| **Sidebar + Main** | ⚠️ Works | ✅ Better | Grid 🏆 |
+| **Button group** | ✅ Perfect | ⚠️ Overkill | Flexbox 🏆 |
+| **Form (2 cols)** | ⚠️ Complex | ✅ Simple | Grid 🏆 |
+| **Vertical stack** | ✅ Perfect | ⚠️ Overkill | Flexbox 🏆 |
+| **Unknown items count** | ✅ Perfect | ⚠️ Complex | Flexbox 🏆 |
+| **Complex dashboard** | ❌ Can't | ✅ Perfect | Grid 🏆 |
+
+---
+
+### 🎯 Decision Flowchart
+
+```
+┌─────────────────────────────────────┐
+│ Do items need to arrange in:        │
+└────────┬────────────────────────────┘
+         │
+    ┌────▼────┐
+    │         │
+  Row OR    Row AND
+  Column    Column
+    │         │
+    ▼         ▼
+ Flexbox    Grid
+```
+
+**Additional Questions:**
+
+**Q: Do you know the exact number of columns?**
+- Yes (3 cols) → Grid
+- No (dynamic) → Flexbox
+
+**Q: Do items need to span multiple columns/rows?**
+- Yes → Grid (use `grid-column: span 2`)
+- No → Flexbox
+
+**Q: Is content-based sizing important?**
+- Yes (button width = text width) → Flexbox
+- No (equal widths) → Grid
+
+---
+
+### 🚨 Common Mistakes
+
+#### ❌ Mistake 1: Using Grid for Simple Row
+
+```css
+/* ❌ BAD: Overkill for simple row */
+.navbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+}
+
+/* ✅ GOOD: Flexbox simpler */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+}
+```
+
+---
+
+#### ❌ Mistake 2: Using Flexbox for Card Grid
+
+```css
+/* ❌ BAD: Hacky, unequal widths */
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.card {
+  flex: 1 1 calc(33.333% - var(--spacing-4));
+}
+
+/* ✅ GOOD: Grid handles it perfectly */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-4);
+}
+```
+
+---
+
+### 💡 Performance Note
+
+**Both are fast!** Choose based on use case, not performance.
+
+- Flexbox: ~3.5ms render time
+- Grid: ~3-4ms render time
+- Float-based: 14ms ❌ (avoid!)
+
+**Source:** FreeCodeCamp Performance Handbook
+
+---
+
+### 📋 Quick Checklist
+
+**Before choosing, ask:**
+
+- [ ] Is this 1D (row OR column) or 2D (row AND column)? ✓
+- [ ] Do I know the exact number of columns? ✓
+- [ ] Do items need equal widths? ✓
+- [ ] Will items wrap to multiple lines? ✓
+- [ ] Do items need to span multiple cells? ✓
+
+**Then decide:**
+- **1D + Unknown count** → Flexbox
+- **2D + Fixed columns** → Grid
+- **Content-based sizing** → Flexbox
+- **Equal-width boxes** → Grid
+
+---
+
 ## Quick Reference
 
 **Box Analysis Questions:**
