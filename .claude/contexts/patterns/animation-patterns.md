@@ -17,7 +17,7 @@
 ## 📘 How to Use This File
 
 **Priority:**
-1. **Page-specific plan:** `.changes/{id}/page-plan.md` Section 2.6 (if exists)
+1. **Page-specific plan:** `openspec/changes/{id}/page-plan.md` Section 2.6 (if exists)
 2. **Project tokens:** `design-system/STYLE_TOKENS.json` (animation tokens)
 3. **General guidelines:** This file (fallback when above don't exist)
 

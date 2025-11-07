@@ -52,7 +52,7 @@ Universal, framework-agnostic template for AI-assisted development.
 
 **Page Planning (UI Tasks):**
 - `/pageplan @prd.md @brief.md` - **NEW!** Generate page structure & content plan for UI tasks
-- Output: `.changes/{id}/page-plan.md` (component reuse, content draft, asset checklist)
+- Output: `openspec/changes/{id}/page-plan.md` (component reuse, content draft, asset checklist)
 - Used by: uxui-frontend agent (auto-reads in STEP 0.5)
 
 **OpenSpec Multi-Agent Workflow:**
@@ -121,7 +121,7 @@ Universal, framework-agnostic template for AI-assisted development.
 
 **Quick Summary:**
 - **Problem:** Agents duplicate components (Navbar 3x), use random colors, lorem ipsum content
-- **Solution:** `/pageplan @prd.md @brief.md` → Generates `.changes/{id}/page-plan.md` with component reuse plan, AI-drafted content, asset checklist
+- **Solution:** `/pageplan @prd.md @brief.md` → Generates `openspec/changes/{id}/page-plan.md` with component reuse plan, AI-drafted content, asset checklist
 - **Benefits:** Prevents duplicates, ensures design consistency, real content from PRD, 25% faster (search done once upfront)
 - **Use for:** Landing pages, dashboards, multi-section UI pages (skip for backend/database work)
 

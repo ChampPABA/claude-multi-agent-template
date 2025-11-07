@@ -269,6 +269,93 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ---
 
+### Step 4.7: Validate Page Plan Compliance (uxui-frontend only)
+
+**Only runs for uxui-frontend agent when page-plan.md exists:**
+
+**Purpose:** Verify agent implemented ALL sections from page-plan.md, not a subset.
+
+```typescript
+// Check if page-plan.md exists
+const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
+const hasPagePlan = fileExists(pagePlanPath)
+
+if (phase.agent === 'uxui-frontend' && hasPagePlan) {
+  output(`\n🔍 Validating page-plan.md compliance...`)
+
+  // Extract sections from page-plan.md Section 2 (Page Structure)
+  const pagePlan = Read(pagePlanPath)
+  const section2Match = pagePlan.match(/## 2\. Page Structure[\s\S]*?(?=## 3\.|## 2\.5|## 2\.6|$)/)
+
+  if (section2Match) {
+    // Count expected sections (extract component names from JSX)
+    const componentMatches = section2Match[0].match(/<([A-Z]\w+)/g) || []
+    const expectedComponents = componentMatches
+      .map(m => m.replace('<', ''))
+      .filter(name => name !== 'Layout' && name !== 'div') // Exclude wrappers
+
+    const uniqueComponents = [...new Set(expectedComponents)] // Remove duplicates
+
+    output(`\n📋 Page Plan Analysis:`)
+    output(`   Expected sections: ${uniqueComponents.length}`)
+    output(`   Components: ${uniqueComponents.join(', ')}`)
+
+    // Prompt user to verify agent compliance
+    output(`\n⚠️ VALIDATION REQUIRED:`)
+    output(`\nDid the agent implement ALL ${uniqueComponents.length} sections?`)
+    output(`\nPlease verify the implementation includes:`)
+    uniqueComponents.forEach(c => output(`   - ${c}`))
+
+    output(`\nOptions:`)
+    output(`  [yes]   - All sections implemented ✓`)
+    output(`  [retry] - Agent skipped sections, retry with strict enforcement`)
+    output(`  [skip]  - Skip validation (not recommended)`)
+
+    const answer = await askUser(`\nConfirm all sections implemented?`)
+
+    if (answer === 'retry') {
+      output(`\n🔄 Retrying phase with enhanced enforcement...`)
+      output(`Agent will be explicitly instructed to implement all ${uniqueComponents.length} sections`)
+
+      // Restart phase with enhanced prompt
+      return executePhaseAgain(changeId, phase, {
+        enforce_page_plan: true,
+        required_sections: uniqueComponents
+      })
+    } else if (answer === 'skip') {
+      warn(`\n⚠️ Skipping validation - proceed with caution`)
+      warn(`   This may result in incomplete implementation`)
+    } else {
+      output(`\n✅ Page plan compliance confirmed`)
+      output(`   All ${uniqueComponents.length} sections implemented`)
+    }
+  } else {
+    warn(`\n⚠️ Could not parse page-plan.md Section 2`)
+    warn(`   Skipping compliance validation`)
+  }
+} else {
+  // Not uxui-frontend or no page-plan.md - skip validation
+  output(`\nℹ️ Page plan validation: N/A (agent: ${phase.agent}, has plan: ${hasPagePlan})`)
+}
+```
+
+**When to use:**
+- ✅ Agent: uxui-frontend
+- ✅ page-plan.md exists
+- ✅ Phase completed successfully
+
+**Common issues caught:**
+- Agent implemented 5/10 sections (missing ProblemSection, ComparisonTable, etc.)
+- Agent followed tasks.md ("4-5 components") instead of page-plan.md (10 sections)
+- Agent skipped sections they thought were "optional"
+
+**Remediation:**
+- If validation fails → Retry with `enforce_page_plan: true`
+- Agent will receive enhanced prompt with explicit section list
+- Validation runs again after retry
+
+---
+
 ### Step 5: Post-Execution (🆕 MANDATORY FLAGS UPDATE)
 
 **⚠️ CRITICAL: Main Claude MUST update flags.json after EVERY phase completion**

@@ -36,7 +36,7 @@ Main Claude:
 2. Reads proposal.md (technical architecture)
 3. Reads STYLE_GUIDE.md (visual design)
 4. Searches existing components (Glob/Grep)
-5. Generates: .changes/{id}/page-plan.md
+5. Generates: openspec/changes/{id}/page-plan.md
    - 🔄 Reuse: Navbar, Footer (found)
    - ✅ New: HeroSection, FeatureGrid (create)
    - 📝 Content draft (AI-generated from PRD)

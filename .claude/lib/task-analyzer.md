@@ -219,7 +219,7 @@ function generateMitigation(risk: RiskLevel, task: Task): string[] {
 ```typescript
 function detectResearchNeeds(task: Task, changeContext: any): ResearchRequirement | null {
   // Check if page-plan.md exists (skip UX/accessibility research)
-  const hasPagePlan = fileExists(`.changes/${changeContext.changeId}/page-plan.md`)
+  const hasPagePlan = fileExists(`openspec/changes/${changeContext.changeId}/page-plan.md`)
 
   const researchIndicators = {
     // Technical research (always check)

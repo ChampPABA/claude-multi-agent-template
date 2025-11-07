@@ -7,7 +7,7 @@
 # With context files
 /pageplan @proposal.md @prd.md @project_brief.md
 
-# Current change only (uses proposal.md in .changes/)
+# Current change only (uses proposal.md in openspec/changes/)
 /pageplan
 
 # Specify change ID
@@ -20,7 +20,7 @@
 
 1. **Reads User-Specified Context:**
    - Only reads files that user mentions with `@` prefix
-   - Always reads `.changes/{change-id}/proposal.md` (if exists)
+   - Always reads `openspec/changes/{change-id}/proposal.md` (if exists)
    - **Always reads `design-system/STYLE_TOKENS.json`** (lightweight, ~500 tokens) ✅
    - Validates `design-system/STYLE_GUIDE.md` exists (doesn't load full content)
 
@@ -36,7 +36,7 @@
    - Asset checklist (user must prepare)
    - Rationale (why this structure)
 
-4. **Outputs to:** `.changes/{change-id}/page-plan.md`
+4. **Outputs to:** `openspec/changes/{change-id}/page-plan.md`
 
 ---
 
@@ -46,7 +46,7 @@
 
 ```typescript
 // Detect current change ID
-const changesDir = '.changes/'
+const changesDir = 'openspec/changes/'
 const changeId = detectCurrentChange() // or from command arg
 
 if (!changeId) {
@@ -54,7 +54,7 @@ if (!changeId) {
   return
 }
 
-const outputPath = `.changes/${changeId}/page-plan.md`
+const outputPath = `openspec/changes/${changeId}/page-plan.md`
 ```
 
 ### STEP 2: Read Context Files
@@ -64,7 +64,7 @@ const outputPath = `.changes/${changeId}/page-plan.md`
 const userFiles = extractMentionedFiles(userMessage) // @prd.md, @brief.md
 
 // Always read (if exists)
-const proposalPath = `.changes/${changeId}/proposal.md`
+const proposalPath = `openspec/changes/${changeId}/proposal.md`
 const tokensPath = `design-system/STYLE_TOKENS.json` // 🆕 Lightweight tokens
 const styleGuidePath = `design-system/STYLE_GUIDE.md` // Validate only, don't load
 

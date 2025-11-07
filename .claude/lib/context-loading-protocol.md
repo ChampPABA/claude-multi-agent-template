@@ -252,7 +252,7 @@ Each agent loads additional contexts based on their role.
 **Project-specific (if exists):**
 - `design-system/STYLE_GUIDE.md` (17 sections, ~5K tokens)
 - `design-system/STYLE_TOKENS.json` (lightweight, ~500 tokens)
-- `.changes/{change-id}/page-plan.md` (from /pageplan command)
+- `openspec/changes/{change-id}/page-plan.md` (from /pageplan command)
 
 **Loading strategy:**
 ```
@@ -334,7 +334,7 @@ Each agent loads additional contexts based on their role.
    → Loading: design/*.md ✓
    → Loading: patterns/ui-component-consistency.md ✓
    → Loading: design-system/STYLE_TOKENS.json ✓
-   → Loading: .changes/landing-page/page-plan.md ✓
+   → Loading: openspec/changes/landing-page/page-plan.md ✓
    ✅ Design contexts loaded
 
 ✅ Context Loading Complete!
