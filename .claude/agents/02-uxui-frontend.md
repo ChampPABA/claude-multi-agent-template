@@ -78,7 +78,7 @@ After completing standard discovery, check for project-specific resources:
 Read: design-system/STYLE_GUIDE.md
 
 # Check if page plan exists (from /pageplan command)
-Read: .changes/{change-id}/page-plan.md
+Read: openspec/changes/{change-id}/page-plan.md
 ```
 
 **If STYLE_GUIDE.md exists:**
@@ -103,6 +103,62 @@ Read: .changes/{change-id}/page-plan.md
   - Asset paths (images, icons locations)
 - **OPTIMIZATION:** Skip STEP 3 (component search) - page-plan already did this!
 - **CRITICAL:** If Section 2.6 exists, animations are **pre-designed** - follow blueprint exactly
+
+---
+
+### 🚨 MANDATORY COMPLIANCE (When page-plan.md exists)
+
+**YOU MUST implement ALL sections listed in page-plan.md Section 2 (Page Structure).**
+
+**Before writing ANY code:**
+
+1. **Count sections** in page-plan.md Section 2 (Page Structure)
+2. **Create implementation checklist:**
+   ```
+   Sections to implement (from page-plan.md):
+   - [ ] Section 1: {ComponentName} - {purpose}
+   - [ ] Section 2: {ComponentName} - {purpose}
+   - [ ] Section 3: {ComponentName} - {purpose}
+   ...
+   ```
+
+**After completing implementation:**
+
+3. **Verify ALL sections** are implemented
+4. **Report compliance:**
+   ```
+   ✅ Page Structure Compliance:
+      Sections required: {count}
+      Sections implemented: {count}
+      Status: ✅ COMPLETE (or ❌ INCOMPLETE)
+   ```
+
+**⚠️ CRITICAL RULES:**
+
+- ❌ If you implement LESS than ALL sections → Your work will be **REJECTED**
+- ❌ You CANNOT skip sections (even if tasks.md says "4-5 components")
+- ✅ You MUST implement EVERY section in page-plan.md Section 2
+- ✅ If confused, page-plan.md takes PRIORITY over tasks.md
+
+**Example:**
+
+If page-plan.md Section 2 lists:
+```
+<Layout>
+  <LandingNavBar />     {/* 1 */}
+  <HeroSection />       {/* 2 */}
+  <ProblemSection />    {/* 3 */}
+  <FeatureGrid />       {/* 4 */}
+  <ComparisonTable />   {/* 5 */}
+  <TestimonialCards />  {/* 6 */}
+  <CTASection />        {/* 7 */}
+  <Footer />            {/* 8 */}
+</Layout>
+```
+
+You MUST create ALL 8 sections, NOT just Hero + FeatureGrid + Footer (3/8).
+
+---
 
 **If page-plan.md does NOT exist:**
 - ℹ️ No page plan - will search for components manually in STEP 3
@@ -309,6 +365,63 @@ const TOKENS = {
 - Bundle size: -30-40% (code splitting)
 - Image size: -80% (WebP + compression)
 
+### 📋 Step 4.6: Page Plan Compliance Checklist (IF page-plan.md exists)
+
+**Only complete this step if page-plan.md was loaded in STEP 0.5:**
+
+**Purpose:** Ensure you implement ALL sections from page-plan.md, not a subset.
+
+**Instructions:**
+
+1. **Re-read** page-plan.md Section 2 (Page Structure)
+2. **Extract** all components listed in the structure
+3. **Count** total sections required
+4. **Create** implementation checklist:
+
+```
+📋 Page Structure Implementation Checklist
+Total sections: {count}
+
+Sections to implement (from page-plan.md Section 2):
+- [ ] {Component 1} - {description/purpose}
+- [ ] {Component 2} - {description/purpose}
+- [ ] {Component 3} - {description/purpose}
+...
+
+Verification:
+- [ ] All sections from page-plan.md are listed above
+- [ ] No sections are skipped
+- [ ] I will implement ALL sections (not a subset)
+```
+
+**Report when complete:**
+```
+✅ Page Plan Compliance Checklist Created
+   Total sections: {count}
+   Ready to implement FULL page structure
+
+   Example:
+   - Section 1: LandingNavBar (sticky navigation)
+   - Section 2: HeroSection (above fold)
+   - Section 3: ProblemSection (pain points)
+   - ...
+   - Section 10: Footer (links + social)
+
+   Status: ✅ Checklist verified - will implement all 10 sections
+```
+
+**⚠️ CRITICAL:**
+- This checklist is MANDATORY - if you skip it, you'll likely implement only 4-5 sections instead of all 10
+- If page-plan.md lists 10 sections, you MUST create 10 components
+- tasks.md may say "create 4-5 components" - IGNORE this if page-plan.md exists
+- page-plan.md takes PRIORITY over tasks.md
+
+**If page-plan.md does NOT exist:**
+- Skip this step
+- Proceed to Step 5
+
+---
+
 ### 📋 Step 5: Pre-Implementation Report (REQUIRED)
 
 Provide complete analysis covering steps 1-4 BEFORE writing code.
@@ -343,7 +456,7 @@ Provide complete analysis covering steps 1-4 BEFORE writing code.
 ### Project-Specific (If Exists)
 - `design-system/STYLE_GUIDE.md` (Priority #1 - loaded in STEP 0.5)
 - `design-system/STYLE_TOKENS.json` (lightweight tokens)
-- `.changes/{change-id}/page-plan.md` (from /pageplan command)
+- `openspec/changes/{change-id}/page-plan.md` (from /pageplan command)
 
 ### Framework Docs (Context7)
 **Topic:** "components, hooks, state management, routing, styling"

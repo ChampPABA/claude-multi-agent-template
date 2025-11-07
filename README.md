@@ -110,7 +110,7 @@ Users need secure login functionality...
 ```bash
 # Step 1: OpenSpec generates tasks
 User: "Build landing page for TOEIC app"
-→ Creates: .changes/landing-page/proposal.md + tasks.md
+→ Creates: openspec/changes/landing-page/proposal.md + tasks.md
 
 # Step 2: Generate page plan (NEW!)
 User: /pageplan @prd.md @project_brief.md
@@ -121,7 +121,7 @@ User: /pageplan @prd.md @project_brief.md
 # 3. Reads STYLE_GUIDE.md (visual design)
 # 4. Searches existing components (Navbar, Footer, etc.)
 # 5. AI drafts real content from PRD
-# 6. Generates: .changes/landing-page/page-plan.md
+# 6. Generates: openspec/changes/landing-page/page-plan.md
 ```
 
 ### page-plan.md Output
@@ -257,7 +257,7 @@ cd my-app
 
 # Draft a change proposal (OpenSpec handles this)
 "I want to build a landing page for my TOEIC app"
-# → Generates: .changes/landing-page/proposal.md + tasks.md
+# → Generates: openspec/changes/landing-page/proposal.md + tasks.md
 ```
 
 ### Step 2: Initialize Claude Agent Kit
@@ -277,7 +277,7 @@ cak init
 # In Claude Code:
 /pageplan @prd.md @project_brief.md
 
-# → Generates: .changes/landing-page/page-plan.md
+# → Generates: openspec/changes/landing-page/page-plan.md
 # → Review content, prepare assets
 ```
 
@@ -288,9 +288,9 @@ cak init
 ```
 
 **What happens:**
-- Reads `.changes/landing-page/proposal.md` (business context)
-- Reads `.changes/landing-page/tasks.md` (implementation checklist)
-- Reads `.changes/landing-page/page-plan.md` (if exists - content plan)
+- Reads `openspec/changes/landing-page/proposal.md` (business context)
+- Reads `openspec/changes/landing-page/tasks.md` (implementation checklist)
+- Reads `openspec/changes/landing-page/page-plan.md` (if exists - content plan)
 - Classifies tasks by agent (database, backend, frontend, etc.)
 - Generates `workflow.md` (execution plan)
 
