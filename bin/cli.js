@@ -28,7 +28,6 @@ program
 program
   .command('init')
   .description('Initialize Claude Agent Kit template in current project')
-  .option('-f, --force', 'Force initialization even if .claude/ exists')
   .action(async (options) => {
     try {
       await initCommand(options);
@@ -42,7 +41,6 @@ program
 program
   .command('update')
   .description('Update template files to latest version')
-  .option('-b, --backup', 'Create backup before updating')
   .action(async (options) => {
     try {
       await updateCommand(options);
