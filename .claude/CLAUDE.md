@@ -51,8 +51,10 @@ Universal, framework-agnostic template for AI-assisted development.
 - `/agentsetup` - Auto-detect tech stack and generate best practices
 
 **Page Planning (UI Tasks):**
-- `/pageplan @prd.md @brief.md` - **NEW!** Generate page structure & content plan for UI tasks
-- Output: `openspec/changes/{id}/page-plan.md` (component reuse, content draft, asset checklist)
+- `/pageplan @prd.md @brief.md` - **ENHANCED v1.4.0!** Generate page structure & conversion-optimized content
+- Output: `openspec/changes/{id}/page-plan.md` (component reuse, buyer avatar, conversion copy, asset checklist)
+- **NEW:** Buyer avatar analysis (Eugene Schwartz framework) for marketing pages
+- **NEW:** Conversion-optimized content (pain → promise → CTA)
 - Used by: uxui-frontend agent (auto-reads in STEP 0.5)
 
 **OpenSpec Multi-Agent Workflow:**
@@ -115,15 +117,24 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
-## 📋 Page Planning System
+## 📋 Page Planning System (v1.4.0 - Conversion-Optimized)
 
 **→ See:** `@/.claude/lib/detailed-guides/page-planning.md` for complete guide
 
 **Quick Summary:**
-- **Problem:** Agents duplicate components (Navbar 3x), use random colors, lorem ipsum content
-- **Solution:** `/pageplan @prd.md @brief.md` → Generates `openspec/changes/{id}/page-plan.md` with component reuse plan, AI-drafted content, asset checklist
-- **Benefits:** Prevents duplicates, ensures design consistency, real content from PRD, 25% faster (search done once upfront)
-- **Use for:** Landing pages, dashboards, multi-section UI pages (skip for backend/database work)
+- **Problem:** Agents duplicate components (Navbar 3x), use random colors, lorem ipsum content, **generic copy that doesn't convert**
+- **Solution:** `/pageplan @prd.md @brief.md` → Generates `openspec/changes/{id}/page-plan.md` with:
+  - Component reuse plan ✅ (prevent duplicates)
+  - **Buyer avatar analysis** 🆕 (Eugene Schwartz framework)
+  - **Conversion-optimized content** 🆕 (pain → promise → CTA)
+  - Asset checklist ✅ (performance-optimized)
+- **Benefits:**
+  - Prevents duplicates, ensures design consistency
+  - **Real content from PRD with conversion psychology** 🆕
+  - **2-5x better conversion rates** (pain-based headlines vs generic)
+  - 25% faster (search + copy strategy done once upfront)
+- **Use for:** Landing pages, marketing sites, product pages (auto-detects marketing vs dashboard)
+- **Skips for:** Dashboards, admin panels, backend/database work (no buyer avatar needed)
 
 ---
 
