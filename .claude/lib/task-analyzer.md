@@ -1,7 +1,7 @@
 # Task Analyzer - TaskMaster-style Analysis
 
 > **Enhanced task analysis for intelligent phase generation**
-> **Version:** 1.3.0 (TaskMaster Integration)
+> **Version:** 1.4.0 (Incremental Testing Integration)
 > **Used by:** `/csetup` command
 
 ---
@@ -15,6 +15,8 @@ Analyze tasks.md (from OpenSpec) and generate **intelligent task metadata** incl
 - Research requirements
 - Subtask breakdown recommendations
 - Priority ranking
+- **Incremental testing detection** (NEW in v1.4.0)
+- **Milestone generation** (NEW in v1.4.0)
 
 **Inspired by:** [claude-task-master](https://github.com/eyaltoledano/claude-task-master)
 
@@ -501,6 +503,357 @@ function getPriorityLabel(score: number): string {
 
 ---
 
+### 7. Incremental Testing Detection
+
+> **NEW in v1.4.0:** Automatic detection of tasks that require progressive validation
+
+**Purpose:**
+Identify high-risk/complex tasks that should be broken into milestones instead of being implemented all at once.
+
+**Detection Logic:**
+```typescript
+function detectTestingStrategy(task: Task, metadata: TaskMetadata): TestingStrategy {
+  const { complexity, risk } = metadata
+
+  // Rule 1: HIGH risk always requires incremental testing
+  if (risk.level === 'HIGH') {
+    return {
+      type: 'incremental',
+      reason: `HIGH risk (${risk.score}/10) - Progressive validation required to catch issues early`
+    }
+  }
+
+  // Rule 2: MEDIUM risk + High complexity
+  if (risk.level === 'MEDIUM' && complexity.score >= 7) {
+    return {
+      type: 'incremental',
+      reason: `MEDIUM risk + High complexity (${complexity.score}/10) - Incremental approach reduces debugging effort`
+    }
+  }
+
+  // Rule 3: External API dependencies
+  if (hasExternalAPI(task)) {
+    return {
+      type: 'incremental',
+      reason: 'External API dependency - Test with small sample first to validate integration'
+    }
+  }
+
+  // Rule 4: Data-intensive operations
+  if (isDataIntensive(task)) {
+    return {
+      type: 'incremental',
+      reason: 'Data-intensive operation - Scale testing from small to large dataset'
+    }
+  }
+
+  // Default: Standard testing
+  return {
+    type: 'standard',
+    reason: 'Low risk, no external dependencies - Standard implementation approach'
+  }
+}
+
+// Helper: Detect external API dependencies
+function hasExternalAPI(task: Task): boolean {
+  const externalAPIs = [
+    'google', 'stripe', 'paypal', 'twilio', 'sendgrid',
+    'aws', 'azure', 'gcp', 'firebase', 'openai',
+    'third-party', 'external api', 'rest api', 'graphql api',
+    'oauth', 'saml', 'maps', 'payment gateway'
+  ]
+
+  const taskLower = task.description.toLowerCase()
+  return externalAPIs.some(api => taskLower.includes(api))
+}
+
+// Helper: Detect data-intensive operations
+function isDataIntensive(task: Task): boolean {
+  const dataIntensiveKeywords = [
+    'batch', 'bulk', 'import', 'export', 'migration',
+    'etl', 'thousands', 'large dataset', 'mass update',
+    'data transformation', 'sync', 'replicate'
+  ]
+
+  const taskLower = task.description.toLowerCase()
+  return dataIntensiveKeywords.some(kw => taskLower.includes(kw))
+}
+```
+
+**Output Examples:**
+```
+Task: "Integrate Google Maps API for store locator"
+→ Strategy: INCREMENTAL (External API dependency)
+
+Task: "Migrate 10,000 user records from legacy database"
+→ Strategy: INCREMENTAL (Data-intensive operation)
+
+Task: "Implement user login with JWT authentication"
+→ Strategy: INCREMENTAL (HIGH risk - security critical)
+
+Task: "Create simple contact form with validation"
+→ Strategy: STANDARD (Low risk, no external deps)
+```
+
+---
+
+### 8. Milestone Generation
+
+> **NEW in v1.4.0:** Generate progressive validation milestones for incremental tasks
+
+**Purpose:**
+Break down incremental tasks into testable milestones that validate functionality from simple → complex.
+
+**Generation Logic:**
+```typescript
+function generateMilestones(task: Task, metadata: TaskMetadata): Milestone[] {
+  const milestones: Milestone[] = []
+  const taskLower = task.description.toLowerCase()
+  const estimatedTime = metadata.estimatedTime.adjusted
+
+  // Pattern 1: Backend API Integration
+  if (hasExternalAPI(task) || taskLower.match(/api|integration|service/i)) {
+    milestones.push({
+      id: 1,
+      name: 'Core implementation (minimal viable)',
+      testScope: 'Single happy path (1 record, hardcoded input)',
+      exitCriteria: [
+        'Response status = 200 (or expected success code)',
+        'Data structure valid (matches expected schema)',
+        'Response time < 500ms',
+        'API authentication works (no 401/403 errors)'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.3),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 2,
+      name: 'Parameterized query',
+      testScope: '10 records, dynamic user input',
+      exitCriteria: [
+        'Accepts dynamic input parameters',
+        'Returns correct results for all 10 test cases',
+        'No duplicate API calls (check request logs)',
+        'Response time < 700ms average'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.3),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 3,
+      name: 'Error handling + edge cases',
+      testScope: 'Invalid input, API errors, timeouts, rate limits',
+      exitCriteria: [
+        'Invalid input handled gracefully (no crashes)',
+        'API errors caught and logged correctly',
+        'Timeout logic works (retry or fallback)',
+        'Rate limiting detected and handled',
+        'User-friendly error messages (no stack traces)'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.2),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 4,
+      name: 'Scale + performance validation',
+      testScope: '100-1000 records, concurrent requests',
+      exitCriteria: [
+        'Response time < 2s for 100 records',
+        'No memory leaks under load',
+        'Pagination/batching works correctly (if applicable)',
+        'Caching reduces redundant API calls',
+        'No database connection exhaustion'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.2),
+      retryLimit: 2
+    })
+
+    return milestones
+  }
+
+  // Pattern 2: Complex Form (architecture-first approach)
+  if (taskLower.match(/form|survey|questionnaire|wizard/i) && metadata.complexity.score >= 7) {
+    milestones.push({
+      id: 1,
+      name: 'Form architecture + skeleton',
+      testScope: 'Full structure with 2-3 critical fields only',
+      exitCriteria: [
+        'Multi-step logic works (if applicable)',
+        'Validation framework integrated',
+        'State management clear (React Hook Form, Formik, etc.)',
+        'Navigation between steps functional',
+        'Architecture supports scaling to full field count'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.4),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 2,
+      name: 'End-to-end flow validation',
+      testScope: 'Submit minimal form → API → Database',
+      exitCriteria: [
+        'Data saved to database correctly',
+        'API contract validated (request/response format)',
+        'Success feedback shown to user',
+        'No console errors or warnings',
+        'Data retrieved correctly (read-after-write test)'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.3),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 3,
+      name: 'Complete all fields + validation',
+      testScope: 'All fields + validation rules + accessibility',
+      exitCriteria: [
+        'All field validations work (required, format, custom)',
+        'No UX regressions (smooth transitions, no flickers)',
+        'Accessibility checklist passed (keyboard nav, ARIA labels)',
+        'Form submission with all fields succeeds',
+        'Error messages clear and actionable'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.3),
+      retryLimit: 2
+    })
+
+    return milestones
+  }
+
+  // Pattern 3: Database Migration / ETL
+  if (taskLower.match(/migrat|etl|import|batch|sync/i) || isDataIntensive(task)) {
+    milestones.push({
+      id: 1,
+      name: 'Dry-run with 10 records',
+      testScope: 'Test migration/ETL script on 10 sample records',
+      exitCriteria: [
+        'Data transforms correctly (validate output schema)',
+        'No data loss (record count matches)',
+        'Rollback mechanism works',
+        'Execution time reasonable (< 5s for 10 records)',
+        'Logs are clear and traceable'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.25),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 2,
+      name: 'Scale to 100 records',
+      testScope: 'Validate performance and edge cases',
+      exitCriteria: [
+        'Completes within expected time (< 30s for 100 records)',
+        'Handles duplicates correctly (skip or merge)',
+        'Error logging works (failed records tracked)',
+        'Progress tracking accurate',
+        'Memory usage stable (no leaks)'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.25),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 3,
+      name: 'Full dataset migration (staging)',
+      testScope: 'Migrate entire dataset on staging environment',
+      exitCriteria: [
+        'All records migrated successfully (100% completion)',
+        'Data integrity validated (checksums match)',
+        'No production impact (read-only or isolated)',
+        'Rollback plan tested and documented',
+        'Migration can be re-run safely (idempotent)'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.5),
+      retryLimit: 2
+    })
+
+    return milestones
+  }
+
+  // Fallback: Generic incremental pattern (for unmatched patterns)
+  if (metadata.risk.level === 'HIGH' || metadata.complexity.score >= 8) {
+    milestones.push({
+      id: 1,
+      name: 'Core implementation (minimal)',
+      testScope: 'Basic functionality with simplest input',
+      exitCriteria: [
+        'Core logic works for happy path',
+        'No critical errors or crashes',
+        'Basic validation passes'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.4),
+      retryLimit: 2
+    })
+
+    milestones.push({
+      id: 2,
+      name: 'Expand functionality + edge cases',
+      testScope: 'Full functionality with edge cases',
+      exitCriteria: [
+        'All features implemented',
+        'Edge cases handled correctly',
+        'Error handling comprehensive',
+        'Tests pass'
+      ],
+      estimatedTime: Math.ceil(estimatedTime * 0.6),
+      retryLimit: 2
+    })
+
+    return milestones
+  }
+
+  // Should not reach here (detectTestingStrategy should filter)
+  return []
+}
+```
+
+**Milestone Structure:**
+```typescript
+interface Milestone {
+  id: number                  // Sequential (1, 2, 3, ...)
+  name: string               // Short description
+  testScope: string          // What to test (clear, specific)
+  exitCriteria: string[]     // Checklist to validate
+  estimatedTime: number      // Minutes (derived from task estimate)
+  retryLimit: number         // Always 2 (as confirmed)
+}
+```
+
+**Output Example:**
+```
+Task: "Integrate Stripe payment processing"
+→ Testing Strategy: INCREMENTAL (External API + HIGH risk)
+→ Milestones: 4
+
+Milestone 1: Core implementation (minimal viable)
+  Test Scope: Single happy path (1 record, hardcoded)
+  Exit Criteria:
+    - Response status = 200
+    - Data structure valid
+    - Response time < 500ms
+    - API authentication works
+  Estimated Time: 27 min
+  Retry Limit: 2
+
+Milestone 2: Parameterized query
+  Test Scope: 10 records, dynamic input
+  Exit Criteria:
+    - Accepts dynamic input
+    - Returns correct results for all 10
+    - No duplicate API calls
+    - Response time < 700ms
+  Estimated Time: 27 min
+  Retry Limit: 2
+
+... (Milestone 3 & 4)
+```
+
+---
+
 ## 📊 Output Format
 
 ### Enhanced Task Metadata
@@ -551,6 +904,22 @@ interface TaskMetadata {
     adjusted: number       // With buffer for complexity/risk
     buffer: number         // Percentage added
   }
+
+  // NEW in v1.4.0: Incremental Testing
+  testingStrategy: {
+    type: 'standard' | 'incremental'
+    reason: string
+    milestones?: Milestone[]  // Only if type = 'incremental'
+  }
+}
+
+interface Milestone {
+  id: number                  // Sequential (1, 2, 3, ...)
+  name: string               // Short description
+  testScope: string          // What to test (clear, specific)
+  exitCriteria: string[]     // Checklist to validate
+  estimatedTime: number      // Minutes (derived from task estimate)
+  retryLimit: number         // Always 2
 }
 ```
 
@@ -561,7 +930,7 @@ interface TaskMetadata {
 **Integration Point: STEP 3.5 (after task detection, before template selection)**
 
 ```typescript
-// STEP 3.5: Analyze Tasks (TaskMaster-style)
+// STEP 3.5: Analyze Tasks (TaskMaster-style + Incremental Testing)
 
 const tasks = parseTasksFromMd(tasksContent)
 const analyzedTasks = []
@@ -574,6 +943,21 @@ for (const task of tasks) {
   const needsBreakdown = needsSubtaskBreakdown(task, complexity)
   const subtasks = needsBreakdown ? generateSubtasks(task) : []
   const priority = calculatePriority(task, { complexity, dependencies, risk })
+
+  // NEW: Detect testing strategy
+  const metadata = { complexity: { score: complexity }, risk, dependencies }
+  const testingStrategy = detectTestingStrategy(task, metadata)
+
+  // NEW: Generate milestones if incremental
+  let milestones = []
+  if (testingStrategy.type === 'incremental') {
+    const adjustedTime = adjustTimeForComplexity(task.estimatedTime, complexity, risk)
+    milestones = generateMilestones(task, {
+      ...metadata,
+      complexity: { score: complexity, level: getComplexityLevel(complexity) },
+      estimatedTime: { adjusted: adjustedTime }
+    })
+  }
 
   analyzedTasks.push({
     ...task,
@@ -598,6 +982,12 @@ for (const task of tasks) {
       original: task.estimatedTime,
       adjusted: adjustTimeForComplexity(task.estimatedTime, complexity, risk),
       buffer: calculateBuffer(complexity, risk)
+    },
+    // NEW: Testing strategy
+    testingStrategy: {
+      type: testingStrategy.type,
+      reason: testingStrategy.reason,
+      milestones: milestones.length > 0 ? milestones : undefined
     }
   })
 }
@@ -606,6 +996,8 @@ for (const task of tasks) {
 analyzedTasks.sort((a, b) => b.priority.score - a.priority.score)
 
 // Report analysis
+const incrementalCount = analyzedTasks.filter(t => t.testingStrategy.type === 'incremental').length
+
 output(`
 📊 Task Analysis Complete
 
@@ -623,6 +1015,10 @@ Risk assessment:
 Research required: ${analyzedTasks.filter(t => t.research?.required).length} tasks
 
 Subtask breakdown: ${analyzedTasks.filter(t => t.subtasks.length > 0).length} tasks expanded
+
+🔄 Testing Strategy (NEW):
+  - Incremental: ${incrementalCount} tasks (with milestones)
+  - Standard: ${analyzedTasks.length - incrementalCount} tasks
 `)
 ```
 

@@ -1,6 +1,7 @@
 # Agent Executor with Retry & Escalation
 
 > **Robust agent execution with automatic retry and error recovery**
+> **Version:** 1.4.0 (Incremental Testing Integration)
 
 ---
 
@@ -315,3 +316,451 @@ Manual mode   → NO  (user wants control)
 ---
 
 This retry & escalation framework makes agent execution **robust and reliable**.
+
+---
+
+---
+
+# 🔄 Incremental Testing Execution (v1.4.0)
+
+> **NEW:** Milestone-based execution with round-based retry and Main Claude intervention
+
+---
+
+## 📋 Execution Mode Detection
+
+Before executing a phase, check the `testingStrategy` field:
+
+```typescript
+if (phase.testingStrategy?.type === 'incremental' && phase.testingStrategy.milestones) {
+  // Incremental mode: Execute milestone by milestone
+  return await executeIncrementalPhase(phase, changeId)
+} else {
+  // Standard mode: Single agent execution (existing logic above)
+  return await executeStandardPhase(phase, changeId)
+}
+```
+
+---
+
+## 🎯 Incremental Execution Flow
+
+### Overview
+
+```
+Phase Start (e.g., "Google Maps API Integration")
+↓
+Milestone 1: Core implementation (1 record)
+  → Round 1: Attempt 1 → FAIL
+  → Round 1: Attempt 2 → FAIL
+  → Main Claude: Give hints
+  → Round 2: Attempt 1 → PASS ✅
+↓
+Milestone 2: Parameterized query (10 records)
+  → Round 1: Attempt 1 → PASS ✅
+↓
+Milestone 3: Error handling
+  → Round 1: Attempt 1 → FAIL
+  → Round 1: Attempt 2 → FAIL
+  → Main Claude: Ask human (complex issue) → PAUSE 🛑
+↓
+Human resolves issue
+↓
+Resume: Milestone 3
+  → Round 2: Attempt 1 → PASS ✅
+↓
+Milestone 4: Scale + performance
+  → Round 1: Attempt 1 → PASS ✅
+↓
+Phase Complete ✅
+```
+
+---
+
+## 🔄 Round-based Retry Logic
+
+### Per-Milestone Retry
+
+- **Quota per round:** 2 attempts
+- **Between rounds:** Main Claude intervention (reset quota)
+- **No global limit:** Unlimited rounds (user/Main Claude decides when to stop)
+
+```typescript
+async function executeMilestone(milestone: Milestone, phase: Phase): Promise<MilestoneResult> {
+  let round = 1
+  let passed = false
+  const history = []
+
+  while (!passed) {
+    console.log(`\n📍 Round ${round}`)
+
+    // Execute 2 attempts in this round
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      console.log(`\n   Attempt ${attempt}/2:`)
+
+      // Build prompt (include previous failures + hints if available)
+      const prompt = buildMilestonePrompt(milestone, round, attempt, history)
+
+      // Execute agent
+      const result = await executeAgent(phase.agent, prompt)
+
+      // Validate exit criteria
+      const validation = validateExitCriteria(result.output, milestone.exitCriteria)
+
+      // Store in history
+      history.push({ round, attempt, validation, output: result.output })
+
+      if (validation.allPassed) {
+        // SUCCESS!
+        console.log(`\n   ✅ PASSED`)
+        passed = true
+        return { status: 'passed', history }
+      } else {
+        // FAILED
+        console.log(`\n   ❌ FAILED (${validation.failures.length} criteria not met)`)
+
+        if (attempt === 2) {
+          // Both attempts failed → Escalate to Main Claude
+          console.log(`\n   ⚠️ Round ${round} exhausted`)
+          break  // Exit attempt loop
+        } else {
+          console.log(`\n   🔄 Retrying...`)
+        }
+      }
+    }
+
+    // If we're here, round failed → Main Claude intervention
+    if (!passed) {
+      const decision = await mainClaudeIntervention(milestone, history)
+
+      if (decision.action === 'give_hints') {
+        // Continue to next round with hints
+        console.log(`\n💡 Main Claude Guidance:`)
+        decision.hints.forEach(h => console.log(`   - ${h}`))
+        history.push({ type: 'hints', round: round + 1, hints: decision.hints })
+        round++
+      } else if (decision.action === 'ask_human') {
+        // Pause and wait for human
+        console.log(`\n🛑 Human intervention required`)
+        return { status: 'paused', reason: decision.reason, history }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🤖 Main Claude Intervention
+
+### Decision Logic
+
+```typescript
+async function mainClaudeIntervention(milestone: Milestone, history: ExecutionHistory): Promise<Decision> {
+  // Analyze failure patterns
+  const analysis = analyzeFailures(history)
+
+  console.log(`\n🤔 Main Claude analyzing failures...`)
+  console.log(`   Error pattern: ${analysis.pattern}`)
+  console.log(`   Complexity: ${analysis.complexity}`)
+  console.log(`   Confidence: ${analysis.confidence}`)
+
+  // Decision matrix
+  if (analysis.pattern === 'same_error' && analysis.complexity === 'SIMPLE') {
+    // Same error 2x + simple issue → Give hints
+    return {
+      action: 'give_hints',
+      hints: generateHints(analysis, milestone)
+    }
+  }
+
+  if (analysis.pattern === 'different_errors' || analysis.complexity === 'COMPLEX') {
+    // Non-deterministic or complex → Ask human
+    return {
+      action: 'ask_human',
+      reason: 'Complex or intermittent failures detected',
+      report: generateHumanReport(milestone, history, analysis)
+    }
+  }
+
+  // Too many rounds without progress → Ask human
+  if (history.filter(h => h.type === 'hints').length >= 2) {
+    return {
+      action: 'ask_human',
+      reason: 'No progress after 2 rounds of guidance',
+      report: generateHumanReport(milestone, history, analysis)
+    }
+  }
+
+  // Default: Give hints
+  return {
+    action: 'give_hints',
+    hints: generateHints(analysis, milestone)
+  }
+}
+```
+
+### Failure Analysis
+
+```typescript
+function analyzeFailures(history: ExecutionHistory): Analysis {
+  const failures = history.filter(h => h.validation && !h.validation.allPassed)
+
+  // Extract unique error messages
+  const errorMessages = failures.flatMap(f =>
+    f.validation.failures.map(fail => fail.criterion + ':' + fail.explanation)
+  )
+  const uniqueErrors = [...new Set(errorMessages)]
+
+  // Detect pattern
+  let pattern: 'same_error' | 'different_errors' | 'intermittent'
+  if (uniqueErrors.length === 1) {
+    pattern = 'same_error'
+  } else if (uniqueErrors.length === failures.length) {
+    pattern = 'different_errors'
+  } else {
+    pattern = 'intermittent'
+  }
+
+  // Assess complexity
+  const complexity = uniqueErrors.some(e =>
+    e.includes('timeout') ||
+    e.includes('intermittent') ||
+    e.includes('non-deterministic')
+  ) ? 'COMPLEX' : 'SIMPLE'
+
+  // Confidence in root cause
+  const confidence = (pattern === 'same_error' && complexity === 'SIMPLE') ? 'HIGH' : 'LOW'
+
+  return { pattern, complexity, confidence, uniqueErrors }
+}
+```
+
+### Hint Generation
+
+```typescript
+function generateHints(analysis: Analysis, milestone: Milestone): string[] {
+  const hints = []
+
+  // Pattern-based hints
+  if (analysis.uniqueErrors.some(e => e.includes('401') || e.includes('auth'))) {
+    hints.push('Check if API_KEY environment variable is set correctly')
+    hints.push('Verify API key is valid (not expired/revoked)')
+    hints.push('Ensure API key has permissions for this endpoint')
+  }
+
+  if (analysis.uniqueErrors.some(e => e.includes('timeout'))) {
+    hints.push('Increase timeout threshold (may be too aggressive)')
+    hints.push('Check network connectivity to API endpoint')
+    hints.push('Verify API endpoint URL is correct')
+  }
+
+  if (analysis.uniqueErrors.some(e => e.includes('structure') || e.includes('schema'))) {
+    hints.push('Compare actual response structure with expected schema')
+    hints.push('Check if API version changed (response format may differ)')
+    hints.push('Add console.log() to inspect actual response')
+  }
+
+  // Generic debugging hints
+  hints.push('Review exit criteria - ensure they match current implementation')
+  hints.push('Add detailed logging to identify exact failure point')
+
+  return hints
+}
+```
+
+---
+
+## ✅ Exit Criteria Validation
+
+### Agent Output Format
+
+Agent MUST respond in this format:
+
+```markdown
+## Milestone ${id} Results
+
+**Implementation Summary:**
+[What was implemented]
+
+**Test Results:**
+- [ ] Response status = 200 - PASS - Got status 200
+- [ ] Data structure valid - PASS - Schema matches
+- [ ] Response time < 500ms - FAIL - Got 612ms (too slow)
+- [ ] API authentication works - PASS - No 401 errors
+
+**Issues Found (if any):**
+- Response time exceeds threshold (612ms vs 500ms)
+
+**Conclusion:**
+FAIL → Need to optimize query performance
+```
+
+### Parsing Logic
+
+```typescript
+function validateExitCriteria(agentOutput: string, criteria: string[]): Validation {
+  const results = []
+
+  for (const criterion of criteria) {
+    // Match pattern: "- [ ] {criterion} - PASS/FAIL - explanation"
+    const regex = new RegExp(
+      `\\[(.?)\\]\\s*${escapeRegex(criterion)}\\s*-\\s*(PASS|FAIL)\\s*-\\s*(.+)`,
+      'i'
+    )
+    const match = agentOutput.match(regex)
+
+    if (match) {
+      const [, checkbox, status, explanation] = match
+      results.push({
+        criterion,
+        passed: status.toUpperCase() === 'PASS',
+        explanation: explanation.trim()
+      })
+    } else {
+      // Not found → FAIL (agent didn't report)
+      results.push({
+        criterion,
+        passed: false,
+        explanation: 'Agent did not report on this criterion'
+      })
+    }
+  }
+
+  return {
+    allPassed: results.every(r => r.passed),
+    passedCount: results.filter(r => r.passed).length,
+    totalCount: results.length,
+    results,
+    failures: results.filter(r => !r.passed)
+  }
+}
+```
+
+---
+
+## 🛑 Human Intervention Report
+
+### Report Format
+
+```markdown
+🛑 Human Intervention Required
+
+**Phase:** ${phase.name}
+**Milestone:** ${milestone.id}/${totalMilestones} - ${milestone.name}
+**Total Attempts:** ${totalAttempts} across ${rounds} rounds
+**Status:** AWAITING RESOLUTION
+
+---
+
+## Failure Summary
+
+### Round 1
+**Attempt 1:**
+- ❌ Response status = 200 → Got 401 (Unauthorized)
+- ❌ API authentication works → Invalid API key
+
+**Attempt 2:**
+- ❌ Response status = 200 → Got 401 (Unauthorized)
+- ❌ API authentication works → Invalid API key
+
+### Round 2 (after hints: "Check API_KEY env variable")
+**Attempt 1:**
+- ❌ Response status = 200 → Got 500 (Internal Server Error)
+- ❌ Data structure valid → Unexpected error format
+
+**Attempt 2:**
+- ❌ Response status = 200 → Got 503 (Service Unavailable)
+- ✅ API authentication works → Auth passed this time
+
+---
+
+## Analysis
+
+**Error Pattern:** Different errors each attempt (intermittent)
+**Complexity:** HIGH (non-deterministic behavior)
+**Root Cause Hypothesis:** API instability or network issues
+**Confidence:** LOW
+
+**Possible Causes:**
+1. Google Maps API experiencing outage/degradation
+2. Rate limiting kicking in intermittently
+3. Network connectivity issues
+4. API key quota exhausted
+
+---
+
+## Recommendations
+
+1. Check Google Cloud Console → API quota usage
+2. Test API directly (curl/Postman) outside codebase
+3. Review recent Google Maps API status
+4. Consider adding retry logic with exponential backoff
+5. Verify API key permissions and billing status
+
+---
+
+## Next Steps
+
+Please investigate and provide guidance:
+- Should we continue with current approach?
+- Or pause and fix infrastructure/config first?
+- Or change strategy (e.g., use different API)?
+
+Reply with your decision.
+```
+
+---
+
+## 📊 Complete Example Flow
+
+```typescript
+// In /cdev command
+
+async function executePhase(phase: Phase, changeId: string) {
+  // Check testing strategy
+  if (phase.testingStrategy?.type === 'incremental') {
+    console.log(`\n🔄 INCREMENTAL MODE`)
+    console.log(`   Milestones: ${phase.testingStrategy.milestones.length}`)
+
+    // Execute each milestone
+    for (const milestone of phase.testingStrategy.milestones) {
+      console.log(`\n━━━ Milestone ${milestone.id} ━━━`)
+
+      const result = await executeMilestone(milestone, phase)
+
+      if (result.status === 'passed') {
+        console.log(`✅ Milestone ${milestone.id} complete`)
+        updateFlags(changeId, {
+          [`phase_${phase.id}_milestone_${milestone.id}`]: 'completed'
+        })
+      } else if (result.status === 'paused') {
+        console.log(`🛑 Execution paused`)
+        console.log(result.reason)
+        return { status: 'paused', phase, milestone }
+      }
+    }
+
+    console.log(`\n✅ Phase complete: All milestones passed`)
+    return { status: 'completed', phase }
+
+  } else {
+    // Standard execution (existing logic)
+    return await executeStandardPhase(phase, changeId)
+  }
+}
+```
+
+---
+
+## 🎯 Benefits of Incremental Testing
+
+✅ **Early bug detection** - Catch issues at milestone 1 (1 record) vs milestone 4 (1000 records)
+✅ **Easier debugging** - Small scope = faster to identify root cause
+✅ **Progressive confidence** - Each milestone proves the next will likely work
+✅ **Intelligent recovery** - Main Claude provides hints instead of blind retry
+✅ **Human-in-the-loop** - Escalate complex issues that agents can't solve
+
+---
+
+**This incremental execution framework transforms high-risk tasks into manageable, validated steps! 🚀**

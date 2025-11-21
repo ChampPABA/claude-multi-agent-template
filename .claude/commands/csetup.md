@@ -201,6 +201,10 @@ for (const task of tasks) {
 // Sort by priority (CRITICAL → HIGH → MEDIUM → LOW)
 analyzedTasks.sort((a, b) => b.priority.score - a.priority.score)
 
+// Calculate testing strategy stats (NEW in v1.4.0)
+const incrementalTasks = analyzedTasks.filter(t => t.testingStrategy?.type === 'incremental')
+const totalMilestones = incrementalTasks.reduce((sum, t) => sum + (t.testingStrategy?.milestones?.length || 0), 0)
+
 // Store for phases.md generation
 const taskAnalysis = {
   tasks: analyzedTasks,
@@ -219,7 +223,11 @@ const taskAnalysis = {
     },
     researchRequired: analyzedTasks.filter(t => t.research?.required).length,
     subtasksExpanded: analyzedTasks.filter(t => t.subtasks.length > 0).length,
-    averageComplexity: (analyzedTasks.reduce((sum, t) => sum + t.complexity.score, 0) / analyzedTasks.length).toFixed(1)
+    averageComplexity: (analyzedTasks.reduce((sum, t) => sum + t.complexity.score, 0) / analyzedTasks.length).toFixed(1),
+    // NEW: Incremental Testing stats
+    incrementalTesting: incrementalTasks.length,
+    standardTesting: analyzedTasks.length - incrementalTasks.length,
+    totalMilestones: totalMilestones
   }
 }
 ```
@@ -243,6 +251,13 @@ const taskAnalysis = {
       → Mitigation: TDD required, security checklist
    ⚠️ MEDIUM risk: 3 tasks
    ✅ LOW risk: 3 tasks
+
+🔄 Testing Strategy (NEW in v1.4.0):
+   🔄 Incremental: 3 tasks (11 milestones total)
+      → Payment integration (4 milestones)
+      → Auth system (4 milestones)
+      → User data migration (3 milestones)
+   ▶️ Standard: 5 tasks
 
 🔬 Research Required: 2 tasks
    - React Query v5 migration (15 min)
@@ -360,7 +375,7 @@ const allPhases = [...researchPhases, ...phaseSections]
 
 ---
 
-## 📊 Task Analysis Summary (v1.3.0 - TaskMaster-style)
+## 📊 Task Analysis Summary (v1.4.0 - Incremental Testing)
 
 **Analyzed Tasks:** {taskAnalysis.summary.total}
 **Average Complexity:** {taskAnalysis.summary.averageComplexity}/10
@@ -375,6 +390,10 @@ const allPhases = [...researchPhases, ...phaseSections]
 - 🚨 HIGH risk: {taskAnalysis.summary.risk.high} tasks
 - ⚠️ MEDIUM risk: {taskAnalysis.summary.risk.medium} tasks
 - ✅ LOW risk: {taskAnalysis.summary.risk.low} tasks
+
+**Testing Strategy:** (NEW in v1.4.0)
+- 🔄 Incremental: {taskAnalysis.summary.incrementalTesting} tasks ({taskAnalysis.summary.totalMilestones} milestones)
+- ▶️ Standard: {taskAnalysis.summary.standardTesting} tasks
 
 **Research Phases:** {taskAnalysis.summary.researchRequired} added
 **Subtasks Expanded:** {taskAnalysis.summary.subtasksExpanded} tasks
@@ -435,7 +454,10 @@ ${allPhases.map((phaseSection, index) => {
   )
 
   let metadata = ''
+  let milestonesSection = ''
+
   if (matchingTask) {
+    // Standard metadata
     metadata = `
 **Task Metadata (TaskMaster Analysis):**
 - **Complexity:** ${matchingTask.complexity.score}/10 (${matchingTask.complexity.level})
@@ -452,9 +474,66 @@ ${matchingTask.risk.mitigation.length > 0 ? `  - Mitigation:\n${matchingTask.ris
 
 ${matchingTask.subtasks.length > 0 ? `**Subtasks:**\n${matchingTask.subtasks.map(st => `  - ${st.id}: ${st.description} (${st.estimatedTime} min)`).join('\n')}\n` : ''}
 `
+
+    // NEW: Incremental Testing Milestones (v1.4.0)
+    if (matchingTask.testingStrategy?.type === 'incremental' && matchingTask.testingStrategy.milestones) {
+      metadata += `
+**Testing Strategy:** 🔄 INCREMENTAL
+- **Reason:** ${matchingTask.testingStrategy.reason}
+- **Total Milestones:** ${matchingTask.testingStrategy.milestones.length}
+
+`
+
+      // Generate milestone subsections
+      milestonesSection = matchingTask.testingStrategy.milestones.map(milestone => `
+#### Milestone ${milestone.id}/${matchingTask.testingStrategy.milestones.length}: ${milestone.name}
+
+**Test Scope:** ${milestone.testScope}
+**Estimated Time:** ${milestone.estimatedTime} min
+**Retry Limit:** ${milestone.retryLimit} attempts
+
+**Exit Criteria:**
+${milestone.exitCriteria.map(criterion => `- [ ] ${criterion}`).join('\n')}
+
+**Instructions for Agent:**
+1. **Implement:** ${milestone.name}
+2. **Test:** ${milestone.testScope}
+3. **Validate:** Check ALL exit criteria above
+4. **Report results in this format:**
+
+\`\`\`
+## Milestone ${milestone.id} Results
+
+**Implementation Summary:**
+[Brief description of what was implemented]
+
+**Test Results:**
+${milestone.exitCriteria.map(criterion => `- [ ] ${criterion} - [PASS/FAIL] - [Brief explanation]`).join('\n')}
+
+**Issues Found (if any):**
+[List any issues encountered]
+
+**Conclusion:**
+[PASS → Ready for Milestone ${milestone.id + 1}]
+[FAIL → Need to fix [X] before retry]
+\`\`\`
+
+5. **IF FAILED:** Debug issues → Retry (max ${milestone.retryLimit} attempts)
+6. **IF ALL RETRIES FAIL:** Escalate to Main Claude for guidance
+7. **IF PASSED:** Proceed to ${milestone.id < matchingTask.testingStrategy.milestones.length ? `Milestone ${milestone.id + 1}` : 'next phase'}
+
+---
+`).join('\n')
+    } else if (matchingTask.testingStrategy?.type === 'standard') {
+      metadata += `
+**Testing Strategy:** ▶️ STANDARD
+- **Reason:** ${matchingTask.testingStrategy.reason}
+
+`
+    }
   }
 
-  return `${phaseSection}\n${metadata}`
+  return `${phaseSection}\n${metadata}${milestonesSection}`
 }).join('\n---\n\n')}
 
 ---

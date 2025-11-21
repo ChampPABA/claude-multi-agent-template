@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 1.3.0 - Universal Multi-Agent Template
-> **Latest:** TaskMaster Integration - Intelligent task analysis with complexity, dependencies, risk assessment
+> **Template Version:** 1.6.0 - Universal Multi-Agent Template
+> **Latest:** Incremental Testing - Milestone-based validation for high-risk tasks with round-based retry
 
 ---
 
@@ -70,12 +70,13 @@ Universal, framework-agnostic template for AI-assisted development.
 - Level 2: `.claude/contexts/domain/{project}/README.md` (Project Overview)
 - Level 3: `.claude/contexts/domain/{project}/best-practices/index.md` (Best Practices Registry)
 
-**🆕 Implementation Logic (v1.1.0):**
+**Implementation Logic:**
 - `@/.claude/lib/README.md` - Implementation logic overview
-- `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev)
+- `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev) + 🆕 Incremental testing execution (v1.6.0)
 - `@/.claude/lib/tdd-classifier.md` - TDD classification logic (used by /csetup)
-- `@/.claude/lib/flags-updater.md` - 🆕 Progress tracking protocol (Main Claude updates flags.json)
-- `@/.claude/lib/agent-router.md` - 🆕 Mandatory agent routing rules (enforce delegation)
+- `@/.claude/lib/task-analyzer.md` - 🆕 Task analysis with milestone generation (v1.6.0)
+- `@/.claude/lib/flags-updater.md` - Progress tracking protocol (Main Claude updates flags.json)
+- `@/.claude/lib/agent-router.md` - Mandatory agent routing rules (enforce delegation)
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 
 ---
@@ -136,6 +137,20 @@ Universal, framework-agnostic template for AI-assisted development.
 - **Solution:** `/csetup` uses **6 analysis dimensions**: Complexity (1-10), Dependencies (auto-detected), Risk (LOW/MEDIUM/HIGH), Research requirements, Subtask breakdown, Priority (0-100)
 - **Benefits:** Intelligent phases.md with time buffers (+41%), auto-added research phases, dependency order, risk mitigation
 - **Inspired by:** [claude-task-master](https://github.com/eyaltoledano/claude-task-master)
+
+---
+
+## 🔄 Incremental Testing (v1.6.0)
+
+**→ See:** `@/.claude/lib/detailed-guides/incremental-testing.md` for complete guide
+
+**Quick Summary:**
+- **Problem:** All-or-nothing testing → bugs found at scale (1000 records) → hard to debug, expensive rework
+- **Solution:** Milestone-based validation → Test 1 record → 10 → errors → scale → catch bugs early (75% faster debug)
+- **3 Patterns:** Backend API (4 milestones), Complex Form (3 milestones), Database Migration (3 milestones)
+- **Round-based Retry:** 2 attempts → Main Claude intervention (hints vs ask human) → new round (unlimited)
+- **Detection:** Auto-triggered for Risk=HIGH OR (Risk=MEDIUM + Complexity≥7) OR External API OR Data-intensive (~20-30% of tasks)
+- **Benefits:** 60-70% rework reduction, 40-50% net speedup, 90% success rate with progressive confidence
 
 ---
 
