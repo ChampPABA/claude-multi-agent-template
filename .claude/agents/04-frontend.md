@@ -1,7 +1,7 @@
 ---
 name: frontend
 description: Frontend implementation connecting components to APIs
-model: haiku
+model: opus
 color: green
 ---
 

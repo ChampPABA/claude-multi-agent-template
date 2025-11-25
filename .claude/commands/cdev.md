@@ -183,7 +183,7 @@ Run \`/designsetup\` to generate project-specific design system.
 const prompt = buildAgentPrompt(phase, changeContext)
 
 // 4.2: Execute agent with retry & validation
-output(`\n🚀 Invoking ${phase.agent} agent (model: haiku)...`)
+output(`\n🚀 Invoking ${phase.agent} agent (model: opus)...`)
 
 const result = await executeAgentWithRetry(
   phase.agent,
@@ -240,9 +240,8 @@ if (result.success) {
 3. **escalateToUser()**: See `.claude/lib/agent-executor.md`
 
 **Model Strategy:**
-- All agents use `model: haiku` (fixed)
-- Haiku performs excellently with detailed context
-- 12-20x cheaper than sonnet
+- All agents use `model: opus` (fixed)
+- Opus 4.5 is the latest Claude model with best performance
 - Quality maintained through comprehensive validation framework
 
 ---

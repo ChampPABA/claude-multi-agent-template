@@ -80,7 +80,7 @@ auto_proceed = userApprovalGranted()  // Check if user approved workflow
 while (attempt <= max_retries):
 
   1. Invoke agent:
-     Task(agent=agentType, model='haiku', prompt=buildPrompt(auto_proceed))
+     Task(agent=agentType, model='opus', prompt=buildPrompt(auto_proceed))
 
   2. Handle agent questions (NEW!):
      If agent asks "Should I proceed?" or "Continue?":

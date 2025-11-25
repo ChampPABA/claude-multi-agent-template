@@ -2,7 +2,7 @@
 
 > **Detailed guide to the multi-agent architecture**
 > **Source:** Extracted from CLAUDE.md (Navigation Hub)
-> **Version:** 1.4.0
+> **Version:** 1.7.0 (Opus 4.5)
 
 ---
 
@@ -29,14 +29,16 @@
 
 ## Available Agents (6 specialists)
 
-| Agent | Color | When to Use | Phase |
-|-------|-------|-------------|-------|
-| **integration** | Orange | Validate API contracts before connecting | 2.5 |
-| **uxui-frontend** | Blue | Design UI components with mock data | 1 |
-| **test-debug** | Red | Run tests and fix bugs (max 3-4 iterations) | 1,3,4 |
-| **frontend** | Green | Connect UI to backend APIs | 3 |
-| **backend** | Purple | Create API endpoints with validation | 2 |
-| **database** | Pink | Design schemas, migrations, complex queries | 2 |
+**All agents use Opus 4.5** for best-in-class reasoning and code quality.
+
+| Agent | Color | Model | When to Use | Phase |
+|-------|-------|-------|-------------|-------|
+| **integration** | Orange | opus | Validate API contracts before connecting | 2.5 |
+| **uxui-frontend** | Blue | opus | Design UI components with mock data | 1 |
+| **test-debug** | Red | opus | Run tests and fix bugs (max 3-4 iterations) | 1,3,4 |
+| **frontend** | Green | opus | Connect UI to backend APIs | 3 |
+| **backend** | Cyan | opus | Create API endpoints with validation | 2 |
+| **database** | Pink | opus | Design schemas, migrations, complex queries | 2 |
 
 ---
 

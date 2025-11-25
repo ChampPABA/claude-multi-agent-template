@@ -1,7 +1,7 @@
 ---
 name: database
 description: Database schema design and migrations with Prisma/SQLAlchemy
-model: haiku
+model: opus
 color: pink
 ---
 

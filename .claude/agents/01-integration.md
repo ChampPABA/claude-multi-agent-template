@@ -1,7 +1,7 @@
 ---
 name: integration
 description: Validates API contracts and coordinates multi-agent outputs
-model: haiku
+model: opus
 color: orange
 ---
 

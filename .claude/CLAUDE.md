@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 1.6.0 - Universal Multi-Agent Template
+> **Template Version:** 1.7.0 - Universal Multi-Agent Template (Opus 4.5)
 > **Latest:** Incremental Testing - Milestone-based validation for high-risk tasks with round-based retry
 
 ---

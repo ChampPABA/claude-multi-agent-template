@@ -1,7 +1,7 @@
 ---
 name: backend
 description: Backend API development with FastAPI/Express/Django
-model: haiku
+model: opus
 color: cyan
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: uxui-frontend
 description: UX/UI frontend development with React/Next.js/Vue using mock data
-model: haiku
+model: opus
 color: blue
 ---
 

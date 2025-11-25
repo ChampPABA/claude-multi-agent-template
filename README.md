@@ -917,7 +917,43 @@ Built with:
 
 ---
 
-## 🆕 What's New in v1.6.0
+## 🆕 What's New in v1.7.0
+
+**Feature: Opus 4.5 Model Upgrade - All Subagents Now Use Latest Claude Model** 🧠
+
+### The Change
+
+All 6 specialized agents now use **Claude Opus 4.5** (the latest and most capable Claude model) instead of Haiku:
+
+| Agent | Model (Before) | Model (After) |
+|-------|----------------|---------------|
+| integration | haiku | **opus** |
+| uxui-frontend | haiku | **opus** |
+| test-debug | haiku | **opus** |
+| frontend | haiku | **opus** |
+| backend | haiku | **opus** |
+| database | haiku | **opus** |
+
+### Benefits
+
+- ✅ **Best-in-class reasoning** - Opus 4.5 handles complex multi-step tasks better
+- ✅ **Improved code quality** - More accurate implementations with fewer errors
+- ✅ **Better context understanding** - Agents maintain context over longer sessions
+- ✅ **Enhanced problem-solving** - Complex debugging and architectural decisions improved
+
+### Updated Files
+
+- All agent files (`.claude/agents/*.md`) - `model: opus`
+- `/cdev` command - Model strategy updated
+- `agent-executor.md` - Task invocation uses opus
+
+### No Breaking Changes
+
+All existing workflows continue to work exactly as before, just with better performance!
+
+---
+
+## 🔄 What's New in v1.6.0
 
 **Feature: Incremental Testing - Milestone-based Validation for High-Risk Tasks** 🔄
 
@@ -1155,6 +1191,20 @@ All your customizations in `.claude/contexts/domain/` are preserved!
 ---
 
 ## 📜 Changelog
+
+### v1.7.0 (2025-11-25)
+**Feature: Opus 4.5 Model Upgrade**
+
+**Changed:**
+- All 6 agents upgraded from `model: haiku` to `model: opus`
+- Updated `/cdev` model strategy description
+- Updated `agent-executor.md` Task invocation
+
+**Benefits:**
+- Best-in-class reasoning with Opus 4.5
+- Improved code quality and fewer errors
+- Better context understanding
+- Enhanced problem-solving for complex tasks
 
 ### v1.4.1 (2025-11-06)
 **Feature: Intelligent Auto-Proceed - Eliminate Double Confirmations**

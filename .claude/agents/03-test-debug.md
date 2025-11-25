@@ -1,7 +1,7 @@
 ---
 name: test-debug
 description: Automated testing and debugging with Vitest/Jest/Playwright
-model: haiku
+model: opus
 color: red
 ---
 

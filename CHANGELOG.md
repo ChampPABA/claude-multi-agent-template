@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2025-11-25
+
+### 🧠 Opus 4.5 Model Upgrade - All Subagents Now Use Latest Claude Model
+
+**Major Model Upgrade:** All 6 specialized agents upgraded from Haiku to Opus 4.5 for best-in-class performance.
+
+### Changed
+
+- **All Agent Files** - Model upgraded to opus
+  - `.claude/agents/01-integration.md` - `model: opus`
+  - `.claude/agents/02-uxui-frontend.md` - `model: opus`
+  - `.claude/agents/03-test-debug.md` - `model: opus`
+  - `.claude/agents/04-frontend.md` - `model: opus`
+  - `.claude/agents/05-backend.md` - `model: opus`
+  - `.claude/agents/06-database.md` - `model: opus`
+
+- **`/cdev` command** - Model strategy updated
+  - Changed: `model: haiku` → `model: opus`
+  - Updated model strategy description
+
+- **`agent-executor.md`** - Task invocation updated
+  - Changed: `Task(agent=agentType, model='haiku', ...)` → `Task(agent=agentType, model='opus', ...)`
+
+### Benefits
+
+| Aspect | Haiku | Opus 4.5 |
+|--------|-------|----------|
+| **Reasoning** | Fast, basic | Best-in-class complex reasoning |
+| **Code Quality** | Good | Excellent, fewer errors |
+| **Context** | Standard | Enhanced long-context understanding |
+| **Problem-solving** | Standard | Advanced debugging & architecture |
+
+### No Breaking Changes
+
+All existing workflows continue to work exactly as before:
+- ✅ `/psetup`, `/csetup`, `/cdev` commands unchanged
+- ✅ Agent behavior unchanged (same workflow, better execution)
+- ✅ All features from v1.0-1.6 preserved
+
+---
+
 ## [1.6.0] - 2025-01-21
 
 ### 🔄 Incremental Testing - Milestone-based Validation for High-Risk Tasks
