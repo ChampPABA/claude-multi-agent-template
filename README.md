@@ -917,7 +917,37 @@ Built with:
 
 ---
 
-## 🆕 What's New in v1.7.0
+## 🆕 What's New in v1.7.1
+
+**Patch: OpenSpec File Naming Conventions - Clarify design.md vs STYLE_GUIDE.md** 📁
+
+### The Issue
+
+Users were confused between two files with similar names:
+- `design.md` (from OpenSpec) = Technical/Architecture decisions
+- `STYLE_GUIDE.md` (from Template) = Visual design (colors, fonts, spacing)
+
+### The Fix
+
+Added clear documentation in CLAUDE.md and agent-discovery.md:
+
+| Source | File | Purpose |
+|--------|------|---------|
+| **OpenSpec** | `design.md` | Technical Architecture (API structure, data flow) |
+| **Template** | `STYLE_GUIDE.md` | Visual Design (colors, typography, spacing) |
+
+### Updated Files
+
+- `CLAUDE.md` - New "📁 File Naming Conventions" section
+- `agent-discovery.md` - Added notes explaining design.md vs STYLE_GUIDE.md
+
+### No Breaking Changes
+
+All existing workflows continue to work. This is a documentation improvement only.
+
+---
+
+## 📋 What's New in v1.7.0
 
 **Feature: Opus 4.5 Model Upgrade - All Subagents Now Use Latest Claude Model** 🧠
 
@@ -1191,6 +1221,19 @@ All your customizations in `.claude/contexts/domain/` are preserved!
 ---
 
 ## 📜 Changelog
+
+### v1.7.1 (2025-11-25)
+**Patch: OpenSpec File Naming Conventions**
+
+**Added:**
+- New "📁 File Naming Conventions" section in CLAUDE.md
+- Clear distinction between OpenSpec files and Template files
+- Notes in agent-discovery.md explaining design.md purpose
+
+**Documentation:**
+- `design.md` (OpenSpec) = Technical Architecture (API, data flow)
+- `STYLE_GUIDE.md` (Template) = Visual Design (colors, fonts, spacing)
+- Updated agent reading guidance per role
 
 ### v1.7.0 (2025-11-25)
 **Feature: Opus 4.5 Model Upgrade**

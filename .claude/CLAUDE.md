@@ -1,8 +1,46 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 1.7.0 - Universal Multi-Agent Template (Opus 4.5)
+> **Template Version:** 1.7.1 - Universal Multi-Agent Template (Opus 4.5)
 > **Latest:** Incremental Testing - Milestone-based validation for high-risk tasks with round-based retry
+
+---
+
+## 📁 File Naming Conventions (OpenSpec + Template)
+
+> **IMPORTANT:** Avoid confusion between OpenSpec files and Template files
+
+### OpenSpec Files (from [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec))
+
+| File | Purpose | When to Read |
+|------|---------|--------------|
+| `proposal.md` | WHY - Goals, scope, rationale | Phase planning |
+| `tasks.md` | WHAT - Implementation checklist | Task tracking |
+| `design.md` | **Technical/Architecture decisions** (optional) | Backend/Database phases |
+| `specs/` | Delta specs (ADDED/MODIFIED/REMOVED) | Requirement validation |
+
+### Template Files (from claude-multi-agent-template)
+
+| File | Purpose | When to Read |
+|------|---------|--------------|
+| `STYLE_GUIDE.md` | **Visual design** (colors, typography, spacing) | UI/Frontend phases |
+| `STYLE_TOKENS.json` | Lightweight design tokens (~500 tokens) | Quick UI reference |
+| `page-plan.md` | UI component layout + content strategy | uxui-frontend agent |
+| `phases.md` | Execution plan with agent assignments | All phases |
+| `flags.json` | Progress tracking | All phases |
+
+### Key Distinction
+
+```
+OpenSpec design.md    = Technical Architecture (data flow, API structure, system design)
+Template STYLE_GUIDE  = Visual Design (colors, fonts, spacing, component styles)
+```
+
+**Agents should read BOTH when relevant:**
+- `uxui-frontend` → STYLE_GUIDE.md (visual) + design.md (if has UI architecture)
+- `backend` → design.md (API/data architecture)
+- `database` → design.md (data models, relationships)
+- `frontend` → STYLE_GUIDE.md (visual) + design.md (API contracts)
 
 ---
 

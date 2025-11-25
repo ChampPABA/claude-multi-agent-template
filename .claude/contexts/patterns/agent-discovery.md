@@ -104,10 +104,14 @@ ls openspec/changes/{change-id}/.claude/
 
 4. **OpenSpec files:**
    ```bash
-   Read: openspec/changes/{change-id}/proposal.md
-   Read: openspec/changes/{change-id}/tasks.md
-   Read: openspec/changes/{change-id}/design.md  # if exists
+   Read: openspec/changes/{change-id}/proposal.md   # WHY - goals, scope
+   Read: openspec/changes/{change-id}/tasks.md      # WHAT - checklist
+   Read: openspec/changes/{change-id}/design.md     # HOW - technical architecture (if exists)
    ```
+
+   > **Note:** `design.md` = Technical/Architecture decisions (API structure, data flow)
+   > This is DIFFERENT from `STYLE_GUIDE.md` which is Visual Design (colors, fonts)
+   > See CLAUDE.md "File Naming Conventions" for details.
 
 **If change context doesn't exist:**
 - Skip Level 5 (working on general task, not OpenSpec change)
