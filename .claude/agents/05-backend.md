@@ -579,14 +579,19 @@ Response: { token: string, user: { id, email, name } }
 
 ---
 
-## Documentation Policy
+## Documentation Policy (v1.8.0)
 
-**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
+**→ See:** `.claude/contexts/patterns/code-standards.md` → "Forbidden Files" section
 
-**Quick Rule:**
-- ❌ **NEVER** create .md documentation files (README, API_DOCS, etc.)
-- ✅ **ALWAYS** report results as verbose text output in final message
-- Exception: ONLY when user explicitly requests documentation
+**Simple Rule:** Only create **actual code files**. No reports, summaries, or temp files.
+
+**Quick Reference:**
+- ❌ NEVER create files for: reports, summaries, logs, guides, analysis results
+- ❌ NEVER create ALL_CAPS filenames or files with PHASE_/STEP_ prefixes
+- ✅ Return all results in your **final response text**
+- ✅ Update `flags.json` with endpoints created
+
+**Rule of thumb:** If it wouldn't be committed to git as part of the feature, don't create it.
 
 ## Rules
 

@@ -152,10 +152,11 @@ ls openspec/changes/{change-id}/.claude/
    ```
    ⚠️ No project context found!
 
-   It looks like you haven't run `/agentsetup` yet.
+   Best practices haven't been generated yet.
+   This happens automatically when you run /csetup.
 
    Options:
-   1. Run `/agentsetup` now (recommended)
+   1. Run `/csetup {change-id}` (recommended - generates best practices)
    2. Continue without best practices (universal patterns only)
 
    Which would you like?

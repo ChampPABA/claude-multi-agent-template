@@ -526,7 +526,7 @@ Frontend expects `email` but backend doesn't return it.
 - ✅ ALWAYS read `tech-stack.md` before ANY install/run commands
 - ✅ Use exact package manager from tech-stack.md (pnpm, npm, bun, uv, poetry, pip)
 - ❌ NEVER assume or hardcode package manager
-- ❌ If tech-stack.md missing → warn user to run `/agentsetup`
+- ❌ If tech-stack.md missing → warn user to run `/csetup`
 
 ### Validation Standards
 - ✅ Read ACTUAL code files (don't guess or assume)
@@ -638,14 +638,18 @@ Found: 3 endpoints
 
 ---
 
-## Documentation Policy
+## Documentation Policy (v1.8.0)
 
-**→ See:** `.claude/contexts/patterns/code-standards.md` for complete policy
+**→ See:** `.claude/contexts/patterns/code-standards.md` → "Forbidden Files" section
+
+**Simple Rule:** Only create **actual code/config files**. No reports, summaries, or temp files.
 
 **Quick Reference:**
-- ❌ NEVER create documentation files unless explicitly requested
-- ❌ NO INTEGRATION_REPORT.md, CONTRACT_ANALYSIS.md, API_CONTRACTS.md, etc.
-- ✅ Return comprehensive text reports in your final message instead
-- ✅ Exception: Only when user explicitly says "create documentation"
+- ❌ NEVER create files for: reports, summaries, logs, guides, analysis results
+- ❌ NEVER create ALL_CAPS filenames or files with PHASE_/STEP_ prefixes
+- ✅ Return all results in your **final response text**
+- ✅ Update `flags.json` with validation results
+
+**Rule of thumb:** If it wouldn't be committed to git as part of the feature, don't create it.
 
 ---

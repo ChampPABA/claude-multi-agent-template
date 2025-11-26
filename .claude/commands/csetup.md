@@ -96,6 +96,212 @@ Continue anyway? (yes/no)
 
 ---
 
+### Step 2.7: Auto-Setup Best Practices (v1.8.0)
+
+> **NEW:** Auto-detect tech stack and generate best-practices (replaces /psetup and /agentsetup)
+
+```typescript
+// 1. Detect tech stack from multiple sources
+output(`\n🔍 Detecting Tech Stack...`)
+
+// Source 1: package.json / requirements.txt (if exists)
+let packageStack = []
+if (fileExists('package.json')) {
+  const pkg = JSON.parse(Read('package.json'))
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies }
+  packageStack = Object.keys(deps).filter(d =>
+    ['next', 'react', 'vue', 'express', 'fastapi', 'prisma', 'drizzle', 'vitest', 'jest'].some(k => d.includes(k))
+  )
+  output(`   📦 From package.json: ${packageStack.join(', ') || 'none'}`)
+}
+
+// Source 2: design.md (architecture section)
+let designStack = []
+const designPath = `openspec/changes/${changeId}/design.md`
+if (fileExists(designPath)) {
+  const designContent = Read(designPath)
+  // Look for tech stack section
+  const techMatch = designContent.match(/tech.*stack|architecture|framework/gi)
+  if (techMatch) {
+    designStack = extractTechFromText(designContent)
+    output(`   📐 From design.md: ${designStack.join(', ') || 'none'}`)
+  }
+}
+
+// Source 3: proposal.md + tasks.md (keywords)
+const proposalContent = Read(`openspec/changes/${changeId}/proposal.md`)
+const tasksContent = Read(`openspec/changes/${changeId}/tasks.md`)
+const combined = (proposalContent + ' ' + tasksContent).toLowerCase()
+
+const techDetection = {
+  react: /\b(react|jsx|tsx|use[A-Z]\w+|usestate|useeffect)\b/i,
+  nextjs: /\b(next\.?js|next js|app router|pages router)\b/i,
+  vue: /\b(vue|vuex|pinia|nuxt)\b/i,
+  express: /\b(express\.js|express js|expressjs)\b/i,
+  fastapi: /\b(fastapi|fast api)\b/i,
+  django: /\b(django)\b/i,
+  prisma: /\b(prisma)\b/i,
+  drizzle: /\b(drizzle)\b/i,
+  postgres: /\b(postgres|postgresql)\b/i,
+  mongodb: /\b(mongodb|mongoose)\b/i,
+  tailwind: /\b(tailwind)\b/i,
+  typescript: /\b(typescript)\b/i,
+  vitest: /\b(vitest)\b/i,
+  jest: /\b(jest)\b/i,
+  playwright: /\b(playwright)\b/i
+}
+
+const proposalStack = []
+for (const [tech, pattern] of Object.entries(techDetection)) {
+  if (pattern.test(combined)) {
+    proposalStack.push(tech)
+  }
+}
+output(`   📝 From proposal/tasks: ${proposalStack.join(', ') || 'none'}`)
+
+// Merge all sources (remove duplicates)
+const detectedStack = [...new Set([...packageStack, ...designStack, ...proposalStack])]
+
+// 2. If no stack detected, ask user
+if (detectedStack.length === 0) {
+  output(`\n⚠️ Could not auto-detect tech stack`)
+
+  const answer = await askUserQuestion({
+    questions: [{
+      question: 'What tech stack will you use?',
+      header: 'Stack',
+      options: [
+        { label: 'Next.js + React', description: 'Full-stack React framework' },
+        { label: 'FastAPI + Python', description: 'Python async API' },
+        { label: 'Express + Node', description: 'Node.js backend' },
+        { label: 'Vue + Nuxt', description: 'Vue.js framework' }
+      ],
+      multiSelect: true
+    }]
+  })
+
+  // Parse user selection into detectedStack
+  detectedStack.push(...parseUserStackSelection(answer))
+}
+
+output(`\n✅ Final Tech Stack: ${detectedStack.join(', ')}`)
+
+// 3. Check if best-practices already exist
+const bpDir = '.claude/contexts/domain/project/best-practices/'
+const existingBp = fileExists(bpDir) ? listFiles(bpDir) : []
+
+const missingBp = detectedStack.filter(tech => {
+  return !existingBp.some(f => f.toLowerCase().includes(tech.toLowerCase()))
+})
+
+// 4. Generate missing best-practices from Context7
+if (missingBp.length > 0) {
+  output(`\n📚 Generating Best Practices from Context7...`)
+
+  // Create directory structure if needed
+  if (!fileExists('.claude/contexts/domain/')) {
+    mkdir('.claude/contexts/domain/project/best-practices/')
+  }
+
+  // Context7 library ID mapping
+  const context7Ids = {
+    react: '/facebook/react',
+    nextjs: '/vercel/next.js',
+    vue: '/vuejs/vue',
+    express: '/expressjs/express',
+    fastapi: '/fastapi/fastapi',
+    prisma: '/prisma/prisma',
+    drizzle: '/drizzle-team/drizzle-orm',
+    vitest: '/vitest-dev/vitest',
+    jest: '/jestjs/jest',
+    playwright: '/microsoft/playwright',
+    tailwind: '/tailwindlabs/tailwindcss'
+  }
+
+  for (const tech of missingBp) {
+    const libraryId = context7Ids[tech.toLowerCase()]
+
+    if (libraryId) {
+      output(`   📖 Fetching ${tech} best practices...`)
+
+      // Query Context7 for best practices
+      const docs = await mcp__context7__get-library-docs({
+        context7CompatibleLibraryID: libraryId,
+        topic: 'best practices, common mistakes, anti-patterns, patterns',
+        mode: 'code'
+      })
+
+      // Generate best-practices file
+      const bpContent = generateBestPracticesFile(tech, docs)
+      Write(`.claude/contexts/domain/project/best-practices/${tech}.md`, bpContent)
+
+      output(`   ✅ ${tech}.md generated`)
+    } else {
+      output(`   ⚠️ ${tech} - no Context7 mapping, using universal patterns`)
+    }
+  }
+
+  // Generate index.md
+  generateBestPracticesIndex(detectedStack, changeId)
+  output(`   ✅ index.md generated`)
+
+  // Generate domain/index.md if not exists
+  if (!fileExists('.claude/contexts/domain/index.md')) {
+    generateDomainIndex('project', detectedStack)
+    output(`   ✅ domain/index.md generated`)
+  }
+
+  output(`\n✅ Best Practices Setup Complete!`)
+  output(`   Files: ${missingBp.length + 1} generated`)
+  output(`   Location: .claude/contexts/domain/project/best-practices/`)
+} else {
+  output(`\n✅ Best Practices: Already configured (${existingBp.length} files)`)
+}
+
+// 5. Store detected stack in context.md (for agents to reference)
+const stackForContext = {
+  detected: detectedStack,
+  bestPracticesPath: '.claude/contexts/domain/project/best-practices/',
+  files: [...existingBp, ...missingBp.map(t => `${t}.md`)]
+}
+```
+
+**Helper: generateBestPracticesFile()**
+```typescript
+function generateBestPracticesFile(tech: string, context7Docs: string): string {
+  return `# ${tech} Best Practices
+
+> **Source:** Context7 MCP
+> **Generated:** ${new Date().toISOString().split('T')[0]}
+
+---
+
+## ✅ DO (Best Practices)
+
+${extractDos(context7Docs)}
+
+---
+
+## ❌ DON'T (Anti-Patterns)
+
+${extractDonts(context7Docs)}
+
+---
+
+## 🎯 Quick Checklist
+
+Before committing ${tech} code:
+${extractChecklist(context7Docs)}
+
+---
+
+**⚠️ Agents MUST read this file before writing ${tech} code!**
+`
+}
+```
+
+---
+
 ### Step 3: Analyze Tasks
 
 **Parse tasks.md content and detect keywords:**
@@ -711,8 +917,6 @@ function getAgentForPhase(phaseId: string): string {
     'refactor': 'test-debug',
     'regression-tests': 'test-debug',
     'test-coverage': 'test-debug',
-    'documentation': 'integration',
-    'report': 'integration',
     'script-implementation': 'backend',
     'automated-tests': 'test-debug',
     'manual-testing': 'user',
@@ -786,19 +990,19 @@ Detected:
 Change type: feature
 
 📋 Template selected: frontend-only
-   - Total phases: 11
-   - Estimated time: 3.25 hours
+   - Total phases: 9
+   - Estimated time: 2h 50m
    - Reason: Frontend work detected, no backend/API needed
 
 Generating workflow...
-✓ Generated phases.md (127 lines, 11 phases)
+✓ Generated phases.md (115 lines, 9 phases)
 ✓ Generated flags.json (initialized all phases as pending)
 ✓ Generated context.md (change context with core tech references)
 
 ✅ Change setup complete!
 
 📦 Change: CHANGE-003
-📋 Template: frontend-only (11 phases)
+📋 Template: frontend-only (9 phases)
 🛠️ Detected: Frontend
 
 📁 Files created:
@@ -816,10 +1020,12 @@ Generating workflow...
    Phase 7: Responsive Test (user, 15 min)
    Phase 8: Refactor (test-debug, 20 min)
    Phase 9: Test Coverage (test-debug, 5 min)
-   Phase 10: Documentation (integration, 15 min)
-   Phase 11: Final Report (integration, 10 min)
 
-⏱️ Total estimated time: ~3h 15m
+⏱️ Total estimated time: ~2h 50m
+
+💡 Note: Documentation/Report phases removed in v1.2.0
+   → Verbose summary output in terminal when change completes
+   → flags.json contains full execution history
 
 🚀 Ready to start development!
 

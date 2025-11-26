@@ -94,7 +94,7 @@ See: `.claude/lib/agent-executor.md` for full implementation
 ```typescript
 // Step 4: Invoke Agent with Retry & Validation
 
-// 4.1: Build agent prompt (with design reference - Context Optimization v1.2.0)
+// 4.1: Build agent prompt (with design reference + best practices - v1.8.0)
 function buildAgentPrompt(phase, changeContext) {
   let prompt = `
 # Phase ${phase.phase_number}: ${phase.name}
@@ -108,7 +108,56 @@ ${changeContext.tasks}
 ${phase.instructions}
 `
 
-  // 🆕 Add design reference for uxui-frontend agent (not full content!)
+  // 🆕 v1.8.0: Add best-practices reference for ALL agents
+  const bpDir = '.claude/contexts/domain/project/best-practices/'
+  if (fileExists(bpDir)) {
+    const bpFiles = listFiles(bpDir).filter(f => f.endsWith('.md') && f !== 'index.md')
+
+    // Map agent type to relevant best-practices
+    const agentBpMapping = {
+      'uxui-frontend': ['react', 'nextjs', 'vue', 'tailwind'],
+      'frontend': ['react', 'nextjs', 'vue', 'typescript'],
+      'backend': ['express', 'fastapi', 'django', 'prisma', 'drizzle'],
+      'database': ['prisma', 'drizzle', 'postgres', 'mongodb'],
+      'test-debug': ['vitest', 'jest', 'playwright'],
+      'integration': ['typescript'] // minimal
+    }
+
+    const relevantTechs = agentBpMapping[phase.agent] || []
+    const relevantFiles = bpFiles.filter(f =>
+      relevantTechs.some(tech => f.toLowerCase().includes(tech))
+    )
+
+    if (relevantFiles.length > 0) {
+      prompt += `
+
+---
+
+## 📚 Best Practices (MANDATORY - STEP 0)
+
+**YOU MUST READ these files before writing ANY code:**
+
+${relevantFiles.map(f => `
+### ${f.replace('.md', '')}
+\`\`\`
+Read: ${bpDir}${f}
+\`\`\`
+`).join('')}
+
+**After reading, REPORT:**
+\`\`\`
+✅ Best Practices Loaded
+   ${relevantFiles.map(f => `- ${f.replace('.md', '')} ✓`).join('\n   ')}
+\`\`\`
+
+**If you skip this, your work will be REJECTED!**
+
+---
+`
+    }
+  }
+
+  // Add design reference for uxui-frontend agent (not full content!)
   if (phase.agent === 'uxui-frontend') {
     const tokensPath = 'design-system/STYLE_TOKENS.json'
     const styleGuidePath = 'design-system/STYLE_GUIDE.md'
@@ -392,11 +441,65 @@ output(`   ⏱️  ${formatDuration(flags.meta.time_remaining_estimate)} remaini
 
 // 4. Check next phase
 if (flags.ready_to_archive) {
-  output('\n✅ All phases complete! Ready to archive.')
-  output(`\nNext steps:`)
-  output(`1. Review: /cview ${changeId}`)
-  output(`2. Update tasks.md (mark all [x])`)
-  output(`3. Archive: openspec archive ${changeId}`)
+  // 🆕 v1.2.0: Verbose Summary Output (replaces documentation/report phases)
+  output(`\n`)
+  output(`╔════════════════════════════════════════════════════════════╗`)
+  output(`║           ✅ CHANGE COMPLETED SUCCESSFULLY                 ║`)
+  output(`╚════════════════════════════════════════════════════════════╝`)
+  output(``)
+  output(`📦 Change: ${changeId}`)
+  output(`📋 Template: ${flags.template} (${flags.meta.total_phases} phases)`)
+  output(``)
+  output(`═══════════════════════════════════════════════════════════════`)
+  output(`📊 EXECUTION SUMMARY`)
+  output(`═══════════════════════════════════════════════════════════════`)
+  output(``)
+  output(`⏱️  Time:`)
+  output(`   • Estimated: ${formatDuration(flags.meta.total_estimated_minutes)}`)
+  output(`   • Actual:    ${formatDuration(flags.meta.total_actual_minutes)}`)
+  output(`   • Variance:  ${calculateVariance(flags.meta)}`)
+  output(``)
+  output(`📈 Phases Completed: ${flags.meta.completed_phases}/${flags.meta.total_phases}`)
+
+  // List all phases with status
+  Object.entries(flags.phases).forEach(([phaseId, phase]) => {
+    const status = phase.status === 'completed' ? '✅' :
+                   phase.status === 'skipped' ? '⏭️' : '❌'
+    const time = phase.actual_minutes ? `(${phase.actual_minutes}m)` : ''
+    output(`   ${status} ${phase.phase_number}. ${phaseId} ${time}`)
+  })
+
+  output(``)
+  output(`═══════════════════════════════════════════════════════════════`)
+  output(`📁 FILES CREATED/MODIFIED`)
+  output(`═══════════════════════════════════════════════════════════════`)
+
+  // Collect all files from phase outputs
+  const allFiles = collectFilesFromPhases(flags.phases)
+  if (allFiles.created.length > 0) {
+    output(``)
+    output(`✨ Created (${allFiles.created.length}):`)
+    allFiles.created.forEach(f => output(`   • ${f}`))
+  }
+  if (allFiles.modified.length > 0) {
+    output(``)
+    output(`📝 Modified (${allFiles.modified.length}):`)
+    allFiles.modified.forEach(f => output(`   • ${f}`))
+  }
+
+  output(``)
+  output(`═══════════════════════════════════════════════════════════════`)
+  output(`🚀 NEXT STEPS`)
+  output(`═══════════════════════════════════════════════════════════════`)
+  output(``)
+  output(`1. Review changes:  /cview ${changeId}`)
+  output(`2. Test manually:   Verify the implementation works`)
+  output(`3. Mark complete:   Update tasks.md (mark all [x])`)
+  output(`4. Archive:         openspec archive ${changeId}`)
+  output(``)
+  output(`💡 Note: flags.json contains full execution history`)
+  output(`   Path: openspec/changes/${changeId}/.claude/flags.json`)
+  output(``)
 } else {
   const nextPhase = flags.phases[flags.current_phase]
 

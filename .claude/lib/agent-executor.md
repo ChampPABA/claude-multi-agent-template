@@ -136,20 +136,49 @@ What would you like to do?
 
 **Check agent response for required items:**
 
-**All agents:**
+**All agents (MANDATORY v1.8.0):**
+- "Best Practices Loaded" ← **NEW: Must show which files were read**
 - "Pre-Implementation Validation Report"
 - "Ready to Implement ✓"
 
 **uxui-frontend:**
+- "Best Practices Loaded" (react, nextjs, tailwind, etc.)
 - "Design Foundation ✓"
 - "Box Thinking Analysis ✓"
 - "Component Search ✓"
 - "Design Tokens Extracted ✓"
 
+**frontend:**
+- "Best Practices Loaded" (react, nextjs, typescript)
+- "API Contract Verified ✓"
+
 **backend:**
+- "Best Practices Loaded" (express/fastapi, prisma, etc.)
 - "Patterns Loaded ✓"
 - "Existing Endpoints Search ✓"
 - "TDD Workflow" (if TDD required)
+
+**database:**
+- "Best Practices Loaded" (prisma/drizzle)
+- "Schema Analysis ✓"
+
+**test-debug:**
+- "Best Practices Loaded" (vitest/jest/playwright)
+- "Test Infrastructure ✓"
+
+**Validation Logic:**
+```typescript
+function validateBestPracticesLoaded(agentResponse: string): boolean {
+  // Must contain "Best Practices Loaded" section
+  if (!agentResponse.includes('Best Practices Loaded')) {
+    return false
+  }
+
+  // Must show at least one file was read
+  const hasFileMarker = agentResponse.match(/- \w+ ✓/g)
+  return hasFileMarker && hasFileMarker.length > 0
+}
+```
 
 **See:** `validation-framework.md` for complete list per agent
 
@@ -178,6 +207,52 @@ What would you like to do?
 5. **No unresolved errors**
    - If contains "ERROR" or "FAILED" without "fixed"
    - → likely has unresolved issues
+
+6. **No forbidden temp files created (v1.8.0)**
+   - Check if agent created non-code files (reports, summaries, logs)
+   - If found → **auto-delete** and warn agent
+
+---
+
+## 🧹 Temp File Cleanup (v1.8.0)
+
+**After each phase completes, Main Claude MUST cleanup non-code files:**
+
+```typescript
+function cleanupTempFiles(changeDir: string) {
+  // Pattern: files that are clearly not code
+  const forbiddenKeywords = [
+    'REPORT', 'SUMMARY', 'DELIVERY', 'OUTPUT', 'LOG',
+    'GUIDE', 'ANALYSIS', 'RESULTS', 'PHASE_', 'STEP_'
+  ]
+
+  // Find all .txt and .md files in change directory
+  const txtFiles = Glob(`${changeDir}/**/*.txt`)
+  const mdFiles = Glob(`${changeDir}/**/*.md`)
+
+  const allFiles = [...txtFiles, ...mdFiles]
+
+  for (const file of allFiles) {
+    const filename = path.basename(file).toUpperCase()
+
+    // Check if filename contains forbidden keywords
+    const isForbidden = forbiddenKeywords.some(kw => filename.includes(kw))
+
+    // Also check: ALL_CAPS filenames are usually temp files
+    const isAllCaps = /^[A-Z0-9_]+\.(txt|md)$/i.test(path.basename(file))
+
+    if (isForbidden || isAllCaps) {
+      output(`🧹 Cleaning up temp file: ${file}`)
+      rm(file)
+    }
+  }
+}
+
+// Call after each phase
+cleanupTempFiles(`openspec/changes/${changeId}`)
+```
+
+**Rule:** Only actual code/config files should remain. Reports go in response text or flags.json.
 
 ---
 

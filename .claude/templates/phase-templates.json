@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "templates": {
     "full-stack": {
       "name": "Full-Stack Feature",
@@ -22,12 +22,10 @@
         "manual-flow-test",
         "refactor",
         "regression-tests",
-        "test-coverage",
-        "documentation",
-        "report"
+        "test-coverage"
       ],
-      "total_phases": 19,
-      "estimated_minutes": 420
+      "total_phases": 17,
+      "estimated_minutes": 395
     },
 
     "frontend-only": {
@@ -43,12 +41,10 @@
         "component-tests",
         "responsive-test",
         "refactor",
-        "test-coverage",
-        "documentation",
-        "report"
+        "test-coverage"
       ],
-      "total_phases": 11,
-      "estimated_minutes": 195
+      "total_phases": 9,
+      "estimated_minutes": 170
     },
 
     "backend-only": {
@@ -63,12 +59,10 @@
         "contract-backend",
         "e2e-api-tests",
         "refactor",
-        "regression-tests",
-        "documentation",
-        "report"
+        "regression-tests"
       ],
-      "total_phases": 10,
-      "estimated_minutes": 210
+      "total_phases": 8,
+      "estimated_minutes": 185
     },
 
     "script-only": {
@@ -81,11 +75,10 @@
         "manual-testing",
         "business-logic-validation",
         "refactor",
-        "test-coverage",
-        "documentation"
+        "test-coverage"
       ],
-      "total_phases": 7,
-      "estimated_minutes": 150
+      "total_phases": 6,
+      "estimated_minutes": 135
     },
 
     "bug-fix": {
@@ -96,11 +89,10 @@
         "fix-implementation",
         "unit-tests",
         "manual-verification",
-        "regression-tests",
-        "report"
+        "regression-tests"
       ],
-      "total_phases": 5,
-      "estimated_minutes": 60
+      "total_phases": 4,
+      "estimated_minutes": 50
     },
 
     "refactor": {
@@ -109,12 +101,10 @@
       "milestone_support": true,
       "phases": [
         "refactor-implementation",
-        "regression-tests",
-        "documentation",
-        "report"
+        "regression-tests"
       ],
-      "total_phases": 4,
-      "estimated_minutes": 90
+      "total_phases": 2,
+      "estimated_minutes": 65
     }
   },
 
