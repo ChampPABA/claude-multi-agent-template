@@ -1,99 +1,91 @@
-# /extract - Extract Design System from Website (Component-Level)
+# /extract - Extract Design Inspiration from Website(s)
 
 You are an expert design systems engineer with deep knowledge of CSS, animations, and UX patterns.
 
-Your task is to extract comprehensive design data from a website and save it as reusable YAML files with component-level detail.
+Your task is to extract comprehensive design data from one or more websites and save as JSON files that `/designsetup` will use.
 
 ---
 
 ## 📖 Usage
 
 ```bash
-/extract <URL>
+/extract <URL> [URL2] [URL3] ...
 
 Arguments:
-  URL              Required. Website URL to extract from
+  URL              Required. One or more website URLs to extract from
 
 Examples:
-  /extract https://airbnb.com
-  /extract https://blackbird.com
-  /extract https://linear.app
+  /extract https://motherduck.com
+  /extract https://linear.app https://stripe.com
+  /extract https://ref1.com https://ref2.com https://ref3.com
 ```
+
+**Multi-URL Support:**
+- Extract from multiple sites → Merge into `merged-insights.json`
+- Pick animations from ref1, colors from ref2, scroll effects from ref3
+- `/designsetup` will let user choose what to use from each
 
 ---
 
 ## 🎯 Mission
 
-Extract ALL design data from a website and save to `design-system/extracted/{site-name}/`:
-- `data.yaml` - Complete 17-section design data + animations
-- `analysis.md` - Psychology & design philosophy analysis
-- `screenshots/` - Component screenshots (default + hover/focus states)
+Extract design inspiration from website(s) and save to `.claude/extractions/`:
+- `{site-name}.json` - Design data per site (colors, typography, animations, style)
+- `merged-insights.json` - Combined insights from all extracted sites
+- `screenshots/{site-name}/` - Component screenshots
+
+**Key Outputs for /designsetup:**
+1. **Style Classification** (Neo-Brutalism, Minimalist, Glassmorphism, etc.)
+2. **Animation Patterns** (button hover, scroll effects, GSAP detection)
+3. **Decorative Elements** (blobs, gradients, 3D shapes, illustrations)
+4. **Color Palette** (primary, secondary, accents)
+5. **Typography** (fonts, weights, sizes)
 
 **Key Principles:**
-1. **Component-Level Detail**: Extract every component type with all states
-2. **Animation Capture**: Before/after screenshots for all interactive states
-3. **17 Sections Mandatory**: Template-based extraction (fallback if not found)
-4. **Reusable**: Output can be used by multiple projects
+1. **Style Detection**: Classify design style automatically
+2. **Animation Capture**: Detect GSAP, ScrollTrigger, CSS animations
+3. **Multi-Site Merge**: Combine insights from multiple references
+4. **Lean Output**: JSON format for token efficiency (~500 tokens per site)
 
 ---
 
 ## 🔍 STEP 0: Parse Input & Setup
 
 ```javascript
-// Parse URL
-const input = args[0];
-if (!input) {
-  return error('URL required. Usage: /extract https://airbnb.com');
+// Parse URLs (support multiple)
+const urls = args.filter(arg => arg.startsWith('http') || !arg.startsWith('-'));
+if (urls.length === 0) {
+  return error('URL required. Usage: /extract https://motherduck.com [https://linear.app]');
 }
 
-// Normalize URL
-let url = input.trim();
-if (!url.startsWith('http://') && !url.startsWith('https://')) {
-  url = 'https://' + url;
-}
-
-// Auto-detect site name
-const siteName = new URL(url).hostname
-  .replace('www.', '')
-  .replace(/\.[^.]+$/, ''); // Remove TLD
-// e.g., "airbnb.com" → "airbnb"
-
-// Check if already extracted
-const extractedPath = `design-system/extracted/${siteName}`;
-if (exists(extractedPath + '/data.yaml')) {
-  const existingData = YAML.parse(Read(extractedPath + '/data.yaml'));
-  const extractedDate = existingData.meta.extracted_at;
-
-  const response = await AskUserQuestion({
-    questions: [{
-      question: `Site "${siteName}" was already extracted on ${extractedDate}. Re-extract?`,
-      header: "Re-extract?",
-      multiSelect: false,
-      options: [
-        { label: "Yes, re-extract", description: "Overwrite previous data" },
-        { label: "No, cancel", description: "Keep existing data" }
-      ]
-    }]
-  });
-
-  if (response.answers["Re-extract?"] === "No, cancel") {
-    return output('Extraction cancelled. Existing data preserved.');
+// Normalize URLs
+const sites = urls.map(url => {
+  let normalizedUrl = url.trim();
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = 'https://' + normalizedUrl;
   }
-}
+
+  const siteName = new URL(normalizedUrl).hostname
+    .replace('www.', '')
+    .replace(/\.[^.]+$/, ''); // Remove TLD
+
+  return { url: normalizedUrl, siteName };
+});
 
 // Create directories
-Bash: mkdir -p design-system/extracted/${siteName}/screenshots
+Bash: mkdir -p .claude/extractions/screenshots
 ```
 
 **Report:**
 ```
 🚀 Extraction Started
 
-📍 URL: ${url}
-📁 Site: ${siteName}
-📂 Output: design-system/extracted/${siteName}/
+📍 Sites to extract: ${sites.length}
+${sites.map((s, i) => `   ${i + 1}. ${s.siteName} (${s.url})`).join('\n')}
 
-⏳ Navigating to site...
+📂 Output: .claude/extractions/
+
+⏳ Processing sites...
 ```
 
 ---
@@ -542,6 +534,281 @@ async function extractAnimations() {
    - Inputs: ${inputs.length} extracted
    - Animations: ${animations.keyframes.length} @keyframes, ${animations.transitions.length} transitions
 
+🔄 Detecting style, scroll animations, and decorative elements...
+```
+
+---
+
+## STEP 2.5: Detect Design Style & Animation Libraries (NEW!)
+
+```javascript
+async function detectStyleAndAnimations() {
+  return await mcp__chrome-devtools__evaluate_script({
+    function: `() => {
+      const result = {
+        style: { detected: null, confidence: 0, characteristics: [] },
+        animationLibraries: [],
+        scrollAnimations: [],
+        decorativeElements: []
+      };
+
+      // ========== DETECT ANIMATION LIBRARIES ==========
+
+      // Check for GSAP
+      if (window.gsap || window.TweenMax || window.TweenLite) {
+        result.animationLibraries.push({
+          name: 'GSAP',
+          version: window.gsap?.version || 'unknown',
+          detected: true
+        });
+      }
+
+      // Check for ScrollTrigger
+      if (window.ScrollTrigger) {
+        result.animationLibraries.push({
+          name: 'ScrollTrigger',
+          version: window.ScrollTrigger?.version || 'unknown',
+          detected: true,
+          instances: document.querySelectorAll('[data-scroll], [data-gsap]').length
+        });
+      }
+
+      // Check for Framer Motion (React)
+      if (document.querySelector('[data-framer-appear-id], [data-projection-id]')) {
+        result.animationLibraries.push({
+          name: 'Framer Motion',
+          detected: true
+        });
+      }
+
+      // Check for Lottie
+      if (window.lottie || document.querySelector('lottie-player, [data-lottie]')) {
+        result.animationLibraries.push({
+          name: 'Lottie',
+          detected: true
+        });
+      }
+
+      // Check for AOS (Animate on Scroll)
+      if (window.AOS || document.querySelector('[data-aos]')) {
+        result.animationLibraries.push({
+          name: 'AOS',
+          detected: true,
+          instances: document.querySelectorAll('[data-aos]').length
+        });
+      }
+
+      // ========== DETECT SCROLL ANIMATIONS ==========
+
+      // Find elements with scroll-triggered classes or attributes
+      const scrollElements = document.querySelectorAll(
+        '[data-scroll], [data-aos], [data-gsap], [data-animate], ' +
+        '[class*="scroll-"], [class*="animate-on-scroll"], ' +
+        '[class*="fade-in"], [class*="slide-"]'
+      );
+
+      scrollElements.forEach(el => {
+        const classes = el.className;
+        const dataAttrs = Object.keys(el.dataset || {});
+
+        result.scrollAnimations.push({
+          type: detectScrollAnimationType(classes, dataAttrs),
+          trigger: el.dataset.aos || el.dataset.scroll || 'scroll',
+          element: el.tagName.toLowerCase() + (el.className ? '.' + el.className.split(' ')[0] : '')
+        });
+      });
+
+      // Detect sticky/pinned sections (common in GSAP sites)
+      document.querySelectorAll('[class*="sticky"], [class*="pinned"], [style*="position: sticky"]')
+        .forEach(el => {
+          result.scrollAnimations.push({
+            type: 'sticky-section',
+            element: el.tagName.toLowerCase()
+          });
+        });
+
+      function detectScrollAnimationType(classes, dataAttrs) {
+        if (classes.includes('stack') || dataAttrs.includes('stack')) return 'stacking-cards';
+        if (classes.includes('parallax') || dataAttrs.includes('parallax')) return 'parallax';
+        if (classes.includes('fade')) return 'fade-in';
+        if (classes.includes('slide')) return 'slide-in';
+        if (classes.includes('scale')) return 'scale-in';
+        return 'custom-scroll';
+      }
+
+      // ========== DETECT DECORATIVE ELEMENTS ==========
+
+      const svgs = document.querySelectorAll('svg:not([class*="icon"]):not([width="24"]):not([width="16"])');
+      svgs.forEach(svg => {
+        const viewBox = svg.getAttribute('viewBox');
+        const width = parseInt(svg.getAttribute('width') || '0');
+        const height = parseInt(svg.getAttribute('height') || '0');
+
+        // Large SVGs are likely decorative
+        if (width > 100 || height > 100 || (viewBox && parseInt(viewBox.split(' ')[2]) > 100)) {
+          const paths = svg.querySelectorAll('path, circle, ellipse');
+          const isBlob = Array.from(paths).some(p => {
+            const d = p.getAttribute('d') || '';
+            return d.includes('C') && d.length > 200; // Curved paths = likely blob
+          });
+
+          result.decorativeElements.push({
+            type: isBlob ? 'blob' : 'svg-decoration',
+            size: { width, height },
+            colors: extractSvgColors(svg)
+          });
+        }
+      });
+
+      // Detect gradient backgrounds
+      document.querySelectorAll('*').forEach(el => {
+        const bg = window.getComputedStyle(el).backgroundImage;
+        if (bg && bg.includes('gradient')) {
+          result.decorativeElements.push({
+            type: 'gradient',
+            value: bg.substring(0, 100) + '...'
+          });
+        }
+      });
+
+      // Detect 3D elements
+      document.querySelectorAll('[class*="3d"], [style*="perspective"], [style*="rotateX"], [style*="rotateY"]')
+        .forEach(el => {
+          result.decorativeElements.push({
+            type: '3d-element',
+            element: el.tagName.toLowerCase()
+          });
+        });
+
+      function extractSvgColors(svg) {
+        const colors = new Set();
+        svg.querySelectorAll('[fill], [stroke]').forEach(el => {
+          const fill = el.getAttribute('fill');
+          const stroke = el.getAttribute('stroke');
+          if (fill && fill !== 'none') colors.add(fill);
+          if (stroke && stroke !== 'none') colors.add(stroke);
+        });
+        return Array.from(colors).slice(0, 5);
+      }
+
+      // ========== DETECT DESIGN STYLE ==========
+
+      const allElements = document.querySelectorAll('*');
+      const styleIndicators = {
+        neoBrutalism: 0,
+        minimalist: 0,
+        glassmorphism: 0,
+        neumorphism: 0,
+        modernSaas: 0,
+        playful: 0
+      };
+
+      allElements.forEach(el => {
+        const s = window.getComputedStyle(el);
+
+        // Neo-Brutalism indicators
+        if (s.borderWidth && parseInt(s.borderWidth) >= 2) styleIndicators.neoBrutalism += 2;
+        if (s.boxShadow && s.boxShadow.includes('0px 0px 0px') || !s.boxShadow.includes('blur')) {
+          styleIndicators.neoBrutalism += 1; // Solid shadows
+        }
+        if (s.borderRadius && parseInt(s.borderRadius) >= 8 && parseInt(s.borderRadius) <= 16) {
+          styleIndicators.neoBrutalism += 1;
+        }
+
+        // Minimalist indicators
+        if (s.borderWidth === '0px' || s.borderWidth === '1px') styleIndicators.minimalist += 0.5;
+        if (!s.boxShadow || s.boxShadow === 'none') styleIndicators.minimalist += 0.5;
+
+        // Glassmorphism indicators
+        if (s.backdropFilter && s.backdropFilter !== 'none') styleIndicators.glassmorphism += 3;
+        if (s.backgroundColor && s.backgroundColor.includes('rgba') && parseFloat(s.backgroundColor.split(',')[3]) < 0.8) {
+          styleIndicators.glassmorphism += 1;
+        }
+
+        // Neumorphism indicators
+        if (s.boxShadow && s.boxShadow.includes('inset')) styleIndicators.neumorphism += 2;
+
+        // Modern SaaS indicators
+        if (s.boxShadow && s.boxShadow.includes('rgba') && s.boxShadow.includes('blur')) {
+          styleIndicators.modernSaas += 1;
+        }
+        if (parseInt(s.borderRadius) >= 12) styleIndicators.modernSaas += 0.5;
+
+        // Playful indicators
+        if (s.borderRadius && parseInt(s.borderRadius) >= 24) styleIndicators.playful += 1;
+        if (s.transform && s.transform !== 'none') styleIndicators.playful += 0.5;
+      });
+
+      // Determine style
+      const maxStyle = Object.entries(styleIndicators)
+        .sort((a, b) => b[1] - a[1])[0];
+
+      const styleDescriptions = {
+        neoBrutalism: {
+          name: 'Neo-Brutalism',
+          characteristics: ['Bold borders (2-4px)', 'Solid shadows (no blur)', 'High contrast', 'Chunky rounded corners'],
+          feel: 'Bold, energetic, playful'
+        },
+        minimalist: {
+          name: 'Minimalist',
+          characteristics: ['Clean lines', 'Subtle or no shadows', 'Lots of whitespace', 'Simple typography'],
+          feel: 'Clean, professional, trustworthy'
+        },
+        glassmorphism: {
+          name: 'Glassmorphism',
+          characteristics: ['Frosted glass effect', 'Backdrop blur', 'Semi-transparent backgrounds', 'Layered depth'],
+          feel: 'Modern, premium, tech-forward'
+        },
+        neumorphism: {
+          name: 'Neumorphism',
+          characteristics: ['Soft inset shadows', 'Extruded elements', 'Monochromatic palette'],
+          feel: 'Soft, touchable, futuristic'
+        },
+        modernSaas: {
+          name: 'Modern SaaS',
+          characteristics: ['Soft shadows with blur', 'Rounded corners', 'Gradient accents', 'Card-based layout'],
+          feel: 'Professional, friendly, reliable'
+        },
+        playful: {
+          name: 'Playful/Creative',
+          characteristics: ['Large border radius', 'Animations', 'Bright colors', 'Asymmetric layouts'],
+          feel: 'Fun, creative, approachable'
+        }
+      };
+
+      result.style = {
+        detected: styleDescriptions[maxStyle[0]].name,
+        confidence: Math.min(Math.round((maxStyle[1] / 50) * 100), 100),
+        characteristics: styleDescriptions[maxStyle[0]].characteristics,
+        feel: styleDescriptions[maxStyle[0]].feel,
+        scores: styleIndicators
+      };
+
+      return result;
+    }`
+  });
+}
+
+const styleData = await detectStyleAndAnimations();
+```
+
+**Report:**
+```
+✅ Style & Animations Detected!
+
+🎨 Design Style: ${styleData.style.detected} (${styleData.style.confidence}% confidence)
+   Characteristics: ${styleData.style.characteristics.join(', ')}
+   Feel: ${styleData.style.feel}
+
+📚 Animation Libraries:
+${styleData.animationLibraries.map(lib => `   ✅ ${lib.name} ${lib.version || ''}`).join('\n') || '   (none detected)'}
+
+🎬 Scroll Animations: ${styleData.scrollAnimations.length} detected
+${styleData.scrollAnimations.slice(0, 5).map(a => `   - ${a.type}`).join('\n')}
+
+🖼️ Decorative Elements: ${styleData.decorativeElements.length} found
+${styleData.decorativeElements.slice(0, 5).map(d => `   - ${d.type}`).join('\n')}
+
 🔄 Extracting component animations (hover/focus states)...
 ```
 
@@ -702,223 +969,226 @@ function generateDescription(defaultStyle, hoverStyle) {
 
 ```javascript
 // Create temp directory
-await Bash: mkdir -p design-system/extracted/${siteName}/screenshots
+await Bash: mkdir -p .claude/extractions/screenshots/${siteName}
 
 // Try fullpage
 try {
   await mcp__chrome-devtools__take_screenshot({
     fullPage: true,
     format: 'png',
-    filePath: `design-system/extracted/${siteName}/screenshots/full-page.png`
+    filePath: `.claude/extractions/screenshots/${siteName}/full-page.png`
   });
 } catch {
   // Fallback: viewport only
   await mcp__chrome-devtools__take_screenshot({
     fullPage: false,
     format: 'png',
-    filePath: `design-system/extracted/${siteName}/screenshots/viewport.png`
+    filePath: `.claude/extractions/screenshots/${siteName}/viewport.png`
   });
 }
 ```
 
 ---
 
-## STEP 5: AI Psychology Analysis
+## STEP 5: Generate Site JSON (Lean Format)
 
-Read screenshot and analyze:
-
-```javascript
-const screenshotPath = exists(`design-system/extracted/${siteName}/screenshots/full-page.png`)
-  ? `design-system/extracted/${siteName}/screenshots/full-page.png`
-  : `design-system/extracted/${siteName}/screenshots/viewport.png`;
-
-const screenshot = Read(screenshotPath);
-
-const analysisPrompt = `
-You are a UX/UI design psychologist and systems architect.
-
-Analyze this website's design and provide deep psychology insights.
-
-Visual Screenshot: [attached]
-
-Extracted CSS Data:
-- Colors: ${JSON.stringify(colors, null, 2)}
-- Typography: ${JSON.stringify(typography, null, 2)}
-- Shadows: ${JSON.stringify(shadows, null, 2)}
-- Spacing: ${JSON.stringify(spacing, null, 2)}
-- Button Styles: ${JSON.stringify(buttons.slice(0, 2), null, 2)}
-- Card Styles: ${JSON.stringify(cards.slice(0, 2), null, 2)}
-
-Component Animations:
-${Object.entries(componentAnimations).slice(0, 3).map(([id, anim]) =>
-  `- ${id}: ${anim.description}`
-).join('\n')}
-
-Wrap your analysis in <pondering> tags and include:
-
-1. **Design Style Classification** (Neo-Brutalism, Minimalist, Modern SaaS, etc.)
-2. **Visual Principles** (what design principles are used?)
-3. **Psychology** (what emotions does it evoke? why?)
-4. **Target Audience** (who is this for?)
-5. **Key Differentiators** (how is it different from typical sites?)
-6. **Design Philosophy** (core beliefs that guide this design)
-
-Be specific with examples from the CSS data.
-`;
-
-const analysis = await LLM({
-  prompt: analysisPrompt,
-  images: [screenshot]
-});
-
-Write(`design-system/extracted/${siteName}/analysis.md`, analysis);
-```
-
-**Report:**
-```
-✅ Psychology Analysis Complete!
-
-🧠 Design style detected from analysis
-📁 Saved: analysis.md
-
-🔄 Generating final YAML output...
-```
-
----
-
-## STEP 6: Generate data.yaml (17 Sections)
+Generate a lean JSON file per site (~500 tokens):
 
 ```javascript
-const yamlData = {
+const siteData = {
   meta: {
     site_name: siteName,
     url: url,
     extracted_at: new Date().toISOString(),
-    extractor_version: '2.0.0',
-    coverage: {
-      total_sections: 17,
-      detected_sections: 15, // Count how many have detected: true
-      percentage: Math.round((15 / 17) * 100)
-    }
+    extractor_version: '3.0.0'
   },
 
-  sections: {
-    overview: {
-      detected: true,
-      style: 'Auto-detected from analysis',
-      tech_stack: 'Framework-agnostic'
+  // ========== STYLE (from STEP 2.5) ==========
+  style: {
+    detected: styleData.style.detected,
+    confidence: styleData.style.confidence,
+    characteristics: styleData.style.characteristics,
+    feel: styleData.style.feel
+  },
+
+  // ========== ANIMATION LIBRARIES ==========
+  animation_libraries: styleData.animationLibraries,
+
+  // ========== SCROLL ANIMATIONS ==========
+  scroll_animations: {
+    detected: styleData.scrollAnimations.length > 0,
+    patterns: [...new Set(styleData.scrollAnimations.map(a => a.type))],
+    count: styleData.scrollAnimations.length
+  },
+
+  // ========== DECORATIVE ELEMENTS ==========
+  decorative_elements: {
+    types: [...new Set(styleData.decorativeElements.map(d => d.type))],
+    has_blobs: styleData.decorativeElements.some(d => d.type === 'blob'),
+    has_gradients: styleData.decorativeElements.some(d => d.type === 'gradient'),
+    has_3d: styleData.decorativeElements.some(d => d.type === '3d-element')
+  },
+
+  // ========== COLORS (Simplified) ==========
+  colors: {
+    primary: colors.backgrounds.slice(0, 3).map(c => c.hex),
+    text: colors.texts.slice(0, 3).map(c => c.hex),
+    accent: colors.borders.slice(0, 2).map(c => c.hex)
+  },
+
+  // ========== TYPOGRAPHY (Simplified) ==========
+  typography: {
+    fonts: typography.allFonts.slice(0, 3),
+    weights: typography.allWeights,
+    heading_style: typography.h1[0] ? {
+      fontSize: typography.h1[0].fontSize,
+      fontWeight: typography.h1[0].fontWeight
+    } : null
+  },
+
+  // ========== COMPONENT ANIMATIONS ==========
+  component_animations: {
+    button_hover: componentAnimations['button-0']?.description || 'none',
+    card_hover: componentAnimations['card-0']?.description || 'none',
+    input_focus: componentAnimations['input-0']?.description || 'none'
+  },
+
+  // ========== SPACING ==========
+  spacing: {
+    grid_base: spacing.detectedGrid,
+    common: spacing.commonValues.slice(0, 8)
+  },
+
+  // ========== SHADOWS ==========
+  shadows: shadows.shadows.slice(0, 5),
+
+  // ========== BORDER RADIUS ==========
+  border_radius: shadows.borderRadii.slice(0, 5)
+};
+
+// Write site-specific JSON
+Write(`.claude/extractions/${siteName}.json`, JSON.stringify(siteData, null, 2));
+```
+
+**Report:**
+```
+✅ Site Data Extracted: ${siteName}
+
+🎨 Style: ${siteData.style.detected} (${siteData.style.confidence}% confidence)
+📚 Animation Libraries: ${siteData.animation_libraries.map(l => l.name).join(', ') || 'none'}
+🎬 Scroll Animations: ${siteData.scroll_animations.patterns.join(', ') || 'none'}
+🖼️ Decorative: ${siteData.decorative_elements.types.join(', ') || 'none'}
+
+📁 Saved: .claude/extractions/${siteName}.json
+```
+
+---
+
+## STEP 6: Merge Multiple Sites (If Multi-URL)
+
+If extracting from multiple sites, merge insights:
+
+```javascript
+// Only run if multiple sites
+if (sites.length > 1) {
+  const allSiteData = sites.map(site => {
+    const data = JSON.parse(Read(`.claude/extractions/${site.siteName}.json`));
+    return { siteName: site.siteName, ...data };
+  });
+
+  const mergedInsights = {
+    meta: {
+      generated_at: new Date().toISOString(),
+      sites_count: sites.length,
+      sites: sites.map(s => s.siteName)
     },
 
-    design_philosophy: {
-      detected: true,
-      from_analysis: true
-    },
+    // ========== STYLES FROM ALL SITES ==========
+    styles: allSiteData.map(site => ({
+      site: site.siteName,
+      style: site.style.detected,
+      confidence: site.style.confidence,
+      characteristics: site.style.characteristics,
+      feel: site.style.feel
+    })),
 
-    color_palette: {
-      detected: true,
-      primary: colors.backgrounds.slice(0, 5),
-      secondary: colors.backgrounds.slice(5, 10),
-      text_colors: colors.texts,
-      border_colors: colors.borders
-    },
+    // ========== ANIMATION LIBRARIES (Combined) ==========
+    animation_libraries: [...new Set(
+      allSiteData.flatMap(site => site.animation_libraries.map(l => l.name))
+    )].map(name => {
+      const sources = allSiteData
+        .filter(site => site.animation_libraries.some(l => l.name === name))
+        .map(site => site.siteName);
+      return { name, sources };
+    }),
 
-    typography: {
-      detected: true,
-      fonts: typography.allFonts,
-      weights: typography.allWeights,
-      sizes: typography.allSizes,
-      h1: typography.h1,
-      h2: typography.h2,
-      h3: typography.h3,
-      body: typography.body
-    },
+    // ========== SCROLL ANIMATIONS (Combined) ==========
+    scroll_animations: [...new Set(
+      allSiteData.flatMap(site => site.scroll_animations.patterns)
+    )].map(pattern => {
+      const sources = allSiteData
+        .filter(site => site.scroll_animations.patterns.includes(pattern))
+        .map(site => site.siteName);
+      return { pattern, sources };
+    }),
 
-    spacing_system: {
-      detected: true,
-      grid_base: spacing.detectedGrid,
-      paddings: spacing.paddings,
-      margins: spacing.margins,
-      gaps: spacing.gaps,
-      common_values: spacing.commonValues
-    },
+    // ========== DECORATIVE ELEMENTS (Combined) ==========
+    decorative_elements: [...new Set(
+      allSiteData.flatMap(site => site.decorative_elements.types)
+    )].map(type => {
+      const sources = allSiteData
+        .filter(site => site.decorative_elements.types.includes(type))
+        .map(site => site.siteName);
+      return { type, sources };
+    }),
 
-    component_styles: {
-      detected: true,
-      buttons: buttons.map((btn, i) => ({
-        ...btn,
-        animation: componentAnimations[`button-${i}`] || null
+    // ========== COMPONENT ANIMATIONS (Combined) ==========
+    component_animations: {
+      button_hover: allSiteData.map(site => ({
+        site: site.siteName,
+        animation: site.component_animations.button_hover
       })),
-      cards: cards.map((card, i) => ({
-        ...card,
-        animation: componentAnimations[`card-${i}`] || null
-      })),
-      inputs: inputs.map((input, i) => ({
-        ...input,
-        animation: componentAnimations[`input-${i}`] || null
+      card_hover: allSiteData.map(site => ({
+        site: site.siteName,
+        animation: site.component_animations.card_hover
       }))
     },
 
-    shadows_elevation: {
-      detected: true,
-      values: shadows.shadows
-    },
+    // ========== COLORS (All Options) ==========
+    color_palettes: allSiteData.map(site => ({
+      site: site.siteName,
+      primary: site.colors.primary,
+      text: site.colors.text
+    })),
 
-    animations_transitions: {
-      detected: true,
-      keyframes: animations.keyframes,
-      transitions: animations.transitions
-    },
+    // ========== TYPOGRAPHY (All Options) ==========
+    typography_options: allSiteData.map(site => ({
+      site: site.siteName,
+      fonts: site.typography.fonts
+    }))
+  };
 
-    border_styles: {
-      detected: true,
-      widths: shadows.borderWidths
-    },
+  Write('.claude/extractions/merged-insights.json', JSON.stringify(mergedInsights, null, 2));
+}
+```
 
-    border_radius: {
-      detected: true,
-      values: shadows.borderRadii
-    },
+**Report (Multi-Site):**
+```
+✅ Merged Insights Generated!
 
-    opacity_transparency: {
-      detected: true,
-      values: [0.5, 0.7, 0.9] // Standard
-    },
+📊 Combined from ${sites.length} sites:
+${sites.map(s => `   - ${s.siteName}`).join('\n')}
 
-    z_index_layers: {
-      detected: false,
-      fallback: 'standard'
-    },
+🎨 Styles found:
+${mergedInsights.styles.map(s => `   - ${s.style} (${s.site})`).join('\n')}
 
-    responsive_breakpoints: {
-      detected: false,
-      fallback: 'standard'
-    },
+📚 Animation Libraries:
+${mergedInsights.animation_libraries.map(l => `   - ${l.name} (from: ${l.sources.join(', ')})`).join('\n')}
 
-    css_variables: {
-      generated: true
-    },
+🎬 Scroll Patterns:
+${mergedInsights.scroll_animations.map(a => `   - ${a.pattern} (from: ${a.sources.join(', ')})`).join('\n')}
 
-    layout_patterns: {
-      detected: true,
-      container_width: '1280px',
-      grid_columns: 12
-    },
-
-    example_components: {
-      generated: true
-    },
-
-    additional_sections: {
-      accessibility: { detected: true },
-      best_practices: { generated: true }
-    }
-  },
-
-  animations: componentAnimations
-};
-
-const yamlContent = YAML.stringify(yamlData, null, 2);
-Write(`design-system/extracted/${siteName}/data.yaml`, yamlContent);
+📁 Saved: .claude/extractions/merged-insights.json
 ```
 
 ---
@@ -926,42 +1196,47 @@ Write(`design-system/extracted/${siteName}/data.yaml`, yamlContent);
 ## STEP 7: Final Report
 
 ```
-✅ Extraction Complete: ${siteName}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ EXTRACTION COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 Coverage: ${yamlData.meta.coverage.detected_sections}/17 sections (${yamlData.meta.coverage.percentage}%)
-   ✅ Colors (${colors.backgrounds.length + colors.texts.length + colors.borders.length} total)
-   ✅ Typography (${typography.allFonts.length} fonts, ${typography.allWeights.length} weights)
-   ✅ Spacing (${spacing.detectedGrid}px grid detected)
-   ✅ Components (${buttons.length} buttons, ${cards.length} cards, ${inputs.length} inputs)
-   ✅ Shadows (${shadows.shadows.length} unique values)
-   ✅ Animations (${animations.keyframes.length} @keyframes, ${animations.transitions.length} transitions)
-   ${yamlData.sections.z_index_layers.detected ? '✅' : '❌'} Z-index
-   ${yamlData.sections.responsive_breakpoints.detected ? '✅' : '❌'} Breakpoints
+📊 Sites Extracted: ${sites.length}
+${sites.map(s => `
+┌─ ${s.siteName} ─────────────────────────────────────────┐
+│ 🎨 Style: ${siteData.style.detected} (${siteData.style.confidence}%)
+│ 📚 Libraries: ${siteData.animation_libraries.map(l => l.name).join(', ') || 'none'}
+│ 🎬 Scroll: ${siteData.scroll_animations.patterns.join(', ') || 'none'}
+│ 🖼️ Decorative: ${siteData.decorative_elements.types.join(', ') || 'none'}
+│ 📁 File: .claude/extractions/${s.siteName}.json
+└─────────────────────────────────────────────────────────┘
+`).join('')}
 
-📸 Screenshots: ${Object.keys(componentAnimations).length * 2 + 1} captured
-   - full-page.png (or viewport.png)
-   - ${Object.keys(componentAnimations).length} components × 2 states
+${sites.length > 1 ? `
+📋 Merged Insights: .claude/extractions/merged-insights.json
+   → Use this in /designsetup to pick features from each site
+` : ''}
 
-📁 Output:
-   ✓ design-system/extracted/${siteName}/data.yaml
-   ✓ design-system/extracted/${siteName}/analysis.md
-   ✓ design-system/extracted/${siteName}/screenshots/ (${Object.keys(componentAnimations).length * 2 + 1} files)
+📸 Screenshots: .claude/extractions/screenshots/
+   ${sites.map(s => `- ${s.siteName}/full-page.png`).join('\n   ')}
 
-⏱️ Time: ${Date.now() - startTime}ms
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🚀 Next Steps:
 
-1. Extract more sites:
-   /extract https://blackbird.com
-   /extract https://linear.app
+1. Extract more references (optional):
+   /extract https://another-site.com
 
-2. Generate style guide:
-   /designsetup @prd.md @project.md
+2. Generate design system:
+   /designsetup
 
-3. Or review extracted data:
-   cat design-system/extracted/${siteName}/analysis.md
+   → Will read: .claude/extractions/*.json
+   → Will ask you to pick: style, animations, theme
+   → Will output: design-system/tokens.json
+
+3. Review extracted data:
+   Read .claude/extractions/${sites[0].siteName}.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ---

@@ -1,8 +1,8 @@
-# /designsetup - Synthesize Style Guide from Extracted Data
+# /designsetup - Interactive Design System Setup
 
 You are a senior design systems architect with experience at FANG-level companies.
 
-Your task is to analyze extracted design data, synthesize with project context, and generate a comprehensive STYLE_GUIDE.md with AI-recommended style directions.
+Your task is to guide user through an **interactive design system setup** with verbose options, theme selection, and decorative direction.
 
 ---
 
@@ -24,50 +24,59 @@ Examples:
 
 ## 🎯 Mission
 
-Generate production-ready style guide at: `design-system/STYLE_GUIDE.md`
+Generate lean design system files:
+- `design-system/tokens.json` (~800 tokens) - **PRIMARY: Agent reads this**
+- `design-system/patterns/*.md` - Code patterns (selective loading)
+- `design-system/STYLE_GUIDE.md` (~2000 tokens) - **Human-readable (no code)**
 
 **Process:**
-1. Load all extracted data from `design-system/extracted/`
-2. Analyze project context (from @files or user input)
-3. Generate 2-3 style direction options with AI reasoning
-4. User selects preferred option
-5. Generate comprehensive STYLE_GUIDE.md (17 sections, 1500-2000 lines)
+1. Load all extracted data from `.claude/extractions/*.json`
+2. Present verbose style options with Match scores
+3. **Interactive Loop** (max 3 rounds): Present → Feedback → Adjust
+4. Theme selection + Decorative direction recommendation
+5. Generate tokens.json + patterns/*.md + STYLE_GUIDE.md
 
 **Key Principles:**
-1. **Multi-Source Synthesis**: Combine best patterns from all extracted sites
-2. **Context-Aware**: Match style to target audience + brand personality
-3. **Transparent Reasoning**: Show why each option fits
-4. **User Choice**: Present options with pros/cons, let user decide
+1. **Interactive Loop**: User must accept 100% before generating
+2. **Verbose Options**: Show full details (characteristics, feel, examples)
+3. **Theme + Decorations**: Agent recommends based on project context
+4. **Lean Output**: tokens.json for agents, STYLE_GUIDE.md for humans
 
 ---
 
 ## STEP 0: Discovery & Validation
 
 ```javascript
-// 1. Find extracted sites
-const extractedFiles = glob('design-system/extracted/*/data.yaml');
+// 1. Find extracted sites from .claude/extractions/
+const extractedFiles = glob('.claude/extractions/*.json').filter(f => !f.includes('merged-insights'));
+const mergedInsightsPath = '.claude/extractions/merged-insights.json';
 
 if (extractedFiles.length === 0) {
   return error(`
     ❌ No extracted data found
 
     Please extract at least 1 site first:
-      /extract https://airbnb.com
-      /extract https://blackbird.com
-      /extract https://linear.app
+      /extract https://motherduck.com
+      /extract https://linear.app https://stripe.com
 
     Then run: /designsetup @prd.md @project.md
   `);
 }
 
-// 2. Load all extracted data
+// 2. Load all extracted site data
 const extractedData = {};
 for (const file of extractedFiles) {
-  const siteName = path.dirname(file).split('/').pop();
-  extractedData[siteName] = YAML.parse(Read(file));
+  const siteName = path.basename(file, '.json');
+  extractedData[siteName] = JSON.parse(Read(file));
 }
 
-// 3. Load context files
+// 3. Load merged insights if exists (for multi-site)
+let mergedInsights = null;
+if (exists(mergedInsightsPath)) {
+  mergedInsights = JSON.parse(Read(mergedInsightsPath));
+}
+
+// 4. Load context files
 const contextArgs = args.filter(arg => arg.startsWith('@'));
 const contexts = {};
 
@@ -88,14 +97,16 @@ if (contextArgs.length > 0) {
 
 **Report:**
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎨 Design Setup Started
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 Extracted Sites: ${Object.keys(extractedData).length}
 ${Object.entries(extractedData).map(([site, data]) =>
-  `   - ${site} (${data.meta.coverage.percentage}% coverage, ${data.meta.extracted_at.split('T')[0]})`
+  `   - ${site}: ${data.style.detected} (${data.style.confidence}% confidence)`
 ).join('\n')}
+
+${mergedInsights ? `📋 Merged Insights: Available (${mergedInsights.meta.sites_count} sites)` : ''}
 
 📁 Context Files: ${Object.keys(contexts).length || 'None (will use interactive mode)'}
 ${Object.keys(contexts).length > 0 ? Object.keys(contexts).map(c => `   - ${c}`).join('\n') : ''}
@@ -222,77 +233,399 @@ if (!contextAnalysis.has_context) {
 
 ---
 
-## STEP 2: Style Direction Analysis (AI Pondering)
+## STEP 2: Interactive Style Selection (Verbose + Loop)
 
-Instructions:
-1. Wrap thinking in <pondering> tags
-2. Consider:
-   - Which extracted patterns fit target audience best?
-   - Which style matches brand personality?
-   - What differentiates from competitors?
-   - What are implementation trade-offs?
-3. Recommend 2-3 distinct style directions
-4. Rank by fit score (0-100)
+> **Key Change:** Interactive loop until user accepts 100%
 
-Return JSON:
-{
-  "pondering": "...",
-  "recommended_count": 2 or 3,
-  "options": [
-    {
-      "name": "Neo-Brutalism" | "Warm Minimalist" | "Modern Professional" | "Playful Rounded" | "Technical Clean" | other,
-      "fit_score": 0-100,
-      "rationale": "Why this fits (2-3 sentences)",
-      "sources": {
-        "colors": "site-name | custom",
-        "shadows": "site-name",
-        "typography": "site-name | custom",
-        "spacing": "site-name",
-        "button_hover": "site-name",
-        "card_hover": "site-name",
-        "input_focus": "site-name",
-        "border_radius": "site-name",
-        "overall_vibe": "site-name"
-      },
-      "customizations": [
-        "Adapt Airbnb warmth to bold colors",
-        "Use Blackbird hard shadows instead of soft"
-      ],
-      "advantages": [
-        "string (3-5 advantages)"
-      ],
-      "disadvantages": [
-        "string (2-4 disadvantages)"
-      ]
+```javascript
+let round = 1;
+let maxRounds = 3;
+let userAccepted = false;
+let selectedStyle = null;
+let selectedAnimations = [];
+let selectedTheme = null;
+
+while (!userAccepted && round <= maxRounds) {
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 ROUND ${round}/${maxRounds}: Style Selection
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `);
+
+  // ========== STYLE OPTIONS (VERBOSE) ==========
+
+  const styleOptions = [];
+
+  // Generate options from extracted data
+  for (const [siteName, data] of Object.entries(extractedData)) {
+    styleOptions.push({
+      site: siteName,
+      style: data.style.detected,
+      confidence: data.style.confidence,
+      characteristics: data.style.characteristics,
+      feel: data.style.feel,
+      colors: data.colors.primary,
+      animations: data.animation_libraries,
+      scrollPatterns: data.scroll_animations.patterns,
+      decorativeTypes: data.decorative_elements.types
+    });
+  }
+
+  // Calculate match scores based on context
+  const scoredOptions = styleOptions.map(opt => {
+    let score = opt.confidence;
+
+    // Bonus for matching brand personality
+    if (contextAnalysis.brand_personality) {
+      if (contextAnalysis.brand_personality.includes('bold') &&
+          (opt.style === 'Neo-Brutalism' || opt.style === 'Playful/Creative')) {
+        score += 15;
+      }
+      if (contextAnalysis.brand_personality.includes('professional') &&
+          (opt.style === 'Minimalist' || opt.style === 'Modern SaaS')) {
+        score += 15;
+      }
+      if (contextAnalysis.brand_personality.includes('playful') &&
+          opt.style === 'Playful/Creative') {
+        score += 15;
+      }
+      if (contextAnalysis.brand_personality.includes('minimal') &&
+          opt.style === 'Minimalist') {
+        score += 15;
+      }
     }
-  ]
-}
 
-Important:
-- Option 1 = highest fit score (primary recommendation)
-- Option 2 = good alternative (different approach)
-- Option 3 (if needed) = safe fallback
-- Each option should be DISTINCT (different visual feel)
-- Source mapping must reference actual extracted sites
+    return { ...opt, matchScore: Math.min(score, 100) };
+  }).sort((a, b) => b.matchScore - a.matchScore);
+
+  // Display verbose options
+  for (const [index, option] of scoredOptions.entries()) {
+    const letter = String.fromCharCode(65 + index);
+    const isRecommended = index === 0;
+
+    output(`
+┌─────────────────────────────────────────────────────────────┐
+│ Option ${letter}: ${option.style} ${isRecommended ? '⭐ RECOMMENDED' : ''}
+│ Source: ${option.site}
+│ Match Score: ${option.matchScore}%
+├─────────────────────────────────────────────────────────────┤
+│
+│ 📝 Characteristics:
+│ ${option.characteristics.map(c => `   • ${c}`).join('\n│ ')}
+│
+│ 🎭 Feel: ${option.feel}
+│
+│ 🎨 Colors: ${option.colors.join(', ')}
+│
+│ 🎬 Animations Available:
+│ ${option.animations.length > 0 ? option.animations.map(a => `   • ${a.name}`).join('\n│ ') : '   (none detected)'}
+│
+│ 📜 Scroll Patterns:
+│ ${option.scrollPatterns.length > 0 ? option.scrollPatterns.map(p => `   • ${p}`).join('\n│ ') : '   (none detected)'}
+│
+│ 🖼️ Decorative Elements:
+│ ${option.decorativeTypes.length > 0 ? option.decorativeTypes.map(d => `   • ${d}`).join('\n│ ') : '   (none detected)'}
+│
+└─────────────────────────────────────────────────────────────┘
+    `);
+  }
+
+  // Ask user to select or provide feedback
+  const styleChoice = await AskUserQuestion({
+    questions: [{
+      question: "เลือก style ที่ชอบ หรือพิมพ์ feedback:",
+      header: "Style",
+      multiSelect: false,
+      options: [
+        ...scoredOptions.map((opt, i) => ({
+          label: `${String.fromCharCode(65 + i)}: ${opt.style}`,
+          description: `${opt.matchScore}% match - ${opt.feel}`
+        })),
+        { label: "Mix/Custom", description: "ผสมหลาย style หรือปรับแต่งเอง" }
+      ]
+    }]
+  });
+
+  if (styleChoice.answers["Style"] === "Mix/Custom") {
+    output(`
+พิมพ์ความต้องการ (ตัวอย่าง: "ชอบ border ของ A แต่อยากได้สี soft กว่านี้"):
+    `);
+    const customInput = await getUserTextInput();
+
+    // AI interprets and adjusts
+    output(`
+🤖 กำลังปรับตาม feedback: "${customInput}"...
+    `);
+
+    round++;
+    continue; // Loop again with adjusted options
+  }
+
+  // User selected a style
+  const selectedIndex = styleChoice.answers["Style"].charCodeAt(0) - 65;
+  selectedStyle = scoredOptions[selectedIndex];
+
+  // ========== ANIMATION SELECTION ==========
+
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 ROUND ${round}/${maxRounds}: Animation Selection
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `);
+
+  // Collect all available animations from all sites
+  const allAnimations = [];
+
+  for (const [siteName, data] of Object.entries(extractedData)) {
+    // Animation libraries
+    for (const lib of data.animation_libraries) {
+      allAnimations.push({
+        type: 'library',
+        name: lib.name,
+        source: siteName,
+        description: `${lib.name} library detected`
+      });
+    }
+
+    // Scroll patterns
+    for (const pattern of data.scroll_animations.patterns) {
+      allAnimations.push({
+        type: 'scroll',
+        name: pattern,
+        source: siteName,
+        description: `Scroll animation: ${pattern}`
+      });
+    }
+
+    // Component animations
+    if (data.component_animations.button_hover !== 'none') {
+      allAnimations.push({
+        type: 'component',
+        name: `Button: ${data.component_animations.button_hover}`,
+        source: siteName,
+        description: data.component_animations.button_hover
+      });
+    }
+    if (data.component_animations.card_hover !== 'none') {
+      allAnimations.push({
+        type: 'component',
+        name: `Card: ${data.component_animations.card_hover}`,
+        source: siteName,
+        description: data.component_animations.card_hover
+      });
+    }
+  }
+
+  // Display animations
+  output(`
+🎬 Available Animations (จาก references ทั้งหมด):
+
+${allAnimations.map((anim, i) => `
+[${i + 1}] ${anim.name}
+    Type: ${anim.type}
+    Source: ${anim.source}
+    Description: ${anim.description}
+`).join('')}
+  `);
+
+  const animChoice = await AskUserQuestion({
+    questions: [{
+      question: "เลือก animations ที่ต้องการ (เลือกได้หลายอัน):",
+      header: "Animations",
+      multiSelect: true,
+      options: allAnimations.map((anim, i) => ({
+        label: `${anim.name}`,
+        description: `From ${anim.source}: ${anim.description}`
+      }))
+    }]
+  });
+
+  selectedAnimations = animChoice.answers["Animations"]
+    ? animChoice.answers["Animations"].split(',').map(s => s.trim())
+    : [];
+
+  // ========== THEME + DECORATIVE DIRECTION ==========
+
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 ROUND ${round}/${maxRounds}: Theme & Decorative Direction
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `);
+
+  // AI recommends themes based on context
+  const themePrompt = `
+Based on project context, recommend 3-4 theme options.
+
+Project Context:
+- Product Type: ${contextAnalysis.product_type}
+- Target Audience: ${contextAnalysis.target_audience?.demographics || 'Unknown'}
+- Brand Personality: ${contextAnalysis.brand_personality?.join(', ') || 'Unknown'}
+${Object.keys(contexts).length > 0 ? `- Context Files: ${Object.keys(contexts).join(', ')}` : ''}
+${Object.keys(contexts).length > 0 ? `- Brief Summary: ${Object.values(contexts)[0]?.substring(0, 500)}` : ''}
+
+Return JSON array:
+[
+  {
+    "name": "Theme Name",
+    "description": "What this theme represents",
+    "feeling": "How it makes users feel",
+    "decorative_elements": ["element1", "element2", "element3"],
+    "avoid_elements": ["avoid1", "avoid2"],
+    "icons_suggestion": ["Lucide icon names"],
+    "match_reason": "Why this theme fits the project"
+  }
+]
 `;
 
-const styleOptions = await LLM({
-  prompt: ponderingPrompt,
-  response_format: 'json',
-  max_tokens: 4000
-});
+  const themeOptions = await LLM({
+    prompt: themePrompt,
+    response_format: 'json'
+  });
+
+  output(`
+🎨 Theme Recommendations (based on your project):
+  `);
+
+  for (const [index, theme] of themeOptions.entries()) {
+    output(`
+┌─────────────────────────────────────────────────────────────┐
+│ Theme ${String.fromCharCode(65 + index)}: ${theme.name}
+├─────────────────────────────────────────────────────────────┤
+│
+│ 📝 Description: ${theme.description}
+│ 🎭 Feeling: ${theme.feeling}
+│
+│ ✅ Decorative Elements (Use):
+│ ${theme.decorative_elements.map(e => `   • ${e}`).join('\n│ ')}
+│
+│ ❌ Avoid:
+│ ${theme.avoid_elements.map(e => `   • ${e}`).join('\n│ ')}
+│
+│ 🎯 Icons (Lucide): ${theme.icons_suggestion.join(', ')}
+│
+│ 💡 Why: ${theme.match_reason}
+│
+└─────────────────────────────────────────────────────────────┘
+    `);
+  }
+
+  const themeChoice = await AskUserQuestion({
+    questions: [{
+      question: "เลือก theme หรือพิมพ์ custom:",
+      header: "Theme",
+      multiSelect: false,
+      options: [
+        ...themeOptions.map((t, i) => ({
+          label: `${String.fromCharCode(65 + i)}: ${t.name}`,
+          description: `${t.feeling} - ${t.decorative_elements.slice(0, 3).join(', ')}`
+        })),
+        { label: "No Theme", description: "ไม่ใช้ theme - geometric/abstract" },
+        { label: "Custom", description: "กำหนด theme เอง" }
+      ]
+    }]
+  });
+
+  if (themeChoice.answers["Theme"] === "Custom") {
+    output(`พิมพ์ theme ที่ต้องการ (ตัวอย่าง: "อวกาศ - จรวด, ดาวเทียม, ดาว"):`);
+    const customTheme = await getUserTextInput();
+    selectedTheme = {
+      name: 'Custom',
+      description: customTheme,
+      decorative_elements: customTheme.split(',').map(s => s.trim()),
+      avoid_elements: []
+    };
+  } else if (themeChoice.answers["Theme"] === "No Theme") {
+    selectedTheme = {
+      name: 'Abstract',
+      description: 'No specific theme - geometric and abstract decorations',
+      decorative_elements: ['geometric shapes', 'gradients', 'blobs'],
+      avoid_elements: []
+    };
+  } else {
+    const themeIndex = themeChoice.answers["Theme"].charCodeAt(0) - 65;
+    selectedTheme = themeOptions[themeIndex];
+  }
+
+  // ========== CONFIRMATION ==========
+
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ SUMMARY - Please Confirm
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 Style: ${selectedStyle.style} (from ${selectedStyle.site})
+   Feel: ${selectedStyle.feel}
+
+🎬 Animations Enabled:
+${selectedAnimations.map(a => `   ✅ ${a}`).join('\n') || '   (none selected)'}
+
+🎭 Theme: ${selectedTheme.name}
+   Decorations: ${selectedTheme.decorative_elements.join(', ')}
+   Avoid: ${selectedTheme.avoid_elements.join(', ') || '(none)'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `);
+
+  const confirmation = await AskUserQuestion({
+    questions: [{
+      question: "ยืนยันการตั้งค่านี้?",
+      header: "Confirm",
+      multiSelect: false,
+      options: [
+        { label: "Yes, Generate", description: "สร้าง design system ตามนี้" },
+        { label: "Adjust", description: "ปรับแต่งอีกรอบ" },
+        { label: "Start Over", description: "เริ่มใหม่ตั้งแต่ต้น" }
+      ]
+    }]
+  });
+
+  if (confirmation.answers["Confirm"] === "Yes, Generate") {
+    userAccepted = true;
+  } else if (confirmation.answers["Confirm"] === "Start Over") {
+    round = 1;
+  } else {
+    round++;
+  }
+
+  if (round > maxRounds && !userAccepted) {
+    output(`
+⚠️ ครบ ${maxRounds} รอบแล้ว
+
+แนะนำ:
+1. รัน /extract กับ reference ใหม่
+2. หรือ accept แล้วค่อย manual edit ไฟล์ที่สร้าง
+    `);
+
+    const forceChoice = await AskUserQuestion({
+      questions: [{
+        question: "ต้องการ generate ตาม settings ปัจจุบันไหม?",
+        header: "Force",
+        multiSelect: false,
+        options: [
+          { label: "Yes", description: "Generate ตาม settings ล่าสุด" },
+          { label: "Cancel", description: "ยกเลิก" }
+        ]
+      }]
+    });
+
+    if (forceChoice.answers["Force"] === "Yes") {
+      userAccepted = true;
+    } else {
+      return output('Design setup cancelled.');
+    }
+  }
+}
 ```
 
 **Report:**
 ```
-✅ Style Directions Generated!
+✅ User Selection Complete!
 
-🎨 ${styleOptions.recommended_count} options created
-   - Primary: ${styleOptions.options[0].name} (${styleOptions.options[0].fit_score}% fit)
-   - Alternative: ${styleOptions.options[1].name} (${styleOptions.options[1].fit_score}% fit)
-   ${styleOptions.options[2] ? `- Fallback: ${styleOptions.options[2].name} (${styleOptions.options[2].fit_score}% fit)` : ''}
+🎨 Style: ${selectedStyle.style}
+🎬 Animations: ${selectedAnimations.length} selected
+🎭 Theme: ${selectedTheme.name}
 
-🔄 Generating option previews...
+🔄 Generating design system files...
 ```
 
 ---
@@ -782,322 +1115,1054 @@ Write('design-system/STYLE_GUIDE.md', styleGuideMD);
 
 ---
 
-## STEP 5.5: Generate STYLE_TOKENS.json (Context Optimization)
+## STEP 5.5: Generate tokens.json (Enhanced v2.0.0)
 
-> **New in v1.2.0:** Generate lightweight design tokens file for token-efficient loading
+> **Enhanced v2.0.0:** tokens.json now includes style, theme, animations, decorative_direction, and patterns_index
 
 ```javascript
 output(`
-🔄 Extracting design tokens for efficient loading...
+🔄 Generating enhanced tokens.json...
 `);
 
-// Extract design tokens from STYLE_GUIDE.md
-const tokensPrompt = `
-You are extracting design tokens from the STYLE_GUIDE.md into a lightweight JSON format.
-
-Source: STYLE_GUIDE.md content below
-${styleGuideMD}
-
-Task: Extract ALL design tokens into JSON format following this exact structure:
-
-{
+// Build tokens.json from user selections + extracted data
+const tokensData = {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "meta": {
-    "generated_at": "${new Date().toISOString()}",
-    "generated_by": "/designsetup command",
-    "source": "design-system/STYLE_GUIDE.md",
-    "design_style": "${selectedOption.name}",
-    "description": "Lightweight design tokens extracted from STYLE_GUIDE.md (~500 tokens vs ~5000 tokens for full guide)"
+    "generated_at": new Date().toISOString(),
+    "generated_by": "/designsetup command v2.0.0",
+    "source_sites": Object.keys(extractedData),
+    "description": "Design tokens for agents (~800 tokens). Human-readable guide: STYLE_GUIDE.md"
   },
-  "tokens": {
-    "colors": {
-      "primary": {
-        "DEFAULT": "[extract from guide]",
-        "foreground": "[extract]",
-        "hover": "[extract or generate]",
-        "description": "Primary brand color for CTAs, links, and accents",
-        "tailwind": "bg-primary, text-primary, border-primary"
-      },
-      "secondary": { ... },
-      "background": { ... },
-      "foreground": { ... },
-      "border": { ... },
-      "semantic": {
-        "success": "[extract]",
-        "warning": "[extract]",
-        "error": "[extract]",
-        "info": "[extract]"
-      }
-    },
-    "spacing": {
-      "scale": [extract spacing scale array],
-      "description": "4px or 8px base unit spacing scale",
-      "tailwind_mapping": { ... },
-      "common_patterns": {
-        "component_padding": "p-4 (16px) or p-6 (24px)",
-        "section_gap": "gap-8 (32px) or gap-12 (48px)",
-        "layout_margin": "mt-16 (64px) or mt-24 (96px)"
-      }
-    },
-    "typography": {
-      "font_family": { ... },
-      "font_size": { ... },
-      "font_weight": { ... },
-      "line_height": { ... },
-      "headings": { ... }
-    },
-    "shadows": {
-      "sm": "[extract]",
-      "DEFAULT": "[extract]",
-      "md": "[extract]",
-      "lg": "[extract]",
-      "xl": "[extract]",
-      "usage": {
-        "cards": "shadow-md",
-        "dropdowns": "shadow-lg",
-        "modals": "shadow-xl",
-        "buttons_hover": "shadow-sm"
-      }
-    },
-    "borders": {
-      "radius": { ... },
-      "width": { ... },
-      "usage": { ... }
-    },
-    "animation": {
-      "duration": { ... },
-      "easing": { ... },
-      "common": { ... }
-    },
-    "breakpoints": { ... },
-    "z_index": { ... }
+
+  // ========== NEW: Style & Theme (from user selection) ==========
+  "style": {
+    "name": selectedStyle.style,
+    "confidence": selectedStyle.confidence,
+    "characteristics": selectedStyle.characteristics,
+    "feel": selectedStyle.feel,
+    "source_site": selectedStyle.site
   },
+
+  "theme": {
+    "name": selectedTheme.name,
+    "description": selectedTheme.description,
+    "feeling": selectedTheme.feeling || selectedTheme.description,
+    "decorative_elements": {
+      "use": selectedTheme.decorative_elements,
+      "avoid": selectedTheme.avoid_elements
+    },
+    "icons_suggestion": selectedTheme.icons_suggestion || ["Lucide icons"]
+  },
+
+  // ========== NEW: Animations (from user selection) ==========
+  "animations": {
+    "enabled": selectedAnimations.length > 0,
+    "libraries": extractedData[selectedStyle.site]?.animation_libraries || [],
+    "selected_patterns": selectedAnimations,
+    "scroll_animations": {
+      "enabled": selectedAnimations.some(a =>
+        a.includes('scroll') || a.includes('parallax') || a.includes('fade') || a.includes('stacking')
+      ),
+      "patterns": extractedData[selectedStyle.site]?.scroll_animations?.patterns || []
+    },
+    "component_animations": {
+      "button_hover": extractedData[selectedStyle.site]?.component_animations?.button_hover || "scale + shadow",
+      "card_hover": extractedData[selectedStyle.site]?.component_animations?.card_hover || "translateY + shadow",
+      "input_focus": extractedData[selectedStyle.site]?.component_animations?.input_focus || "ring"
+    },
+    "duration": {
+      "fast": "150ms",
+      "normal": "200ms",
+      "slow": "300ms"
+    },
+    "easing": {
+      "default": "ease-in-out",
+      "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+    }
+  },
+
+  // ========== Colors (from selected style's source) ==========
+  "colors": {
+    "primary": {
+      "DEFAULT": selectedStyle.colors[0] || "#0d7276",
+      "foreground": "#ffffff",
+      "hover": darkenColor(selectedStyle.colors[0] || "#0d7276", 10),
+      "tailwind": "bg-primary, text-primary, border-primary"
+    },
+    "secondary": {
+      "DEFAULT": selectedStyle.colors[1] || "#64748b",
+      "foreground": "#ffffff",
+      "hover": darkenColor(selectedStyle.colors[1] || "#64748b", 10)
+    },
+    "accent": {
+      "DEFAULT": selectedStyle.colors[2] || selectedStyle.colors[0] || "#f97316",
+      "foreground": "#ffffff"
+    },
+    "background": {
+      "DEFAULT": "#ffffff",
+      "muted": "#f1f5f9",
+      "subtle": "#f8fafc"
+    },
+    "foreground": {
+      "DEFAULT": "#0a0a0a",
+      "muted": "#64748b",
+      "subtle": "#94a3b8"
+    },
+    "border": {
+      "DEFAULT": "#e2e8f0",
+      "hover": "#cbd5e1",
+      "focus": selectedStyle.colors[0] || "#0d7276"
+    },
+    "semantic": {
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "info": "#3b82f6"
+    }
+  },
+
+  // ========== Typography (from extracted data) ==========
+  "typography": {
+    "font_family": {
+      "sans": extractedData[selectedStyle.site]?.typography?.fonts[0] || "'Inter', sans-serif",
+      "mono": "'Fira Code', monospace"
+    },
+    "font_size": {
+      "xs": "12px", "sm": "14px", "base": "16px", "lg": "18px",
+      "xl": "20px", "2xl": "24px", "3xl": "30px", "4xl": "36px", "5xl": "48px"
+    },
+    "font_weight": {
+      "normal": "400", "medium": "500", "semibold": "600", "bold": "700"
+    },
+    "headings": {
+      "h1": "text-5xl font-bold",
+      "h2": "text-4xl font-bold",
+      "h3": "text-3xl font-semibold",
+      "h4": "text-2xl font-semibold",
+      "h5": "text-xl font-medium",
+      "h6": "text-lg font-medium"
+    }
+  },
+
+  // ========== Spacing (from extracted data) ==========
+  "spacing": {
+    "scale": extractedData[selectedStyle.site]?.spacing?.common || [4, 8, 12, 16, 24, 32, 48, 64, 96],
+    "grid_base": extractedData[selectedStyle.site]?.spacing?.grid_base || "8px",
+    "common_patterns": {
+      "component_padding": "p-4 (16px) or p-6 (24px)",
+      "section_gap": "gap-8 (32px) or gap-12 (48px)",
+      "layout_margin": "mt-16 (64px) or mt-24 (96px)"
+    }
+  },
+
+  // ========== Shadows (from extracted data) ==========
+  "shadows": {
+    "values": extractedData[selectedStyle.site]?.shadows || [
+      "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+      "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+    ],
+    "usage": {
+      "cards": "shadow-md",
+      "dropdowns": "shadow-lg",
+      "modals": "shadow-xl",
+      "buttons_hover": "shadow-sm"
+    }
+  },
+
+  // ========== Borders (from extracted data) ==========
+  "borders": {
+    "radius": extractedData[selectedStyle.site]?.border_radius || ["4px", "8px", "12px", "9999px"],
+    "usage": {
+      "inputs": "rounded-md",
+      "buttons": "rounded-lg",
+      "cards": "rounded-xl",
+      "avatars": "rounded-full"
+    }
+  },
+
+  // ========== NEW: Patterns Index (references to patterns/*.md) ==========
+  "patterns_index": {
+    "buttons": "design-system/patterns/buttons.md",
+    "scroll_animations": "design-system/patterns/scroll-animations.md",
+    "decorations": "design-system/patterns/decorations.md",
+    "cards": "design-system/patterns/cards.md",
+    "forms": "design-system/patterns/forms.md"
+  },
+
+  // ========== Component Library ==========
   "component_library": {
-    "name": "[extract from guide]",
-    "install_command": "[extract]",
-    "common_components": [extract array]
+    "name": "shadcn/ui",
+    "install_command": "npx shadcn-ui@latest init",
+    "common_components": ["button", "card", "input", "select", "dialog", "dropdown-menu", "badge", "avatar", "tooltip"]
   },
-  "component_patterns": {
-    "button": {
-      "primary": "[extract full Tailwind classes from Button component section - exact copy of primary button pattern]",
-      "secondary": "[extract secondary button pattern]",
-      "ghost": "[extract ghost button pattern]",
-      "outline": "[extract outline button pattern]",
-      "destructive": "[extract destructive/danger button pattern]",
-      "link": "[extract link button pattern]",
-      "icon": "[extract icon-only button pattern]",
-      "sizes": {
-        "sm": "[extract small button classes]",
-        "md": "[extract medium/default button classes]",
-        "lg": "[extract large button classes]"
-      },
-      "states": {
-        "default": "[base classes]",
-        "hover": "[hover state classes]",
-        "active": "[active/pressed state classes]",
-        "disabled": "[disabled state classes]",
-        "loading": "[loading state classes with spinner]"
-      }
-    },
-    "card": {
-      "default": "[extract default card pattern with border/shadow/padding]",
-      "elevated": "[extract elevated card with larger shadow]",
-      "outlined": "[extract outlined card variant]",
-      "interactive": "[extract interactive card with hover effects]",
-      "composition": {
-        "header": "[extract card header classes]",
-        "content": "[extract card content/body classes]",
-        "footer": "[extract card footer classes]",
-        "image": "[extract card image wrapper classes]"
-      }
-    },
-    "input": {
-      "base": "[extract base input field classes]",
-      "variants": {
-        "default": "[extract default input]",
-        "error": "[extract error state input with red border]",
-        "success": "[extract success state input]",
-        "disabled": "[extract disabled input]"
-      },
-      "sizes": {
-        "sm": "[extract small input]",
-        "md": "[extract medium input]",
-        "lg": "[extract large input]"
-      }
-    },
-    "form_field": {
-      "wrapper": "[extract form field wrapper classes]",
-      "label": "[extract label classes]",
-      "input": "[reference to input.base]",
-      "helper_text": "[extract helper text classes]",
-      "error_message": "[extract error message classes with red text]",
-      "composition": "[extract full form field pattern: label + input + helper + error]"
-    },
-    "badge": {
-      "default": "[extract default badge]",
-      "variants": {
-        "primary": "[extract primary badge]",
-        "secondary": "[extract secondary badge]",
-        "success": "[extract success/green badge]",
-        "warning": "[extract warning/yellow badge]",
-        "error": "[extract error/red badge]",
-        "outline": "[extract outline badge]"
-      }
-    },
-    "alert": {
-      "base": "[extract base alert classes]",
-      "variants": {
-        "info": "[extract info alert with blue accent]",
-        "success": "[extract success alert with green accent]",
-        "warning": "[extract warning alert with yellow accent]",
-        "error": "[extract error alert with red accent]"
-      },
-      "composition": {
-        "wrapper": "[alert container classes]",
-        "icon": "[icon wrapper classes]",
-        "content": "[content wrapper classes]",
-        "title": "[alert title classes]",
-        "description": "[alert description classes]",
-        "actions": "[action buttons wrapper classes]"
-      }
-    }
-  },
-  "layout_patterns": {
-    "container": {
-      "default": "[extract default container: max-w-7xl mx-auto px-4 sm:px-6 lg:px-8]",
-      "narrow": "[extract narrow container: max-w-4xl]",
-      "wide": "[extract wide container: max-w-screen-2xl]",
-      "full": "[extract full-width: w-full]",
-      "fluid": "[extract fluid container with responsive padding]"
-    },
-    "grid": {
-      "auto": "[extract auto-fit grid: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6]",
-      "feature": "[extract feature grid: grid grid-cols-1 md:grid-cols-3 gap-8]",
-      "dashboard": "[extract dashboard grid: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4]",
-      "gallery": "[extract gallery grid: grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2]",
-      "masonry": "[extract masonry-style grid classes]"
-    },
-    "flex": {
-      "row_center": "[extract centered row: flex items-center justify-center]",
-      "row_between": "[extract space-between row: flex items-center justify-between]",
-      "row_start": "[extract left-aligned row: flex items-center justify-start]",
-      "col_center": "[extract centered column: flex flex-col items-center justify-center]",
-      "col_start": "[extract top-aligned column: flex flex-col items-start]"
-    },
-    "section_spacing": {
-      "tight": "[extract tight section spacing: py-8 md:py-12]",
-      "normal": "[extract normal section spacing: py-12 md:py-16]",
-      "loose": "[extract loose section spacing: py-16 md:py-24]",
-      "hero": "[extract hero section spacing: py-20 md:py-32]"
-    },
-    "page_layouts": {
-      "landing": "[extract landing page layout structure]",
-      "dashboard": "[extract dashboard layout: sidebar + main content]",
-      "auth": "[extract auth page layout: centered card]",
-      "settings": "[extract settings page layout: tabs + content]"
-    }
-  },
+
+  // ========== Critical Rules ==========
   "critical_rules": {
     "colors": [
-      "❌ NO hardcoded hex values (#64748b)",
-      "✅ USE theme tokens (text-foreground/70)",
-      "❌ NO random opacity values",
-      "✅ USE consistent opacity scale (/50, /70, /90)"
+      "❌ NO hardcoded hex values",
+      "✅ USE theme tokens (bg-primary, text-foreground)"
     ],
     "spacing": [
-      "❌ NO arbitrary values (p-5, gap-7, mt-15)",
-      "✅ USE spacing scale (p-4, p-6, gap-8, mt-16)",
-      "❌ NO hardcoded px values",
-      "✅ USE Tailwind scale"
+      "❌ NO arbitrary values (p-5, gap-7)",
+      "✅ USE spacing scale (p-4, p-6, gap-8)"
     ],
     "consistency": [
-      "❌ NO mixing patterns (shadow-sm on Card A, shadow-lg on Card B)",
-      "✅ USE consistent patterns (all cards use shadow-md)",
-      "❌ NO mixing border radius (rounded-md vs rounded-lg)",
-      "✅ USE same border radius for similar components"
+      "❌ NO mixing patterns",
+      "✅ USE consistent patterns from tokens"
     ]
   }
+};
+
+// Helper function to darken color
+function darkenColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max((num >> 16) - amt, 0);
+  const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
+  const B = Math.max((num & 0x0000FF) - amt, 0);
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
 
-IMPORTANT:
-- Extract ALL values from STYLE_GUIDE.md (don't use placeholders)
-- If a value isn't in the guide, infer it logically (e.g., hover = 10% darker than DEFAULT)
-- Keep descriptions concise but clear
-- Return ONLY valid JSON (no markdown, no explanations)
+// Write tokens.json
+Write('design-system/tokens.json', JSON.stringify(tokensData, null, 2));
+output(`✅ tokens.json generated (~800 tokens)`);
+```
+
+---
+
+## STEP 5.6: Generate patterns/*.md Files
+
+> **Code patterns for agents** - Selective loading based on page type
+
+```javascript
+output(`
+🔄 Generating pattern files...
+`);
+
+// Create patterns directory
+mkdir('design-system/patterns');
+
+// ========== 1. buttons.md ==========
+const buttonsPattern = `# Button Patterns
+
+> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
+> **Load when:** Any UI page
+
+## Primary Button
+\`\`\`tsx
+<button className="
+  bg-primary text-primary-foreground
+  px-4 py-2 rounded-lg
+  font-medium
+  ${tokensData.animations.component_animations.button_hover === 'scale + shadow'
+    ? 'hover:scale-105 hover:shadow-md'
+    : 'hover:bg-primary/90'}
+  transition-all duration-200
+  focus:outline-none focus:ring-2 focus:ring-primary/50
+  disabled:opacity-50 disabled:cursor-not-allowed
+">
+  Button Text
+</button>
+\`\`\`
+
+## Secondary Button
+\`\`\`tsx
+<button className="
+  bg-secondary text-secondary-foreground
+  px-4 py-2 rounded-lg
+  font-medium
+  hover:bg-secondary/80
+  transition-all duration-200
+">
+  Secondary
+</button>
+\`\`\`
+
+## Ghost Button
+\`\`\`tsx
+<button className="
+  bg-transparent text-foreground
+  px-4 py-2 rounded-lg
+  font-medium
+  hover:bg-muted
+  transition-all duration-200
+">
+  Ghost
+</button>
+\`\`\`
+
+## Outline Button
+\`\`\`tsx
+<button className="
+  bg-transparent text-primary
+  border border-primary
+  px-4 py-2 rounded-lg
+  font-medium
+  hover:bg-primary hover:text-primary-foreground
+  transition-all duration-200
+">
+  Outline
+</button>
+\`\`\`
+
+## Icon Button
+\`\`\`tsx
+<button className="
+  p-2 rounded-lg
+  hover:bg-muted
+  transition-all duration-200
+">
+  <Icon className="w-5 h-5" />
+</button>
+\`\`\`
+
+## Button Sizes
+\`\`\`tsx
+// Small
+className="px-3 py-1.5 text-sm rounded-md"
+
+// Medium (default)
+className="px-4 py-2 text-base rounded-lg"
+
+// Large
+className="px-6 py-3 text-lg rounded-lg"
+\`\`\`
 `;
 
-const tokensJSON = await LLM({
-  prompt: tokensPrompt,
-  max_tokens: 4000,
-  temperature: 0.1 // Low temperature for consistent extraction
-});
+Write('design-system/patterns/buttons.md', buttonsPattern);
 
-// Validate JSON
-try {
-  JSON.parse(tokensJSON);
-  Write('design-system/STYLE_TOKENS.json', tokensJSON);
-  output(`✅ STYLE_TOKENS.json generated (~500 tokens)`);
-} catch (e) {
-  warn(`⚠️ Failed to generate STYLE_TOKENS.json: ${e.message}`);
-  warn(`Continuing without tokens file...`);
-}
+// ========== 2. scroll-animations.md ==========
+const scrollAnimationsPattern = `# Scroll Animation Patterns
+
+> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
+> **Load when:** Landing pages, marketing pages
+> **Libraries:** ${tokensData.animations.libraries.map(l => l.name).join(', ') || 'CSS/Tailwind'}
+
+## Enabled Patterns
+${selectedAnimations.length > 0 ? selectedAnimations.map(a => `- ${a}`).join('\n') : '- No scroll animations selected'}
+
+---
+
+## Fade In on Scroll (CSS)
+\`\`\`tsx
+// Add to component
+const [isVisible, setIsVisible] = useState(false);
+const ref = useRef(null);
+
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    ([entry]) => setIsVisible(entry.isIntersecting),
+    { threshold: 0.1 }
+  );
+  if (ref.current) observer.observe(ref.current);
+  return () => observer.disconnect();
+}, []);
+
+return (
+  <div
+    ref={ref}
+    className={\`
+      transition-all duration-700
+      \${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
+    \`}
+  >
+    {children}
+  </div>
+);
+\`\`\`
+
+## Stacking Cards (GSAP ScrollTrigger)
+\`\`\`tsx
+// Requires: npm install gsap
+
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
+
+useEffect(() => {
+  const cards = gsap.utils.toArray('.stacking-card');
+
+  cards.forEach((card, i) => {
+    gsap.to(card, {
+      scrollTrigger: {
+        trigger: card,
+        start: 'top 80%',
+        end: 'top 20%',
+        scrub: true,
+      },
+      y: -50 * i,
+      scale: 1 - (0.05 * i),
+      opacity: 1 - (0.1 * i),
+    });
+  });
+}, []);
+
+// JSX
+<div className="stacking-card bg-card p-6 rounded-xl shadow-md sticky top-20">
+  Card Content
+</div>
+\`\`\`
+
+## Parallax Section
+\`\`\`tsx
+// CSS approach
+<div className="relative overflow-hidden">
+  <div
+    className="absolute inset-0 bg-cover bg-center"
+    style={{
+      backgroundImage: 'url(/hero-bg.jpg)',
+      transform: 'translateY(var(--parallax-offset, 0))',
+    }}
+  />
+  <div className="relative z-10 py-24">
+    Content here
+  </div>
+</div>
+
+// Update --parallax-offset on scroll
+useEffect(() => {
+  const handleScroll = () => {
+    const offset = window.scrollY * 0.5;
+    document.documentElement.style.setProperty('--parallax-offset', \`\${offset}px\`);
+  };
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
+\`\`\`
+
+## Slide In from Side
+\`\`\`tsx
+// Left
+className="animate-slide-in-left"
+// CSS: @keyframes slide-in-left { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+// Right
+className="animate-slide-in-right"
+// CSS: @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+\`\`\`
+`;
+
+Write('design-system/patterns/scroll-animations.md', scrollAnimationsPattern);
+
+// ========== 3. decorations.md ==========
+const decorationsPattern = `# Decorative Elements
+
+> **Theme:** ${selectedTheme.name}
+> **Load when:** Landing pages, marketing pages (NOT dashboards)
+
+## Theme Direction
+
+### ✅ USE These Elements
+${selectedTheme.decorative_elements.map(e => `- ${e}`).join('\n')}
+
+### ❌ AVOID These Elements
+${selectedTheme.avoid_elements.length > 0 ? selectedTheme.avoid_elements.map(e => `- ${e}`).join('\n') : '- (none specified)'}
+
+### 🎯 Suggested Icons (Lucide)
+${selectedTheme.icons_suggestion?.join(', ') || 'Default Lucide icons'}
+
+---
+
+## Gradient Background
+\`\`\`tsx
+// Subtle gradient overlay
+<div className="
+  absolute inset-0 -z-10
+  bg-gradient-to-br from-primary/5 via-transparent to-accent/5
+"/>
+
+// Mesh gradient (hero sections)
+<div className="
+  absolute inset-0 -z-10
+  bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(var(--primary),0.3),transparent)]
+"/>
+\`\`\`
+
+## Blob Shapes
+\`\`\`tsx
+// CSS blob
+<div className="
+  absolute -top-20 -right-20 w-96 h-96
+  bg-primary/10 rounded-full blur-3xl
+  animate-blob
+"/>
+
+// CSS for animation
+// @keyframes blob {
+//   0%, 100% { transform: translate(0, 0) scale(1); }
+//   33% { transform: translate(30px, -50px) scale(1.1); }
+//   66% { transform: translate(-20px, 20px) scale(0.9); }
+// }
+\`\`\`
+
+## Grid Pattern
+\`\`\`tsx
+// Dot grid background
+<div className="
+  absolute inset-0 -z-10
+  bg-[radial-gradient(#e5e7eb_1px,transparent_1px)]
+  [background-size:16px_16px]
+"/>
+
+// Line grid
+<div className="
+  absolute inset-0 -z-10
+  bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)]
+  [background-size:24px_24px]
+"/>
+\`\`\`
+
+## Floating Elements
+\`\`\`tsx
+// Floating icons (for theme: ${selectedTheme.name})
+<div className="absolute top-10 left-10 animate-float opacity-20">
+  <IconFromTheme className="w-12 h-12 text-primary" />
+</div>
+
+// CSS
+// @keyframes float {
+//   0%, 100% { transform: translateY(0); }
+//   50% { transform: translateY(-20px); }
+// }
+\`\`\`
+
+## Dividers & Separators
+\`\`\`tsx
+// Wave divider
+<svg className="w-full h-16" viewBox="0 0 1200 120" preserveAspectRatio="none">
+  <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="currentColor" className="text-muted/30"/>
+</svg>
+
+// Gradient line
+<div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+\`\`\`
+`;
+
+Write('design-system/patterns/decorations.md', decorationsPattern);
+
+// ========== 4. cards.md ==========
+const cardsPattern = `# Card Patterns
+
+> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
+> **Load when:** Any UI page
+
+## Default Card
+\`\`\`tsx
+<div className="
+  bg-card text-card-foreground
+  rounded-xl border shadow-md
+  p-6
+">
+  <h3 className="text-xl font-semibold mb-2">Card Title</h3>
+  <p className="text-muted-foreground">Card content goes here.</p>
+</div>
+\`\`\`
+
+## Interactive Card (with hover)
+\`\`\`tsx
+<div className="
+  bg-card text-card-foreground
+  rounded-xl border shadow-md
+  p-6
+  ${tokensData.animations.component_animations.card_hover === 'translateY + shadow'
+    ? 'hover:-translate-y-1 hover:shadow-lg'
+    : 'hover:border-primary/50'}
+  transition-all duration-200
+  cursor-pointer
+">
+  <h3 className="text-xl font-semibold mb-2">Interactive Card</h3>
+  <p className="text-muted-foreground">Hover me!</p>
+</div>
+\`\`\`
+
+## Feature Card
+\`\`\`tsx
+<div className="
+  bg-card text-card-foreground
+  rounded-xl border shadow-md
+  p-6
+  hover:-translate-y-1 hover:shadow-lg
+  transition-all duration-200
+">
+  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+    <Icon className="w-6 h-6 text-primary" />
+  </div>
+  <h3 className="text-lg font-semibold mb-2">Feature Title</h3>
+  <p className="text-muted-foreground text-sm">
+    Feature description goes here.
+  </p>
+</div>
+\`\`\`
+
+## Pricing Card
+\`\`\`tsx
+<div className="
+  bg-card text-card-foreground
+  rounded-xl border shadow-md
+  p-8
+  relative overflow-hidden
+">
+  {/* Popular badge */}
+  <div className="absolute top-4 right-4">
+    <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
+      Popular
+    </span>
+  </div>
+
+  <h3 className="text-xl font-bold mb-2">Pro Plan</h3>
+  <div className="text-4xl font-bold mb-4">
+    $29<span className="text-lg text-muted-foreground">/mo</span>
+  </div>
+
+  <ul className="space-y-3 mb-6">
+    <li className="flex items-center gap-2">
+      <CheckIcon className="w-5 h-5 text-primary" />
+      <span>Feature 1</span>
+    </li>
+    {/* ... more features */}
+  </ul>
+
+  <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg">
+    Get Started
+  </button>
+</div>
+\`\`\`
+
+## Testimonial Card
+\`\`\`tsx
+<div className="
+  bg-card text-card-foreground
+  rounded-xl border shadow-md
+  p-6
+">
+  <div className="flex items-center gap-4 mb-4">
+    <img src="/avatar.jpg" className="w-12 h-12 rounded-full" />
+    <div>
+      <h4 className="font-semibold">John Doe</h4>
+      <p className="text-sm text-muted-foreground">CEO, Company</p>
+    </div>
+  </div>
+  <p className="text-muted-foreground italic">
+    "This product is amazing! It has transformed how we work."
+  </p>
+</div>
+\`\`\`
+`;
+
+Write('design-system/patterns/cards.md', cardsPattern);
+
+// ========== 5. forms.md ==========
+const formsPattern = `# Form Patterns
+
+> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
+> **Load when:** Auth pages, settings, any form UI
+
+## Input Field
+\`\`\`tsx
+<div className="space-y-2">
+  <label className="text-sm font-medium text-foreground">
+    Email Address
+  </label>
+  <input
+    type="email"
+    placeholder="you@example.com"
+    className="
+      w-full px-4 py-2
+      bg-background text-foreground
+      border rounded-md
+      focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+      placeholder:text-muted-foreground
+      transition-all duration-200
+    "
+  />
+  <p className="text-sm text-muted-foreground">
+    We'll never share your email.
+  </p>
+</div>
+\`\`\`
+
+## Input with Error
+\`\`\`tsx
+<div className="space-y-2">
+  <label className="text-sm font-medium text-foreground">
+    Password
+  </label>
+  <input
+    type="password"
+    className="
+      w-full px-4 py-2
+      bg-background text-foreground
+      border border-error rounded-md
+      focus:outline-none focus:ring-2 focus:ring-error/50
+    "
+  />
+  <p className="text-sm text-error">
+    Password must be at least 8 characters.
+  </p>
+</div>
+\`\`\`
+
+## Select Field
+\`\`\`tsx
+<div className="space-y-2">
+  <label className="text-sm font-medium text-foreground">
+    Country
+  </label>
+  <select className="
+    w-full px-4 py-2
+    bg-background text-foreground
+    border rounded-md
+    focus:outline-none focus:ring-2 focus:ring-primary/50
+  ">
+    <option value="">Select country</option>
+    <option value="th">Thailand</option>
+    <option value="us">United States</option>
+  </select>
+</div>
+\`\`\`
+
+## Checkbox
+\`\`\`tsx
+<label className="flex items-center gap-2 cursor-pointer">
+  <input
+    type="checkbox"
+    className="
+      w-4 h-4 rounded
+      border border-border
+      text-primary
+      focus:ring-2 focus:ring-primary/50
+    "
+  />
+  <span className="text-sm text-foreground">
+    I agree to the terms and conditions
+  </span>
+</label>
+\`\`\`
+
+## Form Layout
+\`\`\`tsx
+<form className="space-y-6 max-w-md mx-auto">
+  {/* Form fields */}
+
+  <button
+    type="submit"
+    className="
+      w-full bg-primary text-primary-foreground
+      py-2 rounded-lg font-medium
+      hover:bg-primary/90
+      transition-all duration-200
+    "
+  >
+    Submit
+  </button>
+</form>
+\`\`\`
+`;
+
+Write('design-system/patterns/forms.md', formsPattern);
+
+output(`
+✅ Pattern files generated:
+   - design-system/patterns/buttons.md
+   - design-system/patterns/scroll-animations.md
+   - design-system/patterns/decorations.md
+   - design-system/patterns/cards.md
+   - design-system/patterns/forms.md
+`);
+```
+
+---
+
+## STEP 5.7: Generate Lean STYLE_GUIDE.md (Human-Readable)
+
+> **Human-readable guide** - No code, just descriptions and visuals
+
+```javascript
+output(`
+🔄 Generating lean STYLE_GUIDE.md (human-readable)...
+`);
+
+const styleGuideMD = `# ${selectedStyle.style} Design System
+
+> **Style:** ${selectedStyle.style}
+> **Theme:** ${selectedTheme.name}
+> **Generated:** ${new Date().toISOString().split('T')[0]}
+> **Sources:** ${Object.keys(extractedData).join(', ')}
+
+---
+
+## 1. Overview
+
+This design system follows **${selectedStyle.style}** aesthetics with a **${selectedTheme.name}** theme.
+
+### Feel
+${selectedStyle.feel}
+
+### Characteristics
+${selectedStyle.characteristics.map(c => `- ${c}`).join('\n')}
+
+---
+
+## 2. Color Palette
+
+### Primary Color
+- **Color:** ${tokensData.colors.primary.DEFAULT}
+- **Use for:** CTAs, links, accents, interactive elements
+- **Feel:** ${selectedStyle.feel}
+
+### Secondary Color
+- **Color:** ${tokensData.colors.secondary.DEFAULT}
+- **Use for:** Secondary actions, less prominent elements
+
+### Background Colors
+- **Main:** ${tokensData.colors.background.DEFAULT} (white)
+- **Muted:** ${tokensData.colors.background.muted} (subtle sections)
+- **Subtle:** ${tokensData.colors.background.subtle} (alternating sections)
+
+### Text Colors
+- **Primary text:** ${tokensData.colors.foreground.DEFAULT}
+- **Muted text:** ${tokensData.colors.foreground.muted}
+- **Subtle text:** ${tokensData.colors.foreground.subtle}
+
+### Semantic Colors
+- **Success:** ${tokensData.colors.semantic.success} (green)
+- **Warning:** ${tokensData.colors.semantic.warning} (amber)
+- **Error:** ${tokensData.colors.semantic.error} (red)
+- **Info:** ${tokensData.colors.semantic.info} (blue)
+
+---
+
+## 3. Typography
+
+### Font Family
+- **Primary:** ${tokensData.typography.font_family.sans}
+- **Monospace:** ${tokensData.typography.font_family.mono}
+
+### Heading Sizes
+- **H1:** 48px bold - Hero headlines
+- **H2:** 36px bold - Section titles
+- **H3:** 30px semibold - Subsection titles
+- **H4:** 24px semibold - Card titles
+- **H5:** 20px medium - Feature titles
+- **H6:** 18px medium - Small titles
+
+### Body Text
+- **Large:** 18px - Feature descriptions
+- **Base:** 16px - Body text
+- **Small:** 14px - Captions, labels
+- **Extra small:** 12px - Badges, tags
+
+---
+
+## 4. Spacing System
+
+### Base Unit
+${tokensData.spacing.grid_base} grid system
+
+### Scale
+${tokensData.spacing.scale.map(s => `- ${s}px`).join('\n')}
+
+### Common Patterns
+- **Component padding:** 16px or 24px
+- **Section gap:** 32px or 48px
+- **Layout margin:** 64px or 96px
+
+---
+
+## 5. Shadows & Elevation
+
+### Elevation Levels
+- **Level 0:** No shadow (flat elements)
+- **Level 1:** Subtle shadow (buttons on hover)
+- **Level 2:** Medium shadow (cards)
+- **Level 3:** Large shadow (dropdowns)
+- **Level 4:** Extra large shadow (modals)
+
+### Usage
+- **Cards:** Medium shadow
+- **Dropdowns:** Large shadow
+- **Modals:** Extra large shadow
+- **Button hover:** Subtle shadow
+
+---
+
+## 6. Border Radius
+
+### Values
+${tokensData.borders.radius.map(r => `- ${r}`).join('\n')}
+
+### Usage
+- **Inputs:** Medium radius (8px)
+- **Buttons:** Large radius (12px)
+- **Cards:** Extra large radius (16px)
+- **Avatars:** Full radius (circle)
+
+---
+
+## 7. Theme: ${selectedTheme.name}
+
+### Description
+${selectedTheme.description}
+
+### Feeling
+${selectedTheme.feeling || selectedTheme.description}
+
+### Decorative Elements to USE
+${selectedTheme.decorative_elements.map(e => `- ✅ ${e}`).join('\n')}
+
+### Elements to AVOID
+${selectedTheme.avoid_elements.length > 0 ? selectedTheme.avoid_elements.map(e => `- ❌ ${e}`).join('\n') : '- (none specified)'}
+
+### Suggested Icons
+${selectedTheme.icons_suggestion?.join(', ') || 'Lucide icons'}
+
+---
+
+## 8. Animations
+
+### Enabled
+${tokensData.animations.enabled ? 'Yes' : 'No'}
+
+### Libraries
+${tokensData.animations.libraries.map(l => `- ${l.name}`).join('\n') || '- CSS/Tailwind only'}
+
+### Selected Patterns
+${selectedAnimations.length > 0 ? selectedAnimations.map(a => `- ${a}`).join('\n') : '- No scroll animations'}
+
+### Component Animations
+- **Button hover:** ${tokensData.animations.component_animations.button_hover}
+- **Card hover:** ${tokensData.animations.component_animations.card_hover}
+- **Input focus:** ${tokensData.animations.component_animations.input_focus}
+
+### Timing
+- **Fast:** 150ms (micro-interactions)
+- **Normal:** 200ms (most transitions)
+- **Slow:** 300ms (modals, page transitions)
+
+---
+
+## 9. Component Library
+
+### Recommended
+${tokensData.component_library.name}
+
+### Common Components
+${tokensData.component_library.common_components.map(c => `- ${c}`).join('\n')}
+
+---
+
+## 10. Code Patterns
+
+**For code examples, see:**
+- \`design-system/patterns/buttons.md\`
+- \`design-system/patterns/cards.md\`
+- \`design-system/patterns/forms.md\`
+- \`design-system/patterns/scroll-animations.md\`
+- \`design-system/patterns/decorations.md\`
+
+---
+
+## 11. Critical Rules
+
+### Colors
+- ❌ NO hardcoded hex values
+- ✅ USE theme tokens (bg-primary, text-foreground)
+
+### Spacing
+- ❌ NO arbitrary values (p-5, gap-7)
+- ✅ USE spacing scale (p-4, p-6, gap-8)
+
+### Consistency
+- ❌ NO mixing patterns
+- ✅ USE consistent patterns from tokens
+
+---
+
+*Generated by /designsetup v2.0.0*
+*Sources: ${Object.keys(extractedData).join(', ')}*
+`;
+
+Write('design-system/STYLE_GUIDE.md', styleGuideMD);
+output(`✅ STYLE_GUIDE.md generated (lean, human-readable, ~150 lines)`);
 ```
 
 ---
 
 ## STEP 6: Final Report
 
-```
+```javascript
+output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ Design Setup Complete!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📁 Generated: design-system/STYLE_GUIDE.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 Summary:
-   - Style: ${selectedOption.name}
-   - Fit Score: ${selectedOption.fit_score}%
-   - Sources: ${Object.keys(extractedData).join(', ')}
-   - Sections: 17/17 complete ✓
-   - Lines: ~${styleGuideMD.split('\n').length}
+   Style: ${selectedStyle.style} (from ${selectedStyle.site})
+   Theme: ${selectedTheme.name}
+   Sources: ${Object.keys(extractedData).join(', ')}
+   Animations: ${selectedAnimations.length} patterns enabled
 
-🎨 Key Features:
-${selectedOption.advantages.slice(0, 4).map(a => `   ✓ ${a}`).join('\n')}
+🎨 Style Characteristics:
+${selectedStyle.characteristics.slice(0, 4).map(c => `   • ${c}`).join('\n')}
+
+🎭 Theme Direction:
+   USE: ${selectedTheme.decorative_elements.slice(0, 3).join(', ')}
+   AVOID: ${selectedTheme.avoid_elements.slice(0, 2).join(', ') || '(none)'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📦 Files Created:
-   ✓ design-system/STYLE_GUIDE.md (final guide, ~2000 lines)
-   ✓ design-system/STYLE_TOKENS.json (lightweight tokens, ~500 tokens) 🆕
-   ✓ design-system/synthesis/options/ (${styleOptions.options.length} YAMLs)
 
-⚠️ Trade-offs:
-${selectedOption.disadvantages.slice(0, 2).map(d => `   • ${d}`).join('\n')}
+   🤖 FOR AGENTS (code patterns):
+   ✓ design-system/tokens.json (~800 tokens)
+   ✓ design-system/patterns/buttons.md
+   ✓ design-system/patterns/cards.md
+   ✓ design-system/patterns/forms.md
+   ✓ design-system/patterns/scroll-animations.md
+   ✓ design-system/patterns/decorations.md
 
-🎯 Component Sources:
-   - Colors: ${selectedOption.sources.colors}
-   - Shadows: ${selectedOption.sources.shadows}
-   - Typography: ${selectedOption.sources.typography}
-   - Animations: ${selectedOption.sources.button_hover}, ${selectedOption.sources.card_hover}
+   👤 FOR HUMANS (no code):
+   ✓ design-system/STYLE_GUIDE.md (~150 lines)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🚀 Next Steps:
 
 1. Review generated files:
-   - Full guide: cat design-system/STYLE_GUIDE.md | head -100
-   - Tokens: cat design-system/STYLE_TOKENS.json
+   cat design-system/tokens.json | head -50
+   cat design-system/STYLE_GUIDE.md
 
-2. Setup project (generates design-context.md):
-   /psetup
+2. Plan your pages:
+   /pageplan @prd.md @project.md
 
-3. Start development:
-   /csetup feature-login
-   /cdev feature-login
+3. Setup & develop:
+   /csetup feature-landing
+   /cdev feature-landing
 
-4. Context Optimization (v1.2.0):
-   ✅ Commands use STYLE_TOKENS.json (~500 tokens, not full guide ~5K)
-   ✅ Agents load design-context.md + STYLE_TOKENS.json (~1.5K total)
-   ✅ 70% token reduction while maintaining quality ✨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 How It Works:
+
+   /pageplan reads:
+   → tokens.json (style, theme, colors, animations)
+   → Auto-detects page type (landing/dashboard/auth)
+   → Loads patterns/*.md selectively
+
+   uxui-frontend agent reads:
+   → tokens.json (all tokens)
+   → patterns/buttons.md (always)
+   → patterns/cards.md (always)
+   → patterns/scroll-animations.md (landing pages only)
+   → patterns/decorations.md (landing pages only)
+   → patterns/forms.md (forms only)
+
+   Token Savings: ~800 vs ~5000 (84% reduction) ✨
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`);
 ```
 
 ---

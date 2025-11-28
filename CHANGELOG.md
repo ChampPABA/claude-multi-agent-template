@@ -7,187 +7,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.7.0] - 2025-11-25
+## [2.0.0] - 2025-01-28
 
-### 🧠 Opus 4.5 Model Upgrade - All Subagents Now Use Latest Claude Model
+### 🎨 Design System v2.0.0 - Interactive Setup & Smart Page Planning
 
-**Major Model Upgrade:** All 6 specialized agents upgraded from Haiku to Opus 4.5 for best-in-class performance.
-
-### Changed
-
-- **All Agent Files** - Model upgraded to opus
-  - `.claude/agents/01-integration.md` - `model: opus`
-  - `.claude/agents/02-uxui-frontend.md` - `model: opus`
-  - `.claude/agents/03-test-debug.md` - `model: opus`
-  - `.claude/agents/04-frontend.md` - `model: opus`
-  - `.claude/agents/05-backend.md` - `model: opus`
-  - `.claude/agents/06-database.md` - `model: opus`
-
-- **`/cdev` command** - Model strategy updated
-  - Changed: `model: haiku` → `model: opus`
-  - Updated model strategy description
-
-- **`agent-executor.md`** - Task invocation updated
-  - Changed: `Task(agent=agentType, model='haiku', ...)` → `Task(agent=agentType, model='opus', ...)`
-
-### Benefits
-
-| Aspect | Haiku | Opus 4.5 |
-|--------|-------|----------|
-| **Reasoning** | Fast, basic | Best-in-class complex reasoning |
-| **Code Quality** | Good | Excellent, fewer errors |
-| **Context** | Standard | Enhanced long-context understanding |
-| **Problem-solving** | Standard | Advanced debugging & architecture |
-
-### No Breaking Changes
-
-All existing workflows continue to work exactly as before:
-- ✅ `/psetup`, `/csetup`, `/cdev` commands unchanged
-- ✅ Agent behavior unchanged (same workflow, better execution)
-- ✅ All features from v1.0-1.6 preserved
-
----
-
-## [1.6.0] - 2025-01-21
-
-### 🔄 Incremental Testing - Milestone-based Validation for High-Risk Tasks
-
-**Major Testing Enhancement:** Transform high-risk tasks into validated milestones with round-based retry and intelligent Main Claude intervention.
-
-**Inspired by:** Incremental integration testing best practices (sample-based validation)
+**Major Release:** Complete overhaul of design system with interactive setup, theme selection, selective pattern loading, and auto page type detection.
 
 ### Added
 
-- **incremental-testing.md** - Comprehensive testing guide (~460 lines)
-  - Location: `.claude/lib/detailed-guides/incremental-testing.md`
-  - 3 milestone patterns (Backend API, Complex Form, Database Migration)
-  - Round-based retry logic (2 attempts → Main Claude → new round)
-  - Main Claude intervention (give hints vs ask human)
-  - Exit criteria validation protocol
-  - Benefits analysis (40-50% net speedup)
+- **`/extract` command** - Multi-URL design extraction
+  - Extract from multiple reference sites (merged-insights.json)
+  - Style detection (Neo-Brutalism, Minimalist, Glassmorphism, Modern SaaS, Playful)
+  - Animation library detection (GSAP, ScrollTrigger, Framer Motion, Lottie, AOS)
+  - Scroll pattern detection (stacking-cards, parallax, fade-in, slide-in, sticky-section)
+  - Decorative element detection (blobs, gradients, 3D elements, SVG decorations)
+  - Output: `.claude/extractions/*.json` + `merged-insights.json`
 
-- **Testing Strategy Detection** - Automatic in `/csetup`
-  - Triggers: Risk=HIGH OR (Risk=MEDIUM + Complexity≥7) OR External API OR Data-intensive
-  - Detection rate: ~20-30% of tasks
-  - Auto-generates 3-4 milestones per task
-  - Time distribution: 30-30-20-20 (API), 40-30-30 (Form), 25-25-50 (Migration)
+- **Interactive Design Setup** - `/designsetup` v2.0.0
+  - 3-round interactive loop (Present → Feedback → Adjust)
+  - Verbose style options with match scores
+  - Theme + decorative direction recommendation (AI recommends based on project context)
+  - USE/AVOID elements for theme consistency
+  - Max 3 rounds until user accepts 100%
 
-- **Milestone Subsections in phases.md** - Detailed execution guide
-  - Test scope (1 record → 10 → errors → scale)
-  - Exit criteria (checkboxes, PASS/FAIL)
-  - Retry limit (2 per round)
-  - Agent instructions (implement → test → validate → report)
-  - Escalation protocol (round exhausted → Main Claude)
+- **`tokens.json` v2.0.0** - Enhanced design tokens (~800 tokens)
+  - New `style` section (name, confidence, characteristics, feel, source_site)
+  - New `theme` section (name, description, feeling, decorative_elements.use/avoid, icons_suggestion)
+  - New `animations` section (enabled, libraries, selected_patterns, scroll_animations, component_animations)
+  - New `patterns_index` section (references to patterns/*.md files)
+  - Colors, typography, spacing, shadows, borders from extracted data
 
-- **Round-based Retry** - Unlimited rounds with intelligent intervention
-  - 2 attempts per round (not total)
-  - Main Claude analyzes failures after each round
-  - Decision matrix: Same error + SIMPLE → Give hints | Different errors + COMPLEX → Ask human
-  - Hint generation (pattern-based: 401→API key, timeout→threshold, schema→version)
-  - Human escalation report (failure summary, analysis, recommendations)
+- **`patterns/*.md` files** - Selective code patterns for agents
+  - `buttons.md` - Button patterns (primary, secondary, ghost, outline, icon, sizes, states)
+  - `cards.md` - Card patterns (default, interactive, feature, pricing, testimonial)
+  - `forms.md` - Form patterns (input, error state, select, checkbox, layout)
+  - `scroll-animations.md` - Scroll animation patterns (fade-in, stacking-cards, parallax, slide-in)
+  - `decorations.md` - Decorative elements (gradients, blobs, grids, floating elements, dividers)
 
-- **Exit Criteria Validation** - Strict PASS/FAIL per criterion
-  - Agent output format: `- [ ] criterion - PASS/FAIL - explanation`
-  - Parser validates ALL criteria (missing = FAIL)
-  - No lenient rules (100% pass required)
-  - Validation history tracked per round
+- **Auto Page Type Detection** - `/pageplan` v2.0.0
+  - Auto-detects page type from `proposal.md`/`tasks.md` (landing/dashboard/auth)
+  - Reads `tokens.json` for style/theme/animations
+  - Loads patterns selectively based on page type
+  - Landing/Marketing: Full decorations, scroll animations, buyer avatar analysis
+  - Dashboard/Admin: Minimal decorations, data-focused, no buyer avatar
+  - Auth (Login/Register): Clean, form-focused, no decorations
+
+- **`/csetup` v2.0.0 enhancements**
+  - Reads `tokens.json` instead of `STYLE_TOKENS.json`
+  - Reads `page-plan.md` if exists
+  - Extracts page type from page-plan.md
+  - Includes page type info in context.md with pattern loading instructions
 
 ### Changed
 
-- **`/csetup` command** - Testing strategy stats added
-  - STEP 3.5: Calculates incremental vs standard tasks
-  - Reports: "🔄 Incremental: 3 tasks (11 milestones) | ▶️ Standard: 5 tasks"
-  - Task analysis summary includes testing strategy breakdown
-  - phases.md now includes milestone subsections (3x longer for incremental tasks)
+- **`STYLE_GUIDE.md`** - Now human-readable only (~150 lines, no code)
+  - For humans to review design direction
+  - Code patterns moved to `patterns/*.md`
+  - References patterns files for code examples
 
-- **agent-executor.md** - Incremental execution logic (+447 lines)
-  - New section: "🔄 Incremental Testing Execution (v1.4.0)"
-  - Execution mode detection (incremental vs standard)
-  - `executeMilestone()` function with round-based retry
-  - `mainClaudeIntervention()` with decision matrix
-  - `validateExitCriteria()` for PASS/FAIL checking
-  - Complete example flow (4 milestones, 3 rounds, 1 human intervention)
+- **Context Optimization** - 84% token reduction
+  - Before: Full STYLE_GUIDE.md ~5000 tokens loaded everywhere
+  - After: tokens.json ~800 tokens + selective patterns
+  - Page type detection determines which patterns to load
 
-- **task-analyzer.md** - Milestone generation patterns
-  - Pattern 1: Backend API (4 milestones: core → params → errors → scale)
-  - Pattern 2: Complex Form (3 milestones: architecture → flow → completion)
-  - Pattern 3: Database Migration (3 milestones: dry-run → scale → full)
-  - Auto-detects API keywords (Google, Stripe, payment, OAuth)
-  - Auto-detects complexity (form fields, multi-step, wizard)
+- **CLAUDE.md** - Updated to v2.0.0
+  - New Design System v2.0.0 section with complete flow
+  - New Context Optimization v2.0.0 section
+  - Updated Page Planning section with page type handling table
+  - New flow diagram: extract → designsetup → pageplan → csetup → cdev
 
-- **phase-templates.json** - Incremental testing metadata
-  - `testingStrategy` field added
-  - `milestones` array with id, name, testScope, exitCriteria, estimatedTime, retryLimit
-  - Reason field (why incremental vs standard)
+### Page Type Handling
 
-### Performance
+| Page Type | Decorations | Scroll Anims | Buyer Avatar | Patterns Loaded |
+|-----------|-------------|--------------|--------------|-----------------|
+| Landing/Marketing | ✅ Full | ✅ Enabled | ✅ Enabled | buttons, cards, scroll-anims, decorations |
+| Dashboard/Admin | ❌ Minimal | ❌ Disabled | ❌ Skipped | buttons, cards, forms |
+| Auth (Login/Register) | ❌ None | ❌ Disabled | ❌ Skipped | buttons, forms |
 
-| Metric | Before (v1.5.1) | After (v1.6.0) | Improvement |
-|--------|-----------------|----------------|-------------|
-| **Bug Detection** | At scale (1000 records) | At M1 (1 record) | **75% faster debug** |
-| **Rework Time** | Fix at scale | Fix before scaling | **60-70% reduction** |
-| **Debug Speed** | Full dataset | Small scope | **80% faster** |
-| **Success Rate** | Unknown | Progressive proof | **90% at M4** |
-| **Net Timeline** | Baseline | +15-20% upfront | **-40-50% overall** (less rework) |
+### Migration Guide
 
-### Examples
+**For existing projects:**
 
-**Before v1.6.0 (All-or-nothing):**
-```
-Task: Integrate Google Maps API
-→ Implement full solution (1000 locations)
-→ Test with full dataset → Bug found
-→ Hard to debug (which part failed?)
-→ Fix → Retest full dataset → Slow iteration
-```
+1. Run `/extract` to extract design from reference sites:
+   ```bash
+   /extract https://your-reference.com
+   ```
 
-**After v1.6.0 (Incremental):**
-```
-Task: Integrate Google Maps API
-→ M1: Test 1 location (hardcoded) → Bug found → Easy fix
-→ M2: Test 10 locations (parameterized) → Works!
-→ M3: Error handling → Refined
-→ M4: Scale to 1000 → Confident (1 & 10 worked)
-```
+2. Run `/designsetup` to generate new design system:
+   ```bash
+   /designsetup @prd.md
+   ```
 
-**Round-based Retry Example:**
-```
-M1: Core implementation
-→ Round 1: Attempt 1 ❌ (API key missing)
-→ Round 1: Attempt 2 ❌ (Still missing)
-→ Main Claude: "Check API_KEY env variable" 💡
-→ Round 2: Attempt 1 ✅ (Fixed!)
-```
+3. Verify new files exist:
+   ```bash
+   ls design-system/tokens.json
+   ls design-system/patterns/
+   ls design-system/STYLE_GUIDE.md
+   ```
 
-### Benefits
+4. Continue normal workflow:
+   ```bash
+   /pageplan @prd.md
+   /csetup feature-name
+   /cdev feature-name
+   ```
 
-✅ **Early bug detection** - Catch at M1 (1 record) vs M4 (1000 records)
-✅ **Easier debugging** - Small scope = 80% faster to identify root cause
-✅ **Progressive confidence** - Each milestone proves the next will work
-✅ **Intelligent recovery** - Main Claude hints instead of blind retry
-✅ **Risk mitigation** - High-risk tasks validated systematically
-✅ **40-50% net speedup** - +15-20% time upfront → -60-70% rework time
+**Breaking Changes:**
+- `STYLE_TOKENS.json` renamed to `tokens.json` with new structure
+- `STYLE_GUIDE.md` no longer contains code (moved to patterns/*.md)
+- Commands now read `tokens.json` instead of `STYLE_TOKENS.json`
 
-### Trade-offs
+---
 
-⚠️ **Timeline:** +15-20% upfront (but saves 60-70% rework)
-⚠️ **Complexity:** phases.md 2-3x longer (summary table at top)
-⚠️ **Learning curve:** More coordination (automated by `/csetup`)
+## [1.6.0] - 2025-01-27
 
-**Net benefit:** +15-20% time → -60-70% rework = **40-50% faster overall**
+### 📋 Page Plan Enhancement - Buyer Avatar & Conversion Copy
 
-### Fixed
+**Added:**
+- Buyer avatar analysis (Eugene Schwartz framework) for marketing pages
+- Conversion-optimized content generation (pain → promise → CTA)
+- Auto-detection of marketing vs dashboard pages
 
-- Main Claude intervention now gives pattern-based hints (401→API key, timeout→threshold)
-- Exit criteria validation enforces 100% pass rate (no lenient 80% rule)
-- Round-based retry prevents premature escalation (2 attempts per round, not total)
+---
 
-### Performance Improvements
+## [1.5.1] - 2025-01-26
 
-- Testing strategy detection runs in `/csetup` (~2s overhead)
-- Milestone execution adds ~0.5s per validation
-- Main Claude intervention adds ~3-5s per round
-- Human escalation reports generated in <1s
+### 🔧 Git Compatibility Fix
+
+**Fixed:**
+- Normalized line endings to LF for Windows compatibility
+
+---
+
+## [1.5.0] - 2025-01-25
+
+### ✨ Minor Improvements
+
+**Added:**
+- Various stability improvements
+- Documentation updates
 
 ---
 

@@ -1,6 +1,12 @@
-# /pageplan - Page Structure & Content Planning
+# /pageplan - Page Structure & Content Planning (v2.0.0)
 
 **Purpose:** Generate a detailed page plan for UI implementation, including component reuse strategy, content draft, and asset checklist.
+
+**NEW in v2.0.0:**
+- 🎯 Auto-detects page type (landing/dashboard/auth) from proposal.md/tasks.md
+- 🎨 Reads `design-system/tokens.json` (style, theme, animations, decorations)
+- 📦 Loads `design-system/patterns/*.md` selectively based on page type
+- 🎬 Applies animations/decorations for marketing pages, minimal for dashboards
 
 **Usage:**
 ```bash
@@ -21,22 +27,36 @@
 1. **Reads User-Specified Context:**
    - Only reads files that user mentions with `@` prefix
    - Always reads `openspec/changes/{change-id}/proposal.md` (if exists)
-   - **Always reads `design-system/STYLE_TOKENS.json`** (lightweight, ~500 tokens) ✅
+   - Always reads `openspec/changes/{change-id}/tasks.md` (for page type detection)
+   - **Always reads `design-system/tokens.json`** (lightweight, ~800 tokens) ✅
    - Validates `design-system/STYLE_GUIDE.md` exists (doesn't load full content)
 
-2. **Searches Existing Components:**
+2. **Auto-Detects Page Type:**
+   - **Landing/Marketing:** Full decorations, scroll animations, buyer avatar analysis
+   - **Dashboard/Admin:** Minimal decorations, data-focused, no buyer avatar
+   - **Auth (Login/Register):** Clean, form-focused, no decorations
+
+3. **Loads Patterns Selectively:**
+   - `patterns/buttons.md` - Always
+   - `patterns/cards.md` - Always
+   - `patterns/forms.md` - Auth pages, settings
+   - `patterns/scroll-animations.md` - Landing pages only
+   - `patterns/decorations.md` - Landing pages only
+
+4. **Searches Existing Components:**
    - Glob: `**/{Navbar,Footer,Sidebar,Header}*.{tsx,jsx,vue}`
    - Grep: Common UI patterns
    - Builds reuse vs new component list
 
-3. **Generates page-plan.md:**
+5. **Generates page-plan.md:**
+   - Page type + design approach
    - Component plan (reuse vs new)
    - Page structure (layout composition)
-   - Content draft (AI-generated from PRD)
+   - Content draft (AI-generated, conversion-optimized for marketing)
    - Asset checklist (user must prepare)
-   - Rationale (why this structure)
+   - Animation/decoration blueprint (from tokens.json)
 
-4. **Outputs to:** `openspec/changes/{change-id}/page-plan.md`
+6. **Outputs to:** `openspec/changes/{change-id}/page-plan.md`
 
 ---
 
@@ -57,7 +77,7 @@ if (!changeId) {
 const outputPath = `openspec/changes/${changeId}/page-plan.md`
 ```
 
-### STEP 2: Read Context Files
+### STEP 2: Read Context Files & Detect Page Type
 
 ```typescript
 // Only read files user specified with @
@@ -65,29 +85,22 @@ const userFiles = extractMentionedFiles(userMessage) // @prd.md, @brief.md
 
 // Always read (if exists)
 const proposalPath = `openspec/changes/${changeId}/proposal.md`
-const tokensPath = `design-system/STYLE_TOKENS.json` // 🆕 Lightweight tokens
+const tasksPath = `openspec/changes/${changeId}/tasks.md`
+const tokensPath = `design-system/tokens.json` // 🆕 v2.0 tokens with style/theme/animations
 const styleGuidePath = `design-system/STYLE_GUIDE.md` // Validate only, don't load
 
-const contextFiles = [
-  ...userFiles,
-  proposalPath
-].filter(fileExists)
-
 // Read all context
-let context = contextFiles.map(readFile).join('\n\n---\n\n')
-
-// 🆕 Extract individual content for buyer avatar analysis (STEP 3.5)
 let proposalContent = ''
-let briefContent = ''
 let tasksContent = ''
+let briefContent = ''
+let tokens = null
 
 // Read proposal separately if exists
 if (fileExists(proposalPath)) {
   proposalContent = Read(proposalPath)
 }
 
-// Read tasks.md if exists (for marketing page detection)
-const tasksPath = `openspec/changes/${changeId}/tasks.md`
+// Read tasks.md if exists (for page type detection)
 if (fileExists(tasksPath)) {
   tasksContent = Read(tasksPath)
 }
@@ -98,14 +111,88 @@ if (briefFile && fileExists(briefFile)) {
   briefContent = Read(briefFile)
 }
 
-// 🆕 Load design tokens (lightweight)
+// ========== PAGE TYPE DETECTION ==========
+output(`
+🔍 Detecting page type from proposal.md/tasks.md...
+`)
+
+const combinedContext = `${proposalContent}\n${tasksContent}`.toLowerCase()
+
+let pageType = 'generic'
+let pageTypeConfig = {}
+
+if (combinedContext.match(/(landing|marketing|homepage|product.page|sales|conversion)/i)) {
+  pageType = 'landing'
+  pageTypeConfig = {
+    name: 'Landing/Marketing Page',
+    decorations: true,
+    scrollAnimations: true,
+    buyerAvatar: true,
+    patterns: ['buttons.md', 'cards.md', 'scroll-animations.md', 'decorations.md']
+  }
+} else if (combinedContext.match(/(dashboard|admin|analytics|reports|settings)/i)) {
+  pageType = 'dashboard'
+  pageTypeConfig = {
+    name: 'Dashboard/Admin Page',
+    decorations: false,
+    scrollAnimations: false,
+    buyerAvatar: false,
+    patterns: ['buttons.md', 'cards.md', 'forms.md']
+  }
+} else if (combinedContext.match(/(login|register|signup|sign.up|auth|forgot.password)/i)) {
+  pageType = 'auth'
+  pageTypeConfig = {
+    name: 'Authentication Page',
+    decorations: false,
+    scrollAnimations: false,
+    buyerAvatar: false,
+    patterns: ['buttons.md', 'forms.md']
+  }
+} else {
+  pageType = 'generic'
+  pageTypeConfig = {
+    name: 'Generic Page',
+    decorations: false,
+    scrollAnimations: false,
+    buyerAvatar: false,
+    patterns: ['buttons.md', 'cards.md']
+  }
+}
+
+output(`
+✅ Page Type Detected: ${pageTypeConfig.name}
+   - Decorations: ${pageTypeConfig.decorations ? '✅ Enabled' : '❌ Disabled'}
+   - Scroll Animations: ${pageTypeConfig.scrollAnimations ? '✅ Enabled' : '❌ Disabled'}
+   - Buyer Avatar Analysis: ${pageTypeConfig.buyerAvatar ? '✅ Enabled' : '❌ Skipped'}
+   - Patterns to Load: ${pageTypeConfig.patterns.join(', ')}
+`)
+
+// ========== LOAD TOKENS.JSON (v2.0 structure) ==========
 if (fileExists(tokensPath)) {
-  const tokens = JSON.parse(Read(tokensPath))
-  context += `\n\n---\n\n# Design Tokens (STYLE_TOKENS.json)\n\n`
-  context += `Primary Color: ${tokens.tokens.colors.primary.DEFAULT}\n`
-  context += `Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px\n`
-  context += `Component Library: ${tokens.component_library.name}\n`
-  context += `Shadows: ${Object.keys(tokens.tokens.shadows).join(', ')}\n`
+  tokens = JSON.parse(Read(tokensPath))
+
+  output(`
+✅ tokens.json Loaded:
+   - Style: ${tokens.style.name} (${tokens.style.confidence}% confidence)
+   - Theme: ${tokens.theme.name}
+   - Decorations: ${tokens.theme.decorative_elements.use.slice(0, 3).join(', ')}
+   - Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}
+   - Primary Color: ${tokens.colors.primary.DEFAULT}
+  `)
+} else {
+  warn(`⚠️ No tokens.json found - run /designsetup first`)
+}
+
+// ========== LOAD PATTERNS SELECTIVELY ==========
+const loadedPatterns = {}
+const patternsDir = 'design-system/patterns'
+
+for (const patternFile of pageTypeConfig.patterns) {
+  const patternPath = `${patternsDir}/${patternFile}`
+  if (fileExists(patternPath)) {
+    loadedPatterns[patternFile] = Read(patternPath)
+    output(`   ✅ Loaded: ${patternFile}`)
+  }
 }
 
 // Validate STYLE_GUIDE.md exists (don't load!)
@@ -114,7 +201,7 @@ if (!hasStyleGuide) {
   warn(`⚠️ No STYLE_GUIDE.md found - run /designsetup first`)
 }
 
-// Total context: ~1.5K tokens (vs 5K+ if loading full STYLE_GUIDE.md)
+// Total context: ~1.5K tokens (tokens.json + selective patterns)
 ```
 
 ### STEP 3: Search Existing Components
@@ -141,19 +228,18 @@ for (const pattern of searchPatterns) {
 }
 ```
 
-### STEP 3.5: Buyer Avatar Analysis (NEW - Conversion Optimization)
+### STEP 3.5: Buyer Avatar Analysis (Conditional - Marketing Pages Only)
 
 > **Purpose:** Extract buyer psychology to generate conversion-optimized copy (inspired by Eugene Schwartz framework)
+> **Triggered by:** pageTypeConfig.buyerAvatar === true (landing pages only)
 
 ```typescript
-// Only analyze if this is a marketing/landing page
-const isMarketingPage = tasksContent.toLowerCase().match(/(landing|marketing|homepage|product page|sales)/i)
-
 let buyerAvatar = null
 
-if (isMarketingPage && (proposalContent || briefContent)) {
+// Only analyze if page type config enables buyer avatar
+if (pageTypeConfig.buyerAvatar && (proposalContent || briefContent)) {
   output(`
-🎯 Detecting marketing page - analyzing buyer psychology...
+🎯 Marketing page detected - analyzing buyer psychology...
   `)
 
   const avatarPrompt = `
@@ -209,7 +295,8 @@ If insufficient context, return { "has_context": false }
   }
 } else {
   output(`
-ℹ️ Non-marketing page detected - skipping buyer avatar analysis
+ℹ️ Page type: ${pageTypeConfig.name} - skipping buyer avatar analysis
+   (Buyer avatar only for landing/marketing pages)
   `)
 }
 ```
@@ -767,23 +854,60 @@ _([length] chars - based on [source])_
 
 ---
 
-## 6. Design Notes
+## 6. Design System (from tokens.json)
 
-**Design System Files:**
-- Tokens (lightweight): \`design-system/STYLE_TOKENS.json\`
-- Full guide (reference): \`design-system/STYLE_GUIDE.md\`
+> **Page Type:** ${pageTypeConfig.name}
+> **Decorations:** ${pageTypeConfig.decorations ? 'Enabled' : 'Disabled'}
+> **Scroll Animations:** ${pageTypeConfig.scrollAnimations ? 'Enabled' : 'Disabled'}
 
-**Key Design Tokens:**
-- Primary color: [from STYLE_TOKENS.json]
-- Font family: [from STYLE_TOKENS.json]
-- Spacing scale: [from STYLE_TOKENS.json]
-- Component library: [from STYLE_TOKENS.json]
-- Shadows: [from STYLE_TOKENS.json]
+### Style Direction
+- **Style:** ${tokens?.style?.name || '[Run /designsetup]'}
+- **Feel:** ${tokens?.style?.feel || '[Run /designsetup]'}
+- **Source:** ${tokens?.style?.source_site || '[Run /designsetup]'}
 
-**Agent Instructions:**
-- uxui-frontend MUST read STYLE_TOKENS.json in STEP 0.5
+### Theme & Decorations
+${pageTypeConfig.decorations && tokens ? `
+- **Theme:** ${tokens.theme.name}
+- **Feeling:** ${tokens.theme.feeling}
+- **USE These Elements:**
+  ${tokens.theme.decorative_elements.use.map(e => `- ✅ ${e}`).join('\n  ')}
+- **AVOID These Elements:**
+  ${tokens.theme.decorative_elements.avoid.map(e => `- ❌ ${e}`).join('\n  ') || '  (none)'}
+- **Suggested Icons:** ${tokens.theme.icons_suggestion?.join(', ') || 'Lucide icons'}
+` : `
+ℹ️ Decorations disabled for ${pageTypeConfig.name}
+`}
+
+### Animations
+${pageTypeConfig.scrollAnimations && tokens?.animations?.enabled ? `
+- **Scroll Animations:** Enabled
+- **Patterns:** ${tokens.animations.scroll_animations.patterns.join(', ') || 'None specified'}
+- **Libraries:** ${tokens.animations.libraries.map(l => l.name).join(', ') || 'CSS/Tailwind'}
+` : `
+ℹ️ Scroll animations disabled for ${pageTypeConfig.name}
+`}
+
+### Component Animations (Always Apply)
+- **Button Hover:** ${tokens?.animations?.component_animations?.button_hover || 'scale + shadow'}
+- **Card Hover:** ${tokens?.animations?.component_animations?.card_hover || 'translateY + shadow'}
+- **Input Focus:** ${tokens?.animations?.component_animations?.input_focus || 'ring'}
+
+### Design Tokens
+- **Primary Color:** ${tokens?.colors?.primary?.DEFAULT || '#0d7276'}
+- **Font Family:** ${tokens?.typography?.font_family?.sans || 'Inter'}
+- **Spacing Scale:** ${tokens?.spacing?.scale?.join(', ') || '4, 8, 16, 24, 32, 48'}px
+- **Component Library:** ${tokens?.component_library?.name || 'shadcn/ui'}
+
+### Pattern Files Loaded
+${pageTypeConfig.patterns.map(p => `- ✅ design-system/patterns/${p}`).join('\n')}
+
+### Agent Instructions
+- uxui-frontend MUST read \`design-system/tokens.json\` in STEP 0.5
+- Load patterns from \`design-system/patterns/\` selectively (see above)
 - Use theme tokens (text-foreground/70), NOT hardcoded colors
 - Use spacing scale (p-4, p-6), NOT arbitrary values (p-5)
+- ${pageTypeConfig.decorations ? '✅ Apply decorations from theme' : '❌ Skip decorations for this page type'}
+- ${pageTypeConfig.scrollAnimations ? '✅ Apply scroll animations' : '❌ Skip scroll animations for this page type'}
 
 ## 7. Implementation Notes
 

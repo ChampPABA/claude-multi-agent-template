@@ -44,23 +44,54 @@ Read in order:
 
 ---
 
-### Step 2.5: Validate Design System (Context Optimization v1.2.0)
+### Step 2.5: Validate Design System & Page Plan (v2.0.0)
 
-> **New:** Validate design files exist for UI work
+> **Updated v2.0.0:** Validate design files + read page-plan.md if exists
 
 ```typescript
 // Detect if change involves UI/frontend work
 const tasksContent = Read('openspec/changes/{change-id}/tasks.md')
 const hasFrontend = tasksContent.toLowerCase().match(/(ui|component|page|frontend|design|responsive)/i)
 
+let tokens = null
+let pagePlan = null
+let pageType = 'generic'
+
 if (hasFrontend) {
   output(`\n🎨 UI work detected - validating design system...`)
 
-  const tokensPath = 'design-system/STYLE_TOKENS.json'
+  const tokensPath = 'design-system/tokens.json' // v2.0 tokens
   const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+  const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
 
   const hasTokens = fileExists(tokensPath)
   const hasStyleGuide = fileExists(styleGuidePath)
+  const hasPagePlan = fileExists(pagePlanPath)
+
+  // ========== LOAD tokens.json (v2.0 structure) ==========
+  if (hasTokens) {
+    tokens = JSON.parse(Read(tokensPath))
+    output(`✅ tokens.json Loaded:`)
+    output(`   - Style: ${tokens.style.name}`)
+    output(`   - Theme: ${tokens.theme.name}`)
+    output(`   - Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}`)
+  }
+
+  // ========== LOAD page-plan.md (if exists) ==========
+  if (hasPagePlan) {
+    pagePlan = Read(pagePlanPath)
+    output(`✅ page-plan.md Found`)
+
+    // Extract page type from page-plan.md
+    const pageTypeMatch = pagePlan.match(/Page Type:\*\*\s*(.*)/i)
+    if (pageTypeMatch) {
+      pageType = pageTypeMatch[1].trim().toLowerCase()
+      output(`   - Page Type: ${pageType}`)
+    }
+  } else {
+    output(`ℹ️ page-plan.md not found (optional)`)
+    output(`   → Run /pageplan first for better component planning`)
+  }
 
   if (!hasTokens || !hasStyleGuide) {
     warn(`
@@ -68,7 +99,8 @@ if (hasFrontend) {
 
 Found:
   ${hasStyleGuide ? '✅' : '❌'} STYLE_GUIDE.md
-  ${hasTokens ? '✅' : '❌'} STYLE_TOKENS.json
+  ${hasTokens ? '✅' : '❌'} tokens.json
+  ${hasPagePlan ? '✅' : '❌'} page-plan.md
 
 This may result in:
   - Inconsistent colors (random hex codes)
@@ -77,7 +109,8 @@ This may result in:
 
 Recommendation:
   1. Run: /designsetup
-  2. Then: /csetup ${changeId}
+  2. Run: /pageplan @prd.md (optional but recommended)
+  3. Then: /csetup ${changeId}
 
 Continue anyway? (yes/no)
     `)
@@ -89,7 +122,8 @@ Continue anyway? (yes/no)
   } else {
     output(`✅ Design System Ready`)
     output(`   - STYLE_GUIDE.md ✓`)
-    output(`   - STYLE_TOKENS.json ✓`)
+    output(`   - tokens.json ✓`)
+    if (hasPagePlan) output(`   - page-plan.md ✓`)
   }
 }
 ```
@@ -799,39 +833,66 @@ const projectTech = Read('.claude/contexts/domain/project/tech-stack.md')
 // Detect additional tech from proposal/tasks
 const additionalTech = detectAdditionalTech(proposalContent, tasksContent)
 
-// 🆕 Load design info (if UI work)
+// 🆕 Load design info (if UI work) - v2.0.0
 let designInfo = ''
-if (hasFrontend) {
-  const tokensPath = 'design-system/STYLE_TOKENS.json'
+if (hasFrontend && tokens) {
+  designInfo = `
+## 🎨 Design System (v2.0.0)
 
-  if (fileExists(tokensPath)) {
-    const tokens = JSON.parse(Read(tokensPath))
+**Design Files:**
+- tokens.json: \`design-system/tokens.json\` (~800 tokens)
+- patterns/: \`design-system/patterns/*.md\` (selective loading)
+- STYLE_GUIDE.md: \`design-system/STYLE_GUIDE.md\` (human-readable, ~150 lines)
+${pagePlan ? `- page-plan.md: \`openspec/changes/${changeId}/page-plan.md\` ✅` : ''}
 
-    designInfo = `
-## 🎨 Design System (Context Optimization v1.2.0)
+**Style Direction:**
+- Style: ${tokens.style.name}
+- Theme: ${tokens.theme.name}
+- Feel: ${tokens.style.feel}
 
-**Design Files (Token-Efficient):**
-- STYLE_TOKENS.json: \`design-system/STYLE_TOKENS.json\` (~500 tokens)
-- STYLE_GUIDE.md: \`design-system/STYLE_GUIDE.md\` (~5000 tokens, load selectively)
-
-**Key Design Tokens:**
-- Primary Color: ${tokens.tokens.colors.primary.DEFAULT}
+**Design Tokens:**
+- Primary Color: ${tokens.colors.primary.DEFAULT}
 - Component Library: ${tokens.component_library.name}
-- Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px
-- Shadows: ${Object.keys(tokens.tokens.shadows).slice(0, 5).join(', ')}
+- Spacing Scale: ${tokens.spacing.scale.join(', ')}px
+- Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}
 
-**Agent Loading (STEP 0.5 for uxui-frontend):**
-1. Read: STYLE_TOKENS.json (~500 tokens) ✅
-2. Optional: STYLE_GUIDE.md (selective sections ~2K tokens)
-3. Report: Design tokens extracted
+**Theme & Decorations:**
+${pageType.includes('landing') || pageType.includes('marketing') ? `
+- Decorations: ✅ Enabled
+- USE: ${tokens.theme.decorative_elements.use.slice(0, 3).join(', ')}
+- AVOID: ${tokens.theme.decorative_elements.avoid.slice(0, 2).join(', ') || '(none)'}
+- Scroll Animations: ✅ Enabled
+` : `
+- Decorations: ❌ Disabled (${pageType} page)
+- Scroll Animations: ❌ Disabled
+`}
+
+**Pattern Files to Load:**
+${pageType.includes('landing') || pageType.includes('marketing') ?
+`- patterns/buttons.md ✅
+- patterns/cards.md ✅
+- patterns/scroll-animations.md ✅
+- patterns/decorations.md ✅` :
+pageType.includes('auth') ?
+`- patterns/buttons.md ✅
+- patterns/forms.md ✅` :
+`- patterns/buttons.md ✅
+- patterns/cards.md ✅
+- patterns/forms.md ✅`}
+
+**Agent Instructions (uxui-frontend STEP 0.5):**
+1. Read: tokens.json (~800 tokens) ✅
+2. Read: page-plan.md (if exists) ✅
+3. Load patterns selectively based on page type
+4. Report: Design tokens + page type extracted
 
 **Critical Rules:**
 - ❌ NO hardcoded colors (text-gray-500)
 - ✅ USE theme tokens (text-foreground/70)
 - ❌ NO arbitrary spacing (p-5)
 - ✅ USE spacing scale (p-4, p-6)
+- ${pageType.includes('landing') ? '✅ Apply decorations from theme' : '❌ Skip decorations for this page type'}
 `
-  }
 }
 
 // Replace placeholders
