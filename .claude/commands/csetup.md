@@ -310,13 +310,13 @@ function generateBestPracticesFile(tech: string, context7Docs: string): string {
 
 ---
 
-## ✅ DO (Best Practices)
+## Best Practices
 
 ${extractDos(context7Docs)}
 
 ---
 
-## ❌ DON'T (Anti-Patterns)
+## Anti-Patterns to Avoid
 
 ${extractDonts(context7Docs)}
 
@@ -329,7 +329,7 @@ ${extractChecklist(context7Docs)}
 
 ---
 
-**⚠️ Agents MUST read this file before writing ${tech} code!**
+**Agents read this file in STEP 0 before implementation.**
 `
 }
 ```
@@ -487,7 +487,7 @@ const taskAnalysis = {
    🟢 LOW: 1 task (Documentation)
 
 ⚠️ Risk Assessment:
-   🚨 HIGH risk: 2 tasks (Payment integration, Auth system)
+   🔴 HIGH risk: 2 tasks (Payment integration, Auth system)
       → Mitigation: TDD required, security checklist
    ⚠️ MEDIUM risk: 3 tasks
    ✅ LOW risk: 3 tasks
@@ -627,7 +627,7 @@ const allPhases = [...researchPhases, ...phaseSections]
 - 🟢 LOW: {taskAnalysis.summary.priority.low}
 
 **Risk Assessment:**
-- 🚨 HIGH risk: {taskAnalysis.summary.risk.high} tasks
+- 🔴 HIGH risk: {taskAnalysis.summary.risk.high} tasks
 - ⚠️ MEDIUM risk: {taskAnalysis.summary.risk.medium} tasks
 - ✅ LOW risk: {taskAnalysis.summary.risk.low} tasks
 
@@ -880,18 +880,19 @@ pageType.includes('auth') ?
 - patterns/cards.md ✅
 - patterns/forms.md ✅`}
 
-**Agent Instructions (uxui-frontend STEP 0.5):**
-1. Read: tokens.json (~800 tokens) ✅
-2. Read: page-plan.md (if exists) ✅
+**Agent Loading (STEP 0.5 for uxui-frontend):**
+1. Read: tokens.json (~800 tokens)
+2. Read: page-plan.md (if exists)
 3. Load patterns selectively based on page type
 4. Report: Design tokens + page type extracted
 
-**Critical Rules:**
-- ❌ NO hardcoded colors (text-gray-500)
-- ✅ USE theme tokens (text-foreground/70)
-- ❌ NO arbitrary spacing (p-5)
-- ✅ USE spacing scale (p-4, p-6)
-- ${pageType.includes('landing') ? '✅ Apply decorations from theme' : '❌ Skip decorations for this page type'}
+**Style Guidelines:**
+
+| Instead of | Use | WHY |
+|------------|-----|-----|
+| text-gray-500 | text-foreground/70 | Theme-aware |
+| p-5 | p-4 or p-6 | Spacing scale |
+| ${pageType.includes('landing') ? '✅ Apply decorations from theme' : '❌ Skip decorations for this page type'} | | |
 `
 }
 

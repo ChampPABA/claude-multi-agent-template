@@ -16,11 +16,11 @@ Used by `/csetup` to automatically determine which phases require TDD workflow
 **`flags-updater.md`** - Progress tracking protocol
 Ensures Main Claude updates flags.json after EVERY phase completion. Provides helper functions for extracting files, tasks, and calculating duration.
 
-**`agent-router.md`** - Mandatory agent routing rules
-Enforces strict agent boundaries. Main Claude MUST delegate implementation work to specialized agents. Includes work type detection patterns and self-check protocol.
+**`agent-router.md`** - Agent routing rules
+Defines agent boundaries. Main Claude delegates implementation work to specialized agents. Includes work type detection patterns and self-check protocol.
 
 **`validation-gates.md`** - Validation checkpoints
-Four validation gates that Main Claude MUST pass: before work, after agent responds, before reporting, and before phase start. Ensures quality and correctness at each step.
+Four validation gates that Main Claude passes: before work, after agent responds, before reporting, and before phase start. Ensures quality and correctness at each step.
 
 **`task-analyzer.md`** - TaskMaster-style task analysis (v1.3.0)
 Used by `/csetup` to analyze tasks with 6 dimensions: complexity, dependencies, risk, research, subtasks, priority. Generates intelligent phases.md with time buffers and metadata.
@@ -65,7 +65,7 @@ Complete agent system guide. Covers 6 specialist agents, Main Claude's role, sel
 
 ---
 
-## 🚨 Important
+## 📌 Important
 
 These are **logic specifications** (not executable code). Main Claude reads these .md files as documentation and implements the logic when running `/cdev` and `/csetup` commands.
 

@@ -2,7 +2,7 @@
 
 > **Detailed guide to the multi-agent architecture**
 > **Source:** Extracted from CLAUDE.md (Navigation Hub)
-> **Version:** 1.7.0 (Opus 4.5)
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
@@ -58,77 +58,38 @@ Main Claude: *Executes uxui-frontend agent directly*
 
 ---
 
-## 🔒 Main Claude Self-Check Protocol (MANDATORY)
+## 🔒 Main Claude Self-Check Protocol
 
-**⚠️ CRITICAL: Main Claude MUST complete this checklist BEFORE doing ANY work**
+**Before starting work, Main Claude routes tasks appropriately.**
 
-See: `@/.claude/lib/agent-router.md` for complete routing protocol
+→ See: `@/.claude/lib/agent-router.md` for complete routing protocol
 
-**Pre-Work Checklist (Run for EVERY user request):**
+**Quick Routing Table:**
 
-```markdown
-## ✅ Pre-Work Self-Check
-
-[ ] 1. Read user request carefully
-       - What are they asking for?
-       - What is the end goal?
-
-[ ] 2. Detect work type
-       - Is this implementation work? (writing code, creating files)
-       - Is this planning/analysis? (reading, explaining, breaking down)
-
-[ ] 3. If IMPLEMENTATION work:
-       - Read: @/.claude/contexts/patterns/task-classification.md
-       - Which agent should handle this?
-         • UI components → uxui-frontend
-         • API endpoints → backend
-         • Database schemas → database
-         • API integration → frontend
-         • Tests/bugs → test-debug
-         • Contracts → integration
-
-[ ] 4. Can Main Claude do this?
-       ✅ YES for: Planning, reading files, explaining, orchestrating workflows
-       ❌ NO for: Writing components, creating endpoints, designing schemas
-
-[ ] 5. If MUST delegate:
-       - Use Task tool with selected agent
-       - Include all necessary context
-       - Wait for agent response
-       - Update flags.json after completion (if using /cdev)
-
-[ ] 6. Report decision to user
-       ```
-       🔍 Task Analysis:
-       - Work type: [type]
-       - Requires: [agent] agent
-       - Reason: [explanation]
-
-       🚀 Invoking [agent] agent...
-       ```
-```
+| Task Type | Route To |
+|-----------|----------|
+| UI components | uxui-frontend |
+| API endpoints | backend |
+| Database schemas | database |
+| API integration | frontend |
+| Tests/bugs | test-debug |
+| Contracts | integration |
+| Planning, reading, explaining | Main Claude (direct) |
 
 **Main Claude's Role:**
-- ✅ Orchestrator (plan, coordinate, report)
-- ✅ Progress tracker (update flags.json)
-- ✅ Analyst (read files, explain code)
-- ❌ NOT implementer (no writing code directly)
+- Orchestrator (plan, coordinate, report)
+- Progress tracker (update flags.json)
+- Analyst (read files, explain code)
 
-**If Main Claude skips this self-check for implementation work, it violates system protocol.**
-
----
-
-## ⚠️ Agent Pre-Work Requirements
-
-**STEP 0 (ALL agents):** Every agent must discover project context first
-
-**STEP 1-5 (uxui-frontend only):** Design fundamentals checklist
+WHY routing matters: Specialist agents have domain-specific validation (design tokens, TDD patterns, error handling) that ensures higher quality output.
 
 ---
 
-### STEP 0: Project Discovery (ALL Agents)
+## 📋 Agent Pre-Work Requirements
 
-**Every agent MUST complete this before ANY work:**
+→ See: `.claude/agents/_shared/pre-work-checklist.md` for detailed checklist
+
+### STEP 0: Project Discovery (All Agents)
 
 ```
 1. Read: domain/index.md → Get current project name
@@ -138,80 +99,41 @@ See: `@/.claude/lib/agent-router.md` for complete routing protocol
 5. Report: "✅ Project Context Loaded"
 ```
 
-**STEP 0.5 (uxui-frontend ONLY):**
+### STEP 0.5: Design Context (uxui-frontend only)
 
 ```
 6. Check: design-system/STYLE_GUIDE.md exists?
-   - If YES → Read STYLE_GUIDE.md (Priority #1 - project-specific)
-   - If NO → Read .claude/contexts/design/*.md (Fallback - general principles)
-7. Report: "✅ Style Guide Loaded" or "⚠️ No style guide - using general principles"
+   - If YES → Read STYLE_GUIDE.md (project-specific)
+   - If NO → Read .claude/contexts/design/*.md (fallback)
+7. Report: "✅ Style Guide Loaded"
 ```
 
-**Why this matters:**
-- STYLE_GUIDE.md = project-specific design system (colors, spacing, components)
-- design/*.md = universal design principles (box thinking, color theory)
-- Priority: STYLE_GUIDE.md > design/*.md
+WHY: STYLE_GUIDE.md has project-specific tokens. design/*.md has universal principles.
 
-**Fallback:** If discovery fails, warn user to run `/agentsetup` or `/designsetup`
+**Fallback:** If discovery fails, suggest `/agentsetup` or `/designsetup`
 
 ---
 
 ### STEP 1-5: Design Fundamentals (uxui-frontend only)
 
-**When invoking uxui-frontend agent, Main Claude MUST include these requirements in the Task prompt:**
+→ See: `.claude/agents/02-uxui-frontend.md` for complete checklist
 
-```
-MANDATORY PRE-WORK CHECKLIST (after STEP 0):
+**Summary:**
+1. Read design contexts (box-thinking, color-theory, spacing)
+2. Do Box Thinking Analysis (identify boxes, relationships, spacing)
+3. Search for existing components (Reuse > Compose > Extend > Create)
+4. Extract design tokens from reference component
+5. Report pre-implementation analysis
 
-Before writing ANY code, you MUST:
+**Style Guidelines:**
 
-1. **Read ALL design contexts:**
-   - @/.claude/contexts/design/index.md
-   - @/.claude/contexts/design/box-thinking.md
-   - @/.claude/contexts/design/color-theory.md
-   - @/.claude/contexts/design/spacing.md
-   - @/.claude/contexts/patterns/ui-component-consistency.md
-   - @/.claude/contexts/patterns/frontend-component-strategy.md
+| Instead of | Use | WHY |
+|------------|-----|-----|
+| text-gray-500 | text-foreground/70 | Theme-aware |
+| p-5 | p-4 or p-6 | Spacing scale |
+| h-5 w-5, opacity-50 | h-4 w-4, text-foreground/70 | Consistency |
 
-2. **Do Box Thinking Analysis:**
-   - Identify all boxes (parent, children, siblings)
-   - Document relationships (container, adjacent, nested)
-   - Plan space flow using spacing scale (8, 16, 24, 32, 40, 48px)
-   - Plan responsive behavior (stack/merge/compress)
-
-3. **Search for Existing Components:**
-   - Glob: "**/*{Keyword}*.{tsx,jsx,vue}"
-   - Grep: "[similar-pattern]"
-   - Decision: Reuse > Compose > Extend > Create New
-   - If creating new: Extract design tokens from most similar component
-
-4. **Extract Design Tokens from Reference Component:**
-   ```typescript
-   const DESIGN_TOKENS = {
-     spacing: { padding: '[from reference]', gap: '[from reference]' },
-     colors: { bg: '[theme token]', text: '[theme token]', border: '[theme token]' },
-     shadows: '[from reference - e.g., shadow-sm]',
-     borderRadius: '[from reference - e.g., rounded-md]'
-   }
-   ```
-
-5. **Report Pre-Implementation Analysis:**
-   You MUST provide a detailed report covering steps 1-4 BEFORE writing any code.
-
-CRITICAL RULES:
-- ❌ NO hardcoded colors (text-gray-500) → ✅ Use theme tokens (text-foreground/70)
-- ❌ NO arbitrary spacing (p-5) → ✅ Use spacing scale (p-4, p-6)
-- ❌ NO inconsistent icons (h-5 w-5, opacity-50) → ✅ Match reference (h-4 w-4, text-foreground/70)
-- ❌ NO creating duplicate components → ✅ Search and reuse first
-
-If you skip these steps, your work will be rejected.
-```
-
-**Why this enforcement matters:**
-- Prevents visual inconsistency (mismatched colors, spacing, shadows)
-- Ensures component reuse (avoids duplicates)
-- Maintains design system integrity
-- Saves implementation time
+WHY these steps matter: Prevents visual inconsistency, ensures component reuse, maintains design system integrity.
 
 ---
 

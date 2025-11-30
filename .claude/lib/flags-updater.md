@@ -2,18 +2,16 @@
 
 > **WHO:** Main Claude (orchestrator)
 > **WHEN:** Immediately after sub-agent completes phase
-> **HOW:** Follow this exact flow
-> **PURPOSE:** Ensure real-time progress tracking for users
+> **PURPOSE:** Real-time progress tracking for users
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
 ## 🎯 Core Principle
 
-**Main Claude is ALWAYS responsible for updating flags.json**
+**Main Claude updates flags.json after each phase.**
 
-- ❌ NOT sub-agents (they don't have direct access)
-- ❌ NOT user (they shouldn't have to)
-- ✅ Main Claude after EVERY phase completion
+WHY: Sub-agents don't have direct access to flags.json. Users shouldn't have to manually track progress. Immediate updates ensure accurate /cstatus and /cview output.
 
 ---
 
@@ -24,14 +22,14 @@ Step 1: Sub-agent responds with completion message
    ↓
 Step 2: Main Claude validates response quality
    ↓
-Step 3: Main Claude updates flags.json (MANDATORY - THIS STEP!)
+Step 3: Main Claude updates flags.json
    ↓
 Step 4: Main Claude reports progress to user
    ↓
 Step 5: Main Claude asks to continue (or auto-continue)
 ```
 
-**⚠️ CRITICAL:** Step 3 CANNOT be skipped. Ever.
+WHY Step 3 is important: Without immediate update, /cstatus shows stale data and users can't track real progress.
 
 ---
 
@@ -279,34 +277,28 @@ function calculateTimeRemaining(flags: Flags): number {
 
 ---
 
-## ⚠️ CRITICAL RULES
+## 📋 Best Practices
 
-### Rule 1: NEVER Skip This Step
+### Update Timing
 
-```markdown
-❌ WRONG:
-Sub-agent completes → Main Claude asks user to continue
-(flags.json not updated)
+| When | Action |
+|------|--------|
+| Sub-agent returns success | Update flags.json immediately |
+| Before asking user to continue | Flags should already be updated |
+| After each phase | Update individually (not batched) |
 
-✅ CORRECT:
-Sub-agent completes → Main Claude updates flags.json → Main Claude reports progress → Main Claude asks user to continue
+WHY: Immediate updates ensure /cstatus always shows accurate progress.
+
+### Correct Flow
+
+```
+Sub-agent completes
+   → Main Claude updates flags.json
+   → Main Claude reports progress
+   → Main Claude asks user to continue
 ```
 
-### Rule 2: Update IMMEDIATELY After Sub-Agent Responds
-
-```markdown
-Don't wait for:
-- ❌ User confirmation
-- ❌ Next phase to start
-- ❌ Batch multiple updates
-
-Update:
-- ✅ As soon as sub-agent returns success
-- ✅ Before asking user anything
-- ✅ After EACH individual phase
-```
-
-### Rule 3: Validate Before Update
+### Validate Before Update
 
 ```typescript
 // Check 1: flags.json exists
@@ -329,10 +321,10 @@ if (!agentResponse.includes('✅') && !agentResponse.includes('Complete')) {
 }
 ```
 
-### Rule 4: Always Report to User
+### Report to User
 
 ```markdown
-After updating flags.json, ALWAYS show:
+After updating flags.json, show:
 
 📊 Progress Updated:
    ✅ Phase "frontend-mockup" marked complete
@@ -466,4 +458,4 @@ if (flags.ready_to_archive) {
 
 ---
 
-**💡 Remember:** Main Claude updates flags.json. Always. No exceptions.
+**💡 Summary:** Main Claude updates flags.json immediately after each phase completes. This ensures accurate progress tracking.

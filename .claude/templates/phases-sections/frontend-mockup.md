@@ -70,11 +70,14 @@ Create UI components with mockup data. Focus on visual design, layout, and user 
 - Error states: user-friendly messages (mockup errors)
 - Responsive design: test 3 breakpoints minimum
 
-**CRITICAL RULES:**
-- ❌ NO hardcoded colors → ✅ Use theme tokens
-- ❌ NO arbitrary spacing → ✅ Use spacing scale
-- ❌ NO inconsistent icons → ✅ Match reference components
-- ❌ NO creating duplicate components → ✅ Search and reuse first
+**Design Consistency Rules:**
+
+| Instead of | Use | WHY |
+|------------|-----|-----|
+| Hardcoded colors | Theme tokens | Maintains dark/light mode support |
+| Arbitrary spacing | Spacing scale (8, 16, 24...) | Consistent visual rhythm |
+| Random icons | Reference component icons | Visual consistency |
+| Creating new components | Search and reuse existing | Prevents duplicates, faster development |
 
 ## ✅ Success Criteria
 

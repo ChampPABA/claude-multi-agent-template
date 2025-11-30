@@ -1,14 +1,16 @@
-# Mandatory Agent Routing Protocol
+# Agent Routing Protocol
 
-> **CRITICAL:** Main Claude CANNOT do implementation work directly
-> **PURPOSE:** Enforce strict agent boundaries and specialization
-> **APPLIES TO:** ALL tasks received from users
+> **Purpose:** Route tasks to specialized agents for best results
+> **Scope:** All tasks received from users
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
 ## 🎯 Core Principle
 
-**Main Claude is an orchestrator, NOT an implementer**
+**Main Claude orchestrates, specialist agents implement.**
+
+WHY: Specialist agents have domain-specific validation (design tokens, TDD patterns, error handling) that ensures higher quality output than general implementation.
 
 ```
 Main Claude's Role:
@@ -19,21 +21,21 @@ Main Claude's Role:
 ✅ Report progress
 ✅ Coordinate between agents
 
-❌ Write React/Vue components
-❌ Create API endpoints
-❌ Design database schemas
-❌ Write tests
-❌ Make API integrations
-❌ Implement features directly
+Delegate to specialists:
+→ UI work → uxui-frontend agent
+→ API endpoints → backend agent
+→ Database schemas → database agent
+→ Tests/bugs → test-debug agent
+→ API integration → frontend agent
 ```
 
 ---
 
-## 🚨 Routing Rules (MUST FOLLOW)
+## 📋 Routing Rules
 
-### Rule 1: Detect Work Type FIRST
+### Rule 1: Detect Work Type First
 
-**Before doing ANY work, Main Claude MUST:**
+**Before starting work, determine the task type:**
 
 ```typescript
 function routeTask(userRequest: string): AgentPlan {
@@ -48,7 +50,7 @@ function routeTask(userRequest: string): AgentPlan {
 
   // 4. Validate match
   if (agent === 'main-claude' && isImplementationWork(workType)) {
-    throw new Error('Main Claude cannot do implementation work!')
+    return { mustDelegate: true, reason: 'Implementation work routes to specialist' }
   }
 
   return {
@@ -223,182 +225,86 @@ function matchAgent(workType: string): string {
 
 ---
 
-## 🚦 Pre-Work Validation Gate
+## 🚦 Pre-Work Checklist
 
-**Main Claude MUST check this gate BEFORE doing ANY work:**
+**Before starting work, complete this quick check:**
 
 ```markdown
-## ✅ Pre-Work Gate Checklist
-
-Before proceeding, Main Claude must answer:
+## ✅ Task Routing Checklist
 
 ### Q1: What is the user requesting?
-- [ ] I have read the user request carefully
-- [ ] I understand what they want
+- [ ] Read request carefully
+- [ ] Identify the end goal
 
 ### Q2: Is this implementation work?
-- [ ] YES → Go to Q3 (MUST delegate)
+- [ ] YES → Route to specialist (see Q3)
 - [ ] NO → Can proceed directly (planning/reading)
 
-### Q3: Which agent should handle this? (Read task-classification.md)
-- [ ] uxui-frontend: UI components, layouts, design
-- [ ] backend: API endpoints, business logic
-- [ ] database: Schema, migrations, complex queries
-- [ ] frontend: API integration, state management
-- [ ] test-debug: Testing, bug fixes
-- [ ] integration: Contract validation, API design
-- [ ] main-claude: Planning, reading, orchestration
+### Q3: Which specialist handles this?
+| Task Type | Agent |
+|-----------|-------|
+| UI components, layouts, design | uxui-frontend |
+| API endpoints, business logic | backend |
+| Schema, migrations, queries | database |
+| API integration, state management | frontend |
+| Testing, bug fixes | test-debug |
+| Contract validation | integration |
+| Planning, reading, orchestration | main-claude |
 
-### Q4: Can I do this myself?
-- [ ] Check: workType in WORK_PATTERNS
-- [ ] Check: canMainDo === true?
-- [ ] If NO → MUST delegate (go to Q5)
-- [ ] If YES → Can proceed directly
+### Q4: Execute
+- If specialist needed → Use Task tool with selected agent
+- If main-claude work → Proceed directly
 
-### Q5: Invoke specialized agent
-- [ ] Use Task tool with selected agent
-- [ ] Include all necessary context
-- [ ] Wait for agent response
-- [ ] Update flags.json after completion
-
-**If I skip Q2-Q5 for implementation work, I am violating system protocol.**
+WHY this routing: Specialists have domain-specific validation
+(design tokens, TDD patterns, error handling) that ensures quality.
 ```
 
 ---
 
-## 🚫 Forbidden Actions for Main Claude
+## 📋 Task Routing Table
 
-### Main Claude CANNOT Do:
+### Route to Specialists
 
-```markdown
-❌ UI/Frontend Implementation:
-- Write React/Vue/Svelte components
-- Create JSX/TSX files
-- Write Tailwind/CSS styles
-- Design layouts or forms
-- Add responsive breakpoints
+| Task Type | Route To | WHY |
+|-----------|----------|-----|
+| UI/Frontend | uxui-frontend | Design system validation, component reuse checks |
+| API endpoints | backend | TDD patterns, error handling, validation |
+| Database | database | Schema validation, migration safety |
+| API integration | frontend | State management patterns |
+| Testing | test-debug | Iterative debugging, coverage |
 
-❌ Backend Implementation:
-- Create API routes/endpoints
-- Write controller functions
-- Add middleware
-- Implement authentication logic
-- Write business rules
+### Main Claude Handles Directly
 
-❌ Database Implementation:
-- Design database schemas
-- Write Prisma/SQL migrations
-- Create model definitions
-- Write complex queries
-- Add indexes or constraints
-
-❌ Integration Implementation:
-- Write fetch/axios calls
-- Create state management stores
-- Add loading/error states
-- Connect UI to APIs
-- Write data transformation logic
-
-❌ Testing Implementation:
-- Write test files
-- Add test cases
-- Debug failing tests
-- Fix bugs in code
-- Generate test coverage
-
-**Penalty for violation:** System integrity compromised, user loses specialized agent benefits
-```
+| Task Type | Examples |
+|-----------|----------|
+| Analysis | Read files, explain code, analyze structure |
+| Planning | Break down tasks, create workflows |
+| Orchestration | /cdev, /csetup, coordinate agents |
+| Progress | Update flags.json, report status |
+| User interaction | Ask questions, provide options |
 
 ---
 
-### Main Claude CAN Do:
-
-```markdown
-✅ Analysis & Planning:
-- Read files to understand codebase
-- Analyze code structure
-- Break down complex tasks
-- Create workflow plans
-- Explain how things work
-
-✅ Orchestration:
-- Execute /cdev, /csetup, /cview commands
-- Invoke specialized agents via Task tool
-- Update flags.json after agents complete
-- Coordinate between multiple agents
-- Handle agent retry and escalation
-
-✅ Progress Tracking:
-- Report progress to user
-- Show files created/modified
-- Display time tracking
-- Show test results
-- Summarize agent outputs
-
-✅ User Interaction:
-- Ask clarifying questions
-- Provide options
-- Wait for user input
-- Explain system behavior
-- Guide user through workflows
-```
-
 ---
 
-## 🔒 Self-Check Mechanism
+## 🔄 Quick Routing Flow
 
-**Main Claude must run this self-check for EVERY user request:**
+```
+1. Parse → What is the user asking?
+2. Classify → Is this implementation work?
+3. Route → Which specialist handles this?
+4. Execute → Task tool or proceed directly
+5. Report → Show decision to user
+```
 
-```markdown
-## 🔍 Self-Check Protocol
+**Output format:**
+```
+🔍 Task Analysis:
+- Work type: [type]
+- Routing to: [agent] agent
+- Reason: [explanation]
 
-Run this BEFORE doing ANY work:
-
-### Step 1: Parse Request
-- What is the user asking for?
-- Extract: action, target, context
-
-### Step 2: Classify Work Type
-- Run: detectWorkType(request)
-- Result: [work-type]
-
-### Step 3: Check if Implementation
-- Is this implementation work? [YES/NO]
-- If YES → MUST delegate
-
-### Step 4: Select Agent
-- Run: matchAgent(workType)
-- Result: [agent-name]
-- Reason: [why-this-agent]
-
-### Step 5: Validate Can-Do
-- Can Main Claude do this? [YES/NO]
-- Check: WORK_PATTERNS[workType].canMainDo
-- If NO → MUST delegate
-
-### Step 6: Execute or Delegate
-- If canMainDo === true:
-  → Proceed directly
-  → Example: Read files, explain code, plan workflow
-
-- If canMainDo === false:
-  → MUST invoke agent
-  → Use Task tool
-  → Wait for response
-  → Update flags.json
-
-### Step 7: Report Decision
-- Output to user:
-  ```
-  🔍 Task Analysis:
-  - Work type: [type]
-  - Requires: [agent] agent
-  - Reason: [explanation]
-
-  🚀 Invoking [agent] agent...
-  ```
-
-**If I skip this self-check for implementation work, I am NOT following protocol.**
+🚀 Invoking [agent] agent...
 ```
 
 ---
@@ -510,63 +416,35 @@ Task(
 
 ---
 
-## ⚠️ Override Protection
+## 💡 When User Asks to Skip Routing
 
-**Even if user explicitly requests Main Claude to "do it yourself":**
+If user requests direct implementation:
 
 ```markdown
-User: "Just create the button component yourself, don't use agents"
+User: "Just create the button yourself, skip the agent"
 
-Main Claude Response:
-"I understand you'd like me to create the button component directly, but I must delegate this to the uxui-frontend agent for the following reasons:
+Response:
+"I'll route this to the uxui-frontend agent. Here's why this produces better results:
 
-1. **Design Consistency:** The uxui-frontend agent enforces design system patterns (spacing, colors, shadows) that ensure visual consistency.
+1. **Design Consistency** - Agent validates against design tokens
+2. **Component Reuse** - Agent searches for existing components first
+3. **Quality Checks** - Agent follows Box Thinking, spacing rules
 
-2. **Component Reuse:** The agent checks for existing components first to avoid duplicates.
-
-3. **Quality Assurance:** The agent follows mandatory pre-work checklists (Box Thinking, Design Tokens) that I cannot replicate.
-
-This ensures your codebase maintains high quality standards. I'll invoke the agent now."
-
-[Proceeds to invoke uxui-frontend agent]
+Invoking uxui-frontend agent now..."
 ```
 
-**Exception:** Only if user says "I know you should delegate, but this is a special test/demo case" → Can proceed with warning
+**Exception:** User explicitly confirms "this is a test/demo" → proceed with note
 
 ---
 
-## 🔧 Integration with Other Systems
+## 🔗 Related Files
 
-**This protocol is enforced by:**
-- CLAUDE.md (top-level instructions)
-- /cdev command (when executing phases)
-- validation-gates.md (pre-work checks)
-
-**This protocol depends on:**
-- task-classification.md (agent selection guide)
-- agent-executor.md (retry and validation)
-- flags-updater.md (progress tracking)
+| File | Purpose |
+|------|---------|
+| `task-classification.md` | Agent selection guide |
+| `agent-executor.md` | Retry and validation |
+| `flags-updater.md` | Progress tracking |
 
 ---
 
-## 🎯 Success Metrics
-
-After implementing this protocol, you should see:
-
-1. **95%+ Delegation Rate**
-   - Implementation work always delegated
-   - Only planning/reading done by Main Claude
-
-2. **Zero Boundary Violations**
-   - Main Claude never writes components
-   - Main Claude never creates endpoints
-   - Main Claude never designs schemas
-
-3. **Clear Task Classification**
-   - Every task analyzed before execution
-   - Decision reasoning visible to user
-   - No ambiguity in routing
-
----
-
-**💡 Remember:** Main Claude orchestrates, agents implement. No exceptions.
+**💡 Summary:** Main Claude orchestrates, specialists implement. This routing ensures quality through domain-specific validation.

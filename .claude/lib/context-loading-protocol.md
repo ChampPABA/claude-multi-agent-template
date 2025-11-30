@@ -1,8 +1,8 @@
 # Context Loading Protocol
 
 > **Unified context loading strategy for all agents**
-> **Version:** 1.4.0
-> **Purpose:** Eliminate duplication across 6 agents, enforce consistency
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
+> **Purpose:** Consistent context loading across 6 agents (DRY principle)
 
 ---
 
@@ -22,17 +22,17 @@ This protocol defines how agents discover and load context before starting work.
 
 ---
 
-## 🚨 Level 0: Package Manager Discovery (CRITICAL!)
+## 📦 Level 0: Package Manager Discovery
 
-**⚠️ STOP! Read this BEFORE running ANY install/run command**
+**Before running install/run commands, detect the package manager.**
 
 ### Why This Matters:
 
-Using the wrong package manager can:
-- ❌ Create duplicate lock files (package-lock.json + pnpm-lock.yaml)
-- ❌ Install to wrong location (node_modules vs .venv)
-- ❌ Break CI/CD pipelines
-- ❌ Cause version conflicts
+Using the correct package manager:
+- ✅ Prevents duplicate lock files (package-lock.json + pnpm-lock.yaml conflicts)
+- ✅ Installs to correct location (node_modules vs .venv)
+- ✅ Maintains CI/CD compatibility
+- ✅ Avoids version conflicts
 
 ### Protocol:
 
@@ -78,7 +78,7 @@ From tech-stack.md, extract:
 
 2. **Package Manager** (pnpm, npm, bun, uv, poetry, pip)
    - Use for: ALL install/run commands
-   - **CRITICAL:** NEVER hardcode npm/pip
+   - Always use detected PM to prevent lock file conflicts
 
 3. **ORM/Database Tool** (Prisma, SQLAlchemy, TypeORM, Drizzle)
    - Use for: Database agents
@@ -350,35 +350,18 @@ Each agent loads additional contexts based on their role.
 
 ---
 
-## 🚨 Package Manager Safety Rules
+## 📋 Package Manager Guidelines
 
-### ❌ NEVER Do This:
+### Use Detected Package Manager
 
-```bash
-# ❌ Hardcoded npm (wrong if project uses pnpm)
-npm install lodash
+| If Detected | Install Command | Run Command |
+|-------------|-----------------|-------------|
+| pnpm | `pnpm install lodash` | `pnpm run dev` |
+| npm | `npm install lodash` | `npm run dev` |
+| uv | `uv pip install requests` | `uv run app.py` |
+| poetry | `poetry add requests` | `poetry run python app.py` |
 
-# ❌ Hardcoded pip (wrong if project uses uv)
-pip install requests
-
-# ❌ Assuming package manager
-npm run dev
-```
-
-### ✅ ALWAYS Do This:
-
-```bash
-# ✅ Read tech-stack.md first
-# ✅ Use detected package manager
-
-# If pnpm detected:
-pnpm install lodash
-pnpm run dev
-
-# If uv detected:
-uv pip install requests
-uv run app.py
-```
+WHY: Using the detected PM prevents lock file conflicts and maintains CI/CD compatibility.
 
 ### Error Handling:
 

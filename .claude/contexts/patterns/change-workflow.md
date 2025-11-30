@@ -307,7 +307,7 @@ Report: "✅ Project Context Loaded"
 
 ## 📤 Agent Post-Work (Flags Update)
 
-**After completing a phase, agents MUST update flags.json:**
+**After completing a phase, agents should update flags.json:**
 
 ```json
 {
@@ -329,10 +329,13 @@ Report: "✅ Project Context Loaded"
 }
 ```
 
-**What agents MUST NOT update:**
-- ❌ `tasks.md` (OpenSpec owns this)
-- ❌ `phases.md` (generated once, read-only)
-- ❌ `proposal.md` or `design.md`
+**Files agents should not update (read-only):**
+
+| File | WHY Read-Only |
+|------|---------------|
+| `tasks.md` | OpenSpec owns this file |
+| `phases.md` | Generated once, treated as read-only |
+| `proposal.md`, `design.md` | OpenSpec specification files |
 
 ---
 

@@ -691,7 +691,7 @@ export function usePrefersReducedMotion() {
 
 ---
 
-## 🚨 Common Mistakes
+## ⚠️ Common Mistakes
 
 ### ❌ Mistake 1: Animating layout properties
 

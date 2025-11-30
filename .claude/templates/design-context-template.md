@@ -109,7 +109,7 @@ Buttons (hover): shadow-sm
 
 ---
 
-## 🚨 Critical Design Rules
+## ⚠️ Design Rules
 
 ### Colors
 - ❌ **NO** hardcoded colors: `text-gray-500`, `#64748b`

@@ -6,7 +6,7 @@
 
 ## 🎨 IMPORTANT: Style Guide Priority System
 
-**uxui-frontend agents MUST check this priority order:**
+**uxui-frontend agents should check this priority order:**
 
 ### Priority 1: Project-Specific Style Guide (Highest)
 ```

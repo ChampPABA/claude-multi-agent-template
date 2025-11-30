@@ -6,9 +6,9 @@
 
 ## 4-Phase Methodology
 
-**NEVER jump straight to full-scale implementation.**
+Start small and iterate. This approach catches bugs early and reduces rework.
 
-**Always follow this progression:**
+**Progression:**
 
 1. **Phase 1: MVT (Minimum Viable Test)** - Start small (1 item)
 2. **Phase 2: Complexity** - Add validation and edge cases (2-3 items)

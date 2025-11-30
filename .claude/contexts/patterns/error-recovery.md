@@ -32,7 +32,7 @@ Errors that agent can fix automatically:
 
 ---
 
-### 🚨 Blocking Errors (Escalate Immediately)
+### Blocking Errors (Escalate Immediately)
 Errors that agent cannot fix alone:
 - **Missing environment variable** (e.g., DATABASE_URL not set)
 - **Service not running** (e.g., PostgreSQL not running)
@@ -111,14 +111,14 @@ Error: "Database connection refused"
 
 ---
 
-## 🚨 Step 3: Escalation Format
+## 📤 Step 3: Escalation Format
 
 When escalating to Main Claude, provide this information:
 
 ### Template:
 
 ```markdown
-🚨 **Escalation Required**
+⚠️ **Escalation Required**
 
 **Agent:** {agent-name}
 **Task:** {task-description}
@@ -154,7 +154,7 @@ When escalating to Main Claude, provide this information:
 ### Example Escalation:
 
 ```markdown
-🚨 **Escalation Required**
+⚠️ **Escalation Required**
 
 **Agent:** backend
 **Task:** Create POST /api/auth/login endpoint

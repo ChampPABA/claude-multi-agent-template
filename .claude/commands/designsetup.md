@@ -903,7 +903,7 @@ Project Context:
 
 Task: Generate complete STYLE_GUIDE.md (1500-2000 lines) with ALL 17 sections.
 
-CRITICAL: Follow the EXACT format of existing STYLE_GUIDE.md:
+Follow this format for STYLE_GUIDE.md:
 
 # [Project Name] Design System - Style Guide (${selectedOption.name})
 

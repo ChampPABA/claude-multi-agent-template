@@ -1,7 +1,7 @@
 # Agent Executor with Retry & Escalation
 
-> **Robust agent execution with automatic retry and error recovery**
-> **Version:** 1.4.0 (Incremental Testing Integration)
+> **Resilient agent execution with automatic retry and error recovery**
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
@@ -136,35 +136,24 @@ What would you like to do?
 
 **Check agent response for required items:**
 
-**All agents (MANDATORY v1.8.0):**
-- "Best Practices Loaded" ← **NEW: Must show which files were read**
-- "Pre-Implementation Validation Report"
-- "Ready to Implement ✓"
+WHY: Pre-work validation ensures agents loaded context before implementing. This prevents inconsistent output.
 
-**uxui-frontend:**
-- "Best Practices Loaded" (react, nextjs, tailwind, etc.)
-- "Design Foundation ✓"
-- "Box Thinking Analysis ✓"
-- "Component Search ✓"
-- "Design Tokens Extracted ✓"
+**All agents:**
+| Marker | Purpose |
+|--------|---------|
+| "Best Practices Loaded" | Shows which files were read |
+| "Pre-Implementation Validation Report" | Analysis before coding |
+| "Ready to Implement ✓" | Confirms context loaded |
 
-**frontend:**
-- "Best Practices Loaded" (react, nextjs, typescript)
-- "API Contract Verified ✓"
+**Agent-specific markers:**
 
-**backend:**
-- "Best Practices Loaded" (express/fastapi, prisma, etc.)
-- "Patterns Loaded ✓"
-- "Existing Endpoints Search ✓"
-- "TDD Workflow" (if TDD required)
-
-**database:**
-- "Best Practices Loaded" (prisma/drizzle)
-- "Schema Analysis ✓"
-
-**test-debug:**
-- "Best Practices Loaded" (vitest/jest/playwright)
-- "Test Infrastructure ✓"
+| Agent | Additional Markers |
+|-------|-------------------|
+| uxui-frontend | Design Foundation ✓, Box Thinking ✓, Component Search ✓, Design Tokens ✓ |
+| frontend | API Contract Verified ✓ |
+| backend | Patterns Loaded ✓, Existing Endpoints Search ✓, TDD Workflow (if required) |
+| database | Schema Analysis ✓ |
+| test-debug | Test Infrastructure ✓ |
 
 **Validation Logic:**
 ```typescript
@@ -214,9 +203,11 @@ function validateBestPracticesLoaded(agentResponse: string): boolean {
 
 ---
 
-## 🧹 Temp File Cleanup (v1.8.0)
+## 🧹 Temp File Cleanup
 
-**After each phase completes, Main Claude MUST cleanup non-code files:**
+**After each phase completes, Main Claude cleans up non-code files:**
+
+WHY: Only code/config files should remain. Reports go in response text or flags.json.
 
 ```typescript
 function cleanupTempFiles(changeDir: string) {
@@ -252,11 +243,10 @@ function cleanupTempFiles(changeDir: string) {
 cleanupTempFiles(`openspec/changes/${changeId}`)
 ```
 
-**Rule:** Only actual code/config files should remain. Reports go in response text or flags.json.
 
 ---
 
-## 🚨 Escalation
+## 📤 Escalation
 
 **When max retries exceeded, give user options:**
 
@@ -289,21 +279,22 @@ Please choose an option.
 ### Pre-Work Rejection
 
 ```markdown
-❌ Pre-Work Validation Failed
+⚠️ Pre-Work Validation Incomplete
 
 Agent: {agent-type}
 Phase: {phase-name}
 
-Missing required steps:
+Missing steps:
   - {item-1}
   - {item-2}
   - {item-3}
 
-You MUST complete ALL mandatory steps before implementation.
+Please complete these steps before implementation.
+WHY: Pre-work ensures context is loaded for quality output.
 
-Refer to:
+References:
   - .claude/contexts/patterns/validation-framework.md → {agent-type} section
-  - .claude/agents/{agent-file}.md → MANDATORY PRE-WORK CHECKLIST
+  - .claude/agents/{agent-file}.md → Pre-Work Checklist
 
 Please provide a complete Pre-Implementation Validation Report.
 ```
@@ -396,9 +387,9 @@ This retry & escalation framework makes agent execution **robust and reliable**.
 
 ---
 
-# 🔄 Incremental Testing Execution (v1.4.0)
+# 🔄 Incremental Testing Execution
 
-> **NEW:** Milestone-based execution with round-based retry and Main Claude intervention
+> Milestone-based execution with round-based retry and Main Claude intervention
 
 ---
 
@@ -650,7 +641,7 @@ function generateHints(analysis: Analysis, milestone: Milestone): string[] {
 
 ### Agent Output Format
 
-Agent MUST respond in this format:
+Agent responds in this format:
 
 ```markdown
 ## Milestone ${id} Results

@@ -265,10 +265,6 @@ cd my-app
 ```bash
 # Initialize the agent system
 cak init
-
-# Setup project context (detects tech stack)
-# In Claude Code:
-/psetup
 ```
 
 ### Step 3: Generate Page Plan (UI tasks only)
@@ -429,9 +425,8 @@ your-project/
     │
     ├── commands/                    # Slash commands
     │   ├── designsetup.md           # Generate style guide
-    │   ├── pageplan.md              # Generate page plan (NEW!)
-    │   ├── psetup.md                # Project setup
-    │   ├── csetup.md                # Change setup
+    │   ├── pageplan.md              # Generate page plan
+    │   ├── csetup.md                # Change setup (v1.8.0: includes best-practices)
     │   ├── cdev.md                  # Change development
     │   ├── cview.md                 # View progress
     │   └── cstatus.md               # Quick status
@@ -489,17 +484,18 @@ your-project/
 - Tracks progress in `flags.json`
 - Updates completion status back to OpenSpec
 
-### ✅ Auto-Generated Best Practices
+### ✅ Auto-Generated Best Practices (v1.8.0)
 
-Uses Context7 MCP to fetch latest framework docs:
+Uses Context7 MCP to fetch latest framework docs **automatically during `/csetup`**:
 
 ```bash
-/psetup
-# → Detects: Next.js 15, React 18, Prisma 6
-# → Generates: .claude/contexts/domain/{project}/best-practices/
-#    - nextjs-15.md
-#    - react-18.md
-#    - prisma-6.md
+/csetup my-feature
+# → Auto-detects: Next.js 15, React 18, Prisma 6
+# → Auto-generates: .claude/contexts/domain/project/best-practices/
+#    - nextjs.md
+#    - react.md
+#    - prisma.md
+# → Agents MUST read these before coding (validated)
 ```
 
 ### ✅ 3-Level Project Indexing
@@ -621,29 +617,19 @@ cak --help
 
 ---
 
-### `/psetup` - Setup project (one-time)
-
-```bash
-/psetup
-```
-
-**What it does:**
-- Detects tech stack (Next.js, React, Prisma, etc.)
-- Creates `domain/{project}/README.md`
-- Generates best practices via Context7 MCP
-
----
-
-### `/csetup {change-id}` - Setup change context
+### `/csetup {change-id}` - Setup change context (v1.8.0)
 
 ```bash
 /csetup landing-page
 ```
 
-**What it does:**
+**What it does (v1.8.0 - now includes best practices setup):**
 - Reads `proposal.md` (business context)
 - Reads `tasks.md` (implementation checklist)
+- Reads `design.md` (architecture, if exists)
 - Reads `page-plan.md` (if exists - UI content plan)
+- **Auto-detects tech stack** from package.json, design.md, proposal
+- **Auto-generates best practices** from Context7 MCP (replaces `/psetup`)
 - Classifies tasks by agent
 - Generates `workflow.md` (execution plan)
 
@@ -919,44 +905,63 @@ Built with:
 
 ## 🆕 What's New in v2.0.0
 
-**Major Release: Design System v2.0.0 - Interactive Setup & Smart Page Planning** 🎨
+**Two Major Improvements:** Claude 4.5 Optimization + Design System v2.0 🚀🎨
 
-### Complete Design System Overhaul
+### Part 1: Claude 4.5 Optimization
 
-**Problem Solved:**
-- Before: One massive STYLE_GUIDE.md loaded everywhere (~5000 tokens)
-- Before: No theme direction, random decorations
-- Before: Same patterns loaded for landing pages AND dashboards
-- Before: Manual style selection with no recommendations
+1. **Claude 4.5 Best Practices** - All files refactored for better AI comprehension
+2. **Professional Tone** - Replaced aggressive language with respectful instructions
+3. **Positive Instructions** - "Use X" instead of "Don't do Y" with WHY explanations
+4. **Token Reduction** - Agent files ~65% smaller + 30 supporting files optimized
+5. **Shared Components** - New `.claude/agents/_shared/` folder prevents duplication
 
-**Solution Implemented:**
-- ✅ `/extract` - Extract design from multiple reference sites
-- ✅ `/designsetup` - Interactive 3-round loop with theme recommendations
-- ✅ `tokens.json` - Smart design tokens with style/theme/animations (~800 tokens)
-- ✅ `patterns/*.md` - Selective code patterns based on page type
-- ✅ Auto page type detection (landing/dashboard/auth)
+### Tone Calibration
 
-**Results:**
-- **84% token reduction** (~800 vs ~5000 tokens)
-- **Theme consistency** (USE/AVOID decorations enforced)
-- **Smart patterns** (only load what's needed per page type)
-- **Interactive setup** (AI recommends, user confirms)
+| Before | After | WHY |
+|--------|-------|-----|
+| "MUST", "WILL BE REJECTED" | Professional tone | Claude 4.5 works better with respectful instructions |
+| "Don't do X", "Never Y" | "Use X instead" | Positive instructions are clearer |
+| "🚨 CRITICAL!", "🚫 Forbidden" | "📋 Guidelines", "⚠️ Note" | Less aggressive, same clarity |
+| Rules without context | Rules with WHY | Claude applies rules more intelligently |
 
-### New Flow
+### New Shared Components
 
 ```
-/extract https://site.com → .claude/extractions/*.json
-                    ↓
-/designsetup @prd.md → tokens.json + patterns/*.md + STYLE_GUIDE.md
-                    ↓
-/pageplan @prd.md → page-plan.md (auto-detects page type)
-                    ↓
-/csetup → phases.md (reads page-plan.md)
-                    ↓
-/cdev → uxui-frontend (loads patterns selectively)
+.claude/agents/_shared/
+├── pre-work-checklist.md     # Common validation steps
+├── package-manager.md        # Package manager protocol
+├── documentation-policy.md   # What files to create
+├── agent-boundaries.md       # When to use which agent
+└── README.md                 # Overview
 ```
 
-### Page Type Auto-Detection
+### Token Savings (Agents)
+
+| Agent | Before | After | Reduction |
+|-------|--------|-------|-----------|
+| uxui-frontend | ~1037 | ~375 | 64% |
+| integration | ~600 | ~210 | 65% |
+| backend | ~700 | ~244 | 65% |
+| database | ~680 | ~273 | 60% |
+| frontend | ~650 | ~296 | 54% |
+| test-debug | ~580 | ~252 | 57% |
+| **Total** | **~4247** | **~1650** | **61%** |
+
+Plus ~500 tokens in shared files = **~2150 total** (was ~4247)
+
+### Part 2: Design System v2.0
+
+**Complete overhaul of design system with interactive setup, theme selection, and smart page planning.**
+
+### New Design System Features
+
+- 🎯 **`/extract`** - Multi-URL design extraction with style detection
+- 🎭 **`/designsetup`** - Interactive 3-round loop with theme recommendations
+- 📦 **`tokens.json`** - Enhanced design tokens with style/theme/animations (~800 tokens)
+- 📝 **`patterns/*.md`** - Selective code patterns (buttons, cards, forms, scroll-animations, decorations)
+- 🔍 **Auto Page Type Detection** - `/pageplan` auto-detects landing/dashboard/auth
+
+### Page Type Handling
 
 | Page Type | Decorations | Scroll Anims | Buyer Avatar | Patterns Loaded |
 |-----------|-------------|--------------|--------------|-----------------|
@@ -964,53 +969,333 @@ Built with:
 | Dashboard/Admin | ❌ Minimal | ❌ Disabled | ❌ Skipped | buttons, cards, forms |
 | Auth (Login/Register) | ❌ None | ❌ Disabled | ❌ Skipped | buttons, forms |
 
-### New Features
+### Design System Token Savings
 
-**`/extract` command:**
-- Multi-URL support (extract from multiple sites)
-- Style detection (Neo-Brutalism, Minimalist, Glassmorphism, Modern SaaS)
-- Animation library detection (GSAP, ScrollTrigger, Framer Motion)
-- Scroll pattern detection (stacking-cards, parallax, fade-in)
-- Decorative element detection (blobs, gradients, 3D elements)
+| Approach | Tokens | Improvement |
+|----------|--------|-------------|
+| Old: Full STYLE_GUIDE.md | ~5000 | - |
+| New: tokens.json + selective patterns | ~800-1200 | **84%** |
 
-**`/designsetup` v2.0.0:**
-- Interactive 3-round loop (Present → Feedback → Adjust)
-- Verbose style options with match scores
-- AI recommends themes based on project context
-- USE/AVOID decorative direction
+### Files Refactored (36 total)
 
-**`tokens.json` v2.0.0:**
-- `style` - Detected design style with confidence
-- `theme` - Theme name, feeling, decorative direction
-- `animations` - Libraries, patterns, component animations
-- `patterns_index` - References to pattern files
+- **6 agent files** - Professional tone, positive instructions
+- **6 lib files** - WHY explanations, table formats
+- **4 command files** - Softer language, guidelines
+- **11 pattern files** - "⚠️ Common Mistakes" instead of "🚨 Critical"
+- **3 design files** - "should check" instead of "MUST check"
+- **3 template files** - Table with WHY
+- **3 other lib files** - Consistent formatting
 
-**`patterns/*.md` files:**
-- `buttons.md` - Button patterns (primary, secondary, ghost, sizes, states)
-- `cards.md` - Card patterns (default, interactive, feature, pricing)
-- `forms.md` - Form patterns (input, error state, select, checkbox)
-- `scroll-animations.md` - Scroll animation patterns
-- `decorations.md` - Decorative elements (gradients, blobs, grids)
+### Best Practices Applied (Claude 4 Guidelines)
 
-### Upgrading to v2.0.0
+1. **Tone Calibration** - Professional, direct (not aggressive)
+2. **Action Orientation** - Explicit "Write code" vs "Consider"
+3. **Prevent Overengineering** - Clear boundaries
+4. **Encourage Exploration** - Read before implementing
+5. **Rich Output When Needed** - Specify requirements
+6. **Context for Rules** - Explain WHY
+7. **Positive Instructions** - "Use X" not "Don't Y"
+
+---
+
+## 📋 What's New in v1.7.1
+
+**Patch: OpenSpec File Naming Conventions - Clarify design.md vs STYLE_GUIDE.md** 📁
+
+### The Issue
+
+Users were confused between two files with similar names:
+- `design.md` (from OpenSpec) = Technical/Architecture decisions
+- `STYLE_GUIDE.md` (from Template) = Visual design (colors, fonts, spacing)
+
+### The Fix
+
+Added clear documentation in CLAUDE.md and agent-discovery.md:
+
+| Source | File | Purpose |
+|--------|------|---------|
+| **OpenSpec** | `design.md` | Technical Architecture (API structure, data flow) |
+| **Template** | `STYLE_GUIDE.md` | Visual Design (colors, typography, spacing) |
+
+### Updated Files
+
+- `CLAUDE.md` - New "📁 File Naming Conventions" section
+- `agent-discovery.md` - Added notes explaining design.md vs STYLE_GUIDE.md
+
+### No Breaking Changes
+
+All existing workflows continue to work. This is a documentation improvement only.
+
+---
+
+## 📋 What's New in v1.7.0
+
+**Feature: Opus 4.5 Model Upgrade - All Subagents Now Use Latest Claude Model** 🧠
+
+### The Change
+
+All 6 specialized agents now use **Claude Opus 4.5** (the latest and most capable Claude model) instead of Haiku:
+
+| Agent | Model (Before) | Model (After) |
+|-------|----------------|---------------|
+| integration | haiku | **opus** |
+| uxui-frontend | haiku | **opus** |
+| test-debug | haiku | **opus** |
+| frontend | haiku | **opus** |
+| backend | haiku | **opus** |
+| database | haiku | **opus** |
+
+### Benefits
+
+- ✅ **Best-in-class reasoning** - Opus 4.5 handles complex multi-step tasks better
+- ✅ **Improved code quality** - More accurate implementations with fewer errors
+- ✅ **Better context understanding** - Agents maintain context over longer sessions
+- ✅ **Enhanced problem-solving** - Complex debugging and architectural decisions improved
+
+### Updated Files
+
+- All agent files (`.claude/agents/*.md`) - `model: opus`
+- `/cdev` command - Model strategy updated
+- `agent-executor.md` - Task invocation uses opus
+
+### No Breaking Changes
+
+All existing workflows continue to work exactly as before, just with better performance!
+
+---
+
+## 🔄 What's New in v1.6.0
+
+**Feature: Incremental Testing - Milestone-based Validation for High-Risk Tasks** 🔄
+
+### The Problem: All-or-Nothing Testing
+
+**Before v1.6.0:**
+```
+Task: "Integrate Google Maps API"
+→ Agent implements complete solution (1000 locations)
+→ Tests with full dataset
+→ Bug found → Hard to debug (which part failed?)
+→ Fix → Retest full dataset → Slow iteration
+
+Problem:
+❌ Large scope = hard to debug
+❌ Late bug detection (at scale)
+❌ Rework expensive (threw away 1000-location implementation)
+❌ No confidence in progressive scaling
+```
+
+**After v1.6.0:**
+```
+Task: "Integrate Google Maps API"
+→ Milestone 1: Test 1 location (hardcoded)
+   → Bug found → Easy to debug (small scope)
+   → Fix → Retest 1 location → Fast iteration
+→ Milestone 2: Test 10 locations (parameterized)
+   → Works! Confidence++
+→ Milestone 3: Error handling
+   → Refine edge cases
+→ Milestone 4: Scale to 1000
+   → Already confident (1 and 10 worked)
+
+Benefits:
+✅ Small scope = easy debugging
+✅ Early bug detection (at milestone 1)
+✅ Low rework (fix before scaling)
+✅ Progressive confidence
+```
+
+### The Solution: Milestone-based Validation
+
+**Automatic Detection:** `/csetup` detects high-risk tasks automatically
+- Risk = HIGH (payment, auth, security)
+- Risk = MEDIUM + Complexity ≥ 7 (complex forms)
+- External API dependency (Google Maps, Stripe, OpenAI)
+- Data-intensive operation (ETL, migration, batch processing)
+
+**3 Milestone Patterns:**
+
+1. **Backend API Integration** (4 milestones)
+   - M1: Core implementation (1 record, hardcoded)
+   - M2: Parameterized query (10 records, dynamic)
+   - M3: Error handling (invalid input, timeouts)
+   - M4: Scale + performance (100-1000 records)
+
+2. **Complex Form** (3 milestones)
+   - M1: Architecture + skeleton (2-3 critical fields)
+   - M2: E2E flow validation (submit → API → DB)
+   - M3: Complete all fields (all 20 fields + validation)
+
+3. **Database Migration / ETL** (3 milestones)
+   - M1: Dry-run (10 records)
+   - M2: Scale to 100 records
+   - M3: Full dataset (staging)
+
+### Round-based Retry Logic
+
+**Per-Milestone Quota:**
+- **2 attempts per round** (not total)
+- **Unlimited rounds** (Main Claude decides when to stop)
+- **Hints reset quota** (fresh start)
+
+**Example:**
+```
+Milestone 1: Core implementation
+→ Round 1: Attempt 1 ❌ (API key missing)
+→ Round 1: Attempt 2 ❌ (Still missing)
+→ Main Claude: "Check API_KEY env variable" 💡
+→ Round 2: Attempt 1 ✅ (Fixed!)
+
+Total attempts: 3 (2 in Round 1, 1 in Round 2)
+```
+
+### Main Claude Intervention
+
+**Decision Matrix:**
+
+| Error Pattern | Complexity | Confidence | Action |
+|---------------|------------|------------|--------|
+| Same error 2x | SIMPLE | HIGH | Give Hints |
+| Same error 2x | COMPLEX | LOW | Ask Human |
+| Different errors | ANY | ANY | Ask Human |
+| Intermittent | ANY | ANY | Ask Human |
+| 2+ rounds no progress | ANY | ANY | Ask Human |
+
+**Pattern-based Hints:**
+- 401 Unauthorized → Check API_KEY, verify key validity
+- Timeout → Increase threshold, check network
+- Schema mismatch → Compare actual vs expected, check API version
+
+### Benefits & Trade-offs
+
+**Benefits:**
+- ✅ **75% faster debug** - Catch bugs at M1 (1 record) vs M4 (1000 records)
+- ✅ **60-70% rework reduction** - Fix before scaling
+- ✅ **80% faster debugging** - Small scope (1 record) vs full dataset
+- ✅ **90% success rate** - Progressive confidence at M4
+- ✅ **40-50% net speedup** - +15-20% time upfront → -60-70% rework time
+
+**Trade-offs:**
+- ⚠️ **Timeline:** +15-20% upfront (but saves 60-70% rework)
+- ⚠️ **Complexity:** phases.md 2-3x longer (summary table at top)
+- ⚠️ **Learning curve:** More coordination (automated by `/csetup`)
+
+**Net benefit:** +15-20% time → -60-70% rework = **40-50% faster overall**
+
+### When to Use Incremental Testing
+
+**✅ Use for:**
+- Payment integration, Auth systems (HIGH risk)
+- Complex forms with 20+ fields (Complexity ≥ 7)
+- External APIs (Google Maps, Stripe, OpenAI)
+- Data migrations, ETL pipelines (data-intensive)
+
+**❌ Skip for:**
+- Simple CRUD operations (LOW risk, Complexity < 5)
+- UI components (standard testing sufficient)
+- Configuration changes (no integration testing needed)
+
+**Detection Rate:** ~20-30% of tasks (only high-risk)
+
+---
+
+## 🎉 What's New in v1.4.0
+
+**Major Update: Context Optimization & DRY Consolidation**
+
+### Token Efficiency Improvements
+
+**Problem Solved:**
+- Before v1.4.0: Same documentation duplicated across 6 agent files + CLAUDE.md
+- Package Manager warnings: 360 lines duplicated 6x
+- Context Loading Strategy: 1,200 lines duplicated 6x
+- TDD Workflow examples: 1,200 lines duplicated 3x
+- Handoff templates: 900 lines duplicated 6x
+- Documentation policies: 480 lines duplicated 6x
+- CLAUDE.md: 890 lines mixing navigation + detailed guides
+
+**Solution Implemented:**
+- ✅ Created consolidated lib files (context-loading-protocol.md, handoff-protocol.md, tdd-workflow.md)
+- ✅ Extracted detailed guides from CLAUDE.md to lib/detailed-guides/
+- ✅ Applied consistent reference pattern: Brief summary + "→ See: path" + agent-specific additions
+- ✅ Maintained 100% content quality (all information preserved)
+
+**Results:**
+- **All 6 agents:** 6,796 → 4,749 lines (-2,047, -30.1% reduction)
+- **CLAUDE.md:** 890 → 163 lines (-727, -81.7% reduction)
+- **Grand Total:** 7,686 → 4,912 lines (-2,774, -36.1% reduction)
+- **Token savings:** ~36% reduction in total context size
+- **Speed improvement:** Faster agent loading and execution
+- **Maintainability:** Single source of truth for shared documentation
+
+### New Consolidated Documentation Structure
+
+**Created in v1.4.0:**
+```
+.claude/lib/
+├── context-loading-protocol.md     # Universal context loading strategy
+├── handoff-protocol.md             # Agent handoff templates
+├── tdd-workflow.md                 # TDD workflow examples
+└── detailed-guides/
+    ├── best-practices-system.md    # How best practices work
+    ├── context-optimization.md     # Token optimization strategy
+    ├── page-planning.md            # /pageplan command guide
+    ├── taskmaster-analysis.md      # 6-dimension task analysis
+    ├── design-system.md            # Style guide generation
+    └── agent-system.md             # Agent overview & workflow
+```
+
+### Benefits for Users
+
+**For Developers:**
+- ⚡ 36% faster context loading
+- 📖 Cleaner, easier-to-navigate documentation
+- 🎯 CLAUDE.md is now a pure navigation hub (163 lines)
+- 🔍 Detailed guides are modular and focused
+
+**For Claude Agents:**
+- 🚀 Faster startup (less context to load)
+- 💾 More token budget for actual work
+- 📚 Single source of truth (no conflicting info)
+- 🔄 Easier maintenance (update once, apply everywhere)
+
+### Migration Notes
+
+**No breaking changes!** All existing workflows continue to work:
+- ✅ `/psetup`, `/csetup`, `/cdev` commands unchanged
+- ✅ Agent behavior unchanged (same quality, faster execution)
+- ✅ All features from v1.1-1.3 preserved
+- ✅ Existing projects can update with `cak update`
+
+**New Reference Pattern:**
+Agents now use lightweight references instead of duplicating full documentation:
+
+```markdown
+## Context Loading Strategy
+
+**→ See:** `.claude/lib/context-loading-protocol.md` for complete protocol
+
+**Agent-Specific Additions (frontend):**
+### State Management Libraries
+...
+```
+
+### Upgrading to v1.4.1
 
 ```bash
 # Update npm package
 npm update -g @champpaba/claude-agent-kit
 
-# Update template in your project
+# Update template in your project (creates backup)
 cd your-project
 cak update --backup
-
-# Generate new design system
-/extract https://your-reference.com  # Optional
-/designsetup @prd.md
 ```
 
-**Breaking Changes:**
-- `STYLE_TOKENS.json` → `tokens.json` (new structure)
-- `STYLE_GUIDE.md` no longer contains code (moved to `patterns/*.md`)
-- Commands read `tokens.json` instead of `STYLE_TOKENS.json`
+**What's New:**
+- ✅ Auto-proceed feature (eliminate double confirmations)
+- ✅ 50-90% fewer approval prompts
+- ✅ 25% faster workflow execution
+- ✅ All v1.4.0 features (context optimization, DRY consolidation)
 
 All your customizations in `.claude/contexts/domain/` are preserved!
 
@@ -1018,45 +1303,142 @@ All your customizations in `.claude/contexts/domain/` are preserved!
 
 ## 📜 Changelog
 
-### v2.0.0 (2025-01-28)
-**Major: Design System v2.0.0 - Interactive Setup & Smart Page Planning**
+### v2.0.0 (2025-11-30)
+**Major: Claude 4.5 Optimization - Full Template Refactor**
 
 **Added:**
-- `/extract` command - Multi-URL design extraction with style/animation detection
-- Interactive `/designsetup` - 3-round loop with theme recommendations
-- `tokens.json` v2.0.0 - Enhanced design tokens with style/theme/animations (~800 tokens)
-- `patterns/*.md` files - Selective code patterns (buttons, cards, forms, scroll-animations, decorations)
-- Auto page type detection in `/pageplan` (landing/dashboard/auth)
+- Shared components folder `.claude/agents/_shared/`
+- WHY explanations for all rules
 
 **Changed:**
-- `STYLE_TOKENS.json` → `tokens.json` (new structure)
-- `STYLE_GUIDE.md` - Human-readable only, code moved to patterns/*.md
-- `/csetup` - Reads tokens.json + page-plan.md
+- All 6 agent files refactored (~65% smaller)
+- 30 supporting files updated for Claude 4.5 best practices
+- "MUST", "CRITICAL" → Professional tone
+- "Don't do X" → "Use Y instead" with WHY
+- "🚨" → "⚠️" throughout
 
-**Performance:**
-- 84% token reduction (~800 vs ~5000 tokens)
-- Selective pattern loading based on page type
-- Theme consistency with USE/AVOID decorations
+**Benefits:**
+- Better AI comprehension with professional tone
+- 61% token reduction in agent files
+- No duplication (shared components)
 
-**Breaking Changes:**
-- `STYLE_TOKENS.json` renamed to `tokens.json`
-- `STYLE_GUIDE.md` no longer contains code
-- Commands read `tokens.json` instead of `STYLE_TOKENS.json`
+---
 
-### v1.6.0 (2025-01-27)
-**Feature: Page Plan Enhancement - Buyer Avatar & Conversion Copy**
+### v1.8.0 (2025-11-26)
+**Major: Token Optimization & Streamlined Workflow**
 
-### v1.5.1 (2025-01-26)
-**Patch: Git Compatibility Fix**
+**Removed:**
+- `/psetup` command - Merged into `/csetup`
+- `/agentsetup` command - Merged into `/csetup`
+- `documentation` phase from all templates
+- `report` phase from all templates
+- Template files: `documentation.md`, `report.md`
 
-### v1.5.0 (2025-01-25)
-**Feature: Minor Improvements**
+**Added:**
+- Auto tech stack detection in `/csetup` (from package.json, design.md, proposal)
+- Auto best-practices generation from Context7 MCP
+- Verbose terminal summary when change completes
+- Temp file auto-cleanup after each phase
+- Best-practices injection in `/cdev` agent prompts
+- Forbidden Files section in code-standards.md
+- Documentation Policy (v1.8.0) in all agents
+
+**Changed:**
+- All templates: Reduced phases (removed doc/report)
+- `/cdev`: Now shows verbose summary instead of creating files
+- All agents: Updated to reference forbidden files policy
+- `agent-executor.md`: Added temp file cleanup logic
+- `agent-discovery.md`: Updated fallback message
+
+**Benefits:**
+- ~25 min saved per change (no doc/report phases)
+- No more temp file clutter
+- Simplified workflow (1 command instead of 2)
+- Better best-practices enforcement (validated)
+
+### v1.7.1 (2025-11-25)
+**Patch: OpenSpec File Naming Conventions**
+
+**Added:**
+- New "📁 File Naming Conventions" section in CLAUDE.md
+- Clear distinction between OpenSpec files and Template files
+- Notes in agent-discovery.md explaining design.md purpose
+
+**Documentation:**
+- `design.md` (OpenSpec) = Technical Architecture (API, data flow)
+- `STYLE_GUIDE.md` (Template) = Visual Design (colors, fonts, spacing)
+- Updated agent reading guidance per role
+
+### v1.7.0 (2025-11-25)
+**Feature: Opus 4.5 Model Upgrade**
+
+**Changed:**
+- All 6 agents upgraded from `model: haiku` to `model: opus`
+- Updated `/cdev` model strategy description
+- Updated `agent-executor.md` Task invocation
+
+**Benefits:**
+- Best-in-class reasoning with Opus 4.5
+- Improved code quality and fewer errors
+- Better context understanding
+- Enhanced problem-solving for complex tasks
 
 ### v1.4.1 (2025-11-06)
-**Feature: Intelligent Auto-Proceed**
+**Feature: Intelligent Auto-Proceed - Eliminate Double Confirmations**
+
+**Added:**
+- Auto-proceed approval context in agent prompts
+- Smart detection of user approval keywords ("continue", "proceed", "yes", "ลุยเลย")
+- Agent question handling logic (auto-respond vs ask user)
+- Auto-proceed decision tree in agent-executor.md
+
+**Improved:**
+- User experience: 50-90% fewer confirmation prompts
+- Execution speed: 25% faster (no waiting for redundant approvals)
+- Workflow clarity: User approves once, system handles agent interactions
+
+**Technical Details:**
+- Modified: `.claude/lib/agent-executor.md` (+80 lines)
+- Implementation: Lean solution (1 file, 0.1% context increase)
+- Backward compatible: Manual approval mode still available
+
+**When It Activates:**
+- User runs `/cdev` command (implicit approval)
+- User says "continue", "proceed", "yes", "ลุยเลย" (explicit approval)
+
+**Before:**
+```
+User approves → Agent asks → Main asks user again ❌
+```
+
+**After:**
+```
+User approves → Agent asks → Main answers directly ✅
+```
 
 ### v1.4.0 (2025-11-05)
 **Major: Context Optimization & DRY Consolidation**
+
+**Added:**
+- New consolidated lib files: `context-loading-protocol.md`, `handoff-protocol.md`, `tdd-workflow.md`
+- New detailed guides folder: `lib/detailed-guides/` (6 focused guides)
+- Reference pattern across all agents (Brief summary → See: path → Additions)
+
+**Changed:**
+- All 6 agents refactored: 30.1% size reduction (6,796 → 4,749 lines)
+- CLAUDE.md refactored: 81.7% size reduction (890 → 163 lines, pure navigation hub)
+- Documentation structure: Moved detailed content to modular lib files
+
+**Performance:**
+- 36% total context reduction (7,686 → 4,912 lines)
+- Faster agent loading and execution
+- More token budget available for actual work
+
+**Improved:**
+- Maintainability: Single source of truth for shared docs
+- Discoverability: Clear navigation in CLAUDE.md
+- Modularity: Detailed guides in separate files
+- Consistency: Same content quality, zero duplication
 
 ### v1.3.0 (2025-10-30)
 **Feature: TaskMaster-style Intelligent Task Analysis**
@@ -1148,37 +1530,36 @@ All your customizations in `.claude/contexts/domain/` are preserved!
 
 ---
 
-## 📋 Complete Flow Summary
+## 📋 Complete Flow Summary (v1.8.0)
 
 ```
 1️⃣ OpenSpec Planning
-   → proposal.md + tasks.md
+   → proposal.md + tasks.md + design.md (optional)
 
-2️⃣ Generate Style Guide (one-time)
+2️⃣ Generate Style Guide (one-time, optional)
    /designsetup
    → STYLE_GUIDE.md
 
-3️⃣ Setup Project (one-time)
-   /psetup
-   → domain/{project}/best-practices/
-
-4️⃣ Generate Page Plan (UI tasks only)
+3️⃣ Generate Page Plan (UI tasks only)
    /pageplan @prd.md
    → page-plan.md (content + component plan)
 
-5️⃣ Setup Change Context
+4️⃣ Setup Change Context (v1.8.0: now includes best-practices!)
    /csetup {change-id}
+   → Auto-detects tech stack
+   → Auto-generates best-practices from Context7
    → workflow.md
 
-6️⃣ Execute Implementation
+5️⃣ Execute Implementation
    /cdev {change-id}
    → Working code + tests
+   → Verbose summary in terminal (no temp files!)
 
-7️⃣ Monitor Progress
+6️⃣ Monitor Progress
    /cview {change-id}
    → Detailed progress report
 
-8️⃣ OpenSpec Archive & Update
+7️⃣ OpenSpec Archive & Update
    → Merge to specs/
 ```
 
@@ -1194,15 +1575,12 @@ npm install -g @champpaba/claude-agent-kit
 cd your-project
 cak init
 
-# Setup project context
-/psetup
-
 # Generate style guide (optional but recommended)
 /designsetup
 
 # Start building (after OpenSpec planning)
 /pageplan @prd.md           # UI tasks only
-/csetup your-feature
+/csetup your-feature        # v1.8.0: auto-generates best-practices!
 /cdev your-feature
 ```
 

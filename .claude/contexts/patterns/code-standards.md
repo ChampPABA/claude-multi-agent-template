@@ -512,18 +512,20 @@ def calculate_band_score(speechace_score: float) -> float:
 
 ---
 
-## 🚫 Forbidden Files (v1.8.0)
+## 📁 File Creation Policy (v1.8.0)
 
-**Simple Rule:** Agents should ONLY create **actual code/config files** that are part of the project.
+**Simple Rule:** Agents should create **actual code/config files** that are part of the project.
 
-### ❌ NEVER Create These Types of Files
+### Files to Avoid
 
-1. **Report/Summary files** - `.txt`, `.md` files that summarize work done
-2. **Log/Output files** - Files capturing execution output or analysis
-3. **Temporary files** - Any file not intended to be committed to git
-4. **Documentation files** - Unless user explicitly requests
+| File Type | Examples | WHY Avoid |
+|-----------|----------|-----------|
+| Report/Summary files | `*_REPORT.md`, `*_SUMMARY.txt` | Clutter codebase, not code |
+| Log/Output files | `*_OUTPUT.txt`, `*_LOG.txt` | Temporary, not version-controlled |
+| Temporary files | `temp_*.js`, `test_*.txt` | Not intended for git |
+| Documentation files | `*_GUIDE.md` | Only create if user explicitly requests |
 
-**How to recognize forbidden files:**
+**How to recognize these files:**
 - Filename contains: `REPORT`, `SUMMARY`, `DELIVERY`, `LOG`, `OUTPUT`, `GUIDE`, `ANALYSIS`, `RESULTS`
 - Filename is ALL_CAPS or has phase/step numbers (e.g., `PHASE_11_*`, `STEP_3_*`)
 - File extension doesn't match project code (random `.txt`, `.ext` in a JS project)

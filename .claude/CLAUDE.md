@@ -1,8 +1,46 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.0.0 - Universal Multi-Agent Template
-> **Latest:** Design System v2.0 - Interactive setup, theme selection, selective pattern loading, page type detection
+> **Template Version:** 2.0.0 - Claude 4.5 Optimized + Design System v2.0
+> **Latest:** Full template refactored with Claude 4.5 best practices (agents ~65% smaller) + Interactive design setup with theme selection
+
+---
+
+## 📁 File Naming Conventions (OpenSpec + Template)
+
+> **IMPORTANT:** Avoid confusion between OpenSpec files and Template files
+
+### OpenSpec Files (from [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec))
+
+| File | Purpose | When to Read |
+|------|---------|--------------|
+| `proposal.md` | WHY - Goals, scope, rationale | Phase planning |
+| `tasks.md` | WHAT - Implementation checklist | Task tracking |
+| `design.md` | **Technical/Architecture decisions** (optional) | Backend/Database phases |
+| `specs/` | Delta specs (ADDED/MODIFIED/REMOVED) | Requirement validation |
+
+### Template Files (from claude-multi-agent-template)
+
+| File | Purpose | When to Read |
+|------|---------|--------------|
+| `STYLE_GUIDE.md` | **Visual design** (colors, typography, spacing) | UI/Frontend phases |
+| `tokens.json` | Design tokens with style/theme/animations (~800 tokens) | Quick UI reference |
+| `page-plan.md` | UI component layout + content strategy | uxui-frontend agent |
+| `phases.md` | Execution plan with agent assignments | All phases |
+| `flags.json` | Progress tracking | All phases |
+
+### Key Distinction
+
+```
+OpenSpec design.md    = Technical Architecture (data flow, API structure, system design)
+Template STYLE_GUIDE  = Visual Design (colors, fonts, spacing, component styles)
+```
+
+**Agents should read BOTH when relevant:**
+- `uxui-frontend` → STYLE_GUIDE.md (visual) + design.md (if has UI architecture)
+- `backend` → design.md (API/data architecture)
+- `database` → design.md (data models, relationships)
+- `frontend` → STYLE_GUIDE.md (visual) + design.md (API contracts)
 
 ---
 
@@ -19,8 +57,8 @@ Universal, framework-agnostic template for AI-assisted development.
 - ✅ Domain-Specific Support (add your business logic)
 
 **What's NOT Included:**
-- ❌ Framework patterns → Generated dynamically via `/agentsetup`
-- ❌ Package managers → Detected by `/agentsetup`
+- ❌ Framework patterns → Generated dynamically via `/csetup`
+- ❌ Package managers → Auto-detected by `/csetup`
 - ❌ Spec frameworks → Optional (OpenSpec, BMAD, SpecKit)
 
 ---
@@ -28,12 +66,12 @@ Universal, framework-agnostic template for AI-assisted development.
 ## 📖 Quick Navigation
 
 **Design/UI (v2.0.0):**
-- `/extract https://site.com` - **NEW!** Extract design from reference sites (multi-URL, style detection)
-- `/designsetup @prd.md` - **ENHANCED!** Interactive design setup (3-round loop, theme selection)
-- `design-system/tokens.json` - **v2.0!** Design tokens with style/theme/animations (~800 tokens) ✨
-- `design-system/patterns/*.md` - **NEW!** Selective code patterns (buttons, cards, forms, animations, decorations)
+- `/extract https://site.com` - Extract design from reference sites (multi-URL, style detection)
+- `/designsetup @prd.md` - Interactive design setup (3-round loop, theme selection)
+- `design-system/tokens.json` - Design tokens with style/theme/animations (~800 tokens) ✨
+- `design-system/patterns/*.md` - Selective code patterns (buttons, cards, forms, animations, decorations)
 - `design-system/STYLE_GUIDE.md` - Human-readable guide (no code, ~150 lines)
-- `.claude/extractions/*.json` - **NEW!** Extracted site data
+- `.claude/extractions/*.json` - Extracted site data
 - `@/.claude/lib/document-loader.md` - Token-efficient loading patterns
 - `@/.claude/contexts/design/index.md` (General design principles - fallback)
 
@@ -49,15 +87,14 @@ Universal, framework-agnostic template for AI-assisted development.
 **Project Setup:**
 - `/extract https://site.com` - Extract design from reference sites
 - `/designsetup @prd.md` - Interactive design system setup
-- `/psetup` - One-time project setup (detect tech stack, generate best practices)
-- `/agentsetup` - Auto-detect tech stack and generate best practices
+- `/csetup` - **v1.8.0+:** Now auto-detects tech stack + generates best practices (replaces /psetup, /agentsetup)
 
 **Page Planning (UI Tasks) - v2.0.0:**
-- `/pageplan @prd.md @brief.md` - **ENHANCED v2.0.0!** Generate page structure with auto page type detection
+- `/pageplan @prd.md @brief.md` - Generate page structure with auto page type detection
 - Output: `openspec/changes/{id}/page-plan.md` (component reuse, buyer avatar, conversion copy, asset checklist)
-- **NEW v2.0.0:** Auto-detects page type (landing/dashboard/auth) from proposal.md/tasks.md
-- **NEW v2.0.0:** Reads tokens.json for style/theme/animations
-- **NEW v2.0.0:** Loads patterns/*.md selectively based on page type
+- Auto-detects page type (landing/dashboard/auth) from proposal.md/tasks.md
+- Reads tokens.json for style/theme/animations
+- Loads patterns/*.md selectively based on page type
 - Buyer avatar analysis (Eugene Schwartz framework) for marketing pages only
 - Used by: uxui-frontend agent (auto-reads in STEP 0.5)
 
@@ -68,7 +105,7 @@ Universal, framework-agnostic template for AI-assisted development.
 - `/cstatus {change-id}` - Quick progress status for a change
 
 **Best Practices (Dynamic):**
-- `.claude/contexts/domain/{project}/best-practices/` (generated by `/agentsetup`)
+- `.claude/contexts/domain/project/best-practices/` (auto-generated by `/csetup`)
 - Framework-specific guidelines from Context7 MCP
 
 **Indexing (3 Levels):**
@@ -76,25 +113,31 @@ Universal, framework-agnostic template for AI-assisted development.
 - Level 2: `.claude/contexts/domain/{project}/README.md` (Project Overview)
 - Level 3: `.claude/contexts/domain/{project}/best-practices/index.md` (Best Practices Registry)
 
-**🆕 Implementation Logic (v1.1.0):**
+**Implementation Logic:**
 - `@/.claude/lib/README.md` - Implementation logic overview
-- `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev)
+- `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev) + Incremental testing execution
 - `@/.claude/lib/tdd-classifier.md` - TDD classification logic (used by /csetup)
-- `@/.claude/lib/flags-updater.md` - 🆕 Progress tracking protocol (Main Claude updates flags.json)
-- `@/.claude/lib/agent-router.md` - 🆕 Mandatory agent routing rules (enforce delegation)
+- `@/.claude/lib/task-analyzer.md` - Task analysis with milestone generation
+- `@/.claude/lib/flags-updater.md` - Progress tracking protocol (Main Claude updates flags.json)
+- `@/.claude/lib/agent-router.md` - Mandatory agent routing rules (enforce delegation)
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 
 ---
 
-## 📚 Best Practices System
-
-**→ See:** `@/.claude/lib/detailed-guides/best-practices-system.md` for complete guide
+## 📚 Best Practices System (v1.8.0)
 
 **Quick Summary:**
-- Run `/agentsetup` → Auto-detects tech stack → Queries Context7 → Generates framework-specific best practices
-- Files created in `.claude/contexts/domain/{project}/best-practices/` (React, Next.js, Prisma, etc.)
-- Agents auto-discover via 3-level indexing (domain → project → best-practices)
-- Enforces code quality with framework-specific patterns
+- `/csetup` **auto-detects tech stack** from: package.json → design.md → proposal/tasks (3 sources)
+- **Auto-generates best practices** from Context7 MCP (React, Next.js, Prisma, etc.)
+- Files created in `.claude/contexts/domain/project/best-practices/`
+- **Agents read** best practices before coding (validated by agent-executor)
+- `/cdev` **injects** relevant best-practices paths into agent prompts
+
+**Flow:**
+```
+/csetup → detect stack → query Context7 → generate best-practices
+/cdev   → inject paths into prompt → agent reads → validation checks
+```
 
 ---
 
@@ -157,9 +200,9 @@ Universal, framework-agnostic template for AI-assisted development.
 **Quick Summary:**
 - **Problem:** Agents duplicate components (Navbar 3x), use random colors, lorem ipsum content, wrong decorations for page type
 - **Solution:** `/pageplan @prd.md @brief.md` → Generates `openspec/changes/{id}/page-plan.md` with:
-  - **Auto page type detection** 🆕 (landing/dashboard/auth from proposal.md/tasks.md)
-  - **tokens.json integration** 🆕 (style, theme, animations, decorative direction)
-  - **Selective pattern loading** 🆕 (only load patterns relevant to page type)
+  - **Auto page type detection** (landing/dashboard/auth from proposal.md/tasks.md)
+  - **tokens.json integration** (style, theme, animations, decorative direction)
+  - **Selective pattern loading** (only load patterns relevant to page type)
   - Component reuse plan ✅ (prevent duplicates)
   - Buyer avatar analysis (Eugene Schwartz framework) **for marketing pages only**
   - Conversion-optimized content (pain → promise → CTA) **for marketing pages only**
@@ -192,6 +235,20 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
+## 🔄 Incremental Testing (v1.6.0)
+
+**→ See:** `@/.claude/lib/detailed-guides/incremental-testing.md` for complete guide
+
+**Quick Summary:**
+- **Problem:** All-or-nothing testing → bugs found at scale (1000 records) → hard to debug, expensive rework
+- **Solution:** Milestone-based validation → Test 1 record → 10 → errors → scale → catch bugs early (75% faster debug)
+- **3 Patterns:** Backend API (4 milestones), Complex Form (3 milestones), Database Migration (3 milestones)
+- **Round-based Retry:** 2 attempts → Main Claude intervention (hints vs ask human) → new round (unlimited)
+- **Detection:** Auto-triggered for Risk=HIGH OR (Risk=MEDIUM + Complexity≥7) OR External API OR Data-intensive (~20-30% of tasks)
+- **Benefits:** 60-70% rework reduction, 40-50% net speedup, 90% success rate with progressive confidence
+
+---
+
 ## 🤖 Agent System
 
 **→ See:** `@/.claude/lib/detailed-guides/agent-system.md` for complete guide
@@ -199,7 +256,7 @@ Universal, framework-agnostic template for AI-assisted development.
 **Quick Summary:**
 - **6 specialist agents**: integration (validate contracts), uxui-frontend (UI with mock data), test-debug (tests/bugs), frontend (connect UI to API), backend (API endpoints), database (schemas/migrations)
 - **Main Claude's role**: Orchestrator (plan, coordinate, report), NOT implementer (no writing code directly)
-- **Self-check protocol**: MANDATORY checklist before ANY work (detect work type → select agent → delegate)
+- **Self-check protocol**: Checklist before ANY work (detect work type → select agent → delegate)
 - **Agent pre-work**: STEP 0 (project discovery for ALL) + STEP 1-5 (design fundamentals for uxui-frontend only)
 
 **Example workflow:**
@@ -210,6 +267,114 @@ User: "Build login system"
 → Phase 2.5: integration (validate contracts)
 → Phase 3: frontend (connect UI to API)
 → Phase 4: test-debug (tests)
+```
+
+---
+
+## 🆕 v2.0.0: Claude 4.5 Optimization + Design System v2.0
+
+**Based on:** [Claude 4 Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
+
+### Claude 4.5 Changes Applied
+
+| Before | After | WHY |
+|--------|-------|-----|
+| "MUST", "WILL BE REJECTED" | Professional tone | Claude 4.5 works better with respectful instructions |
+| "Don't do X", "Never Y" | "Use X instead" | Positive instructions are clearer |
+| Rules without context | Rules with WHY | Claude applies rules more intelligently |
+| Duplicated content (6x) | Shared `_shared/` folder | 83% token reduction |
+| ~1000 lines per agent | ~250-350 lines | 65% smaller |
+
+### New Shared Components
+
+```
+.claude/agents/_shared/
+├── pre-work-checklist.md     # Common validation steps
+├── package-manager.md        # Package manager protocol
+├── documentation-policy.md   # What files to create
+├── agent-boundaries.md       # When to use which agent
+└── README.md                 # Overview
+```
+
+### Token Savings
+
+| Agent | Before | After | Reduction |
+|-------|--------|-------|-----------|
+| uxui-frontend | ~1037 | ~375 | 64% |
+| integration | ~600 | ~210 | 65% |
+| backend | ~700 | ~244 | 65% |
+| database | ~680 | ~273 | 60% |
+| frontend | ~650 | ~296 | 54% |
+| test-debug | ~580 | ~252 | 57% |
+| **Total** | **~4247** | **~1650** | **61%** |
+
+Plus ~500 tokens in shared files = **~2150 total** (was ~4247)
+
+### Best Practices Applied
+
+1. **Tone Calibration** - Professional, direct (not aggressive)
+2. **Action Orientation** - Explicit "Write code" vs "Consider"
+3. **Prevent Overengineering** - Clear boundaries
+4. **Encourage Exploration** - Read before implementing
+5. **Rich Output When Needed** - Specify requirements
+6. **Context for Rules** - Explain WHY
+7. **Positive Instructions** - "Use X" not "Don't Y"
+
+### Additional Files Refactored
+
+Beyond the 6 agent files, these supporting files were also updated:
+
+**Implementation Logic (lib/):**
+| File | Changes |
+|------|---------|
+| `agent-router.md` | Routing table format, removed "CANNOT/forbidden" language |
+| `agent-executor.md` | Professional rejection messages, table format |
+| `context-loading-protocol.md` | WHY explanations, removed "CRITICAL" warnings |
+| `flags-updater.md` | Best practices table, removed "Step 3 CANNOT be skipped" |
+| `document-loader.md` | Table format for DO/DON'T sections |
+| `detailed-guides/agent-system.md` | Compact table format, shared file references |
+
+**Commands:**
+| File | Changes |
+|------|---------|
+| `cdev.md` | WHY context for best practices, softer tone |
+| `csetup.md` | Best Practices / Anti-Patterns format |
+| `pageplan.md` | "Guidelines" instead of "CRITICAL Rules" |
+| `designsetup.md` | "Follow this format" instead of "EXACT format" |
+
+**Patterns (contexts/patterns/):**
+| File | Changes |
+|------|---------|
+| `validation-framework.md` | WHY explanations, removed "🚨" symbols |
+| `error-recovery.md` | "⚠️" instead of "🚨", professional escalation format |
+| `ui-component-consistency.md` | "Common Issues" instead of "Red Flags" |
+| `task-breakdown.md` | Positive framing for incremental approach |
+| `agent-discovery.md` | Softer language, "⚠️ Fallback" instead of "🚨" |
+| `code-standards.md` | "File Creation Policy" with WHY table |
+| `animation-patterns.md` | "⚠️ Common Mistakes" instead of "🚨" |
+| `frontend-component-strategy.md` | "⚠️ Anti-Patterns" instead of "🚨" |
+| `performance-optimization.md` | "⚠️ Common Mistakes" instead of "🚨" |
+| `change-workflow.md` | Table format for read-only files |
+| `task-classification.md` | "Agent Capabilities Reference" section title |
+
+**Design (contexts/design/):**
+| File | Changes |
+|------|---------|
+| `index.md` | "should check" instead of "MUST check" |
+| `box-thinking.md` | "⚠️ Common Mistakes" instead of "🚨" |
+
+**Templates:**
+| File | Changes |
+|------|---------|
+| `phases-sections/frontend-mockup.md` | Table with WHY for design rules |
+| `design-context-template.md` | "⚠️ Design Rules" instead of "🚨 Critical" |
+| `STYLE_GUIDE.template.md` | "🔧 Troubleshooting" instead of "🚨" |
+
+**Other lib files:**
+| File | Changes |
+|------|---------|
+| `lib/README.md` | Softer descriptions, "📌 Important" |
+| `detailed-guides/taskmaster-analysis.md` | "🔴 HIGH" instead of "🚨 HIGH" |
 
 ---
 

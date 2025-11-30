@@ -408,9 +408,9 @@ Phase 4 (Sequential):
 
 ---
 
-## Part 5: Ultra-Strict Boundaries (Reference)
+## Part 5: Agent Capabilities Reference
 
-### What Each Agent CAN and CANNOT Do
+### What Each Agent Does (and Delegates)
 
 #### uxui-frontend (Blue)
 **CAN:**

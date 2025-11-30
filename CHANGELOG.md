@@ -7,13 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2025-01-28
+## [2.0.0] - 2025-11-30
 
-### 🎨 Design System v2.0.0 - Interactive Setup & Smart Page Planning
+### 🎯 Claude 4.5 Optimization + Design System v2.0
 
-**Major Release:** Complete overhaul of design system with interactive setup, theme selection, selective pattern loading, and auto page type detection.
+**Two Major Improvements in One Release:**
+
+1. **Claude 4.5 Optimization** - All files refactored using Claude 4 best practices for better AI comprehension
+2. **Design System v2.0** - Interactive setup, theme selection, selective pattern loading, page type detection
+
+**Based on:** [Claude 4 Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
 
 ### Added
+
+#### Claude 4.5 Optimization
+
+- **Shared Components** - New `.claude/agents/_shared/` folder
+  - `pre-work-checklist.md` - Common validation steps
+  - `package-manager.md` - Package manager protocol
+  - `documentation-policy.md` - What files to create
+  - `agent-boundaries.md` - When to use which agent
+  - `README.md` - Overview
+
+#### Design System v2.0
 
 - **`/extract` command** - Multi-URL design extraction
   - Extract from multiple reference sites (merged-insights.json)
@@ -60,6 +76,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Claude 4.5 Optimization
+
+- **All 6 Agent Files** - Professional tone, positive instructions (~65% smaller)
+  - Replaced "MUST", "WILL BE REJECTED" with professional explanations
+  - Changed "Don't do X" to "Use Y instead" with WHY
+  - Added table formats with WHY explanations
+  - Deduplicated content to shared files
+
+- **6 Lib Files** - WHY explanations, table formats
+  - `agent-router.md` - Routing table format, removed "CANNOT/forbidden"
+  - `agent-executor.md` - Professional rejection messages
+  - `context-loading-protocol.md` - WHY explanations
+  - `flags-updater.md` - Best practices table
+  - `document-loader.md` - Table format for guidelines
+  - `detailed-guides/agent-system.md` - Compact references
+
+- **4 Command Files** - Softer language, guidelines
+  - `cdev.md` - WHY context for best practices
+  - `csetup.md` - Best Practices / Anti-Patterns format
+  - `pageplan.md` - "Guidelines" instead of "CRITICAL Rules"
+  - `designsetup.md` - "Follow this format" instead of "EXACT format"
+
+- **11 Pattern Files** - "⚠️ Common Mistakes" instead of "🚨 Critical"
+  - `validation-framework.md` - WHY explanations
+  - `error-recovery.md` - "⚠️" instead of "🚨"
+  - `ui-component-consistency.md` - "Common Issues" format
+  - `task-breakdown.md` - Positive framing
+  - `agent-discovery.md` - Softer language
+  - `code-standards.md` - "File Creation Policy" with WHY
+  - `animation-patterns.md` - "⚠️ Common Mistakes"
+  - `frontend-component-strategy.md` - "⚠️ Anti-Patterns"
+  - `performance-optimization.md` - "⚠️ Common Mistakes"
+  - `change-workflow.md` - Table format for read-only files
+  - `task-classification.md` - "Agent Capabilities Reference"
+
+- **3 Design Files** - "should check" instead of "MUST check"
+  - `index.md` - Softer language
+  - `box-thinking.md` - "⚠️ Common Mistakes"
+
+- **3 Template Files** - Table with WHY
+  - `phases-sections/frontend-mockup.md` - Design rules table
+  - `design-context-template.md` - "⚠️ Design Rules"
+  - `STYLE_GUIDE.template.md` - "🔧 Troubleshooting"
+
+- **Other Lib Files**
+  - `lib/README.md` - "📌 Important"
+  - `detailed-guides/taskmaster-analysis.md` - "🔴 HIGH"
+
+#### Design System v2.0
+
 - **`STYLE_GUIDE.md`** - Now human-readable only (~150 lines, no code)
   - For humans to review design direction
   - Code patterns moved to `patterns/*.md`
@@ -71,10 +137,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Page type detection determines which patterns to load
 
 - **CLAUDE.md** - Updated to v2.0.0
+  - New Claude 4.5 Optimization section
   - New Design System v2.0.0 section with complete flow
-  - New Context Optimization v2.0.0 section
+  - Updated Context Optimization section
   - Updated Page Planning section with page type handling table
-  - New flow diagram: extract → designsetup → pageplan → csetup → cdev
+
+### Performance
+
+#### Agent Token Savings (Claude 4.5)
+
+| Agent | Before | After | Reduction |
+|-------|--------|-------|-----------|
+| uxui-frontend | ~1037 lines | ~375 lines | 64% |
+| integration | ~600 lines | ~210 lines | 65% |
+| backend | ~700 lines | ~244 lines | 65% |
+| database | ~680 lines | ~273 lines | 60% |
+| frontend | ~650 lines | ~296 lines | 54% |
+| test-debug | ~580 lines | ~252 lines | 57% |
+| **Total Agents** | **~4247** | **~1650** | **61%** |
+| Shared files | 0 | ~500 lines | - |
+| **Grand Total** | ~4247 | ~2150 | **49%** |
+
+#### Design System Token Savings
+
+| Approach | Tokens | Improvement |
+|----------|--------|-------------|
+| Old: Full STYLE_GUIDE.md | ~5000 | - |
+| New: tokens.json + selective patterns | ~800-1200 | **84%** |
 
 ### Page Type Handling
 
@@ -84,11 +173,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | Dashboard/Admin | ❌ Minimal | ❌ Disabled | ❌ Skipped | buttons, cards, forms |
 | Auth (Login/Register) | ❌ None | ❌ Disabled | ❌ Skipped | buttons, forms |
 
+### Benefits
+
+- ✅ **Better AI comprehension** - Claude 4.5 works better with professional tone
+- ✅ **Clearer instructions** - Positive "Use X" instead of negative "Don't Y"
+- ✅ **Intelligent rule application** - WHY context helps Claude apply rules correctly
+- ✅ **Smaller context** - 61% token reduction in agent files
+- ✅ **No duplication** - Shared components prevent copy-paste
+- ✅ **84% design token reduction** - tokens.json + selective patterns
+- ✅ **Theme consistency** - USE/AVOID decorations enforced
+- ✅ **Smart patterns** - Only load what's needed per page type
+
 ### Migration Guide
 
 **For existing projects:**
 
-1. Run `/extract` to extract design from reference sites:
+1. Run `/extract` to extract design from reference sites (optional):
    ```bash
    /extract https://your-reference.com
    ```
@@ -112,10 +212,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    /cdev feature-name
    ```
 
-**Breaking Changes:**
+### Breaking Changes
+
 - `STYLE_TOKENS.json` renamed to `tokens.json` with new structure
 - `STYLE_GUIDE.md` no longer contains code (moved to patterns/*.md)
 - Commands now read `tokens.json` instead of `STYLE_TOKENS.json`
+
+All existing workflows continue to work - these are only breaking changes for the design system file names.
+
+---
+
+## [1.8.0] - 2025-11-26
+
+### 🔄 Token Optimization - Streamlined Workflow
+
+**Removed:**
+- `/psetup` command - Merged into `/csetup`
+- `/agentsetup` command - Merged into `/csetup`
+- `documentation` phase from all templates
+- `report` phase from all templates
+
+**Changed:**
+- `/csetup` now auto-detects tech stack and generates best practices
+
+---
+
+## [1.7.1] - 2025-11-25
+
+### 📁 File Naming Conventions Clarification
+
+**Added:**
+- Documentation clarifying OpenSpec `design.md` vs Template `STYLE_GUIDE.md`
+
+---
+
+## [1.7.0] - 2025-11-25
+
+### 🧠 Opus 4.5 Model Upgrade
+
+**Changed:**
+- All 6 agents now use Claude Opus 4.5 model instead of Haiku
 
 ---
 
@@ -165,102 +301,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ~500 lines of analysis logic
 
 - **Complexity Scoring** - Automatic task complexity assessment (1-10)
-  - Factors: Time, keywords, multi-step, dependencies
-  - Levels: Simple (1-3), Moderate (4-6), Complex (7-8), Critical (9-10)
-  - Auto-adjusts time estimates with buffers
-
 - **Dependency Detection** - Automatic dependency graph
-  - Detects: UI → Backend, Backend → Database, Tests → Implementation
-  - Outputs: Blocks, Blocked by, Parallelizable tasks
-  - Ensures correct execution order
-
-- **Risk Assessment** - Automatic risk scoring
-  - Levels: LOW, MEDIUM, HIGH
-  - Factors: Complexity, security, external deps, migrations
-  - Mitigation strategies: TDD, security checklist, time buffer, pair programming
-
+- **Risk Assessment** - Automatic risk scoring (LOW/MEDIUM/HIGH)
 - **Research Requirements** - Auto-detects need for research phases
-  - Categories: New tech, best practices, integration, performance, migration
-  - Generates research queries automatically
-  - Adds Phase 0.x (before implementation)
-
 - **Subtask Breakdown** - Intelligent task expansion
-  - When: Complexity >= 7, multiple verbs, time > 90 min
-  - Patterns: UI + Backend, CRUD operations, multi-entity
-  - Example: Login system → 5 subtasks
-
 - **Priority Ranking** - Scoring system (0-100)
-  - Labels: CRITICAL (80+), HIGH (60-79), MEDIUM (40-59), LOW (0-39)
-  - Factors: Business value, blockers, risk, complexity
-  - Tasks sorted by priority in phases.md
-
-### Changed
-
-- **`/csetup` command** - STEP 3.5: Task Analysis added
-  - Analyzes all tasks from tasks.md
-  - Generates task metadata (complexity, deps, risk, etc.)
-  - Sorts tasks by priority
-  - Reports analysis summary to user
-
-- **phases.md template** - Enhanced with task metadata
-  - Task Analysis Summary section
-  - Research phases (Phase 0.x) added automatically
-  - Each phase includes:
-    - Complexity score & level
-    - Priority label & score
-    - Risk level & mitigation
-    - Dependencies graph
-    - Subtasks (if applicable)
-    - Adjusted time estimates
-
-- **CLAUDE.md** - v1.3.0 with TaskMaster section
-  - New section: "TaskMaster-style Analysis"
-  - 6 analysis dimensions explained
-  - Before/after comparison
-  - Generated output examples
-  - Workflow guide
-
-### Examples
-
-**Task Analysis Output:**
-```
-✅ Task Analysis Complete
-
-📊 Summary:
-   Total tasks: 8 → 15 (subtask expansion)
-   Average complexity: 5.8/10
-
-📈 Priority Distribution:
-   🔴 CRITICAL: 2 (Login, Payment)
-   🟠 HIGH: 3 (User Profile, API endpoints)
-   🟡 MEDIUM: 2 (Email notifications)
-   🟢 LOW: 1 (Documentation)
-
-⚠️ Risk Assessment:
-   🚨 HIGH: 2 tasks → TDD required, security checklist
-   ⚠️ MEDIUM: 3 tasks
-   ✅ LOW: 3 tasks
-
-🔬 Research Required: 2 tasks
-   - React Query v5 migration (15 min)
-   - Stripe payment best practices (15 min)
-
-⏱️ Time Estimates:
-   Original: 6.5 hours
-   Adjusted: 9.2 hours (+41% buffer)
-```
-
-### Benefits
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Task Analysis** | Basic | Intelligent | 6 dimensions |
-| **Complexity** | Ignored | Scored 1-10 | Risk-aware |
-| **Dependencies** | Manual | Auto-detected | Faster planning |
-| **Time Estimates** | Optimistic | With buffer | +30-50% accuracy |
-| **Research Phases** | Missing | Auto-added | Informed decisions |
-| **Subtasks** | None | Auto-expanded | Clearer workflow |
-| **Priority** | Random | Scored 0-100 | Right execution order |
 
 ---
 
@@ -268,123 +313,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ⚡ Context Optimization - 70% Token Reduction
 
-**Major Performance Improvement:** Optimized design context loading to reduce token usage from ~20K to ~4.7K tokens while maintaining quality.
+**Added:**
+- 3-tier loading strategy
+- STYLE_TOKENS.json lightweight design tokens
+- Document loader protocol
 
-### Added
-
-- **STYLE_TOKENS.json** - Lightweight design tokens file (~500 tokens)
-  - Auto-generated by `/designsetup` command
-  - Contains: colors, spacing, typography, shadows, borders, animations
-  - Replaces full STYLE_GUIDE.md for most commands
-
-- **design-context-template.md** - Project design summary template
-  - Location: `.claude/templates/design-context-template.md`
-  - Generated per project with design system overview
-  - ~1K tokens vs ~5K for full style guide
-
-- **document-loader.md** - Unified document loading pattern
-  - Location: `.claude/lib/document-loader.md`
-  - 3-tier loading strategy (tokens → context → full guide)
-  - Pattern A (Planning), Pattern B (Execution), Pattern C (Agents)
-
-### Changed
-
-- **`/designsetup` command** - Now generates both STYLE_GUIDE.md and STYLE_TOKENS.json
-  - STEP 5.5: Extract design tokens to JSON
-  - Validates JSON before writing
-  - Reports both files in final output
-
-- **`/pageplan` command** - Uses STYLE_TOKENS.json instead of full STYLE_GUIDE.md
-  - Token usage: ~1.5K (was ~5K)
-  - Loads: STYLE_TOKENS.json + validates STYLE_GUIDE.md exists
-  - 70% reduction in loading time
-
-- **`/csetup` command** - Validates design system for UI work
-  - STEP 2.5: Design System Validation (new)
-  - Warns if STYLE_GUIDE.md or STYLE_TOKENS.json missing
-  - Adds design info to context.md
-
-- **`/cdev` command** - Sends design reference instead of full content
-  - buildAgentPrompt() function added
-  - Sends file paths (~200 tokens) instead of content (~5K tokens)
-  - Enforces STEP 0.5 design loading for uxui-frontend agent
-
-- **CLAUDE.md** - Updated to v1.2.0 with Context Optimization documentation
-  - New section: "Context Optimization (v1.2.0)"
-  - Updated Quick Navigation with STYLE_TOKENS.json
-  - Token comparison table (before/after)
-
-### Performance
-
-| Metric | Before (v1.1.0) | After (v1.2.0) | Improvement |
-|--------|----------------|---------------|-------------|
-| **Total tokens** | ~20,000 | ~4,700 | **70% reduction** |
-| **Loading speed** | Slow | Fast | **3-4x faster** |
-| **/pageplan** | ~5,000 tokens | ~1,500 tokens | **70% faster** |
-| **/csetup** | ~5,000 tokens | ~500 tokens | **90% faster** |
-| **/cdev** | ~5,000 tokens | ~200 tokens | **96% faster** |
-| **uxui-frontend agent** | ~5,000 tokens | ~3,500 tokens | **30% faster** |
-
-### Migration Guide
-
-**For existing projects:**
-
-1. Run `/designsetup` again to generate STYLE_TOKENS.json:
-   ```bash
-   /designsetup
-   ```
-
-2. Verify both files exist:
-   ```bash
-   ls design-system/STYLE_GUIDE.md
-   ls design-system/STYLE_TOKENS.json
-   ```
-
-3. Continue normal workflow:
-   ```bash
-   /psetup
-   /csetup feature-name
-   /cdev feature-name
-   ```
-
-**No breaking changes** - All commands backward compatible!
+**Performance:**
+- Token usage: ~20K → ~4.7K (70% reduction)
+- Speed: 3-4x faster command execution
 
 ---
 
 ## [1.1.0] - 2024-12-XX
 
 ### Added
-- TDD classification logic (`.claude/lib/tdd-classifier.md`)
-- Agent retry & escalation (`/agent-executor.md`)
+- TDD classification logic
+- Agent retry & escalation
 - Validation enforcement framework
-- Progress tracking protocol (`flags-updater.md`)
-- Mandatory agent routing (`agent-router.md`)
-
-### Changed
-- `/csetup` now classifies TDD requirements per phase
-- `/cdev` implements retry logic (max 2 retries)
-- Validation gates enforce pre-work checklists
+- Progress tracking protocol
+- Mandatory agent routing
 
 ---
 
 ## [1.0.0] - 2024-11-XX
 
 ### Initial Release
-- 6 specialized agents (integration, uxui-frontend, backend, database, frontend, test-debug)
-- `/designsetup` command (auto-generate style guide)
-- `/pageplan` command (page planning with component reuse)
-- OpenSpec integration (`/csetup`, `/cdev`, `/cview`, `/cstatus`)
-- 3-level indexing (project discovery)
-- Context7 MCP integration (dynamic best practices)
-
----
-
-## [Unreleased]
-
-### Planned for 1.3.0
-- TaskMaster-style task analysis (subtask breakdown, risk scoring)
-- `cak init` smart merge (overwrite templates, keep user files)
-- Enhanced `/csetup` with dependency graph and research phases
+- 6 specialized agents
+- `/designsetup` command
+- `/pageplan` command
+- OpenSpec integration
+- 3-level indexing
+- Context7 MCP integration
 
 ---
 

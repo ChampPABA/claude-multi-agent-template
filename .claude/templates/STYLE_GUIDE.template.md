@@ -815,7 +815,7 @@ Before submitting a new component, verify:
 
 ---
 
-## 🚨 Troubleshooting
+## 🔧 Troubleshooting
 
 ### Colors look different than expected
 

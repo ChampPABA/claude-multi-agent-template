@@ -823,7 +823,7 @@ Use Flexbox           Use Grid
 
 ---
 
-### 🚨 Common Mistakes
+### ⚠️ Common Mistakes
 
 #### ❌ Mistake 1: Using Grid for Simple Row
 

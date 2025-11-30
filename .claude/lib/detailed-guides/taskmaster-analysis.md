@@ -166,7 +166,7 @@ Priority Distribution:
 - 🟢 LOW: 1
 
 Risk Assessment:
-- 🚨 HIGH: 2 tasks → TDD required
+- 🔴 HIGH: 2 tasks → TDD required
 - ⚠️ MEDIUM: 3 tasks
 - ✅ LOW: 3 tasks
 

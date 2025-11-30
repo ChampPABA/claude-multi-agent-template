@@ -340,7 +340,7 @@ done
 
 ---
 
-## 🚨 Common Mistakes
+## ⚠️ Common Mistakes
 
 ### ❌ Mistake 1: Lazy load hero images
 

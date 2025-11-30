@@ -225,9 +225,9 @@ export function ComboboxField({ ... }) {
 
 ---
 
-## 🚨 Red Flags (Stop Immediately)
+## ⚠️ Common Issues to Avoid
 
-### ❌ Hardcoded Colors
+### Hardcoded Colors
 ```typescript
 // WRONG
 className="text-gray-500"      // Not theme-aware
@@ -238,7 +238,7 @@ className="text-foreground/70" // Theme token
 className="bg-primary"         // Theme token
 ```
 
-### ❌ Non-Standard Opacity/Size
+### Non-Standard Opacity/Size
 ```typescript
 // WRONG
 className="opacity-50"         // Too light for foreground

@@ -108,7 +108,7 @@ ${changeContext.tasks}
 ${phase.instructions}
 `
 
-  // 🆕 v1.8.0: Add best-practices reference for ALL agents
+  // Add best-practices reference for ALL agents
   const bpDir = '.claude/contexts/domain/project/best-practices/'
   if (fileExists(bpDir)) {
     const bpFiles = listFiles(bpDir).filter(f => f.endsWith('.md') && f !== 'index.md')
@@ -133,24 +133,19 @@ ${phase.instructions}
 
 ---
 
-## 📚 Best Practices (MANDATORY - STEP 0)
+## 📚 Best Practices (STEP 0)
 
-**YOU MUST READ these files before writing ANY code:**
+Read these files before implementation for quality output:
 
-${relevantFiles.map(f => `
-### ${f.replace('.md', '')}
-\`\`\`
-Read: ${bpDir}${f}
-\`\`\`
-`).join('')}
+${relevantFiles.map(f => `- Read: ${bpDir}${f}`).join('\n')}
 
-**After reading, REPORT:**
+**Report format:**
 \`\`\`
 ✅ Best Practices Loaded
    ${relevantFiles.map(f => `- ${f.replace('.md', '')} ✓`).join('\n   ')}
 \`\`\`
 
-**If you skip this, your work will be REJECTED!**
+WHY: Best practices ensure consistency with project patterns.
 
 ---
 `
@@ -169,45 +164,29 @@ Read: ${bpDir}${f}
 
 ---
 
-## 🎨 Design System (MANDATORY Reading - STEP 0.5)
+## 🎨 Design System (STEP 0.5)
 
-**Required Files (YOU MUST READ in STEP 0.5):**
+**Files to read:**
 
-${hasTokens ? `
-1. **STYLE_TOKENS.json** (~500 tokens) ✅ REQUIRED
-   \`\`\`
-   Read: design-system/STYLE_TOKENS.json
-   \`\`\`
-   Contains: Colors, spacing, typography, shadows, borders, animations
-` : ''}
+${hasTokens ? `- design-system/STYLE_TOKENS.json (~500 tokens) - Colors, spacing, typography` : ''}
+${hasStyleGuide ? `- design-system/STYLE_GUIDE.md (selective sections) - Component Styles, Layout Patterns` : ''}
 
-${hasStyleGuide ? `
-2. **STYLE_GUIDE.md** (selective sections ~2K tokens) 📖 OPTIONAL
-   \`\`\`
-   Read: design-system/STYLE_GUIDE.md
-   \`\`\`
-   Load only sections you need:
-   - Section 6: Component Styles
-   - Section 15: Layout Patterns
-   - Section 16: Example Component Reference
-` : ''}
+**Style Guidelines:**
 
-**Critical Rules:**
-- ❌ **NO** hardcoded colors: \`text-gray-500\`, \`#64748b\`
-- ✅ **USE** theme tokens: \`text-foreground/70\`, \`bg-muted\`
-- ❌ **NO** arbitrary spacing: \`p-5\`, \`gap-7\`
-- ✅ **USE** spacing scale: \`p-4\`, \`p-6\`, \`gap-8\`
-- ❌ **NO** inconsistent shadows: mixing \`shadow-sm\` and \`shadow-lg\`
-- ✅ **USE** consistent patterns: all cards use \`shadow-md\`
+| Instead of | Use | WHY |
+|------------|-----|-----|
+| text-gray-500, #64748b | text-foreground/70, bg-muted | Theme-aware |
+| p-5, gap-7 | p-4, p-6, gap-8 | Spacing scale |
+| mixing shadow-sm/lg | consistent shadow-md | Visual consistency |
 
-**YOU MUST REPORT:**
+**Report format:**
 \`\`\`
 ✅ Design System Loaded
    - STYLE_TOKENS.json ✓
    - Design Tokens Extracted: [list key tokens]
 \`\`\`
 
-If you skip this, your work will be REJECTED!
+WHY: Design tokens ensure visual consistency across components.
 
 ---
 `
@@ -404,16 +383,18 @@ if (phase.agent === 'uxui-frontend' && hasPagePlan) {
 
 ---
 
-### Step 5: Post-Execution (🆕 MANDATORY FLAGS UPDATE)
+### Step 5: Post-Execution (Flags Update)
 
-**⚠️ CRITICAL: Main Claude MUST update flags.json after EVERY phase completion**
+**Main Claude updates flags.json after each phase completion.**
 
-See: `.claude/lib/flags-updater.md` for complete protocol
+→ See: `.claude/lib/flags-updater.md` for complete protocol
 
-**Execution Order (MUST follow this sequence):**
+WHY: Immediate updates ensure /cstatus shows accurate progress.
+
+**Execution Order:**
 
 ```typescript
-// 1. MANDATORY: Update flags.json
+// 1. Update flags.json
 output(`\n🔄 Updating progress tracking...`)
 
 // See flags-updater.md for updateFlagsAfterPhase() implementation
@@ -516,19 +497,13 @@ if (flags.ready_to_archive) {
 }
 ```
 
-**Rules:**
-- ✅ Main Claude updates flags.json (NOT sub-agent)
-- ✅ Update happens IMMEDIATELY after sub-agent responds successfully
-- ✅ Update happens BEFORE asking user to continue
-- ✅ Progress is reported to user after EVERY update
-- ✅ No exceptions - even if agent "says" it updated flags
+**Key points:**
+- Main Claude updates flags.json (sub-agents don't have access)
+- Update happens immediately after sub-agent responds
+- Update happens before asking user to continue
 
-**Common Mistake:**
-```typescript
-❌ WRONG:
-Agent completes → Ask user to continue → (flags.json never updated)
-
-✅ CORRECT:
+**Correct flow:**
+```
 Agent completes → Update flags.json → Report progress → Ask user to continue
 ```
 

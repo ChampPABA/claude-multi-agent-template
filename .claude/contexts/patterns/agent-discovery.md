@@ -6,7 +6,7 @@
 
 ## 🎯 Purpose
 
-Every agent MUST discover project context before ANY work. This ensures agents have all necessary context loaded.
+Every agent should discover project context before starting work. This ensures agents have all necessary context loaded and prevents inconsistent outputs.
 
 ---
 
@@ -136,7 +136,7 @@ ls openspec/changes/{change-id}/.claude/
 
 ---
 
-## 🚨 Fallback Strategy
+## ⚠️ Fallback Strategy
 
 **If any level fails:**
 

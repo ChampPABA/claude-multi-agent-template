@@ -1,12 +1,15 @@
 # Comprehensive Validation Framework
 
-> **Enforce ALL mandatory patterns across ALL agents**
+> **Validation patterns for agent pre-work**
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
 ## 🎯 Overview
 
-Every agent has MANDATORY pre-work steps. This framework ensures agents CANNOT skip required patterns.
+Every agent has pre-work steps that ensure quality output.
+
+WHY: Pre-work validation prevents inconsistent output (mismatched colors, missing error handling, duplicate components).
 
 **Principles:**
 1. **Report Before Code** - Agent must report completion BEFORE implementation
@@ -137,11 +140,11 @@ const MOCK_DATA = {
 ```
 
 **Validation Keywords:**
-- MUST contain: "Design Foundation ✓"
-- MUST contain: "Box Thinking Analysis ✓"
-- MUST contain: "Component Search ✓"
-- MUST contain: "Design Tokens Extracted ✓"
-- MUST contain: "Ready to Implement ✓"
+- Contains: "Design Foundation ✓"
+- Contains: "Box Thinking Analysis ✓"
+- Contains: "Component Search ✓"
+- Contains: "Design Tokens Extracted ✓"
+- Contains: "Ready to Implement ✓"
 
 ---
 
@@ -236,12 +239,12 @@ logger.error("login_error", extra={"error": str(e)})
 ```
 
 **Validation Keywords:**
-- MUST contain: "Patterns Loaded ✓"
-- MUST contain: "Existing Endpoints Search ✓"
-- IF TDD: MUST contain: "TDD Workflow" + "RED-GREEN-REFACTOR"
-- MUST contain: "Error Handling Pattern ✓"
-- MUST contain: "Logging Pattern ✓"
-- MUST contain: "Ready to Implement ✓"
+- Contains: "Patterns Loaded ✓"
+- Contains: "Existing Endpoints Search ✓"
+- IF TDD: Contains "TDD Workflow" + "RED-GREEN-REFACTOR"
+- Contains: "Error Handling Pattern ✓"
+- Contains: "Logging Pattern ✓"
+- Contains: "Ready to Implement ✓"
 
 ---
 
@@ -349,11 +352,11 @@ const handleError = (error: ApiError) => {
 ```
 
 **Validation Keywords:**
-- MUST contain: "Patterns Loaded ✓"
-- MUST contain: "API Contract Review ✓"
-- MUST contain: "State Management Strategy ✓"
-- MUST contain: "Error Handling Strategy ✓"
-- MUST contain: "Ready to Implement ✓"
+- Contains: "Patterns Loaded ✓"
+- Contains: "API Contract Review ✓"
+- Contains: "State Management Strategy ✓"
+- Contains: "Error Handling Strategy ✓"
+- Contains: "Ready to Implement ✓"
 
 ---
 
@@ -438,11 +441,11 @@ async function updatePassword(userId: string, newHashedPassword: string): Promis
 ```
 
 **Validation Keywords:**
-- MUST contain: "Patterns Loaded ✓"
-- MUST contain: "Existing Schema Search ✓"
-- MUST contain: "Schema Design Plan ✓"
-- MUST contain: "Migration Strategy ✓"
-- MUST contain: "Ready to Implement ✓"
+- Contains: "Patterns Loaded ✓"
+- Contains: "Existing Schema Search ✓"
+- Contains: "Schema Design Plan ✓"
+- Contains: "Migration Strategy ✓"
+- Contains: "Ready to Implement ✓"
 
 ---
 
@@ -536,11 +539,11 @@ describe('Button', () => {
 ```
 
 **Validation Keywords:**
-- MUST contain: "Patterns Loaded ✓"
-- MUST contain: "Test Scope Analysis ✓"
-- MUST contain: "Test Strategy ✓"
-- MUST contain: "Existing Test Patterns ✓"
-- MUST contain: "Ready to Implement ✓"
+- Contains: "Patterns Loaded ✓"
+- Contains: "Test Scope Analysis ✓"
+- Contains: "Test Strategy ✓"
+- Contains: "Existing Test Patterns ✓"
+- Contains: "Ready to Implement ✓"
 
 ---
 
@@ -608,13 +611,13 @@ Grep: "axios\\.(post|get)"
 ```
 
 **Validation Keywords:**
-- MUST contain: "Validation Type ✓"
-- MUST contain: "Contract Sources ✓" OR "Requirements Check ✓"
-- MUST contain: "Ready to Validate ✓"
+- Contains: "Validation Type ✓"
+- Contains: "Contract Sources ✓" OR "Requirements Check ✓"
+- Contains: "Ready to Validate ✓"
 
 ---
 
-## 🚨 Validation Enforcement Logic
+## ✅ Validation Enforcement Logic
 
 ### Orchestrator Validation Function
 
@@ -707,7 +710,7 @@ Your response is missing required pre-work steps:
 
 {missing.map(item => `- ${item}`).join('\n')}
 
-**You MUST complete ALL mandatory steps before implementation.**
+**Complete all pre-work steps before implementation for quality output.**
 
 Please provide a complete Pre-Implementation Validation Report covering:
 

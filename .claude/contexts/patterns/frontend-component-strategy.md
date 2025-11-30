@@ -319,7 +319,7 @@ Read: "tailwind.config.js"
 
 ---
 
-## 🚨 Anti-Patterns to Avoid
+## ⚠️ Anti-Patterns to Avoid
 
 ### ❌ Creating Duplicate Components
 ```typescript

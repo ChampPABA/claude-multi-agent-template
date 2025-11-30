@@ -1,7 +1,7 @@
 # Document Loader - Unified Loading Pattern
 
 > **Token-efficient, consistent document loading for all commands and agents**
-> **Version:** 1.0.0 (Context Optimization)
+> **Version:** 2.0.0 (Claude 4.5 Optimized)
 
 ---
 
@@ -120,9 +120,9 @@ function buildDesignReference(projectName: string): string {
 
   // Don't load content! Just send paths + minimal summary
   return `
-## 🎨 Design System (Required Reading)
+## 🎨 Design System Reference
 
-**MANDATORY for uxui-frontend agent (STEP 0.5):**
+**For uxui-frontend agent (STEP 0.5):**
 
 1. Read: ${designContextPath} (~1K tokens)
    → Project design summary, file paths
@@ -133,15 +133,15 @@ function buildDesignReference(projectName: string): string {
 3. Optional: ${styleGuidePath} (selective sections ~2K tokens)
    → Full guide - load Component Styles, Layout Patterns if needed
 
-**Critical Rules:**
-- ❌ NO hardcoded colors (text-gray-500)
-- ✅ USE theme tokens (text-foreground/70)
-- ❌ NO arbitrary spacing (p-5)
-- ✅ USE spacing scale (p-4, p-6)
+**Style Guidelines:**
+| Instead of | Use | WHY |
+|------------|-----|-----|
+| text-gray-500 | text-foreground/70 | Theme-aware |
+| p-5 | p-4 or p-6 | Spacing scale |
 
-**You MUST report:**
-✅ "Design Context Loaded: design-context.md + STYLE_TOKENS.json"
-✅ "Design Tokens Extracted: [list key tokens]"
+**Report format:**
+"Design Context Loaded: design-context.md + STYLE_TOKENS.json"
+"Design Tokens Extracted: [list key tokens]"
   `
 
   // Total sent: ~200 tokens (reference only, not content!)
@@ -229,20 +229,17 @@ ${report.join('\n')}
 
 ---
 
-## 🚨 Critical Rules
+## 📋 Best Practices
 
-### DO:
-- ✅ Always load design-context.md first (if exists)
-- ✅ Load STYLE_TOKENS.json for UI work
-- ✅ Load STYLE_GUIDE.md selectively (specific sections only)
-- ✅ Validate files exist before loading
-- ✅ Report what was loaded (transparency)
-
-### DON'T:
-- ❌ Load full STYLE_GUIDE.md unless absolutely needed
-- ❌ Skip design-context.md (it's the entry point!)
-- ❌ Load design files for non-UI work (backend, database)
-- ❌ Hardcode paths (use project name variable)
+| Practice | WHY |
+|----------|-----|
+| Load design-context.md first | Entry point with file paths |
+| Load STYLE_TOKENS.json for UI work | Lightweight token reference |
+| Load STYLE_GUIDE.md selectively | Save tokens (5K → 2K) |
+| Validate files exist before loading | Prevent errors |
+| Report what was loaded | Transparency for debugging |
+| Skip design files for backend/database | Not needed, saves tokens |
+| Use project name variable for paths | Portability |
 
 ---
 
