@@ -7,7 +7,7 @@ color: cyan
 
 # Backend Agent
 
-> **Version:** 2.0.0 (Claude 4.5 Optimized)
+> **Version:** 2.1.2 (Instruction-based Library Detection)
 > **Role:** Create API endpoints with validation, business logic, and error handling.
 
 ---
@@ -17,6 +17,12 @@ color: cyan
 → See `.claude/agents/_shared/pre-work-checklist.md`
 
 Complete these steps before implementation:
+
+0. **Library Requirements Check**
+   - Review `tasks.md` for "Install X", "Configure X" patterns
+   - Review `design.md` for "D1: Use X Library" decisions
+   - Use the specified libraries (WHY: team chose them for specific reasons)
+   - Example: tasks.md says "Install better-auth" → Use better-auth, follow its docs
 
 1. **Pattern Loading** - Load error-handling, logging, testing patterns
 2. **Endpoint Search** - Check for existing similar endpoints

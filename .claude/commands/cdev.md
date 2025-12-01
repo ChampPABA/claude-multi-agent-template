@@ -94,7 +94,7 @@ See: `.claude/lib/agent-executor.md` for full implementation
 ```typescript
 // Step 4: Invoke Agent with Retry & Validation
 
-// 4.1: Build agent prompt (with design reference + best practices - v1.8.0)
+// 4.1: Build agent prompt (with design reference + best practices - v2.1.2)
 function buildAgentPrompt(phase, changeContext) {
   let prompt = `
 # Phase ${phase.phase_number}: ${phase.name}
@@ -106,6 +106,47 @@ ${changeContext.proposal}
 ${changeContext.tasks}
 
 ${phase.instructions}
+
+---
+
+## 📦 Library Requirements
+
+**Scan for required libraries before implementation:**
+
+1. **Review tasks.md above** for these patterns:
+   - "Install X and dependencies" → Use library X
+   - "Configure X with Y adapter" → Use X with adapter Y
+   - Backtick packages like \`better-auth\` → Required dependency
+
+2. **Review design.md** (in change context) for:
+   - "### D1: Use X Library" → Decision to use X
+   - "**Decision:** Use X" → Chosen library
+   - Alternatives table shows why this library was chosen
+
+3. **Use the specified libraries**
+   - WHY: The team chose these for compatibility, features, or constraints
+   - Custom implementations duplicate effort and miss edge cases the library handles
+   - Follow library documentation patterns for consistency
+
+**Example:**
+\`\`\`
+tasks.md: "Install better-auth and dependencies"
+→ Use better-auth library
+→ Follow better-auth docs for setup
+
+WHY not custom? better-auth handles OAuth, sessions, security
+edge cases that custom code would need to re-implement.
+\`\`\`
+
+**Report required libraries in your validation:**
+\`\`\`
+Required Libraries Found:
+- better-auth (tasks.md line 6)
+- @better-auth/drizzle (tasks.md line 6)
+- ioredis (design.md D2)
+\`\`\`
+
+---
 `
 
   // Add best-practices reference for ALL agents

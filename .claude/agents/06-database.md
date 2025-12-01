@@ -7,7 +7,7 @@ color: pink
 
 # Database Agent
 
-> **Version:** 2.0.0 (Claude 4.5 Optimized)
+> **Version:** 2.1.2 (Instruction-based Library Detection)
 > **Role:** Design schemas, create migrations, write complex queries, optimize performance.
 
 ---
@@ -17,6 +17,12 @@ color: pink
 → See `.claude/agents/_shared/pre-work-checklist.md`
 
 Complete these steps before implementation:
+
+0. **Library Requirements Check**
+   - Review `tasks.md` for "Install X", "Configure X" patterns
+   - Review `design.md` for "D1: Use X Library" decisions
+   - Use the specified libraries (WHY: team chose them for specific reasons)
+   - Example: design.md says "Use Drizzle ORM" → Use Drizzle, follow its docs
 
 1. **Pattern Loading** - Load ORM patterns from Context7
 2. **Schema Search** - Check existing models/schemas

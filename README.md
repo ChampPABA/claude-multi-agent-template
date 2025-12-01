@@ -27,6 +27,12 @@ cak init
 | frontend | 3 | Connect UI to API |
 | test-debug | 4 | Tests & fixes |
 
+## Features
+
+- **Instruction-based Library Detection** - Agents scan `tasks.md`/`design.md` for required libraries
+- **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
+- **Design System v2.0** - Interactive setup with theme selection
+
 ## Commands
 
 **CLI:** `cak init` | `cak update`

@@ -18,6 +18,13 @@ color: green
 
 Complete these steps before implementation:
 
+0. **Library Requirements Check**
+   - Review `tasks.md` for "Install X", "Configure X" patterns
+   - Review `design.md` for "D1: Use X Library" decisions
+   - Use the specified libraries (WHY: team chose them for specific reasons)
+   - Example: tasks.md says "Install react-query" → Use react-query, follow its docs
+
+
 1. **Pattern Loading** - Load error-handling, state management patterns
 2. **UI Review** - Read existing UI components (from uxui-frontend)
 3. **API Review** - Read API endpoints (from backend/integration)

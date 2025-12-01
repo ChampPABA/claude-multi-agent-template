@@ -18,6 +18,13 @@ color: blue
 
 Complete these steps before implementation:
 
+0. **Library Requirements Check**
+   - Review `tasks.md` for "Install X", "Configure X" patterns
+   - Review `design.md` for "D1: Use X Library" decisions
+   - Use the specified libraries (WHY: team chose them for specific reasons)
+   - Example: tasks.md says "Install shadcn/ui" → Use shadcn components, follow its docs
+
+
 1. **Context Discovery** - Load project context (STEP 0)
 2. **Design Loading** - Load style guide or design principles (STEP 0.5)
 3. **Component Search** - Check existing components (STEP 3)
