@@ -1,6 +1,6 @@
 {
   "name": "@champpaba/claude-agent-kit",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Universal multi-agent template for Claude Code - AI-assisted development with specialized agents",
   "main": "bin/cli.js",
   "bin": {
@@ -10,7 +10,8 @@
   "files": [
     "bin/",
     "lib/",
-    ".claude/"
+    ".claude/",
+    "PROJECT_STATUS.template.yml"
   ],
   "scripts": {
     "test": "echo \"No tests yet\" && exit 0"

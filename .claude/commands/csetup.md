@@ -35,6 +35,81 @@ If not found:
 Please create the change with OpenSpec first
 ```
 
+### Step 1.5: Read PROJECT_STATUS.yml (v2.1.0)
+
+**WHY:** Cross-session context helps understand blockers and infrastructure state before starting work.
+
+```typescript
+const projectStatusPath = 'PROJECT_STATUS.yml'
+
+if (fileExists(projectStatusPath)) {
+  const projectStatus = parseYaml(Read(projectStatusPath))
+
+  output(`\n📊 Project Context (from PROJECT_STATUS.yml)`)
+
+  // Show current focus
+  if (projectStatus.current_focus?.description) {
+    output(`   Focus: ${projectStatus.current_focus.description}`)
+  }
+
+  // Check for blockers that might affect this change
+  if (projectStatus.blockers?.length > 0) {
+    const relevantBlockers = projectStatus.blockers.filter(b =>
+      b.blocks?.some(blocked =>
+        blocked.toLowerCase().includes(changeId.toLowerCase()) ||
+        changeId.toLowerCase().includes(blocked.toLowerCase())
+      )
+    )
+
+    if (relevantBlockers.length > 0) {
+      output(`\n   ⚠️ Potential blockers for this change:`)
+      relevantBlockers.forEach(b => {
+        output(`      - ${b.id}: ${b.description}`)
+      })
+      output(`\n   Consider resolving blockers before starting.`)
+    }
+  }
+
+  // Show infrastructure status summary
+  if (projectStatus.infrastructure) {
+    const downServices = Object.entries(projectStatus.infrastructure)
+      .filter(([_, info]) => info.status === 'down' || info.status === 'degraded')
+
+    if (downServices.length > 0) {
+      output(`\n   ⚠️ Infrastructure issues:`)
+      downServices.forEach(([service, info]) => {
+        output(`      - ${service}: ${info.status}${info.notes ? ` (${info.notes})` : ''}`)
+      })
+    }
+  }
+
+  // Check stale status
+  const lastUpdated = new Date(projectStatus.last_updated)
+  const daysSinceUpdate = Math.floor((Date.now() - lastUpdated) / (1000 * 60 * 60 * 24))
+  const staleThreshold = projectStatus._config?.stale_warning_days || 7
+
+  if (daysSinceUpdate > staleThreshold) {
+    output(`\n   ℹ️ PROJECT_STATUS.yml last updated ${daysSinceUpdate} days ago.`)
+    output(`      Consider running /pstatus to refresh.`)
+  }
+
+  // Update active change
+  if (projectStatus.current_focus?.active_change !== changeId) {
+    output(`\n   📍 Update current_focus.active_change to "${changeId}"? (yes/no)`)
+    const updateFocus = await askUser()
+    if (updateFocus) {
+      projectStatus.current_focus = projectStatus.current_focus || {}
+      projectStatus.current_focus.active_change = changeId
+      projectStatus.last_updated = new Date().toISOString().split('T')[0]
+      Write(projectStatusPath, toYaml(projectStatus))
+      output(`   ✅ Updated active_change to "${changeId}"`)
+    }
+  }
+
+  output(``) // Blank line
+}
+```
+
 ### Step 2: Read OpenSpec Files
 
 Read in order:
