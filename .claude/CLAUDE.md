@@ -412,6 +412,9 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 | **Technical debt:** "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..." | Add to `technical_debt` |
 | **Decisions made:** "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y" | Add to `decisions` |
 | **Learnings/notes:** "พบว่า...", "discovered...", "note:...", "important:..." | Add to `notes` |
+| **Problems found (by Claude):** "⚠️ ปัญหาที่พบ", "ไม่มี X", "missing X", "not configured" | Add to `technical_debt` or `blockers` |
+| **Config gaps:** "ไม่ได้ตั้งค่า...", "need to configure...", "should add to CI/CD" | Add to `technical_debt` |
+| **Sync issues:** "DB not synced", "schema mismatch", "local vs production differs" | Add to `blockers` + `infrastructure` |
 
 ### Update Protocol
 
@@ -453,6 +456,24 @@ User: "ตัดสินใจใช้ Drizzle แทน Prisma แล้ว �
 Claude: "Add to PROJECT_STATUS.yml decisions?
          - decision: Use Drizzle over Prisma
          - reason: Better type safety"
+
+# Problem found by Claude during analysis
+Claude: "⚠️ ปัญหาที่พบ: ไม่มี migration step ใน CI/CD!"
+Claude: "Add to PROJECT_STATUS.yml?
+         technical_debt:
+         - item: Add DB migration to CI/CD
+         - reason: Schema not synced between local and VPS
+         - priority: high"
+
+# Config gap discovered
+Claude: "Local DB กับ VPS schema ไม่ sync กัน"
+Claude: "Add to PROJECT_STATUS.yml?
+         blockers:
+         - id: db-schema-sync
+         - description: Local and VPS DB schemas out of sync
+         infrastructure.database:
+         - status: degraded
+         - notes: Schema mismatch, need migration"
 ```
 
 ---
