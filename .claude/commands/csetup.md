@@ -83,6 +83,50 @@ if (fileExists(projectStatusPath)) {
     }
   }
 
+  // Check pending follow-ups that might affect this change (v2.1.6)
+  if (projectStatus.pending_followups?.length > 0) {
+    const proposalPath = `openspec/changes/${changeId}/proposal.md`
+    const proposal = fileExists(proposalPath) ? Read(proposalPath).toLowerCase() : ''
+
+    const relatedPending = projectStatus.pending_followups.filter(p => {
+      const affects = p.affects || []
+      return affects.some(pattern => {
+        const patternLower = pattern.toLowerCase()
+        return changeId.toLowerCase().includes(patternLower) ||
+               proposal.includes(patternLower) ||
+               (patternLower.includes('db') && proposal.includes('table')) ||
+               (patternLower.includes('schema') && proposal.includes('model')) ||
+               (patternLower.includes('migration') && proposal.includes('database'))
+      })
+    })
+
+    if (relatedPending.length > 0) {
+      output(`\n   ⚠️ Found related pending follow-ups:`)
+      relatedPending.forEach(p => {
+        output(`      - "${p.item}" (from ${p.from_change})`)
+        output(`        Reason: ${p.reason}`)
+        if (p.affects) output(`        Affects: ${p.affects.join(', ')}`)
+      })
+
+      output(`\n   This change may be affected by unresolved follow-ups.`)
+      output(`   Options:`)
+      output(`      1. Continue anyway (risk: issues like schema sync)`)
+      output(`      2. Address follow-up first (create separate proposal)`)
+      output(`      3. Include follow-up in this change's scope`)
+
+      const choice = await askUser(`\n   How to proceed? (1/2/3)`)
+
+      if (choice === '2') {
+        output(`\n   ❌ Setup paused. Create proposal for pending follow-up first.`)
+        return
+      } else if (choice === '3') {
+        output(`\n   ℹ️ Remember to include follow-up items in tasks.md`)
+      } else {
+        output(`\n   ⚠️ Continuing with caution. Monitor for related issues.`)
+      }
+    }
+  }
+
   // Check stale status
   const lastUpdated = new Date(projectStatus.last_updated)
   const daysSinceUpdate = Math.floor((Date.now() - lastUpdated) / (1000 * 60 * 60 * 24))

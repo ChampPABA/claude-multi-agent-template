@@ -72,6 +72,26 @@ blockers: []
   #   blocks: [payment-integration]
 
 # -------------------------------------------------------------------
+# PENDING FOLLOW-UPS
+# Non-Goals from archived changes that need separate proposals
+# Captured when: archiving a change with Non-Goals marked "separate proposal"
+# Claude will warn during /csetup if new change relates to pending items
+# -------------------------------------------------------------------
+pending_followups: []
+  # Example:
+  # - item: "Database migration strategy"
+  #   from_change: "add-infrastructure-cicd"
+  #   reason: "Non-Goal: Database migrations (แยก proposal)"
+  #   affects: ["any change with DB schema changes"]
+  #   date: "2025-11-30"
+  #
+  # - item: "API rate limiting"
+  #   from_change: "add-auth-system"
+  #   reason: "Non-Goal: Rate limiting (phase 2)"
+  #   affects: ["public API endpoints"]
+  #   date: "2025-12-01"
+
+# -------------------------------------------------------------------
 # NEXT PRIORITIES
 # What should be worked on next (with reasoning)
 # Helps Claude suggest appropriate next steps

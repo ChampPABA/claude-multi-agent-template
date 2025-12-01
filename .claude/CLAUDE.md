@@ -402,12 +402,12 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 
 | Event Detected | What to Update |
 |----------------|----------------|
-| After `/openspec:archive` completes | Add to `completed_changes` |
+| After `/openspec:archive` completes | Add to `completed_changes` + check Non-Goals for `pending_followups` |
 | User says "waiting for...", "need X from...", "blocked by..." | Add to `blockers` |
 | User mentions blocker resolved | Remove from `blockers` |
 | Infrastructure change (deploy, tunnel, DB migration) | Update `infrastructure` |
 | User discusses priority shift | Update `next_priorities` |
-| `/csetup {change-id}` started | Update `current_focus.active_change` |
+| `/csetup {change-id}` started | Update `current_focus` + **check `pending_followups` for related items** |
 | **Future features/ideas:** "อยากให้มี...", "want to add...", "later we should...", "in the future..." | Add to `future_ideas` |
 | **Technical debt:** "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..." | Add to `technical_debt` |
 | **Decisions made:** "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y" | Add to `decisions` |
@@ -415,6 +415,8 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 | **Problems found (by Claude):** "⚠️ ปัญหาที่พบ", "ไม่มี X", "missing X", "not configured" | Add to `technical_debt` or `blockers` |
 | **Config gaps:** "ไม่ได้ตั้งค่า...", "need to configure...", "should add to CI/CD" | Add to `technical_debt` |
 | **Sync issues:** "DB not synced", "schema mismatch", "local vs production differs" | Add to `blockers` + `infrastructure` |
+| **Non-Goal needs follow-up:** design.md has "Non-Goal: X (separate proposal)" | Add to `pending_followups` when archiving |
+| **Pending resolved:** User creates proposal for pending item | Remove from `pending_followups` |
 
 ### Update Protocol
 
@@ -474,6 +476,31 @@ Claude: "Add to PROJECT_STATUS.yml?
          infrastructure.database:
          - status: degraded
          - notes: Schema mismatch, need migration"
+
+# Archive with Non-Goals that need follow-up
+Claude: "Archiving add-infrastructure-cicd..."
+Claude: *reads design.md, finds Non-Goals: "Database migrations (separate proposal)"*
+Claude: "Add to PROJECT_STATUS.yml pending_followups?
+         - item: Database migration strategy
+         - from_change: add-infrastructure-cicd
+         - reason: Non-Goal marked 'separate proposal'
+         - affects: ['any change with DB schema']"
+
+# /csetup checks pending_followups (Medium aggressiveness)
+User: "/csetup add-auth-system"
+Claude: *reads PROJECT_STATUS.yml pending_followups*
+Claude: "⚠️ Found related pending follow-up:
+         - 'Database migration strategy' (from add-infrastructure-cicd)
+         - Affects: 'any change with DB schema'
+
+         This change adds DB tables. The migration strategy hasn't been addressed yet.
+
+         Options:
+         1. Continue anyway (risk: schema sync issues)
+         2. Address migration first (create proposal)
+         3. Add migration step to this change's scope
+
+         Which approach?"
 ```
 
 ---
