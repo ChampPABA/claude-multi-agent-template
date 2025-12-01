@@ -85,6 +85,51 @@ next_priorities: []
   #   reason: "Dependency for RIASEC save feature"
 
 # -------------------------------------------------------------------
+# FUTURE IDEAS
+# Features/enhancements discussed but not yet planned
+# Captured from: "อยากให้มี...", "want to add...", "later...", "in the future..."
+# -------------------------------------------------------------------
+future_ideas: []
+  # Example:
+  # - idea: "Dark mode support"
+  #   context: "User requested during review"
+  #   date: "2025-12-01"
+  #
+  # - idea: "Export to PDF"
+  #   context: "Nice to have for reports"
+  #   date: "2025-11-28"
+
+# -------------------------------------------------------------------
+# TECHNICAL DEBT
+# Known issues to fix later
+# Captured from: "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..."
+# -------------------------------------------------------------------
+technical_debt: []
+  # Example:
+  # - item: "Refactor auth middleware"
+  #   reason: "Duplicated logic in 3 places"
+  #   priority: medium  # low, medium, high
+  #
+  # - item: "Add proper error boundaries"
+  #   reason: "Currently crashes on API errors"
+  #   priority: high
+
+# -------------------------------------------------------------------
+# DECISIONS
+# Important technical/product decisions made
+# Captured from: "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y"
+# -------------------------------------------------------------------
+decisions: []
+  # Example:
+  # - decision: "Use better-auth over NextAuth"
+  #   reason: "Better TypeScript support, simpler API"
+  #   date: "2025-12-01"
+  #
+  # - decision: "PostgreSQL over MongoDB"
+  #   reason: "Relational data, ACID compliance needed"
+  #   date: "2025-11-30"
+
+# -------------------------------------------------------------------
 # NOTES
 # Free-form context that doesn't fit above
 # -------------------------------------------------------------------

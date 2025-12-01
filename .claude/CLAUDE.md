@@ -408,6 +408,10 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 | Infrastructure change (deploy, tunnel, DB migration) | Update `infrastructure` |
 | User discusses priority shift | Update `next_priorities` |
 | `/csetup {change-id}` started | Update `current_focus.active_change` |
+| **Future features/ideas:** "อยากให้มี...", "want to add...", "later we should...", "in the future..." | Add to `future_ideas` |
+| **Technical debt:** "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..." | Add to `technical_debt` |
+| **Decisions made:** "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y" | Add to `decisions` |
+| **Learnings/notes:** "พบว่า...", "discovered...", "note:...", "important:..." | Add to `notes` |
 
 ### Update Protocol
 
@@ -423,7 +427,7 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 Claude: *reads PROJECT_STATUS.yml*
 Claude: "I see auth-system is active, tunnel running but waiting for domain."
 
-# During work
+# During work - blocker resolved
 User: "Domain is now configured"
 Claude: "Update PROJECT_STATUS.yml?
          - Remove 'domain' from blockers
@@ -431,6 +435,24 @@ Claude: "Update PROJECT_STATUS.yml?
 
 # After archiving
 Claude: "Auth-system archived. Add to completed_changes?"
+
+# Casual conversation - future idea
+User: "อยากให้มี dark mode ด้วยนะ ไว้ทำทีหลัง"
+Claude: "Add to PROJECT_STATUS.yml future_ideas?
+         - idea: Dark mode support
+         - context: User requested, low priority"
+
+# Discussion - technical debt
+User: "ตรงนี้ code มันซ้ำๆ ต้องแก้ทีหลัง"
+Claude: "Add to PROJECT_STATUS.yml technical_debt?
+         - item: Refactor duplicated code in auth middleware
+         - priority: medium"
+
+# Decision made
+User: "ตัดสินใจใช้ Drizzle แทน Prisma แล้ว เพราะ type-safe กว่า"
+Claude: "Add to PROJECT_STATUS.yml decisions?
+         - decision: Use Drizzle over Prisma
+         - reason: Better type safety"
 ```
 
 ---
