@@ -1,6 +1,6 @@
 # Pre-Work Checklist (Shared by All Agents)
 
-> **Version:** 2.1.2 (Instruction-based Library Detection)
+> **Version:** 2.1.3 (Design Spec Injection)
 > **Purpose:** Single source of truth for pre-work validation
 
 ---
@@ -29,14 +29,22 @@ Complete these steps before implementation to ensure alignment with project stan
    - WHY: The team chose these libraries for specific reasons (compatibility, features, constraints)
    - Custom implementations waste effort and may miss edge cases the library handles
 
+5. **Implement according to Design Spec (not library defaults)**
+   - If design.md specifies configurations → Use those values (not library defaults)
+   - If design.md specifies custom endpoints → Implement those endpoints
+   - WHY: Design decisions were made for specific project requirements
+
 **Example:**
 ```
 tasks.md says: "Install better-auth and dependencies"
-→ Use better-auth library
-→ Follow better-auth documentation patterns
+design.md says: "JWT 15min + Redis refresh token 30d"
 
-WHY not custom? better-auth handles OAuth flows, session management, 
-and security edge cases that custom code would need to re-implement.
+→ Use better-auth library (from tasks.md)
+→ Configure JWT with 15min expiry (from design.md)
+→ Configure Redis refresh with 30d (from design.md)
+→ Implement /api/auth/refresh endpoint (from design.md)
+
+WHY not defaults? Design spec has project-specific security requirements.
 ```
 
 ---
@@ -61,6 +69,13 @@ Library Requirements: (Step 0)
 - [ ] Scanned tasks.md for "Install X" patterns
 - [ ] Scanned design.md for design decisions
 - Required libraries: {list from tasks.md/design.md}
+
+Design Spec Implementation: (Step 5)
+- [ ] Read design.md specifications
+- [ ] Identified custom configurations (not library defaults)
+- Design requirements:
+  - {requirement 1 from design.md}
+  - {requirement 2 from design.md}
 
 Project Context:
 - Project: {name}
@@ -90,6 +105,7 @@ Ready to Implement:
 
 Pre-work validation prevents:
 - **Wrong library choices** - Using custom code when a library was already chosen by the team
+- **Library defaults instead of spec** - Using default configs when design.md specifies custom values
 - Misaligned implementations (wrong patterns, wrong style)
 - Duplicate components (not searching existing code first)
 - Wrong package manager usage (CI/CD breaks)

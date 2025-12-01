@@ -105,6 +105,9 @@ ${changeContext.proposal}
 ## Tasks
 ${changeContext.tasks}
 
+## Design Decisions (from design.md)
+${changeContext.design || '(no design.md found)'}
+
 ${phase.instructions}
 
 ---
@@ -118,32 +121,43 @@ ${phase.instructions}
    - "Configure X with Y adapter" → Use X with adapter Y
    - Backtick packages like \`better-auth\` → Required dependency
 
-2. **Review design.md** (in change context) for:
+2. **Review "Design Decisions" section above** for:
    - "### D1: Use X Library" → Decision to use X
    - "**Decision:** Use X" → Chosen library
-   - Alternatives table shows why this library was chosen
+   - Specific configurations (e.g., "JWT 15min", "Redis refresh token 30d")
+   - Architecture decisions (e.g., "Hybrid Session Strategy")
 
 3. **Use the specified libraries**
    - WHY: The team chose these for compatibility, features, or constraints
    - Custom implementations duplicate effort and miss edge cases the library handles
-   - Follow library documentation patterns for consistency
+
+4. **Implement according to Design Spec (not library defaults)**
+   - If design.md specifies "JWT 15min + Redis refresh 30d" → Configure library with these values
+   - If design.md specifies custom endpoints → Implement those endpoints
+   - Library defaults are starting points, not final implementation
+   - WHY: Design decisions were made for specific project requirements
 
 **Example:**
 \`\`\`
-tasks.md: "Install better-auth and dependencies"
-→ Use better-auth library
-→ Follow better-auth docs for setup
+design.md says:
+  "Hybrid Session Strategy: JWT 15min + Redis refresh 30d"
 
-WHY not custom? better-auth handles OAuth, sessions, security
-edge cases that custom code would need to re-implement.
+→ Use better-auth library (from tasks.md)
+→ Configure JWT plugin with 15min expiry
+→ Configure refresh token with 30d in Redis
+→ Implement /api/auth/refresh endpoint
+
+WHY not defaults? Design spec has project-specific security requirements
+that differ from library defaults.
 \`\`\`
 
-**Report required libraries in your validation:**
+**Report in validation:**
 \`\`\`
-Required Libraries Found:
-- better-auth (tasks.md line 6)
-- @better-auth/drizzle (tasks.md line 6)
-- ioredis (design.md D2)
+Libraries: better-auth, @better-auth/drizzle, ioredis
+Design Spec Implementation:
+- [x] JWT access token: 15min (design.md D1)
+- [x] Redis refresh token: 30d (design.md D2)
+- [x] /api/auth/refresh endpoint (design.md D3)
 \`\`\`
 
 ---
