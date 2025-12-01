@@ -18,7 +18,7 @@ This protocol defines how agents discover and load context before starting work.
 
 **Who uses this:**
 - All 6 agents (integration, uxui-frontend, test-debug, frontend, backend, database)
-- Commands that need tech stack info (/agentsetup, /csetup, /cdev)
+- Commands that need tech stack info (/csetup, /cdev)
 
 ---
 
@@ -92,7 +92,7 @@ From tech-stack.md, extract:
 
 ```
 ⚠️ tech-stack.md not found!
-💡 User should run: /agentsetup
+💡 User should run: /csetup
 
 FALLBACK (use ONLY if absolutely necessary):
 - Detect from package.json (JavaScript)
@@ -383,7 +383,7 @@ Troubleshooting:
 ⚠️ Warning: tech-stack.md shows pnpm, but pnpm-lock.yaml not found
 
 Suggestion:
-- Run: /agentsetup (regenerate tech-stack.md)
+- Run: /csetup (regenerate tech-stack.md)
 - Or manually update tech-stack.md
 ```
 
@@ -392,7 +392,7 @@ Suggestion:
 ## 🔄 When to Re-load Context
 
 **Re-load Level 0-2 when:**
-- ✅ User runs `/agentsetup` (tech stack changed)
+- ✅ User runs `/csetup` (tech stack changed)
 - ✅ Framework version upgraded
 - ✅ New dependencies added
 

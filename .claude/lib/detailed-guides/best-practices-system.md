@@ -8,7 +8,7 @@
 
 ## 📚 How It Works
 
-1. **Run `/agentsetup`** to detect tech stack and generate best practices
+1. **Run `/csetup`** to detect tech stack and generate best practices
 2. **Context7 queries** latest framework docs (React, Next.js, Prisma, etc.)
 3. **Best practices files** created in `domain/{project}/best-practices/`
 4. **Agents auto-discover** project via 3-level indexing
@@ -119,11 +119,10 @@ design-system/
 # 1. Generate style guide FIRST (optional but recommended)
 /designsetup
 
-# 2. Setup project (discovers style guide)
-/psetup
+# 2. Setup change and project (discovers style guide, auto-detects tech stack)
+/csetup feature-login
 
 # 3. Start development (agents use STYLE_GUIDE.md)
-/csetup feature-login
 /cdev feature-login
 ```
 
@@ -143,8 +142,7 @@ design-system/
 
 ## 🔗 See Also
 
-- `../../commands/agentsetup.md` - /agentsetup command (generates best practices)
+- `../../commands/csetup.md` - /csetup command (setup change + auto-detect tech stack + generate best practices)
 - `../../commands/designsetup.md` - /designsetup command (generates style guide)
-- `../../commands/psetup.md` - /psetup command (one-time project setup)
 - `../../contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 - `context-loading-protocol.md` - How agents load framework-specific context

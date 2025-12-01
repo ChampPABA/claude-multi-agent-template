@@ -43,7 +43,7 @@ Create it now? (yes/no)
   const answer = await askUser()
   if (answer === 'yes') {
     // Copy from template
-    copy('PROJECT_STATUS.template.yml', statusPath)
+    copy('.claude/templates/PROJECT_STATUS.template.yml', statusPath)
     output('✅ Created PROJECT_STATUS.yml - please fill in your project details')
     return
   } else {

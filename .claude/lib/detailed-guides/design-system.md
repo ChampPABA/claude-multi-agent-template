@@ -66,11 +66,10 @@ design-system/
 # 1. Generate style guide FIRST (optional but recommended)
 /designsetup
 
-# 2. Setup project (discovers style guide)
-/psetup
+# 2. Setup change and project (discovers style guide, auto-detects tech stack)
+/csetup feature-login
 
 # 3. Start development (agents use STYLE_GUIDE.md)
-/csetup feature-login
 /cdev feature-login
 ```
 

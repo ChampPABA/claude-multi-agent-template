@@ -110,7 +110,7 @@ WHY routing matters: Specialist agents have domain-specific validation (design t
 
 WHY: STYLE_GUIDE.md has project-specific tokens. design/*.md has universal principles.
 
-**Fallback:** If discovery fails, suggest `/agentsetup` or `/designsetup`
+**Fallback:** If discovery fails, suggest `/csetup` or `/designsetup`
 
 ---
 

@@ -156,7 +156,7 @@ const WORK_PATTERNS = {
 
   'orchestration': {
     keywords: [
-      '/cdev', '/csetup', '/cview', '/cstatus', '/psetup',
+      '/cdev', '/csetup', '/cview', '/cstatus', '/pstatus',
       'continue workflow', 'next phase', 'progress'
     ],
     agent: 'main-claude',

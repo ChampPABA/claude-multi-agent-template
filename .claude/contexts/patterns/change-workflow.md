@@ -18,34 +18,7 @@ This pattern describes how the multi-agent system integrates with OpenSpec to de
 
 ## 📋 Workflow Commands
 
-### 1. `/psetup` - Project Setup (One-Time)
-
-**When to use:** First time setting up the project
-
-**What it does:**
-1. Detects tech stack from package files
-2. Queries Context7 for best practices
-3. Creates `domain/` structure (3-level indexing)
-4. Generates framework-specific best practices files
-
-**Output:**
-```
-.claude/contexts/domain/
-├── index.md                              # Level 1 - Project Registry
-└── {project}/
-    ├── README.md                         # Level 2 - Project Overview
-    ├── tech-stack.md                     # Tech details
-    └── best-practices/
-        ├── index.md                      # Level 3 - Best Practices Registry
-        ├── react-18.md
-        ├── nextjs-15.md
-        ├── prisma-6.md
-        └── vitest-2.md
-```
-
----
-
-### 2. `/csetup {change-id}` - Change Setup
+### 1. `/csetup {change-id}` - Change Setup (Includes Project Setup)
 
 **When to use:** After creating OpenSpec change, before development
 
@@ -78,7 +51,7 @@ openspec/changes/CHANGE-XXX/.claude/
 
 ---
 
-### 3. `/cdev {change-id}` - Start/Continue Development
+### 2. `/cdev {change-id}` - Start/Continue Development
 
 **When to use:** After `/csetup`, to execute agent workflow
 
@@ -159,7 +132,7 @@ Ready to archive!
 
 ---
 
-### 4. `/cview {change-id}` - View Progress
+### 3. `/cview {change-id}` - View Progress
 
 **When to use:** Check detailed phase-by-phase progress
 
@@ -228,7 +201,7 @@ Ready to archive!
 
 ---
 
-### 5. `/cstatus {change-id}` - Quick Status
+### 4. `/cstatus {change-id}` - Quick Status
 
 **When to use:** Quick glance at progress
 
@@ -485,27 +458,22 @@ else template = 'full-stack' // Safe default
 
 ## 🎯 Best Practices
 
-### 1. Always Run `/psetup` First
-- One-time project setup
-- Generates framework-specific best practices
+### 1. Run `/csetup` First
+- Auto-detects tech stack and generates best practices
+- Analyzes tasks and generates workflow
 - Required for agent discovery
 
-### 2. Use `/csetup` After Creating OpenSpec Change
-- Analyzes tasks and generates workflow
-- Creates per-change context
-- Enables progress tracking
-
-### 3. Use `/cdev` for Execution
+### 2. Use `/cdev` for Execution
 - Orchestrates agent workflow
 - Updates progress automatically
 - Handles user actions
 
-### 4. Check Progress with `/cview` or `/cstatus`
+### 3. Check Progress with `/cview` or `/cstatus`
 - `/cview` for detailed breakdown
 - `/cstatus` for quick glance
 - Real-time updates from `flags.json`
 
-### 5. Agents Update `flags.json` After Each Phase
+### 4. Agents Update `flags.json` After Each Phase
 - Marks phase as completed
 - Records actual time spent
 - Lists files created
@@ -519,7 +487,7 @@ else template = 'full-stack' // Safe default
 **Solution:** Run `/csetup {change-id}` first
 
 **Problem:** Agent doesn't load project context
-**Solution:** Run `/psetup` to create domain/ structure
+**Solution:** Run `/csetup` to create domain/ structure (auto-detects tech stack)
 
 **Problem:** Progress tracking not working
 **Solution:** Check if `flags.json` exists and is valid JSON

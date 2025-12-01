@@ -46,7 +46,7 @@ Unified pattern for loading design system files. 3-tier strategy: STYLE_TOKENS.j
 ## 📁 Detailed Guides (v1.4.0 - NEW!)
 
 **`detailed-guides/best-practices-system.md`** - How best practices work
-Complete guide to auto-generated best practices via Context7 MCP. Covers `/agentsetup`, 3-level indexing, and agent discovery flow.
+Complete guide to auto-generated best practices via Context7 MCP. Covers `/csetup`, 3-level indexing, and agent discovery flow.
 
 **`detailed-guides/context-optimization.md`** - Token optimization strategy
 Details the 70% token reduction in design system loading. Explains 3-tier loading, before/after comparisons, and benefits.
