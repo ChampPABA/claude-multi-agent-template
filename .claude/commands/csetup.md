@@ -249,6 +249,233 @@ Continue anyway? (yes/no)
 
 ---
 
+### Step 2.6: Feature Best Practice Analysis (v2.2.0)
+
+> **NEW:** Validate spec against industry standards BEFORE checking stack best practices
+> **Reference:** `.claude/lib/feature-best-practices.md`
+
+WHY: Stack best practices tell you "how to use React well", but Feature best practices tell you "what a good auth system needs". The feature layer is higher-level and informs whether your spec is complete.
+
+```typescript
+output(`\n🔍 Analyzing Feature Best Practices...`)
+
+// 1. Detect features from proposal/tasks/design
+const combined = (proposalContent + ' ' + tasksContent + ' ' + designContent).toLowerCase()
+
+const featureDetection = {
+  authentication: {
+    keywords: ['login', 'auth', 'register', 'password', 'session', 'jwt', 'token', 'oauth'],
+    tier: 1, // Blocking
+    standards: [
+      { name: 'Short-lived access token', keywords: ['jwt', 'access', '15', '30', 'min'], priority: 'required' },
+      { name: 'Refresh token rotation', keywords: ['refresh', 'rotation', 'rotate'], priority: 'required' },
+      { name: 'Secure token storage', keywords: ['httponly', 'cookie', 'secure'], priority: 'required' },
+      { name: 'Token revocation', keywords: ['revoke', 'invalidate', 'logout'], priority: 'required' },
+      { name: 'Rate limiting', keywords: ['rate', 'limit', 'throttle', 'attempt'], priority: 'required' },
+      { name: 'Account lockout', keywords: ['lockout', 'lock', 'failed attempt'], priority: 'recommended' }
+    ]
+  },
+  payment: {
+    keywords: ['payment', 'stripe', 'checkout', 'billing', 'subscription'],
+    tier: 1,
+    standards: [
+      { name: 'No card data on server', keywords: ['elements', 'checkout', 'client-side'], priority: 'required' },
+      { name: 'Webhook signature verification', keywords: ['webhook', 'signature', 'verify'], priority: 'required' },
+      { name: 'Idempotency keys', keywords: ['idempotency', 'idempotent'], priority: 'required' }
+    ]
+  },
+  fileUpload: {
+    keywords: ['upload', 'file', 'image', 's3', 'storage'],
+    tier: 1,
+    standards: [
+      { name: 'File type validation', keywords: ['mime', 'type', 'validation', 'allowed'], priority: 'required' },
+      { name: 'File size limits', keywords: ['size', 'limit', 'max'], priority: 'required' },
+      { name: 'Filename sanitization', keywords: ['sanitize', 'filename', 'path'], priority: 'required' }
+    ]
+  },
+  apiDesign: {
+    keywords: ['api', 'endpoint', 'rest', 'graphql'],
+    tier: 2, // Warning
+    standards: [
+      { name: 'Rate limiting', keywords: ['rate', 'limit'], priority: 'required' },
+      { name: 'Input validation', keywords: ['validate', 'validation', 'zod', 'schema'], priority: 'required' },
+      { name: 'Pagination', keywords: ['pagination', 'page', 'limit', 'offset'], priority: 'recommended' }
+    ]
+  }
+}
+
+// 2. Find detected features
+const detectedFeatures = []
+for (const [featureName, config] of Object.entries(featureDetection)) {
+  if (config.keywords.some(kw => combined.includes(kw))) {
+    detectedFeatures.push({ name: featureName, ...config })
+  }
+}
+
+if (detectedFeatures.length > 0) {
+  output(`\n📋 Features Detected:`)
+  detectedFeatures.forEach(f => {
+    output(`   - ${f.name} (Tier ${f.tier}: ${f.tier === 1 ? 'Blocking' : 'Warning'})`)
+  })
+
+  // 3. For each Tier 1/2 feature, check spec against standards
+  const allGaps = []
+
+  for (const feature of detectedFeatures) {
+    output(`\n🔍 Checking ${feature.name} against industry standards...`)
+
+    const gaps = []
+    const matches = []
+
+    for (const standard of feature.standards) {
+      const isMentioned = standard.keywords.some(kw =>
+        designContent.toLowerCase().includes(kw)
+      )
+
+      if (isMentioned) {
+        matches.push(standard.name)
+      } else if (standard.priority === 'required') {
+        gaps.push({
+          feature: feature.name,
+          requirement: standard.name,
+          priority: standard.priority,
+          tier: feature.tier
+        })
+      }
+    }
+
+    if (matches.length > 0) {
+      output(`   ✅ Matches: ${matches.join(', ')}`)
+    }
+
+    if (gaps.length > 0) {
+      output(`   ❌ Gaps: ${gaps.map(g => g.requirement).join(', ')}`)
+      allGaps.push(...gaps)
+    }
+  }
+
+  // 4. Handle gaps based on tier
+  const tier1Gaps = allGaps.filter(g => g.tier === 1)
+  const tier2Gaps = allGaps.filter(g => g.tier === 2)
+
+  if (tier1Gaps.length > 0) {
+    output(`\n⚠️ Security-Critical Gaps Found (Tier 1)`)
+    output(``)
+    output(`Your spec is missing these industry-standard requirements:`)
+    output(``)
+
+    // Group by feature
+    const byFeature = {}
+    tier1Gaps.forEach(g => {
+      if (!byFeature[g.feature]) byFeature[g.feature] = []
+      byFeature[g.feature].push(g.requirement)
+    })
+
+    for (const [feature, reqs] of Object.entries(byFeature)) {
+      output(`   ${feature}:`)
+      reqs.forEach(r => output(`     - ${r}`))
+    }
+
+    output(``)
+    output(`Options:`)
+    output(`   A) Update spec - Add missing requirements to design.md`)
+    output(`   B) Document skip - Record why these aren't needed (requires justification)`)
+    output(`   C) Continue anyway - Proceed with security gap (not recommended)`)
+    output(``)
+
+    const decision = await askUserQuestion({
+      questions: [{
+        question: 'How would you like to handle the security gaps?',
+        header: 'Spec Gaps',
+        options: [
+          { label: 'A) Update spec', description: 'Add missing requirements to design.md (recommended)' },
+          { label: 'B) Document skip', description: 'Record justification for skipping' },
+          { label: 'C) Continue anyway', description: 'Proceed with gap (security risk)' }
+        ],
+        multiSelect: false
+      }]
+    })
+
+    if (decision.includes('A')) {
+      // Generate suggested additions
+      output(`\n📝 Add this to design.md:\n`)
+      output(`\`\`\`markdown`)
+      output(`### D{n}: Security Requirements (Industry Standard Alignment)`)
+      output(``)
+      output(`**Added based on industry best practices:**`)
+      output(``)
+      for (const [feature, reqs] of Object.entries(byFeature)) {
+        output(`#### ${feature}`)
+        reqs.forEach(r => output(`- ${r}`))
+      }
+      output(``)
+      output(`**Source:** Feature Best Practice Validation`)
+      output(`**Added:** ${new Date().toISOString().split('T')[0]}`)
+      output(`\`\`\``)
+      output(``)
+      output(`Please update design.md and re-run /csetup.`)
+      return
+    } else if (decision.includes('B')) {
+      // Document conscious skip
+      output(`\n📝 Add this to design.md to document the skip:\n`)
+      output(`\`\`\`markdown`)
+      output(`### D{n}: Conscious Security Trade-offs`)
+      output(``)
+      output(`**Skipped requirements (with justification):**`)
+      output(``)
+      output(`| Requirement | Why Skipped | Risk Level | Mitigation |`)
+      output(`|-------------|-------------|------------|------------|`)
+      for (const gap of tier1Gaps) {
+        output(`| ${gap.requirement} | [YOUR REASON] | [LOW/MED/HIGH] | [YOUR MITIGATION] |`)
+      }
+      output(``)
+      output(`**Acknowledged by:** User decision in /csetup`)
+      output(`**Date:** ${new Date().toISOString().split('T')[0]}`)
+      output(`\`\`\``)
+      output(``)
+
+      const confirm = await askUserQuestion({
+        questions: [{
+          question: 'Confirm you will document this in design.md?',
+          header: 'Confirm',
+          options: [
+            { label: 'Yes, continue', description: 'I will add documentation' },
+            { label: 'Cancel', description: 'Go back and update spec' }
+          ],
+          multiSelect: false
+        }]
+      })
+
+      if (confirm.includes('Cancel')) {
+        output(`\n❌ Setup cancelled. Please update design.md first.`)
+        return
+      }
+    }
+    // If C, just continue with warning logged
+  }
+
+  if (tier2Gaps.length > 0) {
+    output(`\n⚠️ Recommendations (Tier 2 - Non-blocking):`)
+    tier2Gaps.forEach(g => {
+      output(`   - ${g.feature}: ${g.requirement}`)
+    })
+    output(`   Continuing with setup...`)
+  }
+} else {
+  output(`\n✅ No security-critical features detected`)
+}
+
+// Store feature analysis for later use
+const featureAnalysis = {
+  detected: detectedFeatures.map(f => f.name),
+  tier1Gaps: tier1Gaps || [],
+  tier2Gaps: tier2Gaps || [],
+  validated: true
+}
+```
+
+---
+
 ### Step 2.7: Auto-Setup Best Practices (v1.8.0)
 
 > **NEW:** Auto-detect tech stack and generate best-practices (replaces /psetup and /agentsetup)
@@ -416,6 +643,243 @@ const stackForContext = {
   detected: detectedStack,
   bestPracticesPath: '.claude/contexts/domain/project/best-practices/',
   files: [...existingBp, ...missingBp.map(t => `${t}.md`)]
+}
+```
+
+---
+
+### Step 2.8: Library Capability Validation (v2.2.0)
+
+> **NEW:** Verify chosen libraries support ALL spec requirements before proceeding
+> **WHY:** Prevents spec drift - discovering during implementation that library doesn't support requirements
+
+```typescript
+output(`\n🔍 Validating Library Capabilities...`)
+
+// 1. Extract spec requirements from design.md
+const designPath = `openspec/changes/${changeId}/design.md`
+if (!fileExists(designPath)) {
+  output(`   ⚠️ No design.md found - skipping library validation`)
+} else {
+  const designContent = Read(designPath)
+
+  // 2. Find library mentions in spec
+  const libraryPatterns = {
+    'better-auth': {
+      patterns: ['better-auth', 'betterauth'],
+      context7Id: null, // No Context7 mapping yet
+      knownLimitations: [
+        { feature: 'refresh token rotation', supported: false },
+        { feature: 'redis session storage', supported: false },
+        { feature: 'jwt plugin', supported: true },
+        { feature: 'bearer plugin', supported: true },
+        { feature: 'session-based auth', supported: true }
+      ]
+    },
+    'nextauth': {
+      patterns: ['next-auth', 'nextauth', 'authjs'],
+      context7Id: '/nextauthjs/next-auth',
+      knownLimitations: []
+    },
+    'lucia': {
+      patterns: ['lucia', 'lucia-auth'],
+      context7Id: '/lucia-auth/lucia',
+      knownLimitations: []
+    },
+    'prisma': {
+      patterns: ['prisma'],
+      context7Id: '/prisma/prisma',
+      knownLimitations: []
+    },
+    'drizzle': {
+      patterns: ['drizzle'],
+      context7Id: '/drizzle-team/drizzle-orm',
+      knownLimitations: []
+    }
+  }
+
+  // 3. Detect which libraries are mentioned
+  const detectedLibraries = []
+  for (const [libName, config] of Object.entries(libraryPatterns)) {
+    if (config.patterns.some(p => designContent.toLowerCase().includes(p))) {
+      detectedLibraries.push({ name: libName, ...config })
+    }
+  }
+
+  if (detectedLibraries.length > 0) {
+    output(`\n📚 Libraries in Spec:`)
+    detectedLibraries.forEach(lib => output(`   - ${lib.name}`))
+
+    // 4. Extract requirements from design.md
+    // Look for patterns like: "JWT 15min", "refresh token", "rotation"
+    const requirementPatterns = [
+      { name: 'JWT access token', pattern: /jwt.*(?:access|token).*(\d+\s*min)/i },
+      { name: 'Refresh token', pattern: /refresh\s*token/i },
+      { name: 'Token rotation', pattern: /(?:token\s*)?rotation|rotate/i },
+      { name: 'Redis session', pattern: /redis.*session|session.*redis/i },
+      { name: 'Bearer token', pattern: /bearer\s*(?:token|auth)/i },
+      { name: 'OAuth providers', pattern: /oauth|google|github|social\s*login/i },
+      { name: 'Rate limiting', pattern: /rate\s*limit/i },
+      { name: 'Account lockout', pattern: /lockout|lock\s*account/i }
+    ]
+
+    const specRequirements = []
+    for (const rp of requirementPatterns) {
+      if (rp.pattern.test(designContent)) {
+        specRequirements.push(rp.name)
+      }
+    }
+
+    if (specRequirements.length > 0) {
+      output(`\n📋 Spec Requirements Found:`)
+      specRequirements.forEach(r => output(`   - ${r}`))
+
+      // 5. Check each library's capability
+      const capabilityGaps = []
+
+      for (const lib of detectedLibraries) {
+        output(`\n🔍 Checking ${lib.name} capabilities...`)
+
+        for (const req of specRequirements) {
+          // Check known limitations first
+          const known = lib.knownLimitations.find(l =>
+            req.toLowerCase().includes(l.feature.toLowerCase()) ||
+            l.feature.toLowerCase().includes(req.toLowerCase())
+          )
+
+          if (known && !known.supported) {
+            output(`   ❌ ${req} - NOT SUPPORTED`)
+            capabilityGaps.push({
+              library: lib.name,
+              requirement: req,
+              supported: false,
+              note: `${lib.name} does not have built-in support for ${req}`
+            })
+          } else if (known && known.supported) {
+            output(`   ✅ ${req} - Supported`)
+          } else {
+            // Unknown - query Context7 if available
+            if (lib.context7Id) {
+              output(`   🔍 ${req} - Checking Context7...`)
+              // Note: In actual implementation, this would call Context7
+              // For now, mark as unknown
+              output(`   ⚠️ ${req} - Verify manually`)
+            } else {
+              output(`   ⚠️ ${req} - Verify manually (no Context7 mapping)`)
+            }
+          }
+        }
+      }
+
+      // 6. Report gaps if any
+      if (capabilityGaps.length > 0) {
+        output(`\n⚠️ Library Capability Gaps Detected!`)
+        output(``)
+        output(`The following spec requirements are NOT supported by chosen libraries:`)
+        output(``)
+
+        // Group by library
+        const byLibrary = {}
+        capabilityGaps.forEach(g => {
+          if (!byLibrary[g.library]) byLibrary[g.library] = []
+          byLibrary[g.library].push(g.requirement)
+        })
+
+        for (const [library, reqs] of Object.entries(byLibrary)) {
+          output(`   ${library}:`)
+          reqs.forEach(r => output(`     - ${r}`))
+        }
+
+        output(``)
+        output(`This will cause spec drift during implementation!`)
+        output(``)
+        output(`Options:`)
+        output(`   A) Change library - Use a library that supports these features`)
+        output(`   B) Downgrade spec - Remove unsupported requirements (must document trade-off)`)
+        output(`   C) Custom implementation - Build missing features on top of library`)
+        output(`   D) Continue anyway - Proceed and let agent handle at implementation time`)
+        output(``)
+
+        const decision = await askUserQuestion({
+          questions: [{
+            question: 'How would you like to handle the capability gaps?',
+            header: 'Lib Gaps',
+            options: [
+              { label: 'A) Change library', description: 'Switch to a library that supports requirements' },
+              { label: 'B) Downgrade spec', description: 'Update design.md to use what library supports' },
+              { label: 'C) Custom implementation', description: 'Build on top of library (more work)' },
+              { label: 'D) Continue anyway', description: 'Let agent handle during implementation' }
+            ],
+            multiSelect: false
+          }]
+        })
+
+        if (decision.includes('A')) {
+          output(`\n📝 Suggested alternative libraries:`)
+          for (const [library, reqs] of Object.entries(byLibrary)) {
+            if (library === 'better-auth') {
+              output(`   Instead of ${library}, consider:`)
+              output(`   - lucia-auth (supports custom session storage)`)
+              output(`   - NextAuth.js (supports refresh token rotation with JWT strategy)`)
+              output(`   - Custom implementation with jose + Redis`)
+            }
+          }
+          output(``)
+          output(`Please update design.md with new library choice and re-run /csetup.`)
+          return
+        } else if (decision.includes('B')) {
+          output(`\n📝 Update design.md to remove unsupported requirements:`)
+          output(``)
+          output(`\`\`\`markdown`)
+          output(`### D{n}: Library Capability Alignment`)
+          output(``)
+          output(`**Changed requirements to match ${Object.keys(byLibrary).join(', ')} capabilities:**`)
+          output(``)
+          for (const gap of capabilityGaps) {
+            output(`- ~~${gap.requirement}~~ → Use ${gap.library}'s default approach instead`)
+          }
+          output(``)
+          output(`**Reason:** Library limitation`)
+          output(`**Trade-off:** ${capabilityGaps.map(g => g.requirement).join(', ')} not available`)
+          output(`**Date:** ${new Date().toISOString().split('T')[0]}`)
+          output(`\`\`\``)
+          output(``)
+          output(`Please update design.md and re-run /csetup.`)
+          return
+        } else if (decision.includes('C')) {
+          output(`\n📝 Custom implementation notes for agents:`)
+          output(``)
+          output(`Add to context.md:`)
+          output(`\`\`\`markdown`)
+          output(`## Custom Implementation Required`)
+          output(``)
+          output(`The following features need custom implementation:`)
+          for (const gap of capabilityGaps) {
+            output(`- ${gap.requirement} (not supported by ${gap.library})`)
+          }
+          output(``)
+          output(`Agents should implement these on top of the base library.`)
+          output(`\`\`\``)
+
+          // Store for context.md generation
+          customImplementationRequired = capabilityGaps
+        }
+        // If D, continue with gaps logged for agent awareness
+      } else {
+        output(`\n✅ All spec requirements supported by chosen libraries`)
+      }
+    }
+  } else {
+    output(`   ℹ️ No specific libraries detected in spec`)
+  }
+}
+
+// Store capability analysis
+const capabilityAnalysis = {
+  libraries: detectedLibraries || [],
+  requirements: specRequirements || [],
+  gaps: capabilityGaps || [],
+  customRequired: customImplementationRequired || []
 }
 ```
 

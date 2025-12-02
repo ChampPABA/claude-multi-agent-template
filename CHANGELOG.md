@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2025-12-02
+
+### 4-Layer Best Practice Validation - Prevent Spec Drift
+
+**Problem Solved:** Agents implementing alternatives silently when library doesn't support spec (e.g., better-auth not supporting refresh token rotation).
+
+### Added
+
+- **Feature Best Practice Analysis** (`/csetup` Step 2.6)
+  - Detects features from spec (Auth, Payment, File Upload, etc.)
+  - Compares against industry standards
+  - Security Tiers: Tier 1 (Blocking), Tier 2 (Warning), Tier 3 (Info)
+  - Reports gaps before generating phases.md
+
+- **Library Capability Validation** (`/csetup` Step 2.8)
+  - Checks if chosen library supports ALL spec requirements
+  - Known limitations database (better-auth, etc.)
+  - Options: A) Change library, B) Change spec, C) Custom implementation
+
+- **Library Feasibility Check** (Agent Step 0.5)
+  - Double-check at agent level before implementation
+  - Verify library supports spec requirements
+  - STOP and report if gaps found
+
+- **Spec Deviation Protocol** (`agent-executor.md`)
+  - Clear format for reporting library/spec gaps
+  - Main Claude pauses workflow, shows options
+  - Documents all decisions in design.md
+  - Prevents silent spec drift
+
+- **`feature-best-practices.md`** - Feature detection & industry standards reference
+
+### Changed
+
+- `pre-work-checklist.md` - Added Step 0.5: Library Feasibility Validation
+- `validation-framework.md` - Added Library Feasibility Check for backend agent
+- `csetup.md` - Added Steps 2.6 and 2.8
+
+### Validation Flow
+
+```
+/csetup
+  ├── Step 2.6: Feature BP (Auth requirements vs industry standard)
+  ├── Step 2.7: Stack BP (React, Next.js best practices)
+  └── Step 2.8: Library Capability (better-auth supports rotation? NO → ask user)
+
+/cdev
+  └── Step 0.5: Agent double-check (if gap missed, STOP + report)
+```
+
+### Benefits
+
+- Early detection of library limitations
+- User decides before implementation, not after
+- All trade-offs documented in design.md
+- No more silent spec drift
+
+---
+
 ## [2.0.0] - 2025-11-30
 
 ### 🎯 Claude 4.5 Optimization + Design System v2.0

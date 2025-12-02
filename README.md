@@ -29,9 +29,23 @@ cak init
 
 ## Features
 
+- **4-Layer Validation (v2.2.0)** - Feature BP → Spec Alignment → Library Capability → Stack BP
+- **Spec Drift Prevention** - Validates library supports spec before implementation
 - **Instruction-based Library Detection** - Agents scan `tasks.md`/`design.md` for required libraries
 - **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
 - **Design System v2.0** - Interactive setup with theme selection
+
+## Validation Flow (v2.2.0)
+
+```
+/csetup
+  ├── Step 2.6: Feature Best Practice (Auth, Payment, etc. vs industry standard)
+  ├── Step 2.7: Stack Best Practice (React, Next.js, etc.)
+  └── Step 2.8: Library Capability (verify library supports spec)
+
+/cdev
+  └── Agent Step 0.5: Double-check feasibility before implement
+```
 
 ## Commands
 

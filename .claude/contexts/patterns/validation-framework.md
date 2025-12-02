@@ -228,12 +228,56 @@ logger.warning("login_failed", extra={"email": email, "reason": "invalid_credent
 logger.error("login_error", extra={"error": str(e)})
 ```
 
-### F. Ready to Implement ✓
+### F. Library Feasibility Check ✓ (v2.2.0)
+**From:** design.md + library documentation
+
+**Spec Requirements:**
+- JWT access token 15min expiry
+- Refresh token with rotation
+- Redis session storage
+- Token revocation capability
+
+**Library Capability Verification:**
+- [x] JWT 15min → better-auth jwt plugin: YES ✅
+- [x] Refresh token → better-auth: PARTIAL ⚠️ (session-based, not separate token)
+- [ ] Token rotation → better-auth: NO ❌
+- [ ] Redis storage → better-auth: NO ❌
+
+**IF ALL SUPPORTED:**
+```
+✅ Library Feasibility Validated
+All spec requirements are supported by chosen library.
+Proceeding with implementation...
+```
+
+**IF GAPS FOUND:**
+```
+⚠️ Library Capability Gap Detected
+
+Library: better-auth
+Requirement: Refresh token rotation
+Support Status: NO
+
+What library supports: Session-based auth with auto-refresh
+What spec requires: Explicit refresh token rotation on each use
+
+Options:
+A) Change library → lucia-auth (supports custom session storage)
+B) Change spec → Use session-based approach instead
+C) Custom implementation → Build rotation on top of better-auth
+
+My Recommendation: B (simplest, meets core security needs)
+
+Awaiting decision before proceeding.
+```
+
+### G. Ready to Implement ✓
 ✅ Patterns loaded
 ✅ Existing endpoints searched
 ✅ TDD workflow planned
 ✅ Error handling pattern identified
 ✅ Logging pattern identified
+✅ Library feasibility validated
 
 **Proceeding with TDD (RED phase first)...**
 ```
@@ -244,7 +288,13 @@ logger.error("login_error", extra={"error": str(e)})
 - IF TDD: Contains "TDD Workflow" + "RED-GREEN-REFACTOR"
 - Contains: "Error Handling Pattern ✓"
 - Contains: "Logging Pattern ✓"
+- Contains: "Library Feasibility" (either "Validated" or "Gap Detected")
 - Contains: "Ready to Implement ✓"
+
+**Spec Deviation Markers (triggers workflow pause):**
+- "⚠️ Library Capability Gap"
+- "Awaiting decision"
+- "Support Status: NO"
 
 ---
 

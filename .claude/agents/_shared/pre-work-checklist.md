@@ -1,6 +1,6 @@
 # Pre-Work Checklist (Shared by All Agents)
 
-> **Version:** 2.1.3 (Design Spec Injection)
+> **Version:** 2.2.0 (Library Feasibility Validation)
 > **Purpose:** Single source of truth for pre-work validation
 
 ---
@@ -45,6 +45,88 @@ design.md says: "JWT 15min + Redis refresh token 30d"
 → Implement /api/auth/refresh endpoint (from design.md)
 
 WHY not defaults? Design spec has project-specific security requirements.
+```
+
+---
+
+### Step 0.5: Library Feasibility Validation (v2.2.0)
+
+**Before implementing, verify the chosen library supports ALL spec requirements:**
+
+WHY: Implementing without verifying library capabilities leads to spec drift. Better to discover gaps early than during implementation.
+
+1. **List spec requirements from design.md:**
+
+   Extract specific technical requirements, for example:
+   - "JWT access token 15min expiry"
+   - "Redis refresh token 30d"
+   - "Refresh token rotation on each use"
+   - "Token revocation capability"
+
+2. **For each requirement, verify library support:**
+
+   - Check library documentation
+   - Query Context7 if available: "How to implement {requirement} with {library}?"
+   - Search for feature in library's plugin/extension list
+   - Check if feature is: built-in, plugin-available, or unsupported
+
+3. **Report feasibility in your validation:**
+
+   ```markdown
+   Library Feasibility Check:
+   - [ ] {requirement 1} → {library} supports: YES/PARTIAL/NO
+   - [ ] {requirement 2} → {library} supports: YES/PARTIAL/NO
+   - [ ] {requirement 3} → {library} supports: YES/PARTIAL/NO
+   ```
+
+4. **If ANY requirement is NOT FULLY supported:**
+
+   **STOP - Do not proceed with implementation**
+
+   Report to Main Claude using the Spec Deviation Protocol:
+
+   ```markdown
+   ⚠️ Library Capability Gap Detected
+
+   **Library:** {name}
+   **Requirement (from design.md):** {exact requirement text}
+   **Support Status:** NO / PARTIAL
+
+   **What library supports:** {alternative approach library offers}
+   **What spec requires:** {original requirement}
+
+   **Gap Analysis:**
+   {explain what cannot be implemented as specified}
+
+   **Options:**
+   A) Change library → {suggest alternative library that supports this}
+   B) Change spec → Update design.md to use what library supports
+   C) Custom implementation → Build missing feature on top of library
+
+   **My Recommendation:** {A/B/C} because {reasoning}
+
+   Awaiting decision before proceeding.
+   ```
+
+5. **Wait for explicit decision before implementing**
+
+   - Do NOT implement alternative approach silently
+   - Do NOT assume user would prefer simpler option
+   - Do NOT continue with "close enough" solution
+
+   WHY: Silent spec drift creates technical debt and user confusion. Explicit decisions create documented trade-offs.
+
+**Example Gap Detection:**
+```markdown
+Library Feasibility Check:
+- [x] JWT access token 15min → better-auth jwt plugin: YES ✅
+- [x] Refresh token → better-auth: PARTIAL ⚠️ (session-based, not separate token)
+- [ ] Refresh token rotation → better-auth: NO ❌
+- [ ] Redis session storage → better-auth: NO ❌
+
+⚠️ STOP - Gaps found in requirements 3 and 4
+
+Reporting to Main Claude...
 ```
 
 ---

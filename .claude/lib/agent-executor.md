@@ -318,6 +318,155 @@ Please provide complete output including:
 
 ---
 
+## 🔄 Spec Deviation Protocol (v2.2.0)
+
+When an agent discovers that implementation cannot match spec exactly, this protocol ensures proper handling.
+
+WHY: Silent spec drift creates technical debt and user confusion. Explicit decisions create documented trade-offs.
+
+### Detection Triggers
+
+Agent discovers:
+- Library doesn't support a spec feature
+- Technical constraint prevents exact implementation
+- Better alternative exists than what spec describes
+- Dependency conflict with existing code
+
+### Required Actions
+
+**Agent should NOT:**
+- Implement alternative approach silently
+- Change the approach without user knowledge
+- Continue with "close enough" solution
+- Assume user would prefer the simpler option
+
+**Agent MUST:**
+1. Document the gap clearly
+2. Stop implementation immediately
+3. Report to Main Claude with options
+4. Wait for explicit decision
+
+### Spec Deviation Report Format
+
+```markdown
+⚠️ Spec Deviation Required
+
+**Phase:** {current phase}
+**Agent:** {agent type}
+
+---
+
+**Spec Requirement:** (exact text from design.md)
+{paste the exact requirement from design.md}
+
+**Library/Technical Constraint:**
+{what the library/system actually supports}
+
+**Gap Analysis:**
+{explain what cannot be implemented as specified}
+
+---
+
+**Options:**
+
+A) **Change Approach** - Use what library supports
+   - Implementation: {alternative approach}
+   - Benefit: {what you gain}
+   - Trade-off: {what you lose vs spec}
+
+B) **Change Library** - Switch to alternative
+   - Alternative: {library name}
+   - Benefit: Matches spec exactly
+   - Trade-off: {migration effort, learning curve}
+
+C) **Custom Implementation** - Build on top of library
+   - Implementation: {what needs to be built}
+   - Benefit: Matches spec, uses existing library
+   - Trade-off: {maintenance burden, complexity}
+
+---
+
+**My Recommendation:** {A/B/C}
+**Reasoning:** {why this option is best}
+
+Awaiting decision before proceeding.
+```
+
+### Main Claude Response Protocol
+
+When receiving a spec deviation report:
+
+1. **Pause workflow** - Do not auto-proceed to next phase
+2. **Show report to user** - Present options clearly
+3. **Get explicit decision** - User must choose A, B, or C
+4. **Document decision** in design.md:
+
+   ```markdown
+   ### D{n}: {Decision Title}
+
+   **Context:** Agent found {library} doesn't support {feature}
+   **Decision:** Option {A/B/C} - {brief description}
+   **Reason:** {user's reasoning}
+   **Trade-off Accepted:** {what we're giving up}
+   **Date:** {date}
+   ```
+
+5. **Update spec if needed:**
+   - If Option A: Add "Library Capability Alignment" section to design.md
+   - If Option B: Update library references in design.md and tasks.md
+   - If Option C: Add "Custom Implementation Required" section
+
+6. **Resume workflow** with clear, documented direction
+
+### Spec Deviation Validation
+
+**Check agent output for spec deviation markers:**
+
+| Marker | Meaning |
+|--------|---------|
+| "⚠️ Spec Deviation" | Agent found gap, needs decision |
+| "Library Capability Gap" | Library doesn't support requirement |
+| "Awaiting decision" | Agent stopped, waiting for response |
+
+**Main Claude should:**
+- Pause workflow when seeing these markers
+- Present options to user
+- Record decision before resuming
+
+### Example Flow
+
+```
+Agent: Backend implementing auth
+  ↓
+Agent: Reads design.md "JWT + Redis refresh + rotation"
+  ↓
+Agent: Checks better-auth capabilities
+  ↓
+Agent: Finds "rotation" not supported
+  ↓
+Agent: ⚠️ STOPS - Sends Spec Deviation Report
+  ↓
+Main Claude: Pauses workflow, shows user options
+  ↓
+User: Chooses Option B (change library to lucia-auth)
+  ↓
+Main Claude: Updates design.md with decision
+  ↓
+Main Claude: Resumes workflow with new library
+  ↓
+Agent: Implements with lucia-auth (supports rotation)
+```
+
+### Benefits of Spec Deviation Protocol
+
+- **Prevents silent drift** - User knows about every deviation
+- **Documented trade-offs** - All decisions recorded in design.md
+- **Early detection** - Gaps found at pre-work, not during implementation
+- **Clear options** - User can make informed choice
+- **Audit trail** - Design decisions are traceable
+
+---
+
 ## 🎯 Benefits
 
 ✅ **Auto-recovery** - Transient errors handled automatically
