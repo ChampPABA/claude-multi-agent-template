@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.0.0 - Claude 4.5 Optimized + Design System v2.0
-> **Latest:** Full template refactored with Claude 4.5 best practices (agents ~65% smaller) + Interactive design setup with theme selection
+> **Template Version:** 2.3.0 - Zero-Maintenance Tech Detection
+> **Latest:** Dynamic library detection via Context7 (any language, no hardcoded mappings) + Claude 4.5 optimized agents
 
 ---
 
@@ -131,18 +131,36 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
-## 📚 Best Practices System (v1.8.0)
+## 📚 Best Practices System (v2.3.0 - Zero Maintenance)
 
 **Quick Summary:**
-- `/csetup` **auto-detects tech stack** from: package.json → design.md → proposal/tasks (3 sources)
-- **Auto-generates best practices** from Context7 MCP (React, Next.js, Prisma, etc.)
+- `/csetup` **dynamically detects any library** from spec text + package files (no hardcoded mappings)
+- **Works with any language:** JavaScript, Python, Rust, Go, PHP, Ruby - automatically
+- **Context7 validates** each potential library name and resolves to official docs
 - Files created in `.claude/contexts/domain/project/best-practices/`
 - **Agents read** best practices before coding (validated by agent-executor)
-- `/cdev` **injects** relevant best-practices paths into agent prompts
+
+**Key Change in v2.3.0:**
+- ❌ Old: Hardcoded regex patterns + manual ID mappings (required maintenance)
+- ✅ New: NLP extraction + Context7 resolution (zero maintenance, any library)
+
+**Detection Sources:**
+| Source | Examples |
+|--------|----------|
+| Spec files | proposal.md, design.md, tasks.md |
+| JS/TS | package.json, import statements |
+| Python | requirements.txt, pyproject.toml, imports |
+| Rust | Cargo.toml, use statements |
+| Go | go.mod, import statements |
+| PHP | composer.json |
+| Ruby | Gemfile |
 
 **Flow:**
 ```
-/csetup → detect stack → query Context7 → generate best-practices
+/csetup → extract potential library names from ALL text sources
+        → Context7 resolve-library-id (validates if real library)
+        → Context7 get-library-docs (fetch best practices)
+        → generate .md files for each verified library
 /cdev   → inject paths into prompt → agent reads → validation checks
 ```
 
@@ -275,6 +293,54 @@ User: "Build login system"
 → Phase 3: frontend (connect UI to API)
 → Phase 4: test-debug (tests)
 ```
+
+---
+
+## 🆕 v2.3.0: Zero-Maintenance Tech Stack Detection
+
+**Problem Solved:** Previously, `/csetup` required hardcoded regex patterns and Context7 ID mappings for each library. Adding support for new libraries (like SQLAlchemy, Pydantic, Rust crates) required code changes.
+
+**Solution:** Dynamic detection that works with any library in any language without maintenance.
+
+### How It Works
+
+```
+1. Extract potential library names from ALL text sources:
+   - Spec files (proposal.md, design.md, tasks.md)
+   - Package files (package.json, requirements.txt, Cargo.toml, go.mod, etc.)
+   - Import statements in code snippets
+   - Prose mentions ("using FastAPI", "with Prisma")
+
+2. Send each candidate to Context7 resolve-library-id:
+   - If Context7 recognizes it → confirmed library ✅
+   - If not recognized → not a library, skip ❌
+
+3. For confirmed libraries, fetch best practices:
+   - Context7 get-library-docs with "best practices" topic
+   - Generate .md file with patterns, anti-patterns, checklist
+
+4. Result: Best practices for ANY library, automatically!
+```
+
+### Benefits
+
+| Aspect | Before (v1.8.0) | After (v2.3.0) |
+|--------|-----------------|----------------|
+| New library support | Manual code change | Automatic |
+| Python stack | Partial (FastAPI, Django only) | Full (SQLAlchemy, Pydantic, Click, etc.) |
+| Rust support | None | Automatic |
+| Go support | None | Automatic |
+| Maintenance | Required for each library | Zero |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `csetup.md` Step 2.7 | Complete rewrite with dynamic detection |
+| `extractPotentialLibraryNames()` | New helper for NLP extraction |
+| `parseContext7Response()` | New helper for Context7 response parsing |
+| `generateBestPracticesFile()` | Updated signature, includes Context7 ID |
+| `detectAdditionalTech()` | Deprecated, delegates to new system |
 
 ---
 

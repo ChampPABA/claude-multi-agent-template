@@ -476,173 +476,477 @@ const featureAnalysis = {
 
 ---
 
-### Step 2.7: Auto-Setup Best Practices (v1.8.0)
+### Step 2.7: Auto-Setup Best Practices (v2.3.0 - Dynamic Detection)
 
-> **NEW:** Auto-detect tech stack and generate best-practices (replaces /psetup and /agentsetup)
+> **Zero-Maintenance Design:** Automatically detects any library/framework from spec text and resolves via Context7.
+> **WHY:** Hardcoded mappings require constant maintenance and miss new libraries. Dynamic resolution works with any language (Python, Rust, Go, etc.) without code changes.
 
 ```typescript
-// 1. Detect tech stack from multiple sources
-output(`\n🔍 Detecting Tech Stack...`)
+// ============================================================
+// STEP 2.7: Dynamic Tech Stack Detection & Best Practices
+// ============================================================
 
-// Source 1: package.json / requirements.txt (if exists)
-let packageStack = []
-if (fileExists('package.json')) {
-  const pkg = JSON.parse(Read('package.json'))
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies }
-  packageStack = Object.keys(deps).filter(d =>
-    ['next', 'react', 'vue', 'express', 'fastapi', 'prisma', 'drizzle', 'vitest', 'jest'].some(k => d.includes(k))
-  )
-  output(`   📦 From package.json: ${packageStack.join(', ') || 'none'}`)
+output(`\n🔍 Detecting Tech Stack (Dynamic Resolution)...`)
+
+// 1. Gather text from ALL relevant sources
+const textSources = {
+  proposal: Read(`openspec/changes/${changeId}/proposal.md`) || '',
+  tasks: Read(`openspec/changes/${changeId}/tasks.md`) || '',
+  design: fileExists(`openspec/changes/${changeId}/design.md`)
+    ? Read(`openspec/changes/${changeId}/design.md`) : '',
+  packageJson: fileExists('package.json') ? Read('package.json') : '',
+  requirementsTxt: fileExists('requirements.txt') ? Read('requirements.txt') : '',
+  pyprojectToml: fileExists('pyproject.toml') ? Read('pyproject.toml') : '',
+  cargoToml: fileExists('Cargo.toml') ? Read('Cargo.toml') : '',
+  goMod: fileExists('go.mod') ? Read('go.mod') : '',
+  composerJson: fileExists('composer.json') ? Read('composer.json') : '',
+  gemfile: fileExists('Gemfile') ? Read('Gemfile') : ''
 }
 
-// Source 2: design.md (architecture section)
-let designStack = []
-const designPath = `openspec/changes/${changeId}/design.md`
-if (fileExists(designPath)) {
-  const designContent = Read(designPath)
-  // Look for tech stack section
-  const techMatch = designContent.match(/tech.*stack|architecture|framework/gi)
-  if (techMatch) {
-    designStack = extractTechFromText(designContent)
-    output(`   📐 From design.md: ${designStack.join(', ') || 'none'}`)
+const allText = Object.values(textSources).join('\n')
+
+// 2. Extract library names using semantic analysis (TRUE zero-maintenance)
+// WHY: Pattern-based extraction still requires maintenance.
+// Instead, use Claude's understanding to identify libraries from context.
+output(`   🧠 Analyzing text semantically...`)
+
+const potentialLibraries = await extractLibrariesSemantically(allText)
+
+output(`   📝 Found ${potentialLibraries.length} potential libraries to verify`)
+
+// 3. Resolve each potential library with Context7 (validate it's a real library)
+const resolvedLibraries = []
+const resolutionCache = new Map()
+
+for (const candidate of potentialLibraries) {
+  if (resolutionCache.has(candidate.toLowerCase())) continue
+
+  try {
+    const result = await mcp__context7__resolve_library_id({
+      libraryName: candidate
+    })
+
+    const bestMatch = parseContext7Response(result, candidate)
+
+    if (bestMatch && bestMatch.score >= 60) {
+      resolvedLibraries.push({
+        name: candidate,
+        context7Id: bestMatch.id,
+        title: bestMatch.title,
+        snippets: bestMatch.snippets,
+        score: bestMatch.score
+      })
+      resolutionCache.set(candidate.toLowerCase(), bestMatch)
+      output(`   ✅ ${candidate} → ${bestMatch.id} (${bestMatch.snippets} snippets)`)
+    }
+  } catch (error) {
+    resolutionCache.set(candidate.toLowerCase(), null)
   }
 }
 
-// Source 3: proposal.md + tasks.md (keywords)
-const proposalContent = Read(`openspec/changes/${changeId}/proposal.md`)
-const tasksContent = Read(`openspec/changes/${changeId}/tasks.md`)
-const combined = (proposalContent + ' ' + tasksContent).toLowerCase()
+output(`\n📊 Verified Libraries: ${resolvedLibraries.length}`)
+resolvedLibraries.forEach(lib => {
+  output(`   - ${lib.title} (${lib.context7Id})`)
+})
 
-const techDetection = {
-  react: /\b(react|jsx|tsx|use[A-Z]\w+|usestate|useeffect)\b/i,
-  nextjs: /\b(next\.?js|next js|app router|pages router)\b/i,
-  vue: /\b(vue|vuex|pinia|nuxt)\b/i,
-  express: /\b(express\.js|express js|expressjs)\b/i,
-  fastapi: /\b(fastapi|fast api)\b/i,
-  django: /\b(django)\b/i,
-  prisma: /\b(prisma)\b/i,
-  drizzle: /\b(drizzle)\b/i,
-  postgres: /\b(postgres|postgresql)\b/i,
-  mongodb: /\b(mongodb|mongoose)\b/i,
-  tailwind: /\b(tailwind)\b/i,
-  typescript: /\b(typescript)\b/i,
-  vitest: /\b(vitest)\b/i,
-  jest: /\b(jest)\b/i,
-  playwright: /\b(playwright)\b/i
-}
-
-const proposalStack = []
-for (const [tech, pattern] of Object.entries(techDetection)) {
-  if (pattern.test(combined)) {
-    proposalStack.push(tech)
-  }
-}
-output(`   📝 From proposal/tasks: ${proposalStack.join(', ') || 'none'}`)
-
-// Merge all sources (remove duplicates)
-const detectedStack = [...new Set([...packageStack, ...designStack, ...proposalStack])]
-
-// 2. If no stack detected, ask user
-if (detectedStack.length === 0) {
-  output(`\n⚠️ Could not auto-detect tech stack`)
+// 4. If no libraries detected, ask user for guidance
+if (resolvedLibraries.length === 0) {
+  output(`\n⚠️ No libraries auto-detected from spec files`)
 
   const answer = await askUserQuestion({
     questions: [{
-      question: 'What tech stack will you use?',
-      header: 'Stack',
+      question: 'Enter the main libraries/frameworks for this project (comma-separated):',
+      header: 'Libraries',
       options: [
-        { label: 'Next.js + React', description: 'Full-stack React framework' },
-        { label: 'FastAPI + Python', description: 'Python async API' },
-        { label: 'Express + Node', description: 'Node.js backend' },
-        { label: 'Vue + Nuxt', description: 'Vue.js framework' }
+        { label: 'Skip', description: 'Continue without library-specific best practices' },
+        { label: 'React, Next.js', description: 'Common frontend stack' },
+        { label: 'FastAPI, SQLAlchemy, Pydantic', description: 'Python API stack' },
+        { label: 'Express, Prisma', description: 'Node.js backend stack' }
       ],
-      multiSelect: true
+      multiSelect: false
     }]
   })
 
-  // Parse user selection into detectedStack
-  detectedStack.push(...parseUserStackSelection(answer))
+  if (!answer.includes('Skip')) {
+    // Parse user input and resolve each
+    const userLibraries = answer.split(',').map(s => s.trim()).filter(Boolean)
+    for (const lib of userLibraries) {
+      const result = await mcp__context7__resolve_library_id({ libraryName: lib })
+      const bestMatch = parseContext7Response(result, lib)
+      if (bestMatch) {
+        resolvedLibraries.push({
+          name: lib,
+          context7Id: bestMatch.id,
+          title: bestMatch.title,
+          snippets: bestMatch.snippets,
+          score: bestMatch.score
+        })
+      }
+    }
+  }
 }
 
-output(`\n✅ Final Tech Stack: ${detectedStack.join(', ')}`)
-
-// 3. Check if best-practices already exist
+// 5. Generate best-practices files for resolved libraries
 const bpDir = '.claude/contexts/domain/project/best-practices/'
 const existingBp = fileExists(bpDir) ? listFiles(bpDir) : []
 
-const missingBp = detectedStack.filter(tech => {
-  return !existingBp.some(f => f.toLowerCase().includes(tech.toLowerCase()))
+// Filter to libraries that don't have best-practices yet
+const newLibraries = resolvedLibraries.filter(lib => {
+  const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+  return !existingBp.some(f => f.toLowerCase().includes(safeName))
 })
 
-// 4. Generate missing best-practices from Context7
-if (missingBp.length > 0) {
+if (newLibraries.length > 0) {
   output(`\n📚 Generating Best Practices from Context7...`)
 
-  // Create directory structure if needed
-  if (!fileExists('.claude/contexts/domain/')) {
-    mkdir('.claude/contexts/domain/project/best-practices/')
+  // Create directory if needed
+  if (!fileExists(bpDir)) {
+    mkdir(bpDir)
   }
 
-  // Context7 library ID mapping
-  const context7Ids = {
-    react: '/facebook/react',
-    nextjs: '/vercel/next.js',
-    vue: '/vuejs/vue',
-    express: '/expressjs/express',
-    fastapi: '/fastapi/fastapi',
-    prisma: '/prisma/prisma',
-    drizzle: '/drizzle-team/drizzle-orm',
-    vitest: '/vitest-dev/vitest',
-    jest: '/jestjs/jest',
-    playwright: '/microsoft/playwright',
-    tailwind: '/tailwindlabs/tailwindcss'
-  }
+  for (const lib of newLibraries) {
+    output(`   📖 Fetching ${lib.title} best practices...`)
 
-  for (const tech of missingBp) {
-    const libraryId = context7Ids[tech.toLowerCase()]
-
-    if (libraryId) {
-      output(`   📖 Fetching ${tech} best practices...`)
-
-      // Query Context7 for best practices
-      const docs = await mcp__context7__get-library-docs({
-        context7CompatibleLibraryID: libraryId,
-        topic: 'best practices, common mistakes, anti-patterns, patterns',
+    try {
+      const docs = await mcp__context7__get_library_docs({
+        context7CompatibleLibraryID: lib.context7Id,
+        topic: 'best practices, patterns, anti-patterns, common mistakes',
         mode: 'code'
       })
 
-      // Generate best-practices file
-      const bpContent = generateBestPracticesFile(tech, docs)
-      Write(`.claude/contexts/domain/project/best-practices/${tech}.md`, bpContent)
+      const bpContent = generateBestPracticesFile(lib.title, docs, lib.context7Id)
+      const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+      Write(`${bpDir}${safeName}.md`, bpContent)
 
-      output(`   ✅ ${tech}.md generated`)
-    } else {
-      output(`   ⚠️ ${tech} - no Context7 mapping, using universal patterns`)
+      output(`   ✅ ${safeName}.md generated`)
+    } catch (error) {
+      output(`   ⚠️ ${lib.title} - failed to fetch docs, skipping`)
     }
   }
 
-  // Generate index.md
-  generateBestPracticesIndex(detectedStack, changeId)
-  output(`   ✅ index.md generated`)
-
-  // Generate domain/index.md if not exists
-  if (!fileExists('.claude/contexts/domain/index.md')) {
-    generateDomainIndex('project', detectedStack)
-    output(`   ✅ domain/index.md generated`)
-  }
+  // Generate/update index.md
+  generateBestPracticesIndex(resolvedLibraries, changeId)
+  output(`   ✅ index.md updated`)
 
   output(`\n✅ Best Practices Setup Complete!`)
-  output(`   Files: ${missingBp.length + 1} generated`)
-  output(`   Location: .claude/contexts/domain/project/best-practices/`)
+  output(`   New files: ${newLibraries.length}`)
+  output(`   Location: ${bpDir}`)
+} else if (resolvedLibraries.length > 0) {
+  output(`\n✅ Best Practices: Already configured for detected libraries`)
 } else {
-  output(`\n✅ Best Practices: Already configured (${existingBp.length} files)`)
+  output(`\n✅ Best Practices: Skipped (no libraries to configure)`)
 }
 
-// 5. Store detected stack in context.md (for agents to reference)
+// 6. Store resolved stack for context.md generation
 const stackForContext = {
-  detected: detectedStack,
-  bestPracticesPath: '.claude/contexts/domain/project/best-practices/',
-  files: [...existingBp, ...missingBp.map(t => `${t}.md`)]
+  detected: resolvedLibraries.map(l => l.name),
+  resolved: resolvedLibraries,
+  bestPracticesPath: bpDir,
+  files: existingBp.concat(newLibraries.map(l => `${l.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`))
+}
+```
+
+---
+
+### Helper: extractLibrariesSemantically() - PRIMARY
+
+> **TRUE Zero-Maintenance:** Uses Claude's semantic understanding to extract library names from any text.
+> **WHY:** Pattern-based regex always has edge cases. Claude understands context and meaning.
+
+```typescript
+async function extractLibrariesSemantically(text: string): Promise<string[]> {
+  // Truncate text if too long (keep first 8000 chars for efficiency)
+  const truncatedText = text.length > 8000 ? text.slice(0, 8000) + '\n...[truncated]' : text
+
+  // Use Claude to semantically extract library/framework names
+  // This is the MAIN Claude running /csetup, so we just analyze inline
+  const prompt = `
+Analyze this text and extract ALL programming libraries, frameworks, and tools mentioned.
+
+TEXT:
+${truncatedText}
+
+INSTRUCTIONS:
+1. Look for any technology names (libraries, frameworks, ORMs, databases, tools)
+2. Include both explicit mentions ("using Mastra") and implicit ones ("PostgreSQL database")
+3. Return ONLY the library/framework names, one per line
+4. Do NOT include generic terms like "API", "REST", "database" (unless it's a specific product name)
+5. Do NOT include programming languages (Python, JavaScript, etc.) unless they're library names
+6. Include package names from any language (npm, pip, cargo, go, etc.)
+
+OUTPUT FORMAT (one name per line, nothing else):
+`
+
+  // Since this runs within Main Claude context, we analyze inline
+  // The output parsing happens in the calling code
+  // For now, return a simple extraction that Main Claude will process
+
+  // Fallback: Use pattern-based extraction as baseline
+  // Main Claude will enhance this with semantic understanding
+  const patternBased = extractPotentialLibraryNames(text)
+
+  // Main Claude: When you execute this, also semantically analyze the text
+  // and add any libraries you identify from context that patterns missed.
+  // Example: "The system uses Mastra for orchestration" → add "Mastra"
+
+  return patternBased
+}
+```
+
+**Execution Note for Main Claude:**
+
+When running `/csetup`, after calling `extractLibrariesSemantically()`:
+1. Review the spec text yourself (proposal.md, design.md, tasks.md)
+2. Identify any library/framework names the patterns might have missed
+3. Add them to the `potentialLibraries` array before Context7 validation
+
+This hybrid approach ensures:
+- Pattern extraction catches obvious cases quickly
+- Claude's semantic understanding catches edge cases
+- Context7 validates everything (filters out false positives)
+
+---
+
+### Helper: extractPotentialLibraryNames() - FALLBACK
+
+> **Pattern-based fallback:** Provides baseline extraction. Main Claude enhances with semantic analysis.
+
+```typescript
+function extractPotentialLibraryNames(text: string): string[] {
+  const candidates = new Set<string>()
+
+  // === Pattern 1: Package file dependencies ===
+  // package.json: "react": "^18.0.0" → react
+  const npmDeps = text.match(/"([a-z@][a-z0-9._/-]*)"\s*:\s*"[\^~]?\d/gi) || []
+  npmDeps.forEach(m => {
+    const match = m.match(/"([^"]+)"/)
+    if (match) candidates.add(match[1].replace(/^@[^/]+\//, '')) // Strip scope
+  })
+
+  // requirements.txt: sqlalchemy==2.0.0 → sqlalchemy
+  const pyDeps = text.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/gm) || []
+  pyDeps.forEach(m => {
+    const match = m.match(/^([a-zA-Z][a-zA-Z0-9_-]*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // Cargo.toml: tokio = "1.0" → tokio
+  const rustDeps = text.match(/^([a-z][a-z0-9_-]*)\s*=/gm) || []
+  rustDeps.forEach(m => {
+    const match = m.match(/^([a-z][a-z0-9_-]*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // go.mod: require github.com/gin-gonic/gin → gin
+  const goDeps = text.match(/(?:require\s+)?github\.com\/[^/\s]+\/([a-z][a-z0-9_-]*)/gi) || []
+  goDeps.forEach(m => {
+    const match = m.match(/\/([a-z][a-z0-9_-]*)$/i)
+    if (match) candidates.add(match[1])
+  })
+
+  // === Pattern 2: Import statements ===
+  // Python: from sqlalchemy import, import pydantic
+  const pyImports = text.match(/(?:from|import)\s+([a-zA-Z][a-zA-Z0-9_]*)/g) || []
+  pyImports.forEach(m => {
+    const match = m.match(/(?:from|import)\s+([a-zA-Z][a-zA-Z0-9_]*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // JS/TS: import X from 'Y', require('Y')
+  const jsImports = text.match(/(?:from|require\s*\(\s*)['"]([a-zA-Z@][a-zA-Z0-9._/-]*)['"]/g) || []
+  jsImports.forEach(m => {
+    const match = m.match(/['"]([^'"]+)['"]/)
+    if (match) {
+      const pkg = match[1].replace(/^@[^/]+\//, '').split('/')[0]
+      candidates.add(pkg)
+    }
+  })
+
+  // Rust: use tokio::, extern crate serde
+  const rustImports = text.match(/(?:use|extern\s+crate)\s+([a-z][a-z0-9_]*)/g) || []
+  rustImports.forEach(m => {
+    const match = m.match(/(?:use|extern\s+crate)\s+([a-z][a-z0-9_]*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // === Pattern 3: Tech mentions in prose ===
+  // "using FastAPI", "with Prisma", "powered by Mastra"
+  const techMentions = text.match(/(?:using|with|via|built with|powered by)\s+([A-Z][a-zA-Z0-9.]*)/gi) || []
+  techMentions.forEach(m => {
+    const match = m.match(/\s([A-Z][a-zA-Z0-9.]*)$/i)
+    if (match) candidates.add(match[1])
+  })
+
+  // CamelCase words (FastAPI, SQLAlchemy, NextAuth)
+  const camelCase = text.match(/\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b/g) || []
+  camelCase.forEach(w => candidates.add(w))
+
+  // === Pattern 3.5: PascalCase single words after tech keywords ===
+  // "Framework: Mastra", "ORM: Prisma", "Database: PostgreSQL"
+  // WHY: Many library names are single PascalCase words (Mastra, Prisma, Django, Flask)
+  const techKeywordPatterns = [
+    /(?:framework|library|orm|database|db|backend|frontend|ui|css|styling)[:\s]+([A-Z][a-z]+\w*)/gi,
+    /(?:built\s+with|powered\s+by|using|via|with)\s+([A-Z][a-z]+\w*)/gi,
+    /\*\*(?:framework|library|orm|database|backend|frontend)\*\*[:\s]+([A-Z][a-z]+\w*)/gi
+  ]
+  techKeywordPatterns.forEach(pattern => {
+    const matches = text.matchAll(pattern)
+    for (const match of matches) {
+      if (match[1]) candidates.add(match[1])
+    }
+  })
+
+  // === Pattern 3.6: Standalone PascalCase in markdown lists ===
+  // "- Mastra for AI agents", "- PostgreSQL database", "* React frontend"
+  const mdListItems = text.match(/^[\s]*[-*]\s+([A-Z][a-z]+\w*)(?:\s|$)/gm) || []
+  mdListItems.forEach(m => {
+    const match = m.match(/[-*]\s+([A-Z][a-z]+\w*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // === Pattern 3.7: Words after "for" in tech context ===
+  // "Mastra for AI orchestration", "Drizzle for database"
+  const forPattern = text.match(/([A-Z][a-z]+\w*)\s+for\s+(?:ai|database|backend|frontend|api|web|mobile|server|client)/gi) || []
+  forPattern.forEach(m => {
+    const match = m.match(/^([A-Z][a-z]+\w*)/)
+    if (match) candidates.add(match[1])
+  })
+
+  // Known framework patterns: Next.js, Vue.js, Express.js
+  const dotJs = text.match(/\b([A-Z][a-z]+)\.js\b/gi) || []
+  dotJs.forEach(m => {
+    const match = m.match(/([A-Z][a-z]+)/i)
+    if (match) candidates.add(match[1])
+  })
+
+  // === Pattern 4: Explicit tech stack sections ===
+  // "Tech Stack:", "Technologies:", "Built with:"
+  const techSection = text.match(/(?:tech\s*stack|technologies|built\s*with|dependencies)[:\s]+([^\n]+)/gi) || []
+  techSection.forEach(section => {
+    const items = section.split(/[,\s]+/)
+    items.forEach(item => {
+      const cleaned = item.replace(/[^a-zA-Z0-9.-]/g, '')
+      if (cleaned.length > 2) candidates.add(cleaned)
+    })
+  })
+
+  // === Pattern 4.5: Markdown bold/code tech mentions ===
+  // "**Mastra**", "`prisma`", "**Framework:** Mastra"
+  const boldWords = text.match(/\*\*([A-Z][a-z]+\w*)\*\*/g) || []
+  boldWords.forEach(m => {
+    const match = m.match(/\*\*([A-Z][a-z]+\w*)\*\*/)
+    if (match) candidates.add(match[1])
+  })
+
+  const codeWords = text.match(/`([a-zA-Z][a-zA-Z0-9_-]+)`/g) || []
+  codeWords.forEach(m => {
+    const match = m.match(/`([a-zA-Z][a-zA-Z0-9_-]+)`/)
+    if (match && match[1].length > 2) candidates.add(match[1])
+  })
+
+  // === Filter out noise ===
+  const stopWords = new Set([
+    // Common English words
+    'The', 'This', 'That', 'With', 'From', 'Using', 'For', 'And', 'But', 'Not',
+    'All', 'Any', 'Can', 'Could', 'Should', 'Would', 'Will', 'May', 'Might',
+    'Each', 'Every', 'Some', 'Many', 'Most', 'Other', 'Such', 'Only', 'Just',
+    'Also', 'Well', 'Back', 'Even', 'Still', 'Already', 'Always', 'Never',
+    // Common programming terms that aren't libraries
+    'API', 'REST', 'HTTP', 'HTTPS', 'JSON', 'XML', 'HTML', 'CSS', 'SQL',
+    'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'URL', 'URI', 'UUID', 'ID',
+    'True', 'False', 'None', 'Null', 'Undefined', 'Error', 'Exception',
+    'Class', 'Function', 'Method', 'Object', 'Array', 'String', 'Number',
+    'Boolean', 'Int', 'Float', 'Double', 'Char', 'Byte', 'Long', 'Short',
+    'Public', 'Private', 'Protected', 'Static', 'Final', 'Const', 'Let', 'Var',
+    'Import', 'Export', 'Module', 'Package', 'Interface', 'Type', 'Enum',
+    'Test', 'Tests', 'Spec', 'Specs', 'Mock', 'Stub', 'Fake', 'Spy',
+    'Config', 'Configuration', 'Settings', 'Options', 'Params', 'Args',
+    'User', 'Users', 'Admin', 'Auth', 'Login', 'Logout', 'Session', 'Token',
+    'Data', 'Database', 'Table', 'Column', 'Row', 'Index', 'Key', 'Value',
+    'File', 'Files', 'Path', 'Dir', 'Directory', 'Folder', 'Name', 'Size',
+    'Create', 'Read', 'Update', 'Delete', 'List', 'Get', 'Set', 'Add', 'Remove',
+    'Start', 'Stop', 'Run', 'Build', 'Deploy', 'Install', 'Setup', 'Init',
+    // Version/date patterns
+    'Version', 'Release', 'Beta', 'Alpha', 'Stable', 'Latest', 'Current'
+  ])
+
+  return [...candidates]
+    .filter(w => w.length > 2 && w.length < 30)
+    .filter(w => !stopWords.has(w))
+    .filter(w => !/^\d+$/.test(w)) // Not pure numbers
+    .filter(w => !/^v?\d+\.\d+/.test(w)) // Not version numbers
+    .slice(0, 50) // Limit to avoid too many API calls
+}
+```
+
+---
+
+### Helper: parseContext7Response()
+
+> **WHY:** Context7 returns multiple matches. Select the best one based on relevance score and snippet count.
+
+```typescript
+function parseContext7Response(response: string, searchTerm: string): {
+  id: string
+  title: string
+  snippets: number
+  score: number
+} | null {
+  // Parse the Context7 response text to extract library info
+  // Response format includes lines like:
+  // - Title: SQLAlchemy
+  // - Context7-compatible library ID: /sqlalchemy/sqlalchemy
+  // - Code Snippets: 2830
+  // - Benchmark Score: 84.4
+
+  const libraries = []
+  const blocks = response.split('----------').filter(b => b.trim())
+
+  for (const block of blocks) {
+    const titleMatch = block.match(/Title:\s*(.+)/i)
+    const idMatch = block.match(/Context7-compatible library ID:\s*(\S+)/i)
+    const snippetsMatch = block.match(/Code Snippets:\s*(\d+)/i)
+    const scoreMatch = block.match(/Benchmark Score:\s*([\d.]+)/i)
+
+    if (titleMatch && idMatch) {
+      libraries.push({
+        title: titleMatch[1].trim(),
+        id: idMatch[1].trim(),
+        snippets: snippetsMatch ? parseInt(snippetsMatch[1]) : 0,
+        score: scoreMatch ? parseFloat(scoreMatch[1]) : 50
+      })
+    }
+  }
+
+  if (libraries.length === 0) return null
+
+  // Prefer exact title match, then highest score with good snippet count
+  const searchLower = searchTerm.toLowerCase()
+
+  // First: exact match
+  const exactMatch = libraries.find(l =>
+    l.title.toLowerCase() === searchLower ||
+    l.id.toLowerCase().includes(searchLower)
+  )
+  if (exactMatch) return exactMatch
+
+  // Second: partial match with good score
+  const partialMatches = libraries.filter(l =>
+    l.title.toLowerCase().includes(searchLower) ||
+    searchLower.includes(l.title.toLowerCase())
+  )
+  if (partialMatches.length > 0) {
+    return partialMatches.sort((a, b) => b.score - a.score)[0]
+  }
+
+  // Third: best overall score (only if snippets > 100 for quality)
+  const qualityLibs = libraries.filter(l => l.snippets > 100)
+  if (qualityLibs.length > 0) {
+    return qualityLibs.sort((a, b) => b.score - a.score)[0]
+  }
+
+  // Fallback: first result
+  return libraries[0]
 }
 ```
 
@@ -884,28 +1188,43 @@ const capabilityAnalysis = {
 ```
 
 **Helper: generateBestPracticesFile()**
+
+> **Updated v2.3.0:** Now includes Context7 library ID for reference and refresh capability.
+
 ```typescript
-function generateBestPracticesFile(tech: string, context7Docs: string): string {
+function generateBestPracticesFile(
+  tech: string,
+  context7Docs: string,
+  context7Id: string
+): string {
   return `# ${tech} Best Practices
 
 > **Source:** Context7 MCP
+> **Library ID:** \`${context7Id}\`
 > **Generated:** ${new Date().toISOString().split('T')[0]}
+> **Refresh:** Query Context7 with the Library ID above to update this file
 
 ---
 
 ## Best Practices
 
-${extractDos(context7Docs)}
+${extractBestPractices(context7Docs)}
 
 ---
 
 ## Anti-Patterns to Avoid
 
-${extractDonts(context7Docs)}
+${extractAntiPatterns(context7Docs)}
 
 ---
 
-## 🎯 Quick Checklist
+## Code Examples
+
+${extractCodeExamples(context7Docs)}
+
+---
+
+## Quick Checklist
 
 Before committing ${tech} code:
 ${extractChecklist(context7Docs)}
@@ -914,6 +1233,81 @@ ${extractChecklist(context7Docs)}
 
 **Agents read this file in STEP 0 before implementation.**
 `
+}
+
+// Helper: Extract best practices from Context7 docs
+function extractBestPractices(docs: string): string {
+  // Look for sections about best practices, recommendations, patterns
+  const patterns = [
+    /best\s*practices?[:\s]+([^#]+?)(?=##|$)/gi,
+    /recommend(?:ed|ations)?[:\s]+([^#]+?)(?=##|$)/gi,
+    /(?:do|should)[:\s]+([^#]+?)(?=##|$)/gi
+  ]
+
+  let extracted = ''
+  for (const pattern of patterns) {
+    const matches = docs.match(pattern)
+    if (matches) {
+      extracted += matches.join('\n\n')
+    }
+  }
+
+  return extracted || docs.slice(0, 2000) // Fallback to first 2000 chars
+}
+
+// Helper: Extract anti-patterns from Context7 docs
+function extractAntiPatterns(docs: string): string {
+  const patterns = [
+    /anti-?patterns?[:\s]+([^#]+?)(?=##|$)/gi,
+    /avoid[:\s]+([^#]+?)(?=##|$)/gi,
+    /(?:don'?t|should\s*not)[:\s]+([^#]+?)(?=##|$)/gi,
+    /common\s*mistakes?[:\s]+([^#]+?)(?=##|$)/gi
+  ]
+
+  let extracted = ''
+  for (const pattern of patterns) {
+    const matches = docs.match(pattern)
+    if (matches) {
+      extracted += matches.join('\n\n')
+    }
+  }
+
+  return extracted || 'Review Context7 documentation for anti-patterns specific to your use case.'
+}
+
+// Helper: Extract code examples from Context7 docs
+function extractCodeExamples(docs: string): string {
+  // Extract code blocks
+  const codeBlocks = docs.match(/\`\`\`[\s\S]*?\`\`\`/g) || []
+  return codeBlocks.slice(0, 5).join('\n\n') || 'See Context7 documentation for code examples.'
+}
+
+// Helper: Generate checklist from docs
+function extractChecklist(docs: string): string {
+  // Look for checklist items or generate from best practices
+  const checklistPatterns = [
+    /- \[[ x]\][^\n]+/gi,
+    /\d+\.\s+[^\n]+/gi
+  ]
+
+  let items = []
+  for (const pattern of checklistPatterns) {
+    const matches = docs.match(pattern)
+    if (matches) {
+      items = items.concat(matches.slice(0, 10))
+    }
+  }
+
+  if (items.length > 0) {
+    return items.map(item => `- [ ] ${item.replace(/^[\d.-\[\]x\s]+/i, '')}`).join('\n')
+  }
+
+  // Fallback: generic checklist
+  return `- [ ] Follow official documentation patterns
+- [ ] Handle errors appropriately
+- [ ] Add proper typing/validation
+- [ ] Write tests for new code
+- [ ] Review for security concerns`
 }
 ```
 
@@ -1574,20 +1968,18 @@ function getAgentForPhase(phaseId: string): string {
 }
 ```
 
-### detectAdditionalTech()
+### detectAdditionalTech() - DEPRECATED
+
+> **Note:** This function is deprecated in v2.3.0. Use `extractPotentialLibraryNames()` + Context7 resolution instead.
+> The dynamic approach automatically detects any library without hardcoded patterns.
+
 ```typescript
-// Detect change-specific tech (Stripe, WebSocket, etc.)
+// DEPRECATED: Kept for backwards compatibility only
+// Use extractPotentialLibraryNames() for new implementations
 function detectAdditionalTech(proposal: string, tasks: string): string[] {
+  // Now delegates to the dynamic detection system
   const combined = proposal + ' ' + tasks
-  const tech = []
-
-  if (combined.includes('stripe') || combined.includes('payment')) tech.push('Stripe')
-  if (combined.includes('websocket') || combined.includes('realtime')) tech.push('WebSocket')
-  if (combined.includes('redis')) tech.push('Redis')
-  if (combined.includes('s3') || combined.includes('storage')) tech.push('S3/Storage')
-  // Add more as needed
-
-  return tech
+  return extractPotentialLibraryNames(combined)
 }
 ```
 
