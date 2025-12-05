@@ -249,228 +249,686 @@ Continue anyway? (yes/no)
 
 ---
 
-### Step 2.6: Feature Best Practice Analysis (v2.2.0)
+### Step 2.6: Adaptive Depth Research (v2.4.0)
 
-> **NEW:** Validate spec against industry standards BEFORE checking stack best practices
-> **Reference:** `.claude/lib/feature-best-practices.md`
+> **NEW:** Dynamic research layers based on change complexity - replaces hardcoded feature detection
+> **WHY:** Different changes need different research depth. A typo fix needs 0 layers, a healthcare portal needs 10+.
+> **Output:** `openspec/changes/{changeId}/research-checklist.md`
 
-WHY: Stack best practices tell you "how to use React well", but Feature best practices tell you "what a good auth system needs". The feature layer is higher-level and informs whether your spec is complete.
+**Key Principles:**
+- Layer 1 is ALWAYS "Best Practice" (คนอื่นทำกันยังไง? / How do others do it?)
+- Layer 2+ determined dynamically based on change context
+- No fixed minimum or maximum - truly adaptive (0 to 10+ layers)
+- Visual design (from /designsetup) is STATIC - this only handles Strategy (WHAT/WHERE)
+- Warns if industry practice conflicts with user's design choices
 
 ```typescript
-output(`\n🔍 Analyzing Feature Best Practices...`)
+output(`\n🔬 Adaptive Depth Research Analysis...`)
 
-// 1. Detect features from proposal/tasks/design
-const combined = (proposalContent + ' ' + tasksContent + ' ' + designContent).toLowerCase()
+// 1. Gather change context from all spec files
+const proposalPath = `openspec/changes/${changeId}/proposal.md`
+const tasksPath = `openspec/changes/${changeId}/tasks.md`
+const designPath = `openspec/changes/${changeId}/design.md`
 
-const featureDetection = {
-  authentication: {
-    keywords: ['login', 'auth', 'register', 'password', 'session', 'jwt', 'token', 'oauth'],
-    tier: 1, // Blocking
-    standards: [
-      { name: 'Short-lived access token', keywords: ['jwt', 'access', '15', '30', 'min'], priority: 'required' },
-      { name: 'Refresh token rotation', keywords: ['refresh', 'rotation', 'rotate'], priority: 'required' },
-      { name: 'Secure token storage', keywords: ['httponly', 'cookie', 'secure'], priority: 'required' },
-      { name: 'Token revocation', keywords: ['revoke', 'invalidate', 'logout'], priority: 'required' },
-      { name: 'Rate limiting', keywords: ['rate', 'limit', 'throttle', 'attempt'], priority: 'required' },
-      { name: 'Account lockout', keywords: ['lockout', 'lock', 'failed attempt'], priority: 'recommended' }
-    ]
-  },
-  payment: {
-    keywords: ['payment', 'stripe', 'checkout', 'billing', 'subscription'],
-    tier: 1,
-    standards: [
-      { name: 'No card data on server', keywords: ['elements', 'checkout', 'client-side'], priority: 'required' },
-      { name: 'Webhook signature verification', keywords: ['webhook', 'signature', 'verify'], priority: 'required' },
-      { name: 'Idempotency keys', keywords: ['idempotency', 'idempotent'], priority: 'required' }
-    ]
-  },
-  fileUpload: {
-    keywords: ['upload', 'file', 'image', 's3', 'storage'],
-    tier: 1,
-    standards: [
-      { name: 'File type validation', keywords: ['mime', 'type', 'validation', 'allowed'], priority: 'required' },
-      { name: 'File size limits', keywords: ['size', 'limit', 'max'], priority: 'required' },
-      { name: 'Filename sanitization', keywords: ['sanitize', 'filename', 'path'], priority: 'required' }
-    ]
-  },
-  apiDesign: {
-    keywords: ['api', 'endpoint', 'rest', 'graphql'],
-    tier: 2, // Warning
-    standards: [
-      { name: 'Rate limiting', keywords: ['rate', 'limit'], priority: 'required' },
-      { name: 'Input validation', keywords: ['validate', 'validation', 'zod', 'schema'], priority: 'required' },
-      { name: 'Pagination', keywords: ['pagination', 'page', 'limit', 'offset'], priority: 'recommended' }
-    ]
+const proposal = fileExists(proposalPath) ? Read(proposalPath) : ''
+const tasks = fileExists(tasksPath) ? Read(tasksPath) : ''
+const design = fileExists(designPath) ? Read(designPath) : ''
+const combined = (proposal + '\n' + tasks + '\n' + design).toLowerCase()
+
+// 2. Analyze change characteristics using semantic understanding
+const changeAnalysis = analyzeChangeCharacteristics(combined, proposal, tasks)
+
+output(`\n📊 Change Analysis:`)
+output(`   Type: ${changeAnalysis.primaryType}`)
+output(`   Complexity: ${changeAnalysis.complexity}/10`)
+output(`   Risk Level: ${changeAnalysis.riskLevel}`)
+output(`   Target Audience: ${changeAnalysis.audience || 'Internal'}`)
+
+// 3. Determine required research layers based on change characteristics
+const requiredLayers = determineResearchLayers(changeAnalysis)
+
+output(`\n📚 Research Layers Required: ${requiredLayers.length}`)
+
+if (requiredLayers.length === 0) {
+  output(`   ✅ No research needed - trivial change`)
+  output(`   (Typo fix, debug log, simple badge, etc.)`)
+} else {
+  requiredLayers.forEach((layer, idx) => {
+    output(`   L${idx + 1}: ${layer.name}`)
+    output(`       Focus: ${layer.focus}`)
+    output(`       Questions: ${layer.questions.slice(0, 2).join(', ')}...`)
+  })
+}
+
+// 4. Execute research for each layer using Context7 + semantic analysis
+const researchResults = []
+
+for (const layer of requiredLayers) {
+  output(`\n🔍 Researching L${layer.order}: ${layer.name}...`)
+
+  const layerResult = await executeLayerResearch(layer, changeAnalysis)
+  researchResults.push(layerResult)
+
+  output(`   ✅ Found ${layerResult.findings.length} key findings`)
+  if (layerResult.warnings.length > 0) {
+    layerResult.warnings.forEach(w => output(`   ⚠️ ${w}`))
   }
 }
 
-// 2. Find detected features
-const detectedFeatures = []
-for (const [featureName, config] of Object.entries(featureDetection)) {
-  if (config.keywords.some(kw => combined.includes(kw))) {
-    detectedFeatures.push({ name: featureName, ...config })
+// 5. Check for conflicts with design system (if exists)
+const tokensPath = 'design-system/tokens.json'
+if (fileExists(tokensPath) && researchResults.length > 0) {
+  const tokens = JSON.parse(Read(tokensPath))
+  const conflicts = checkDesignConflicts(tokens, researchResults, changeAnalysis)
+
+  if (conflicts.length > 0) {
+    output(`\n⚠️ Design vs Industry Fit Conflicts:`)
+    conflicts.forEach(c => {
+      output(`   - ${c.aspect}: Your design uses "${c.current}", but ${c.industry}`)
+      output(`     Recommendation: ${c.recommendation}`)
+    })
+    output(`\n   Note: User design choices take precedence. These are informational warnings.`)
   }
 }
 
-if (detectedFeatures.length > 0) {
-  output(`\n📋 Features Detected:`)
-  detectedFeatures.forEach(f => {
-    output(`   - ${f.name} (Tier ${f.tier}: ${f.tier === 1 ? 'Blocking' : 'Warning'})`)
+// 6. Generate research-checklist.md
+const checklistPath = `openspec/changes/${changeId}/research-checklist.md`
+const checklistContent = generateResearchChecklist(changeAnalysis, requiredLayers, researchResults)
+
+Write(checklistPath, checklistContent)
+output(`\n✅ Generated: ${checklistPath}`)
+
+// Store for use by agents
+const adaptiveResearch = {
+  layerCount: requiredLayers.length,
+  layers: requiredLayers.map(l => l.name),
+  complexity: changeAnalysis.complexity,
+  checklistPath: checklistPath
+}
+```
+
+#### Helper Functions
+
+```typescript
+// Analyze change characteristics using semantic understanding
+function analyzeChangeCharacteristics(combined, proposal, tasks) {
+  const analysis = {
+    primaryType: 'general',
+    complexity: 1,
+    riskLevel: 'LOW',
+    audience: 'internal',
+    domains: [],
+    features: [],
+    hasUI: false,
+    hasAPI: false,
+    hasDatabase: false,
+    hasPayment: false,
+    hasAuth: false,
+    hasCompliance: false,
+    hasSensitiveData: false,
+    isExternalFacing: false,
+    industryContext: null
+  }
+
+  // Detect primary type
+  if (/marketing|landing|hero|cta|conversion|sales/i.test(combined)) {
+    analysis.primaryType = 'marketing'
+    analysis.isExternalFacing = true
+  } else if (/dashboard|admin|management|analytics/i.test(combined)) {
+    analysis.primaryType = 'dashboard'
+  } else if (/api|endpoint|rest|graphql/i.test(combined)) {
+    analysis.primaryType = 'api'
+  } else if (/auth|login|register|password/i.test(combined)) {
+    analysis.primaryType = 'auth'
+    analysis.hasAuth = true
+  } else if (/database|schema|migration|model/i.test(combined)) {
+    analysis.primaryType = 'database'
+    analysis.hasDatabase = true
+  }
+
+  // Detect features and domains
+  if (/payment|stripe|billing|checkout|subscription/i.test(combined)) {
+    analysis.hasPayment = true
+    analysis.features.push('payment')
+    analysis.riskLevel = 'HIGH'
+  }
+  if (/health|medical|patient|hipaa|phi/i.test(combined)) {
+    analysis.hasCompliance = true
+    analysis.hasSensitiveData = true
+    analysis.domains.push('healthcare')
+    analysis.industryContext = 'healthcare'
+    analysis.riskLevel = 'HIGH'
+  }
+  if (/fintech|banking|finance|pci|financial/i.test(combined)) {
+    analysis.hasCompliance = true
+    analysis.domains.push('fintech')
+    analysis.industryContext = 'fintech'
+    analysis.riskLevel = 'HIGH'
+  }
+  if (/saas|multi-tenant|tenant/i.test(combined)) {
+    analysis.domains.push('saas')
+    analysis.features.push('multi-tenancy')
+  }
+  if (/ecommerce|e-commerce|cart|product|shop/i.test(combined)) {
+    analysis.domains.push('ecommerce')
+    analysis.isExternalFacing = true
+  }
+  if (/realtime|real-time|websocket|collaboration/i.test(combined)) {
+    analysis.features.push('realtime')
+  }
+
+  // Detect UI/API/Database
+  analysis.hasUI = /ui|page|component|form|button|modal/i.test(combined)
+  analysis.hasAPI = /api|endpoint|route|controller/i.test(combined)
+  analysis.hasDatabase = analysis.hasDatabase || /table|column|relation|index/i.test(combined)
+
+  // Detect audience
+  if (/b2c|consumer|user|customer/i.test(combined)) {
+    analysis.audience = 'consumer'
+    analysis.isExternalFacing = true
+  } else if (/b2b|enterprise|business/i.test(combined)) {
+    analysis.audience = 'business'
+    analysis.isExternalFacing = true
+  }
+
+  // Calculate complexity (1-10)
+  let complexity = 1
+  if (analysis.features.length > 0) complexity += analysis.features.length
+  if (analysis.domains.length > 0) complexity += analysis.domains.length
+  if (analysis.hasCompliance) complexity += 2
+  if (analysis.hasPayment) complexity += 2
+  if (analysis.hasAuth) complexity += 1
+  if (analysis.isExternalFacing) complexity += 1
+  if (/integration|external api|third-party/i.test(combined)) complexity += 2
+
+  analysis.complexity = Math.min(complexity, 10)
+
+  // Adjust risk level
+  if (analysis.complexity >= 7 || analysis.hasCompliance || analysis.hasPayment) {
+    analysis.riskLevel = 'HIGH'
+  } else if (analysis.complexity >= 4 || analysis.hasAuth) {
+    analysis.riskLevel = 'MEDIUM'
+  }
+
+  return analysis
+}
+
+// Determine research layers dynamically based on change characteristics
+function determineResearchLayers(analysis) {
+  const layers = []
+  let order = 1
+
+  // Check for trivial changes (0 layers)
+  if (analysis.complexity <= 1 &&
+      !analysis.hasUI && !analysis.hasAPI && !analysis.hasDatabase &&
+      analysis.riskLevel === 'LOW') {
+    return [] // No research needed
+  }
+
+  // L1: Best Practice (ALWAYS for non-trivial changes)
+  layers.push({
+    order: order++,
+    name: 'Best Practice / Industry Standard',
+    focus: `How do others implement ${analysis.primaryType}?`,
+    questions: [
+      `What is the industry standard for ${analysis.primaryType}?`,
+      'What are common patterns and anti-patterns?',
+      'What are the key success factors?',
+      'What are common failure modes?'
+    ],
+    searchTopics: [`${analysis.primaryType} best practices`, `${analysis.primaryType} patterns`]
   })
 
-  // 3. For each Tier 1/2 feature, check spec against standards
-  const allGaps = []
+  // L2+: Dynamic layers based on context
 
-  for (const feature of detectedFeatures) {
-    output(`\n🔍 Checking ${feature.name} against industry standards...`)
+  // Security layer (for auth, payment, sensitive data)
+  if (analysis.hasAuth || analysis.hasPayment || analysis.hasSensitiveData) {
+    layers.push({
+      order: order++,
+      name: 'Security Requirements',
+      focus: 'What security measures are required?',
+      questions: [
+        'What authentication/authorization is needed?',
+        'What data protection is required?',
+        'What are common security vulnerabilities?',
+        'What compliance requirements apply?'
+      ],
+      searchTopics: ['security best practices', `${analysis.primaryType} security`]
+    })
+  }
 
-    const gaps = []
-    const matches = []
+  // Compliance layer (for regulated industries)
+  if (analysis.hasCompliance || analysis.industryContext) {
+    layers.push({
+      order: order++,
+      name: `${analysis.industryContext || 'Industry'} Compliance`,
+      focus: `What ${analysis.industryContext || 'industry'} regulations apply?`,
+      questions: [
+        'What regulatory requirements must be met?',
+        'What audit trails are needed?',
+        'What data handling rules apply?',
+        'What documentation is required?'
+      ],
+      searchTopics: [`${analysis.industryContext} compliance`, `${analysis.industryContext} regulations`]
+    })
+  }
 
-    for (const standard of feature.standards) {
-      const isMentioned = standard.keywords.some(kw =>
-        designContent.toLowerCase().includes(kw)
-      )
+  // UX layer (for external-facing UI)
+  if (analysis.isExternalFacing && analysis.hasUI) {
+    layers.push({
+      order: order++,
+      name: 'User Experience Patterns',
+      focus: 'What UX patterns work for this audience?',
+      questions: [
+        'What user journey is expected?',
+        'What conversion patterns work?',
+        'What accessibility requirements apply?',
+        'What are user expectations?'
+      ],
+      searchTopics: [`${analysis.primaryType} UX`, `${analysis.audience} UX patterns`]
+    })
+  }
 
-      if (isMentioned) {
-        matches.push(standard.name)
-      } else if (standard.priority === 'required') {
-        gaps.push({
-          feature: feature.name,
-          requirement: standard.name,
-          priority: standard.priority,
-          tier: feature.tier
+  // Psychology layer (for marketing/sales)
+  if (analysis.primaryType === 'marketing' || /conversion|sales|cta/i.test(analysis.primaryType)) {
+    layers.push({
+      order: order++,
+      name: 'Conversion Psychology',
+      focus: 'What psychological triggers work?',
+      questions: [
+        'What is the buyer awareness level?',
+        'What pain points to address?',
+        'What objections to overcome?',
+        'What social proof is needed?'
+      ],
+      searchTopics: ['conversion psychology', 'landing page psychology']
+    })
+  }
+
+  // Content Strategy layer (for content-heavy pages)
+  if (analysis.primaryType === 'marketing' || /content|blog|documentation/i.test(analysis.primaryType)) {
+    layers.push({
+      order: order++,
+      name: 'Content Strategy',
+      focus: 'What content structure works?',
+      questions: [
+        'What content hierarchy is effective?',
+        'What tone and voice to use?',
+        'What call-to-actions work?',
+        'What content gaps exist?'
+      ],
+      searchTopics: ['content strategy', 'copywriting best practices']
+    })
+  }
+
+  // Data Architecture layer (for database/data-intensive)
+  if (analysis.hasDatabase || /data|analytics|reporting/i.test(analysis.primaryType)) {
+    layers.push({
+      order: order++,
+      name: 'Data Architecture',
+      focus: 'What data patterns are appropriate?',
+      questions: [
+        'What normalization level is appropriate?',
+        'What indexing strategy is needed?',
+        'What scaling considerations apply?',
+        'What data integrity rules?'
+      ],
+      searchTopics: ['database design patterns', 'data architecture']
+    })
+  }
+
+  // API Design layer (for API-focused changes)
+  if (analysis.hasAPI || analysis.primaryType === 'api') {
+    layers.push({
+      order: order++,
+      name: 'API Design',
+      focus: 'What API patterns are appropriate?',
+      questions: [
+        'What API style is appropriate (REST/GraphQL)?',
+        'What versioning strategy?',
+        'What error handling patterns?',
+        'What rate limiting/throttling?'
+      ],
+      searchTopics: ['API design best practices', 'REST API patterns']
+    })
+  }
+
+  // Multi-tenancy layer (for SaaS)
+  if (analysis.features.includes('multi-tenancy')) {
+    layers.push({
+      order: order++,
+      name: 'Multi-tenancy Patterns',
+      focus: 'What isolation and scaling patterns?',
+      questions: [
+        'What data isolation model?',
+        'What authentication per tenant?',
+        'What resource limits?',
+        'What billing model integration?'
+      ],
+      searchTopics: ['multi-tenant architecture', 'SaaS patterns']
+    })
+  }
+
+  // Real-time layer (for collaboration/live features)
+  if (analysis.features.includes('realtime')) {
+    layers.push({
+      order: order++,
+      name: 'Real-time Architecture',
+      focus: 'What real-time patterns are needed?',
+      questions: [
+        'WebSocket vs SSE vs polling?',
+        'What conflict resolution?',
+        'What offline support?',
+        'What scaling for connections?'
+      ],
+      searchTopics: ['real-time architecture', 'WebSocket patterns']
+    })
+  }
+
+  // Performance layer (for high-traffic or data-intensive)
+  if (analysis.isExternalFacing || analysis.complexity >= 6 ||
+      /performance|speed|optimization|cache/i.test(analysis.primaryType)) {
+    layers.push({
+      order: order++,
+      name: 'Performance Optimization',
+      focus: 'What performance patterns are needed?',
+      questions: [
+        'What caching strategy?',
+        'What lazy loading patterns?',
+        'What CDN/edge considerations?',
+        'What database optimization?'
+      ],
+      searchTopics: ['performance optimization', 'caching strategies']
+    })
+  }
+
+  // Integration layer (for external APIs/services)
+  if (/integration|external api|third-party|webhook/i.test(analysis.primaryType) ||
+      analysis.features.some(f => /payment|email|sms|notification/i.test(f))) {
+    layers.push({
+      order: order++,
+      name: 'Integration Patterns',
+      focus: 'What integration patterns are robust?',
+      questions: [
+        'What retry/circuit breaker patterns?',
+        'What error handling for external failures?',
+        'What monitoring/alerting?',
+        'What idempotency requirements?'
+      ],
+      searchTopics: ['integration patterns', 'API integration best practices']
+    })
+  }
+
+  // Testing Strategy layer (for complex/high-risk)
+  if (analysis.riskLevel === 'HIGH' || analysis.complexity >= 7) {
+    layers.push({
+      order: order++,
+      name: 'Testing Strategy',
+      focus: 'What testing coverage is needed?',
+      questions: [
+        'What unit vs integration vs e2e balance?',
+        'What edge cases to cover?',
+        'What load/stress testing?',
+        'What security testing?'
+      ],
+      searchTopics: ['testing strategy', `${analysis.primaryType} testing`]
+    })
+  }
+
+  return layers
+}
+
+// Execute research for a single layer using Claude's knowledge
+// WHY: Domain knowledge (UX, DB design, security patterns) comes from Claude's training
+//      Stack knowledge (Prisma, React) comes from Context7 in Step 2.7
+function executeLayerResearch(layer, changeAnalysis) {
+  const result = {
+    layer: layer.name,
+    findings: [],
+    recommendations: [],
+    warnings: [],
+    source: 'claude-knowledge'
+  }
+
+  // Claude generates best practices based on:
+  // - Layer context (what domain?)
+  // - Change analysis (what's being built?)
+  // - Questions to answer (what to research?)
+  //
+  // Claude's training includes:
+  // - UX: Nielsen Norman, Baymard Institute, Laws of UX
+  // - Database: Codd's normalization, indexing patterns
+  // - Security: OWASP, auth patterns, encryption
+  // - API: REST dissertation, versioning patterns
+  // - Architecture: distributed systems, caching, scaling
+
+  result.findings = generateDomainKnowledge(layer, changeAnalysis)
+  result.recommendations = generateRecommendations(layer, changeAnalysis)
+  result.warnings = checkForWarnings(layer, changeAnalysis)
+
+  return result
+}
+
+// Generate domain knowledge using Claude's reasoning
+// This is where Claude applies its training to the specific change
+function generateDomainKnowledge(layer, changeAnalysis) {
+  const findings = []
+
+  // Based on layer type, Claude will reason about best practices
+  // The actual content comes from Claude's response when /csetup runs
+
+  findings.push({
+    question: layer.questions[0],
+    // Claude fills this based on its knowledge when executing
+    analysis: `[Claude analyzes: ${layer.focus}]`,
+    bestPractices: [],    // Claude lists industry standards
+    antiPatterns: [],     // Claude lists what to avoid
+    tradeoffs: []         // Claude explains trade-offs
+  })
+
+  return findings
+}
+
+// Check for conflicts between design system and industry practices
+function checkDesignConflicts(tokens, researchResults, changeAnalysis) {
+  const conflicts = []
+
+  // Only check for marketing/external-facing changes
+  if (!changeAnalysis.isExternalFacing) return conflicts
+
+  // Check color appropriateness for industry
+  if (tokens.colors && changeAnalysis.industryContext) {
+    const primaryColor = tokens.colors.primary
+
+    if (changeAnalysis.industryContext === 'healthcare') {
+      // Healthcare typically uses blue/green (trust, calm)
+      if (/red|orange|yellow/i.test(primaryColor)) {
+        conflicts.push({
+          aspect: 'Primary Color',
+          current: primaryColor,
+          industry: 'healthcare typically uses blue/green for trust and calm',
+          recommendation: 'Consider if bright colors are appropriate for healthcare context'
         })
       }
     }
 
-    if (matches.length > 0) {
-      output(`   ✅ Matches: ${matches.join(', ')}`)
-    }
-
-    if (gaps.length > 0) {
-      output(`   ❌ Gaps: ${gaps.map(g => g.requirement).join(', ')}`)
-      allGaps.push(...gaps)
+    if (changeAnalysis.industryContext === 'fintech') {
+      // Fintech typically uses blue/green (trust, money)
+      if (/pink|purple|orange/i.test(primaryColor)) {
+        conflicts.push({
+          aspect: 'Primary Color',
+          current: primaryColor,
+          industry: 'fintech typically uses blue/green for trust and stability',
+          recommendation: 'Consider if playful colors fit financial services context'
+        })
+      }
     }
   }
 
-  // 4. Handle gaps based on tier
-  const tier1Gaps = allGaps.filter(g => g.tier === 1)
-  const tier2Gaps = allGaps.filter(g => g.tier === 2)
-
-  if (tier1Gaps.length > 0) {
-    output(`\n⚠️ Security-Critical Gaps Found (Tier 1)`)
-    output(``)
-    output(`Your spec is missing these industry-standard requirements:`)
-    output(``)
-
-    // Group by feature
-    const byFeature = {}
-    tier1Gaps.forEach(g => {
-      if (!byFeature[g.feature]) byFeature[g.feature] = []
-      byFeature[g.feature].push(g.requirement)
-    })
-
-    for (const [feature, reqs] of Object.entries(byFeature)) {
-      output(`   ${feature}:`)
-      reqs.forEach(r => output(`     - ${r}`))
-    }
-
-    output(``)
-    output(`Options:`)
-    output(`   A) Update spec - Add missing requirements to design.md`)
-    output(`   B) Document skip - Record why these aren't needed (requires justification)`)
-    output(`   C) Continue anyway - Proceed with security gap (not recommended)`)
-    output(``)
-
-    const decision = await askUserQuestion({
-      questions: [{
-        question: 'How would you like to handle the security gaps?',
-        header: 'Spec Gaps',
-        options: [
-          { label: 'A) Update spec', description: 'Add missing requirements to design.md (recommended)' },
-          { label: 'B) Document skip', description: 'Record justification for skipping' },
-          { label: 'C) Continue anyway', description: 'Proceed with gap (security risk)' }
-        ],
-        multiSelect: false
-      }]
-    })
-
-    if (decision.includes('A')) {
-      // Generate suggested additions
-      output(`\n📝 Add this to design.md:\n`)
-      output(`\`\`\`markdown`)
-      output(`### D{n}: Security Requirements (Industry Standard Alignment)`)
-      output(``)
-      output(`**Added based on industry best practices:**`)
-      output(``)
-      for (const [feature, reqs] of Object.entries(byFeature)) {
-        output(`#### ${feature}`)
-        reqs.forEach(r => output(`- ${r}`))
-      }
-      output(``)
-      output(`**Source:** Feature Best Practice Validation`)
-      output(`**Added:** ${new Date().toISOString().split('T')[0]}`)
-      output(`\`\`\``)
-      output(``)
-      output(`Please update design.md and re-run /csetup.`)
-      return
-    } else if (decision.includes('B')) {
-      // Document conscious skip
-      output(`\n📝 Add this to design.md to document the skip:\n`)
-      output(`\`\`\`markdown`)
-      output(`### D{n}: Conscious Security Trade-offs`)
-      output(``)
-      output(`**Skipped requirements (with justification):**`)
-      output(``)
-      output(`| Requirement | Why Skipped | Risk Level | Mitigation |`)
-      output(`|-------------|-------------|------------|------------|`)
-      for (const gap of tier1Gaps) {
-        output(`| ${gap.requirement} | [YOUR REASON] | [LOW/MED/HIGH] | [YOUR MITIGATION] |`)
-      }
-      output(``)
-      output(`**Acknowledged by:** User decision in /csetup`)
-      output(`**Date:** ${new Date().toISOString().split('T')[0]}`)
-      output(`\`\`\``)
-      output(``)
-
-      const confirm = await askUserQuestion({
-        questions: [{
-          question: 'Confirm you will document this in design.md?',
-          header: 'Confirm',
-          options: [
-            { label: 'Yes, continue', description: 'I will add documentation' },
-            { label: 'Cancel', description: 'Go back and update spec' }
-          ],
-          multiSelect: false
-        }]
+  // Check animation appropriateness
+  if (tokens.animations && changeAnalysis.hasCompliance) {
+    if (tokens.animations.enableScrollAnimations) {
+      conflicts.push({
+        aspect: 'Scroll Animations',
+        current: 'enabled',
+        industry: 'compliance-heavy sites often minimize animations for accessibility',
+        recommendation: 'Ensure animations have reduced-motion alternatives'
       })
-
-      if (confirm.includes('Cancel')) {
-        output(`\n❌ Setup cancelled. Please update design.md first.`)
-        return
-      }
     }
-    // If C, just continue with warning logged
   }
 
-  if (tier2Gaps.length > 0) {
-    output(`\n⚠️ Recommendations (Tier 2 - Non-blocking):`)
-    tier2Gaps.forEach(g => {
-      output(`   - ${g.feature}: ${g.requirement}`)
-    })
-    output(`   Continuing with setup...`)
-  }
-} else {
-  output(`\n✅ No security-critical features detected`)
+  return conflicts
 }
 
-// Store feature analysis for later use
-const featureAnalysis = {
-  detected: detectedFeatures.map(f => f.name),
-  tier1Gaps: tier1Gaps || [],
-  tier2Gaps: tier2Gaps || [],
-  validated: true
+// Generate research checklist markdown
+function generateResearchChecklist(changeAnalysis, layers, results) {
+  let content = `# Research Checklist: ${changeAnalysis.primaryType}\n\n`
+  content += `> Generated by Adaptive Depth Research (v2.4.0)\n`
+  content += `> Complexity: ${changeAnalysis.complexity}/10 | Risk: ${changeAnalysis.riskLevel}\n\n`
+
+  if (layers.length === 0) {
+    content += `## ✅ No Research Required\n\n`
+    content += `This is a trivial change (complexity ${changeAnalysis.complexity}/10).\n`
+    content += `Proceed directly with implementation.\n`
+    return content
+  }
+
+  content += `## Summary\n\n`
+  content += `| Layer | Focus | Status |\n`
+  content += `|-------|-------|--------|\n`
+  layers.forEach((layer, idx) => {
+    content += `| L${idx + 1}: ${layer.name} | ${layer.focus} | ⏳ Pending |\n`
+  })
+
+  content += `\n---\n\n`
+
+  // Detail each layer
+  results.forEach((result, idx) => {
+    const layer = layers[idx]
+    content += `## L${idx + 1}: ${layer.name}\n\n`
+    content += `**Focus:** ${layer.focus}\n\n`
+
+    content += `### Key Questions\n\n`
+    layer.questions.forEach(q => {
+      content += `- [ ] ${q}\n`
+    })
+
+    if (result.findings.length > 0) {
+      content += `\n### Findings\n\n`
+      result.findings.forEach(f => {
+        content += `#### ${f.topic}\n\n`
+        if (Array.isArray(f.content)) {
+          f.content.forEach(point => content += `- ${point}\n`)
+        } else {
+          content += `${f.content}\n`
+        }
+        content += `\n*Source: ${f.source}*\n\n`
+      })
+    }
+
+    if (result.recommendations.length > 0) {
+      content += `### Recommendations\n\n`
+      result.recommendations.forEach(r => {
+        content += `- ${r}\n`
+      })
+    }
+
+    if (result.warnings.length > 0) {
+      content += `\n### ⚠️ Warnings\n\n`
+      result.warnings.forEach(w => {
+        content += `- ${w}\n`
+      })
+    }
+
+    content += `\n---\n\n`
+  })
+
+  // Add Content Guidelines section for marketing pages
+  if (changeAnalysis.primaryType === 'marketing' || changeAnalysis.isExternalFacing) {
+    content += `## 📝 Content Guidelines\n\n`
+    content += `> Claude generates these guidelines based on the change context.\n`
+    content += `> Use these as a starting point for content creation.\n\n`
+
+    content += `### Hero Section\n\n`
+    content += `**Headline Strategy:**\n`
+    content += `- Lead with primary pain point or aspiration\n`
+    content += `- 8-12 words, emotional trigger\n`
+    content += `- [Claude: Generate specific headline angle based on proposal]\n\n`
+
+    content += `**Subheadline:**\n`
+    content += `- Concrete benefit + emotional payoff\n`
+    content += `- 15-25 words\n`
+    content += `- [Claude: Generate based on value proposition]\n\n`
+
+    content += `**CTA:**\n`
+    content += `- Action verb + outcome\n`
+    content += `- [Claude: Generate based on user journey stage]\n\n`
+
+    content += `### Value Proposition\n\n`
+    content += `For each feature, translate to:\n`
+    content += `| Feature | Benefit | Emotional Payoff |\n`
+    content += `|---------|---------|------------------|\n`
+    content += `| [Technical] | [What user gets] | [How it makes them feel] |\n\n`
+
+    content += `### Social Proof\n\n`
+    content += `- Use specific results (numbers, timeframes)\n`
+    content += `- Match testimonials to target audience\n`
+    content += `- Include trust signals (logos, certifications)\n\n`
+
+    content += `---\n\n`
+  }
+
+  content += `## Agent Instructions\n\n`
+  content += `When implementing this change, agents should:\n\n`
+  content += `1. Review each layer's findings before starting\n`
+  content += `2. Check off questions as they are addressed\n`
+  content += `3. Follow recommendations where applicable\n`
+  content += `4. Address warnings or document exceptions\n`
+
+  if (changeAnalysis.primaryType === 'marketing' || changeAnalysis.isExternalFacing) {
+    content += `5. Use Content Guidelines section for copy direction\n`
+  }
+
+  return content
+}
+
+// Helper: Generate recommendations based on layer and context
+// Claude fills in actual recommendations when executing /csetup
+function generateRecommendations(layer, changeAnalysis) {
+  // These are prompts for Claude to expand with actual knowledge
+  // When /csetup runs, Claude will provide specific recommendations
+
+  return [
+    `[Claude: Based on ${layer.name} best practices for ${changeAnalysis.primaryType}]`,
+    `[Claude: Specific to this change's context and requirements]`
+  ]
+}
+
+// Helper: Check for potential warnings based on layer and context
+function checkForWarnings(layer, changeAnalysis) {
+  const warnings = []
+
+  // Risk-based warnings
+  if (changeAnalysis.riskLevel === 'HIGH') {
+    warnings.push(`HIGH risk change - review ${layer.name} carefully before deployment`)
+  }
+
+  // Compliance warnings
+  if (layer.name.includes('Compliance') && changeAnalysis.hasCompliance) {
+    warnings.push(`Regulatory compliance required - ensure all ${changeAnalysis.industryContext} requirements are met`)
+  }
+
+  // Payment warnings
+  if (changeAnalysis.hasPayment) {
+    warnings.push('Payment integration - ensure PCI compliance requirements are met')
+  }
+
+  // Security warnings
+  if (layer.name.includes('Security') && changeAnalysis.hasSensitiveData) {
+    warnings.push('Sensitive data handling - ensure proper encryption and access controls')
+  }
+
+  return warnings
 }
 ```
 

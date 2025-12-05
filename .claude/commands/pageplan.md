@@ -1,6 +1,9 @@
-# /pageplan - Page Structure & Content Planning
+# /pageplan - Visual Page Planning
 
-**Purpose:** Generate a detailed page plan for UI implementation, including component reuse strategy, content draft, and asset checklist.
+**Purpose:** Generate a visual page plan for UI implementation - component strategy, layout wireframes, animation blueprint, and asset checklist.
+
+> **Note:** Content strategy and conversion copy are handled by `/csetup` (Adaptive Depth Research).
+> This command focuses on **visual structure** only.
 
 **Usage:**
 ```bash
@@ -32,11 +35,13 @@
 3. **Generates page-plan.md:**
    - Component plan (reuse vs new)
    - Page structure (layout composition)
-   - Content draft (AI-generated from PRD)
-   - Asset checklist (user must prepare)
-   - Rationale (why this structure)
+   - Layout wireframe (ASCII art for Desktop/Tablet/Mobile)
+   - Animation blueprint (hover, focus, transition patterns)
+   - Asset checklist (images, icons to prepare)
 
 4. **Outputs to:** `openspec/changes/{change-id}/page-plan.md`
+
+> **Content & Conversion Strategy** → Handled by `/csetup` in `research-checklist.md`
 
 ---
 
@@ -141,84 +146,9 @@ for (const pattern of searchPatterns) {
 }
 ```
 
-### STEP 3.5: Buyer Avatar Analysis (NEW - Conversion Optimization)
+### STEP 4: Analyze & Generate Plan
 
-> **Purpose:** Extract buyer psychology to generate conversion-optimized copy (inspired by Eugene Schwartz framework)
-
-```typescript
-// Only analyze if this is a marketing/landing page
-const isMarketingPage = tasksContent.toLowerCase().match(/(landing|marketing|homepage|product page|sales)/i)
-
-let buyerAvatar = null
-
-if (isMarketingPage && (proposalContent || briefContent)) {
-  output(`
-🎯 Detecting marketing page - analyzing buyer psychology...
-  `)
-
-  const avatarPrompt = `
-You are a conversion copywriter analyzing a product to understand the target buyer.
-
-Context:
-${proposalContent || ''}
-${briefContent || ''}
-
-Task: Extract buyer psychology using Eugene Schwartz's market awareness framework.
-
-Return JSON:
-{
-  "demographics": {
-    "age_range": "string",
-    "job_role": "string",
-    "description": "string"
-  },
-  "psychographics": {
-    "top_pain_points": ["string", "string", "string"],
-    "secret_desires": "string (what they truly want beyond features)",
-    "decision_triggers": "string (what makes them buy NOW)",
-    "dominant_emotion": "fear" | "aspiration" | "frustration" | "urgency"
-  },
-  "market_awareness": "unaware" | "problem_aware" | "solution_aware" | "product_aware" | "most_aware",
-  "messaging_tone": "B2B" | "B2C",
-  "messaging_strategy": {
-    "hero_hook": "string (pain-based headline angle)",
-    "value_prop_focus": "string (primary benefit to emphasize)",
-    "cta_angle": "string (decision trigger for CTA)"
-  }
-}
-
-If insufficient context, return { "has_context": false }
-  `
-
-  buyerAvatar = await LLM({
-    prompt: avatarPrompt,
-    response_format: 'json',
-    temperature: 0.3
-  })
-
-  if (buyerAvatar.has_context === false) {
-    warn(`⚠️ Insufficient context for buyer avatar - will generate generic copy`)
-    buyerAvatar = null
-  } else {
-    output(`
-✅ Buyer Avatar Analyzed:
-   - Pain Points: ${buyerAvatar.psychographics.top_pain_points.slice(0, 2).join(', ')}
-   - Market Awareness: ${buyerAvatar.market_awareness}
-   - Tone: ${buyerAvatar.messaging_tone}
-    `)
-  }
-} else {
-  output(`
-ℹ️ Non-marketing page detected - skipping buyer avatar analysis
-  `)
-}
-```
-
----
-
-### STEP 4: Analyze & Generate Plan (ENHANCED with Conversion Copy)
-
-Based on context + found components + buyer avatar (if available), generate:
+Based on context + found components, generate:
 
 ```markdown
 # Page Plan: [Page Name]
@@ -584,52 +514,7 @@ className="hover:scale-105 transform"
 
 ---
 
-## 3. 🎯 Target Audience & Conversion Strategy (if marketing page)
-
-${buyerAvatar ? `
-> **Auto-generated from buyer avatar analysis (Eugene Schwartz framework)**
-
-### Buyer Profile
-
-**Demographics:**
-- Age Range: ${buyerAvatar.demographics.age_range}
-- Job Role: ${buyerAvatar.demographics.job_role}
-- Description: ${buyerAvatar.demographics.description}
-
-**Psychographics:**
-- **Top Pain Points:**
-  ${buyerAvatar.psychographics.top_pain_points.map(p => `- ${p}`).join('\n  ')}
-- **Secret Desires:** ${buyerAvatar.psychographics.secret_desires}
-- **Decision Triggers:** ${buyerAvatar.psychographics.decision_triggers}
-- **Dominant Emotion:** ${buyerAvatar.psychographics.dominant_emotion}
-
-**Market Awareness:** ${buyerAvatar.market_awareness}
-- Messaging should be: ${getAwarenessGuidance(buyerAvatar.market_awareness)}
-
-**Messaging Tone:** ${buyerAvatar.messaging_tone} ${buyerAvatar.messaging_tone === 'B2B' ? '(Logic + ROI + Authority)' : '(Emotion + Transformation + Identity)'}
-
----
-
-### Conversion Framework
-
-**Hero Section Strategy:**
-- **Hook Angle:** ${buyerAvatar.messaging_strategy.hero_hook}
-- **Value Prop Focus:** ${buyerAvatar.messaging_strategy.value_prop_focus}
-- **CTA Angle:** ${buyerAvatar.messaging_strategy.cta_angle}
-
-**Content Guidelines:**
-- Lead with pain point (not features)
-- Feature → Benefit → Emotional payoff translation
-- Use ${buyerAvatar.psychographics.dominant_emotion}-based triggers
-- Social proof with specific results (not generic testimonials)
-
----
-` : `
-> Skipped (non-marketing page)
-
-`}
-
-## 4. 📦 Assets to Prepare (Performance-Optimized)
+## 3. 📦 Assets to Prepare (Performance-Optimized)
 
 > **Performance Note:** Follow image optimization best practices for faster load times and better SEO.
 > See: `.claude/contexts/patterns/performance-optimization.md`
@@ -682,92 +567,7 @@ ${buyerAvatar ? `
 
 ---
 
-## 5. 📝 Content Draft (${buyerAvatar ? 'Conversion-Optimized' : 'AI-Generated'})
-
-${buyerAvatar ? `
-> **Generated using buyer avatar insights for conversion optimization**
-
-### Hero Section
-
-**Headline (Pain Hook):**
-"[${buyerAvatar.messaging_strategy.hero_hook}]"
-
-_Strategy: Lead with biggest pain point from avatar analysis_
-_Length: 8-12 words, emotional trigger: ${buyerAvatar.psychographics.dominant_emotion}_
-
-**Subheadline (Promise + Benefit):**
-"[Focus on ${buyerAvatar.messaging_strategy.value_prop_focus}]"
-
-_Strategy: Concrete benefit + emotional payoff_
-_Length: 15-25 words_
-
-**CTA (Decision Trigger):**
-"[${buyerAvatar.messaging_strategy.cta_angle}]"
-
-_Strategy: Action verb + outcome/time-based urgency_
-_Example: "See Results in 5 Minutes" or "Start Your Free Trial"_
-
----
-
-### Value Proposition Section
-
-**How to Structure:**
-For each feature, translate to buyer language:
-
-**Feature 1: [Technical feature name]**
-- **What User Gets:** [Practical benefit]
-- **Emotional Payoff:** [How it makes them feel - addresses pain point: ${buyerAvatar.psychographics.top_pain_points[0]}]
-- **Copy:** "[Benefit-first description, NOT feature dump]"
-
-**Example:**
-❌ Bad: "Advanced analytics dashboard with real-time data"
-✅ Good: "See exactly where projects are stuck—before your boss asks" (addresses pain: missed deadlines)
-
----
-
-### Social Proof & Trust Section
-
-**Strategy:** Use ${buyerAvatar.messaging_tone === 'B2B' ? 'logic-based proof (ROI, case studies, metrics)' : 'emotional proof (transformations, identity, belonging)'}
-
-**Testimonial Template:**
-- Before state (pain point): "${buyerAvatar.psychographics.top_pain_points[0]}"
-- After state (resolution): "[Specific result]"
-- Attribution: [Name, Company/Role]
-
-**Risk Reversal:**
-- Address objection: "${buyerAvatar.psychographics.decision_triggers}"
-- Offer: [Free trial / Money-back guarantee / No credit card required]
-
----
-
-### Call-to-Action (Final)
-
-**CTA Copy:** "[Repeat hero CTA or variation]"
-**Supporting Text:** "[Reinforce ${buyerAvatar.messaging_strategy.value_prop_focus}]"
-**Urgency (optional):** ${buyerAvatar.psychographics.dominant_emotion === 'urgency' ? '[Add time-based urgency]' : '[Social proof count or limited offer]'}
-
-` : `
-> **Standard AI-generated content (non-marketing page)**
-
-### [Section Name]
-
-**[Element Type]:** "[Content]"
-_([length] chars - based on [source])_
-
-[Repeat for all content elements]
-`}
-
----
-
-**Instructions for User:**
-1. Review content above
-2. Edit tone, length, messaging as needed
-3. Prepare assets per checklist
-4. When ready, run: \`/csetup ${changeId}\`
-
----
-
-## 6. Design Notes
+## 4. Design Notes
 
 **Design System Files:**
 - Tokens (lightweight): \`design-system/STYLE_TOKENS.json\`
@@ -785,7 +585,7 @@ _([length] chars - based on [source])_
 - Use theme tokens (text-foreground/70) for theme-awareness
 - Use spacing scale (p-4, p-6) for consistency
 
-## 7. Implementation Notes
+## 5. Implementation Notes
 
 ### Component Imports (Reference)
 \`\`\`tsx
@@ -802,9 +602,9 @@ _([length] chars - based on [source])_
 ---
 
 ## Next Steps
-1. ✅ Review & edit content draft
-2. ✅ Prepare assets (images, icons)
-3. ✅ Run \`/csetup ${changeId}\` when ready
+1. ✅ Review layout wireframe & component plan
+2. ✅ Prepare assets (images, icons) per checklist
+3. ✅ Run \`/csetup ${changeId}\` for research & content strategy
 4. ✅ Run \`/cdev ${changeId}\` to implement
 ```
 
@@ -872,25 +672,6 @@ Result:
 
 ---
 
-## Helper Functions
-
-### getAwarenessGuidance()
-```typescript
-// Provide messaging guidance based on Eugene Schwartz's market awareness stages
-function getAwarenessGuidance(stage: string): string {
-  const guidance = {
-    'unaware': 'Educate about the problem first (they don\'t know they have it)',
-    'problem_aware': 'Agitate the pain, present your solution as THE answer',
-    'solution_aware': 'Differentiate - why YOUR solution vs alternatives',
-    'product_aware': 'Overcome objections, provide social proof, reduce risk',
-    'most_aware': 'Make the offer irresistible, urgency-based CTAs'
-  }
-  return guidance[stage] || 'Focus on benefits and clear CTAs'
-}
-```
-
----
-
 ## Error Handling
 
 1. **No change ID found:**
@@ -915,7 +696,8 @@ function getAwarenessGuidance(stage: string): string {
 - ✅ Read user-specified files only
 - ✅ Search existing components
 - ✅ Generate component reuse plan
-- ✅ Generate content draft from PRD
+- ✅ Generate layout wireframe
+- ✅ Generate animation blueprint
 
 **Nice to have:**
 - Asset checklist detail level
@@ -927,15 +709,19 @@ function getAwarenessGuidance(stage: string): string {
 ## Integration with Multi-Agent Flow
 
 ```
-tasks.md → /pageplan → page-plan.md → /csetup → /cdev
-              ↓            ↓              ↓         ↓
-           Search       User review   Phases   uxui-frontend
-           components   & edit                  reads plan
-                                                 skips search
+/designsetup → /pageplan → /csetup → /cdev
+     ↓             ↓            ↓         ↓
+  tokens.json   page-plan.md  research   uxui-frontend
+  patterns/     (visual)      -checklist reads both
+  STYLE_GUIDE               (content)
 ```
 
+**Separation of Concerns:**
+- `/pageplan` = **Visual** (layout, components, animations, assets)
+- `/csetup` = **Research** (best practices, content strategy, UX principles)
+
 **Agent behavior:**
-- `uxui-frontend`: Reads page-plan.md in STEP 0, skips component search (STEP 3)
+- `uxui-frontend`: Reads page-plan.md (visual) + research-checklist.md (content)
 - `frontend`: May read page-plan.md for component locations
 - Other agents: Ignore page-plan.md (not relevant)
 

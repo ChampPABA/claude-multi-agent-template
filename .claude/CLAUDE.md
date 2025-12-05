@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.3.0 - Zero-Maintenance Tech Detection
-> **Latest:** Dynamic library detection via Context7 (any language, no hardcoded mappings) + Claude 4.5 optimized agents
+> **Template Version:** 2.4.0 - Adaptive Depth Research
+> **Latest:** Dynamic research layers (0-10+) per change + Zero-maintenance tech detection + Claude 4.5 optimized agents
 
 ---
 
@@ -185,18 +185,30 @@ Universal, framework-agnostic template for AI-assisted development.
 - 📜 **Scroll Patterns:** stacking-cards, parallax, fade-in, slide-in
 - 🖼️ **Decorative Direction:** USE/AVOID elements for theme consistency
 
-**Flow:**
+**Flow (v2.4.0):**
 ```
 /extract → .claude/extractions/*.json
            ↓
 /designsetup → tokens.json + patterns/*.md + STYLE_GUIDE.md
            ↓
-/pageplan → page-plan.md (reads tokens.json, auto-detects page type)
+/pageplan → page-plan.md (VISUAL: layout, components, animations, assets)
            ↓
-/csetup → phases.md (reads page-plan.md)
+/csetup → research-checklist.md (RESEARCH: best practices, content, UX)
+        → best-practices/*.md (Stack: Context7)
+        → phases.md
            ↓
-/cdev → uxui-frontend (reads tokens.json + patterns/*.md selectively)
+/cdev → uxui-frontend reads:
+        - tokens.json (design tokens)
+        - patterns/*.md (code patterns)
+        - page-plan.md (visual structure)
+        - research-checklist.md (content & UX)
 ```
+
+**Separation of Concerns:**
+| Command | Focus | Output |
+|---------|-------|--------|
+| `/pageplan` | Visual (layout, wireframe, animations) | `page-plan.md` |
+| `/csetup` | Research (best practices, content, UX) | `research-checklist.md` |
 
 ---
 
@@ -218,33 +230,30 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
-## 📋 Page Planning System (v2.0.0 - Auto Page Type Detection)
+## 📋 Page Planning System (v2.4.0 - Visual Planning Only)
 
 **→ See:** `@/.claude/lib/detailed-guides/page-planning.md` for complete guide
 
 **Quick Summary:**
-- **Problem:** Agents duplicate components (Navbar 3x), use random colors, lorem ipsum content, wrong decorations for page type
-- **Solution:** `/pageplan @prd.md @brief.md` → Generates `openspec/changes/{id}/page-plan.md` with:
-  - **Auto page type detection** (landing/dashboard/auth from proposal.md/tasks.md)
-  - **tokens.json integration** (style, theme, animations, decorative direction)
-  - **Selective pattern loading** (only load patterns relevant to page type)
+- **Problem:** Agents duplicate components (Navbar 3x), wrong layout structure
+- **Solution:** `/pageplan` → Generates `openspec/changes/{id}/page-plan.md` with:
   - Component reuse plan ✅ (prevent duplicates)
-  - Buyer avatar analysis (Eugene Schwartz framework) **for marketing pages only**
-  - Conversion-optimized content (pain → promise → CTA) **for marketing pages only**
+  - Layout wireframe (ASCII art for Desktop/Tablet/Mobile)
+  - Animation blueprint (hover, focus, transition patterns)
   - Asset checklist ✅ (performance-optimized)
 
-**Page Type Handling:**
-| Page Type | Decorations | Scroll Anims | Buyer Avatar | Patterns Loaded |
-|-----------|-------------|--------------|--------------|-----------------|
-| Landing/Marketing | ✅ Full | ✅ Enabled | ✅ Enabled | buttons, cards, scroll-anims, decorations |
-| Dashboard/Admin | ❌ Minimal | ❌ Disabled | ❌ Skipped | buttons, cards, forms |
-| Auth (Login/Register) | ❌ None | ❌ Disabled | ❌ Skipped | buttons, forms |
+> **Note:** Content strategy and conversion copy moved to `/csetup` (Adaptive Depth Research)
+
+**What Goes Where:**
+| Concern | Command | Output File |
+|---------|---------|-------------|
+| Components, Layout, Animations | `/pageplan` | `page-plan.md` |
+| Content, Conversion, UX Research | `/csetup` | `research-checklist.md` |
 
 **Benefits:**
-- Auto-detects page type from context (no manual config)
-- Theme + decorations from tokens.json applied consistently
-- 84% token reduction (selective pattern loading)
-- Conversion-optimized only where needed (marketing pages)
+- Clear separation of Visual vs Research
+- No duplication between commands
+- Agents know exactly which file has which information
 
 ---
 
@@ -292,6 +301,128 @@ User: "Build login system"
 → Phase 2.5: integration (validate contracts)
 → Phase 3: frontend (connect UI to API)
 → Phase 4: test-debug (tests)
+```
+
+---
+
+## 🆕 v2.4.0: Adaptive Depth Research
+
+**Problem Solved:** Previous feature detection was hardcoded (only 4 types: auth, payment, fileUpload, apiDesign) and used fixed standards. Missing domain-level best practices like "how to design a good database" or "healthcare compliance requirements."
+
+**Solution:** Dynamic research layers that adapt to each change's complexity (0 to 10+ layers).
+
+### Key Principles
+
+| Principle | Description |
+|-----------|-------------|
+| L1 = Best Practice (ALWAYS) | "คนอื่นทำกันยังไง?" (How do others do it?) for ALL non-trivial changes |
+| Dynamic Depth | No fixed min/max - truly adaptive (0-10+ layers) |
+| Separation of Concerns | Visual (/designsetup) is STATIC, Strategy (research) is DYNAMIC |
+| Per-Change Output | Generates `research-checklist.md` for each change |
+| Design Conflict Warnings | Warns if industry practice conflicts with user's design choices |
+
+### Layer Examples by Change Type
+
+| Change Type | Layers | Example Layers |
+|-------------|--------|----------------|
+| Typo fix, debug log | 0 | None needed |
+| Simple API endpoint | 2 | Best Practice, API Design |
+| Auth system | 4 | Best Practice, Security, API Design, Testing |
+| E-commerce checkout | 7 | Best Practice, Security, UX, Payment, Integration, Performance, Testing |
+| Healthcare portal | 10 | Best Practice, Security, Compliance (HIPAA), UX, Data Architecture, API, Performance, Testing, Integration, Audit |
+
+### Knowledge Sources (Separated)
+
+| Step | Knowledge Type | Source | Example |
+|------|----------------|--------|---------|
+| **2.6** | Domain (HOW to design) | Claude's Knowledge | Normalization, UX patterns, Security |
+| **2.7** | Stack (HOW to use tool) | Context7 | Prisma, React, Next.js |
+
+### How It Works
+
+```
+1. Analyze change from proposal.md, tasks.md, design.md
+   → Detect: primaryType, complexity, riskLevel, domains, features
+
+2. Determine research layers dynamically:
+   - Trivial (complexity ≤ 1, no UI/API/DB) → 0 layers
+   - Non-trivial → L1 Best Practice + context-specific layers
+
+3. Execute research per layer using Claude's knowledge:
+   - Claude knows: UX (Nielsen Norman, Baymard), DB (Codd), Security (OWASP)
+   - No static files needed - Claude reasons from training
+   - No WebSearch needed - domain knowledge is stable
+
+4. Generate research-checklist.md with:
+   - Key questions per layer
+   - Best practices (from Claude's knowledge)
+   - Anti-patterns to avoid
+   - Trade-offs explained
+   - Recommendations specific to THIS change
+
+5. Agents read research-checklist.md before implementing
+```
+
+**WHY Claude's Knowledge?**
+- Domain principles rarely change (Normalization = 50 years, REST = 20 years)
+- No maintenance needed (no static files to update)
+- Context-aware (Claude applies principles to YOUR specific change)
+- Stack knowledge goes to Context7 (Step 2.7) which has live docs
+
+### Available Research Layers
+
+| Layer | Triggered By |
+|-------|--------------|
+| Best Practice / Industry Standard | Always (non-trivial changes) |
+| Security Requirements | hasAuth, hasPayment, hasSensitiveData |
+| {Industry} Compliance | healthcare, fintech, or other regulated industries |
+| User Experience Patterns | isExternalFacing + hasUI |
+| Conversion Psychology | marketing/sales pages |
+| Content Strategy | marketing/content pages |
+| Data Architecture | hasDatabase, data-intensive |
+| API Design | hasAPI |
+| Multi-tenancy Patterns | SaaS with tenant isolation |
+| Real-time Architecture | WebSocket, collaboration features |
+| Performance Optimization | external-facing OR complexity ≥ 6 |
+| Integration Patterns | external APIs, webhooks |
+| Testing Strategy | HIGH risk OR complexity ≥ 7 |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `csetup.md` Step 2.6 | Complete rewrite - Adaptive Depth Research |
+| `analyzeChangeCharacteristics()` | New: semantic analysis of change context |
+| `determineResearchLayers()` | New: dynamic layer selection |
+| `executeLayerResearch()` | New: Context7 + semantic research |
+| `generateResearchChecklist()` | New: markdown output per change |
+| `checkDesignConflicts()` | New: warns on design vs industry fit |
+
+### Output Example
+
+```markdown
+# Research Checklist: healthcare-portal
+
+> Generated by Adaptive Depth Research (v2.4.0)
+> Complexity: 9/10 | Risk: HIGH
+
+## Summary
+
+| Layer | Focus | Status |
+|-------|-------|--------|
+| L1: Best Practice | How do others implement healthcare? | ⏳ Pending |
+| L2: Security Requirements | What security measures? | ⏳ Pending |
+| L3: Healthcare Compliance | What HIPAA regulations? | ⏳ Pending |
+...
+
+## L1: Best Practice / Industry Standard
+
+**Focus:** How do others implement healthcare portals?
+
+### Key Questions
+- [ ] What is the industry standard for healthcare portals?
+- [ ] What are common patterns and anti-patterns?
+...
 ```
 
 ---

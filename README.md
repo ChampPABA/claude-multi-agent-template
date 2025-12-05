@@ -29,38 +29,46 @@ cak init
 
 ## Features
 
-- **Zero-Maintenance Tech Detection (v2.3.0)** - Auto-detects ANY library in ANY language via Context7
-- **4-Layer Validation** - Feature BP → Spec Alignment → Library Capability → Stack BP
-- **Spec Drift Prevention** - Validates library supports spec before implementation
+- **Adaptive Depth Research (v2.4.0)** - Dynamic research layers (0-10+) based on change complexity
+- **Zero-Maintenance Tech Detection** - Auto-detects ANY library in ANY language via Context7
+- **Visual Page Planning** - Layout wireframes, component plans, animation blueprints
 - **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
 - **Design System v2.0** - Interactive setup with theme selection
 
-## Tech Detection (v2.3.0)
+## Adaptive Depth Research (v2.4.0)
 
 ```
-/csetup automatically detects libraries from:
-  ├── Spec files (proposal.md, design.md, tasks.md)
-  ├── JS/TS (package.json, imports)
-  ├── Python (requirements.txt, pyproject.toml)
-  ├── Rust (Cargo.toml)
-  ├── Go (go.mod)
-  └── PHP/Ruby (composer.json, Gemfile)
+/csetup analyzes change complexity and generates research layers:
 
-Context7 validates → generates best-practices/*.md
-Zero maintenance - works with any library!
+  Typo fix           → 0 layers (no research needed)
+  Simple API         → 2 layers (Best Practice, API Design)
+  Auth system        → 4 layers (+Security, +Testing)
+  E-commerce         → 7 layers (+Payment, +UX, +Integration)
+  Healthcare (HIPAA) → 10 layers (+Compliance, +Audit, etc.)
+
+Knowledge Sources:
+  ├── Domain (UX, DB design, Security) → Claude's Knowledge
+  └── Stack (Prisma, React, Next.js)   → Context7
 ```
 
-## Validation Flow
+## Flow (v2.4.0)
 
 ```
-/csetup
-  ├── Step 2.6: Feature Best Practice (Auth, Payment, etc.)
-  ├── Step 2.7: Stack Best Practice (auto-detected libraries)
-  └── Step 2.8: Library Capability (verify library supports spec)
-
-/cdev
-  └── Agent Step 0.5: Double-check feasibility before implement
+/designsetup → tokens.json, patterns/*.md
+       ↓
+/pageplan → page-plan.md (VISUAL: layout, components, animations)
+       ↓
+/csetup → research-checklist.md (RESEARCH: best practices, content)
+        → best-practices/*.md (Stack: Context7)
+       ↓
+/cdev → Agents read both files
 ```
+
+**Separation of Concerns:**
+| Command | Focus | Output |
+|---------|-------|--------|
+| `/pageplan` | Visual (layout, wireframe, animations) | `page-plan.md` |
+| `/csetup` | Research (best practices, content, UX) | `research-checklist.md` |
 
 ## Commands
 
