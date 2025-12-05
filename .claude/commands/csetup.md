@@ -1045,6 +1045,7 @@ if (resolvedLibraries.length === 0) {
 }
 
 // 5. Generate best-practices files for resolved libraries
+// v2.5.0: Smart Topic Query - include other library names for cross-library integration docs
 const bpDir = '.claude/contexts/domain/project/best-practices/'
 const existingBp = fileExists(bpDir) ? listFiles(bpDir) : []
 
@@ -1056,21 +1057,52 @@ const newLibraries = resolvedLibraries.filter(lib => {
 
 if (newLibraries.length > 0) {
   output(`\n📚 Generating Best Practices from Context7...`)
+  output(`   💡 Using Smart Topic Query for cross-library integration docs`)
 
   // Create directory if needed
   if (!fileExists(bpDir)) {
     mkdir(bpDir)
   }
 
+  // Collect all integration risks for summary
+  const integrationRisks = []
+
   for (const lib of newLibraries) {
     output(`   📖 Fetching ${lib.title} best practices...`)
 
     try {
+      // v2.5.0: Smart Topic Query - include other library names in topic
+      // WHY: This captures integration docs (e.g., "drizzle adapter" in auth.js docs)
+      const otherLibNames = resolvedLibraries
+        .filter(l => l.name !== lib.name)
+        .map(l => l.name.toLowerCase())
+        .slice(0, 5) // Limit to 5 to avoid topic overflow
+        .join(', ')
+
+      const smartTopic = [
+        'best practices',
+        'patterns',
+        'anti-patterns',
+        'common mistakes',
+        'adapter',        // Key for ORM + Auth integrations
+        'integration',    // Key for multi-library setups
+        'schema',         // Key for database + auth column naming
+        'configuration',  // Key for setup requirements
+        otherLibNames     // Include other detected libraries
+      ].filter(Boolean).join(', ')
+
       const docs = await mcp__context7__get_library_docs({
         context7CompatibleLibraryID: lib.context7Id,
-        topic: 'best practices, patterns, anti-patterns, common mistakes',
+        topic: smartTopic,
         mode: 'code'
       })
+
+      // v2.5.0: Detect integration risks from docs content
+      const risks = detectIntegrationRisks(docs, lib.name, resolvedLibraries)
+      if (risks.length > 0) {
+        integrationRisks.push(...risks)
+        output(`   ⚠️ Found ${risks.length} integration pattern(s) to review`)
+      }
 
       const bpContent = generateBestPracticesFile(lib.title, docs, lib.context7Id)
       const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
@@ -1080,6 +1112,13 @@ if (newLibraries.length > 0) {
     } catch (error) {
       output(`   ⚠️ ${lib.title} - failed to fetch docs, skipping`)
     }
+  }
+
+  // v2.5.0: Generate integration risk summary if any found
+  if (integrationRisks.length > 0) {
+    generateIntegrationRiskSummary(integrationRisks, bpDir, resolvedLibraries)
+    output(`\n⚠️ Integration Risk Summary generated (${integrationRisks.length} items)`)
+    output(`   📄 ${bpDir}INTEGRATION_RISKS.md`)
   }
 
   // Generate/update index.md
@@ -1766,6 +1805,228 @@ function extractChecklist(docs: string): string {
 - [ ] Add proper typing/validation
 - [ ] Write tests for new code
 - [ ] Review for security concerns`
+}
+```
+
+---
+
+### Helper: detectIntegrationRisks() - v2.5.0
+
+> **Smart Risk Detection:** Scans Context7 docs for integration patterns that require attention.
+> **WHY:** Proactively catch integration requirements BEFORE implementation, not at runtime.
+
+```typescript
+function detectIntegrationRisks(
+  docs: string,
+  currentLib: string,
+  allLibs: Array<{ name: string; title: string }>
+): Array<{ library: string; risk: string; pattern: string; recommendation: string }> {
+  const risks = []
+  const docsLower = docs.toLowerCase()
+
+  // Integration risk patterns to detect
+  const riskPatterns = [
+    // Adapter patterns (ORM + Auth)
+    {
+      keywords: ['adapter', 'drizzleadapter', 'prismaadapter'],
+      risk: 'Database adapter configuration required',
+      pattern: 'adapter',
+      recommendation: 'Verify adapter schema matches expected column names'
+    },
+    // Column naming patterns
+    {
+      keywords: ['column', 'columnname', 'snake_case', 'camelcase', 'mapping'],
+      risk: 'Column naming convention mismatch possible',
+      pattern: 'schema',
+      recommendation: 'Check column naming between ORM schema and library expectations'
+    },
+    // Schema patterns
+    {
+      keywords: ['userstable', 'accountstable', 'sessionstable', 'schema'],
+      risk: 'Custom table schema required',
+      pattern: 'schema',
+      recommendation: 'Ensure table schemas match library documentation exactly'
+    },
+    // Sync/Migration patterns
+    {
+      keywords: ['sync', 'migrate', 'migration', 'syncurl', 'embedded replica'],
+      risk: 'Data synchronization setup required',
+      pattern: 'sync',
+      recommendation: 'Configure sync intervals and handle offline scenarios'
+    },
+    // Webhook patterns
+    {
+      keywords: ['webhook', 'webhookendpoint', 'webhooksecret'],
+      risk: 'Webhook endpoint configuration required',
+      pattern: 'webhook',
+      recommendation: 'Set up webhook endpoints and verify signatures'
+    },
+    // API Key patterns
+    {
+      keywords: ['apikey', 'secretkey', 'authtoken', 'bearer'],
+      risk: 'API credentials setup required',
+      pattern: 'credentials',
+      recommendation: 'Store credentials securely in environment variables'
+    },
+    // Lifecycle patterns
+    {
+      keywords: ['beforeall', 'afterall', 'beforeeach', 'aftereach', 'setup', 'teardown'],
+      risk: 'Test lifecycle hooks required',
+      pattern: 'lifecycle',
+      recommendation: 'Implement proper setup/teardown in test configuration'
+    }
+  ]
+
+  for (const rp of riskPatterns) {
+    const found = rp.keywords.some(kw => docsLower.includes(kw.toLowerCase()))
+    if (found) {
+      // Check if this risk involves other detected libraries
+      const involvedLibs = allLibs
+        .filter(l => l.name !== currentLib)
+        .filter(l => docsLower.includes(l.name.toLowerCase()))
+        .map(l => l.name)
+
+      risks.push({
+        library: currentLib,
+        risk: rp.risk,
+        pattern: rp.pattern,
+        recommendation: rp.recommendation,
+        involvedLibraries: involvedLibs
+      })
+    }
+  }
+
+  return risks
+}
+```
+
+---
+
+### Helper: generateIntegrationRiskSummary() - v2.5.0
+
+> **Risk Summary Output:** Creates INTEGRATION_RISKS.md with all detected cross-library concerns.
+> **WHY:** Agents can review this BEFORE implementation to avoid common integration mistakes.
+
+```typescript
+function generateIntegrationRiskSummary(
+  risks: Array<{
+    library: string
+    risk: string
+    pattern: string
+    recommendation: string
+    involvedLibraries?: string[]
+  }>,
+  bpDir: string,
+  allLibs: Array<{ name: string; title: string }>
+): void {
+  // Group risks by pattern type
+  const byPattern = {}
+  for (const r of risks) {
+    if (!byPattern[r.pattern]) byPattern[r.pattern] = []
+    byPattern[r.pattern].push(r)
+  }
+
+  const content = `# Integration Risk Summary
+
+> **Generated:** ${new Date().toISOString().split('T')[0]}
+> **Template Version:** 2.5.0 - Smart Topic Query
+> **Detected Libraries:** ${allLibs.map(l => l.name).join(', ')}
+
+---
+
+## ⚠️ Review Before Implementation
+
+The following integration patterns were detected from library documentation.
+**Agents should review these items in STEP 0 before writing code.**
+
+---
+
+${Object.entries(byPattern).map(([pattern, patternRisks]) => `
+### ${pattern.toUpperCase()} Patterns
+
+| Library | Risk | Recommendation |
+|---------|------|----------------|
+${patternRisks.map(r => `| ${r.library} | ${r.risk} | ${r.recommendation} |`).join('\n')}
+${patternRisks.some(r => r.involvedLibraries?.length > 0) ? `
+**Cross-library concerns:**
+${patternRisks.filter(r => r.involvedLibraries?.length > 0).map(r => `- ${r.library} ↔ ${r.involvedLibraries.join(', ')}: ${r.risk}`).join('\n')}
+` : ''}
+`).join('\n')}
+
+---
+
+## Quick Checklist
+
+Before implementing integrations:
+
+${[...new Set(risks.map(r => r.recommendation))].map(rec => `- [ ] ${rec}`).join('\n')}
+
+---
+
+**This file is auto-generated by /csetup v2.5.0**
+**Agents read this in STEP 0 alongside best-practices files**
+`
+
+  Write(`${bpDir}INTEGRATION_RISKS.md`, content)
+}
+```
+
+---
+
+### Helper: generateBestPracticesIndex() - v2.5.0
+
+> **Index File:** Creates index.md registry of all best practices files.
+> **v2.5.0:** Now includes INTEGRATION_RISKS.md if present.
+
+```typescript
+function generateBestPracticesIndex(
+  resolvedLibraries: Array<{ name: string; title: string; context7Id: string }>,
+  changeId: string
+): void {
+  const bpDir = '.claude/contexts/domain/project/best-practices/'
+  const hasIntegrationRisks = fileExists(`${bpDir}INTEGRATION_RISKS.md`)
+
+  const content = `# Best Practices Index
+
+> **Generated:** ${new Date().toISOString().split('T')[0]}
+> **Template Version:** 2.5.0 - Smart Topic Query
+> **Change:** ${changeId}
+
+---
+
+## 📚 Library Best Practices
+
+| Library | File | Context7 ID |
+|---------|------|-------------|
+${resolvedLibraries.map(lib => {
+  const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+  return `| ${lib.title} | [${safeName}.md](./${safeName}.md) | \`${lib.context7Id}\` |`
+}).join('\n')}
+
+---
+
+${hasIntegrationRisks ? `## ⚠️ Integration Risks
+
+Cross-library integration concerns detected. **Review before implementation.**
+
+→ [INTEGRATION_RISKS.md](./INTEGRATION_RISKS.md)
+
+---
+
+` : ''}## Usage
+
+Agents read these files in **STEP 0** before implementation:
+
+1. Read \`index.md\` (this file) for overview
+2. Read relevant \`{library}.md\` files for specific best practices
+${hasIntegrationRisks ? '3. Read `INTEGRATION_RISKS.md` for cross-library concerns' : ''}
+
+---
+
+**Auto-generated by /csetup v2.5.0**
+`
+
+  Write(`${bpDir}index.md`, content)
 }
 ```
 

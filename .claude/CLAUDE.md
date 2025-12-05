@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.4.0 - Adaptive Depth Research
-> **Latest:** Dynamic research layers (0-10+) per change + Zero-maintenance tech detection + Claude 4.5 optimized agents
+> **Template Version:** 2.5.0 - Smart Topic Query
+> **Latest:** Cross-library integration detection + Integration risk summary + Proactive error prevention
 
 ---
 
@@ -131,18 +131,22 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
-## 📚 Best Practices System (v2.3.0 - Zero Maintenance)
+## 📚 Best Practices System (v2.5.0 - Smart Topic Query)
 
 **Quick Summary:**
 - `/csetup` **dynamically detects any library** from spec text + package files (no hardcoded mappings)
 - **Works with any language:** JavaScript, Python, Rust, Go, PHP, Ruby - automatically
 - **Context7 validates** each potential library name and resolves to official docs
+- **v2.5.0:** Smart Topic Query includes other library names for cross-library integration docs
+- **v2.5.0:** Auto-generates `INTEGRATION_RISKS.md` with detected concerns
 - Files created in `.claude/contexts/domain/project/best-practices/`
-- **Agents read** best practices before coding (validated by agent-executor)
+- **Agents read** best practices + integration risks before coding
 
-**Key Change in v2.3.0:**
-- ❌ Old: Hardcoded regex patterns + manual ID mappings (required maintenance)
-- ✅ New: NLP extraction + Context7 resolution (zero maintenance, any library)
+**Key Changes:**
+| Version | Change |
+|---------|--------|
+| v2.3.0 | NLP extraction + Context7 resolution (zero maintenance) |
+| v2.5.0 | Smart Topic Query + Integration Risk Detection |
 
 **Detection Sources:**
 | Source | Examples |
@@ -155,14 +159,23 @@ Universal, framework-agnostic template for AI-assisted development.
 | PHP | composer.json |
 | Ruby | Gemfile |
 
-**Flow:**
+**Flow (v2.5.0):**
 ```
 /csetup → extract potential library names from ALL text sources
         → Context7 resolve-library-id (validates if real library)
-        → Context7 get-library-docs (fetch best practices)
+        → Context7 get-library-docs (Smart Topic Query with other lib names)
+        → detect integration risks from docs content
         → generate .md files for each verified library
+        → generate INTEGRATION_RISKS.md if risks detected
 /cdev   → inject paths into prompt → agent reads → validation checks
 ```
+
+**Output Files:**
+| File | Content |
+|------|---------|
+| `{lib}.md` | Library best practices with integration info |
+| `INTEGRATION_RISKS.md` | Cross-library risks + checklist (if any detected) |
+| `index.md` | Registry of all best practices files |
 
 ---
 
@@ -302,6 +315,86 @@ User: "Build login system"
 → Phase 3: frontend (connect UI to API)
 → Phase 4: test-debug (tests)
 ```
+
+---
+
+## 🆕 v2.5.0: Smart Topic Query + Integration Risk Detection
+
+**Problem Solved:** Context7 queries used static topic "best practices" which missed adapter/integration documentation. Example: Drizzle + Auth.js requires specific column naming (snake_case) but this wasn't detected, causing runtime errors.
+
+**Solution:** Smart Topic Query includes other library names in topic + automatic integration risk detection.
+
+### How Smart Topic Query Works
+
+```
+Old (v2.4.0):
+  topic: "best practices, patterns, anti-patterns, common mistakes"
+  → Misses adapter-specific docs
+
+New (v2.5.0):
+  topic: "best practices, patterns, adapter, integration, schema, {other-lib-names}"
+  → Gets cross-library integration docs automatically
+```
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Smart Topic** | Includes other detected library names in Context7 topic |
+| **Bidirectional Query** | Query BOTH libraries (Auth.js → Drizzle, Drizzle → Auth.js) |
+| **Risk Pattern Detection** | Scans docs for adapter, schema, column, sync, webhook patterns |
+| **INTEGRATION_RISKS.md** | Auto-generated summary of detected integration concerns |
+| **Zero Maintenance** | No hardcoded library pairs - works with any combination |
+
+### Integration Risk Patterns Detected
+
+| Pattern | Keywords | Example |
+|---------|----------|---------|
+| Adapter | adapter, drizzleadapter, prismaadapter | ORM + Auth integrations |
+| Schema | column, snake_case, camelcase, mapping | Column naming mismatches |
+| Sync | sync, migrate, syncurl, embedded replica | Mobile/Edge data sync |
+| Webhook | webhook, webhookendpoint | Payment/notification handlers |
+| Lifecycle | beforeall, aftereach, setup, teardown | Test configuration |
+
+### Output Files
+
+| File | Content |
+|------|---------|
+| `best-practices/{lib}.md` | Library-specific best practices (enhanced with integration docs) |
+| `best-practices/INTEGRATION_RISKS.md` | Cross-library risk summary + checklist |
+
+### Example Flow
+
+```
+Detected: [drizzle, auth.js, stripe]
+
+Query drizzle with topic: "best practices, adapter, integration, auth.js, stripe"
+  → Gets: Drizzle adapter patterns, column naming
+
+Query auth.js with topic: "best practices, adapter, integration, drizzle, stripe"
+  → Gets: DrizzleAdapter config, usersTable/accountsTable schema
+
+Query stripe with topic: "best practices, adapter, integration, drizzle, auth.js"
+  → Gets: Webhook patterns, payment integration
+
+Risk Detection:
+  → auth.js mentions "drizzleadapter", "userstable" → SCHEMA pattern
+  → stripe mentions "webhook", "webhooksecret" → WEBHOOK pattern
+
+Output:
+  → drizzle.md (with auth.js integration info)
+  → auth-js.md (with Drizzle adapter config)
+  → stripe.md (with webhook patterns)
+  → INTEGRATION_RISKS.md (summary of all detected risks)
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `csetup.md` Step 2.7 | Smart Topic Query implementation |
+| `detectIntegrationRisks()` | New: Pattern detection from docs |
+| `generateIntegrationRiskSummary()` | New: INTEGRATION_RISKS.md output |
 
 ---
 
