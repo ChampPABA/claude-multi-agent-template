@@ -24,6 +24,8 @@
 1. **Reads User-Specified Context:**
    - Only reads files that user mentions with `@` prefix
    - Always reads `openspec/changes/{change-id}/proposal.md` (if exists)
+   - Always reads `openspec/changes/{change-id}/tasks.md` (for page type detection)
+   - **Always reads `openspec/changes/{change-id}/.claude/phases.md`** (if exists - for phase info) ✅ NEW v2.6.0
    - **Always reads `design-system/STYLE_TOKENS.json`** (lightweight, ~500 tokens) ✅
    - Validates `design-system/STYLE_GUIDE.md` exists (doesn't load full content)
 
@@ -95,6 +97,22 @@ if (fileExists(proposalPath)) {
 const tasksPath = `openspec/changes/${changeId}/tasks.md`
 if (fileExists(tasksPath)) {
   tasksContent = Read(tasksPath)
+}
+
+// 🆕 v2.6.0: Read phases.md if exists (for phase info, UI detection)
+const phasesPath = `openspec/changes/${changeId}/.claude/phases.md`
+let phasesContent = ''
+if (fileExists(phasesPath)) {
+  phasesContent = Read(phasesPath)
+  output(`✅ phases.md Found - reading phase information`)
+
+  // Extract UI phases from phases.md
+  const uiPhaseMatch = phasesContent.match(/uxui-frontend|frontend-mockup|Frontend Mockup/gi)
+  if (uiPhaseMatch) {
+    output(`   - UI phases detected: ${uiPhaseMatch.length}`)
+  }
+} else {
+  output(`ℹ️ phases.md not found - run /csetup first if you want phase-aware planning`)
 }
 
 // Extract brief from user files

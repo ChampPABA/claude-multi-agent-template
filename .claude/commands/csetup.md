@@ -2609,33 +2609,91 @@ contextTemplate = contextTemplate
 
 Write to: `openspec/changes/{change-id}/.claude/context.md`
 
-### Step 8: Output Summary
+### Step 8: Output Summary (ENHANCED v2.6.0)
 
-```
+```typescript
+// Check if UI work was detected (from Step 2.5/Step 3)
+const hasUIWork = hasFrontend || (hasDatabase && lower.includes('ui'))
+
+// Check for existing page-plan.md
+const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
+const hasPagePlan = fileExists(pagePlanPath)
+
+// Build output
+let output = `
 ✅ Change setup complete!
 
-📦 Change: {change-id}
-📋 Template: {template-name} ({total-phases} phases)
-🛠️ Detected: {detected-categories}
+📦 Change: ${changeId}
+📋 Template: ${templateName} (${totalPhases} phases)
+🛠️ Detected: ${detectedCategories.join(', ')}
 
 📁 Files created:
-✓ openspec/changes/{change-id}/.claude/phases.md
-✓ openspec/changes/{change-id}/.claude/flags.json
-✓ openspec/changes/{change-id}/.claude/context.md
+✓ openspec/changes/${changeId}/.claude/phases.md
+✓ openspec/changes/${changeId}/.claude/flags.json
+✓ openspec/changes/${changeId}/.claude/context.md
 
 📊 Workflow:
-   Phase 1: {first-phase-name} ({agent} agent, {estimated} min)
+   Phase 1: ${firstPhaseName} (${firstPhaseAgent} agent, ${firstPhaseMin} min)
    ...
-   Phase {n}: {last-phase-name}
+   Phase ${totalPhases}: ${lastPhaseName}
 
-⏱️ Total estimated time: ~{hours}h {minutes}m
+⏱️ Total estimated time: ~${hours}h ${minutes}m
+`
 
+// 🆕 v2.6.0: Recommend /pageplan if UI work detected
+if (hasUIWork) {
+  if (hasPagePlan) {
+    output += `
+✅ page-plan.md found: ${pagePlanPath}
+   → uxui-frontend will use this for component planning
+`
+  } else {
+    output += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 UI Work Detected!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Phases with UI work:
+${uiPhases.map(p => \`   • Phase \${p.number}: \${p.name} (\${p.agent})\`).join('\\n')}
+
+💡 RECOMMENDED: Run /pageplan before /cdev
+
+   Why?
+   ├── Content variants (3 options per element - user picks A/B/C)
+   ├── Component index (auto-generated, prevents duplicates)
+   ├── Asset checklist (images, icons with specs)
+   └── Approval process (user reviews before implementation)
+
+📝 Recommended Steps:
+   1. /pageplan @prd.md           ← Generate page plan
+   2. Edit page-plan.md           ← Pick A/B/C content, prepare assets
+   3. Mark APPROVED in Section 6  ← Sign-off before implementation
+   4. /cdev ${changeId}           ← Implement with real content
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`
+  }
+}
+
+output += `
 🚀 Ready to start development!
 
-Next steps:
-1. Review generated workflow: openspec/changes/{change-id}/.claude/phases.md
-2. Start development: /cdev {change-id}
-3. View progress: /cview {change-id}
+Next steps:`
+
+if (hasUIWork && !hasPagePlan) {
+  output += `
+1. (Recommended) Run: /pageplan @prd.md
+2. Edit page-plan.md (content, assets, approval)
+3. Review workflow: openspec/changes/${changeId}/.claude/phases.md
+4. Start development: /cdev ${changeId}
+5. View progress: /cview ${changeId}`
+} else {
+  output += `
+1. Review workflow: openspec/changes/${changeId}/.claude/phases.md
+2. Start development: /cdev ${changeId}
+3. View progress: /cview ${changeId}`
+}
+
+console.log(output)
 ```
 
 ---
