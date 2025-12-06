@@ -179,18 +179,18 @@ let pageType = 'generic'
 if (hasFrontend) {
   output(`\n🎨 UI work detected - validating design system...`)
 
-  const tokensPath = 'design-system/tokens.json' // v2.0 tokens
-  const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+  const tokensPath = 'design-system/data.yaml' // v2.0 tokens
+  const readmePath = 'design-system/README.md'
   const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
 
   const hasTokens = fileExists(tokensPath)
-  const hasStyleGuide = fileExists(styleGuidePath)
+  const hasReadme = fileExists(readmePath)
   const hasPagePlan = fileExists(pagePlanPath)
 
-  // ========== LOAD tokens.json (v2.0 structure) ==========
+  // ========== LOAD data.yaml (v2.0 structure) ==========
   if (hasTokens) {
     tokens = JSON.parse(Read(tokensPath))
-    output(`✅ tokens.json Loaded:`)
+    output(`✅ data.yaml Loaded:`)
     output(`   - Style: ${tokens.style.name}`)
     output(`   - Theme: ${tokens.theme.name}`)
     output(`   - Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}`)
@@ -217,8 +217,8 @@ if (hasFrontend) {
 ⚠️ WARNING: UI work detected but design system incomplete!
 
 Found:
-  ${hasStyleGuide ? '✅' : '❌'} STYLE_GUIDE.md
-  ${hasTokens ? '✅' : '❌'} tokens.json
+  ${hasReadme ? '✅' : '❌'} README.md (human-readable)
+  ${hasTokens ? '✅' : '❌'} data.yaml
   ${hasPagePlan ? '✅' : '❌'} page-plan.md
 
 This may result in:
@@ -240,8 +240,8 @@ Continue anyway? (yes/no)
     }
   } else {
     output(`✅ Design System Ready`)
-    output(`   - STYLE_GUIDE.md ✓`)
-    output(`   - tokens.json ✓`)
+    output(`   - README.md ✓ (human-readable)`)
+    output(`   - data.yaml ✓`)
     if (hasPagePlan) output(`   - page-plan.md ✓`)
   }
 }
@@ -316,7 +316,7 @@ for (const layer of requiredLayers) {
 }
 
 // 5. Check for conflicts with design system (if exists)
-const tokensPath = 'design-system/tokens.json'
+const tokensPath = 'design-system/data.yaml'
 if (fileExists(tokensPath) && researchResults.length > 0) {
   const tokens = JSON.parse(Read(tokensPath))
   const conflicts = checkDesignConflicts(tokens, researchResults, changeAnalysis)
@@ -2536,9 +2536,9 @@ if (hasFrontend && tokens) {
 ## 🎨 Design System (v2.0.0)
 
 **Design Files:**
-- tokens.json: \`design-system/tokens.json\` (~800 tokens)
+- data.yaml: \`design-system/data.yaml\` (~800 tokens)
 - patterns/: \`design-system/patterns/*.md\` (selective loading)
-- STYLE_GUIDE.md: \`design-system/STYLE_GUIDE.md\` (human-readable, ~150 lines)
+- README.md: \`design-system/README.md\` (human-readable, ~100 lines)
 ${pagePlan ? `- page-plan.md: \`openspec/changes/${changeId}/page-plan.md\` ✅` : ''}
 
 **Style Direction:**
@@ -2577,7 +2577,7 @@ pageType.includes('auth') ?
 - patterns/forms.md ✅`}
 
 **Agent Loading (STEP 0.5 for uxui-frontend):**
-1. Read: tokens.json (~800 tokens)
+1. Read: data.yaml (~800 tokens)
 2. Read: page-plan.md (if exists)
 3. Load patterns selectively based on page type
 4. Report: Design tokens + page type extracted

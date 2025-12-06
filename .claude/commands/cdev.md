@@ -175,7 +175,8 @@ Design Spec Implementation:
       'backend': ['express', 'fastapi', 'django', 'prisma', 'drizzle'],
       'database': ['prisma', 'drizzle', 'postgres', 'mongodb'],
       'test-debug': ['vitest', 'jest', 'playwright'],
-      'integration': ['typescript'] // minimal
+      'integration': ['typescript'], // minimal
+      'ux-tester': [] // No best practices needed - uses Chrome DevTools
     }
 
     const relevantTechs = agentBpMapping[phase.agent] || []
@@ -209,12 +210,11 @@ WHY: Best practices ensure consistency with project patterns.
 
   // Add design reference for uxui-frontend agent (not full content!)
   if (phase.agent === 'uxui-frontend') {
-    const tokensPath = 'design-system/STYLE_TOKENS.json'
-    const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+    const tokensPath = 'design-system/data.yaml'
+    const dataYamlPath = 'design-system/data.yaml'
     const hasTokens = fileExists(tokensPath)
-    const hasStyleGuide = fileExists(styleGuidePath)
 
-    if (hasTokens || hasStyleGuide) {
+    if (hasTokens) {
       prompt += `
 
 ---
@@ -223,8 +223,7 @@ WHY: Best practices ensure consistency with project patterns.
 
 **Files to read:**
 
-${hasTokens ? `- design-system/STYLE_TOKENS.json (~500 tokens) - Colors, spacing, typography` : ''}
-${hasStyleGuide ? `- design-system/STYLE_GUIDE.md (selective sections) - Component Styles, Layout Patterns` : ''}
+${hasTokens ? `- design-system/data.yaml (~500 tokens) - Colors, spacing, typography, psychology` : ''}
 
 **Style Guidelines:**
 
@@ -237,7 +236,7 @@ ${hasStyleGuide ? `- design-system/STYLE_GUIDE.md (selective sections) - Compone
 **Report format:**
 \`\`\`
 ✅ Design System Loaded
-   - STYLE_TOKENS.json ✓
+   - data.yaml ✓
    - Design Tokens Extracted: [list key tokens]
 \`\`\`
 
@@ -348,6 +347,112 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 - frontend: API Contract Verification, State Management, Error Handling
 - test-debug: Test Infrastructure, Coverage Targets, Test Plan
 - integration: Contract Collection, Schema Validation, Data Flow Analysis
+- ux-tester: Personas Generated, Dev Server Found, Chrome DevTools Connected
+
+---
+
+### Step 4.6: Approval Gate Handling (v2.7.0)
+
+**NEW:** Handle phases with `requires_approval: true` (e.g., ux-tester Phase 1.5)
+
+```typescript
+// Check if this phase requires user approval
+const isApprovalGate = phase.requires_approval === true ||
+                       phase.metadata?.includes('approval-gate')
+
+if (isApprovalGate && result.success) {
+  // Read all phases for loop back logic
+  const phasesPath = `openspec/changes/${changeId}/.claude/phases.md`
+  const allPhases = parsePhasesFromMd(Read(phasesPath))
+
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧪 ${phase.name} Complete - Awaiting Approval
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${result.summary || 'Report generated successfully'}
+
+📄 Full report: ${result.reportPath || `openspec/changes/${changeId}/ux-test-report.md`}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+กรุณาตัดสินใจ:
+
+✅ "approve" → ไป Phase ถัดไป
+❌ "reject [feedback]" → กลับแก้ไข Phase ก่อนหน้า
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `)
+
+  // PAUSE - Main Claude waits for user's next message
+  // User responds with "approve" or "reject [feedback]"
+  return { status: 'awaiting_approval', phase, changeId }
+}
+
+// When user responds (in next message):
+function handleUserApprovalResponse(userResponse: string, phase: Phase, changeId: string, allPhases: Phase[]) {
+  const normalized = userResponse.trim().toLowerCase()
+
+  // Handle APPROVE
+  if (normalized.match(/^(approve|approved|ok|yes|ใช่|อนุมัติ|ผ่าน|ลุย|ได้|ดี)$/)) {
+    output(`✅ ${phase.name} approved! Continuing to next phase...`)
+    updateFlags(changeId, {
+      [`phase_${phase.phase_number}`]: {
+        status: 'approved',
+        approved_at: new Date().toISOString()
+      }
+    })
+    // Continue to Step 5
+    return { action: 'continue' }
+  }
+
+  // Handle REJECT
+  if (normalized.startsWith('reject') || normalized.startsWith('ไม่') ||
+      normalized.startsWith('แก้') || normalized.startsWith('no')) {
+
+    const feedback = userResponse.replace(/^(reject|ไม่อนุมัติ|แก้ไข|no)\s*/i, '').trim()
+
+    // Find the phase to loop back to
+    const loopBackPhase = allPhases.find(p => p.agent === 'uxui-frontend') || allPhases[0]
+
+    output(`
+🔄 ${phase.name} rejected
+
+📝 Feedback: ${feedback || 'None provided'}
+🔙 Looping back to: Phase ${loopBackPhase.phase_number} - ${loopBackPhase.name}
+
+${loopBackPhase.agent} agent จะได้รับ feedback นี้เพื่อแก้ไข
+    `)
+
+    // Update flags for rejection
+    updateFlags(changeId, {
+      [`phase_${phase.phase_number}`]: {
+        status: 'rejected',
+        rejected_at: new Date().toISOString(),
+        rejection_feedback: feedback
+      },
+      [`phase_${loopBackPhase.phase_number}`]: {
+        status: 'pending',
+        rerun_reason: `Rejected from UX Testing: ${feedback}`
+      }
+    })
+
+    // Loop back to uxui-frontend phase
+    output(`\n🔄 Restarting Phase ${loopBackPhase.phase_number}: ${loopBackPhase.name}`)
+    return {
+      action: 'loop_back',
+      loopBackPhase,
+      feedback
+    }
+  }
+
+  // Unknown response - ask again
+  output(`⚠️ ไม่เข้าใจคำตอบ กรุณาตอบ "approve" หรือ "reject [feedback]"`)
+  return { action: 'ask_again' }
+}
+```
+
+**See:** `.claude/lib/agent-executor.md` → "Approval Gate Execution" section for complete flow
 
 ---
 

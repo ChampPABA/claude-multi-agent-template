@@ -110,7 +110,7 @@ ls openspec/changes/{change-id}/.claude/
    ```
 
    > **Note:** `design.md` = Technical/Architecture decisions (API structure, data flow)
-   > This is DIFFERENT from `STYLE_GUIDE.md` which is Visual Design (colors, fonts)
+   > This is DIFFERENT from `data.yaml` which is Visual Design (colors, fonts, tokens)
    > See CLAUDE.md "File Naming Conventions" for details.
 
 **If change context doesn't exist:**

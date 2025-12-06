@@ -39,7 +39,7 @@ Standardized handoff formats for agent-to-agent communication. Includes all 15 h
 Complete TDD implementation examples (Stripe integration, user auth). Used by frontend, backend, database agents.
 
 **`document-loader.md`** - Token-efficient document loading
-Unified pattern for loading design system files. 3-tier strategy: STYLE_TOKENS.json → design-context.md → STYLE_GUIDE.md.
+Unified pattern for loading design system files. 3-tier strategy: data.yaml → design-context.md → README.md (fallback).
 
 ---
 

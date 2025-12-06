@@ -250,15 +250,14 @@ Each agent loads additional contexts based on their role.
 - `@.claude/contexts/patterns/frontend-component-strategy.md` (when to create vs reuse)
 
 **Project-specific (if exists):**
-- `design-system/STYLE_GUIDE.md` (17 sections, ~5K tokens)
-- `design-system/STYLE_TOKENS.json` (lightweight, ~500 tokens)
+- `design-system/data.yaml` (tokens + psychology, ~500 tokens)
+- `design-system/README.md` (human-readable summary, ~100 tokens)
 - `openspec/changes/{change-id}/page-plan.md` (from /pageplan command)
 
 **Loading strategy:**
 ```
-1. Try STYLE_TOKENS.json first (lightweight)
-2. Load STYLE_GUIDE.md sections selectively
-3. Fall back to design/*.md if no style guide
+1. Load data.yaml (contains all design tokens)
+2. Fall back to design/*.md if no data.yaml
 ```
 
 ### backend Agent:
@@ -333,7 +332,7 @@ Each agent loads additional contexts based on their role.
 🎨 Level 3: Agent-Specific (uxui-frontend)
    → Loading: design/*.md ✓
    → Loading: patterns/ui-component-consistency.md ✓
-   → Loading: design-system/STYLE_TOKENS.json ✓
+   → Loading: design-system/data.yaml ✓
    → Loading: openspec/changes/landing-page/page-plan.md ✓
    ✅ Design contexts loaded
 

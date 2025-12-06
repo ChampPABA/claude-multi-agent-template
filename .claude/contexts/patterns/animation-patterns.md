@@ -18,7 +18,7 @@
 
 **Priority:**
 1. **Page-specific plan:** `openspec/changes/{id}/page-plan.md` Section 2.6 (if exists)
-2. **Project tokens:** `design-system/STYLE_TOKENS.json` (animation tokens)
+2. **Project tokens:** `design-system/data.yaml` (animation tokens)
 3. **General guidelines:** This file (fallback when above don't exist)
 
 **When to read:**
@@ -67,7 +67,7 @@
 
 ## 🎯 Animation Duration Guidelines
 
-**Standard Durations (from STYLE_TOKENS.json):**
+**Standard Durations (from data.yaml):**
 
 | Token | Duration | Use Case | Example |
 |-------|----------|----------|---------|
@@ -101,7 +101,7 @@
 ## 🧩 Component Animation Patterns
 
 > **Purpose:** Standard animation patterns for common components
-> **Source:** Based on STYLE_TOKENS.json + `/pageplan` Section 2.6
+> **Source:** Based on data.yaml + `/pageplan` Section 2.6
 > **Principle:** Same component type = same animation pattern (consistency)
 
 ### Button Components

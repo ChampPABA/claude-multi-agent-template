@@ -255,7 +255,7 @@ function detectResearchNeeds(task: Task, changeContext: any): ResearchRequiremen
   }
 
   // Special case: If no design system exists and UI work detected
-  if (task.type === 'uxui-frontend' && !fileExists('design-system/STYLE_GUIDE.md')) {
+  if (task.type === 'uxui-frontend' && !fileExists('design-system/data.yaml')) {
     detectedPatterns.push({
       category: 'missingDesignSystem',
       reason: 'No design system found - component library selection needed',
@@ -1082,6 +1082,199 @@ function calculateBuffer(complexity: number, risk: RiskLevel): number {
   else if (risk.level === 'MEDIUM') buffer += 20
 
   return buffer
+}
+```
+
+---
+
+## 🧪 UX Testing Phase Injection (v2.7.0)
+
+> **NEW:** Auto-inject Phase 1.5 (UX Testing) after uxui-frontend phase
+
+### Purpose
+
+Ensure UI is tested from user perspectives before proceeding to backend development.
+
+### Detection Logic
+
+```typescript
+function shouldInjectUXTesting(phases: Phase[]): boolean {
+  // Check if any phase uses uxui-frontend agent
+  return phases.some(p => p.agent === 'uxui-frontend')
+}
+```
+
+### Injection Logic
+
+```typescript
+function injectUXTestingPhase(phases: Phase[], context?: ChangeContext): Phase[] {
+  // Step 1: Check if should inject
+  if (!shouldInjectUXTesting(phases)) {
+    return phases // No UI work, skip injection
+  }
+
+  // Step 2: Check skip conditions (optional context)
+  if (context && shouldSkipUXTesting(phases, context)) {
+    return phases // Skip due to context conditions
+  }
+
+  // Step 3: Find the last uxui-frontend phase
+  const lastUxuiFrontendIndex = phases
+    .map((p, i) => p.agent === 'uxui-frontend' ? i : -1)
+    .filter(i => i >= 0)
+    .pop()
+
+  if (lastUxuiFrontendIndex === undefined) {
+    return phases
+  }
+
+  // Step 4: Create UX Testing phase
+  const uxTestingPhase: Phase = {
+    number: `${phases[lastUxuiFrontendIndex].number}.5`, // e.g., "1.5"
+    name: 'UX Testing',
+    agent: 'ux-tester',
+    estimatedTime: 30,
+    metadata: ['approval-gate', 'user-testing', 'persona-based'],
+    requires_approval: true,
+    description: 'Test UI from user perspectives before backend development'
+  }
+
+  // Step 5: Insert after the last uxui-frontend phase
+  const newPhases = [...phases]
+  newPhases.splice(lastUxuiFrontendIndex + 1, 0, uxTestingPhase)
+
+  // Step 6: Renumber subsequent phases if needed
+  return renumberPhases(newPhases)
+}
+
+function renumberPhases(phases: Phase[]): Phase[] {
+  // Keep .5 phases as-is, renumber whole numbers
+  let wholeNumber = 1
+
+  return phases.map(phase => {
+    if (phase.number.toString().includes('.5')) {
+      return phase // Keep .5 as-is
+    }
+
+    const newPhase = { ...phase, number: wholeNumber }
+    wholeNumber++
+    return newPhase
+  })
+}
+```
+
+### Integration Point
+
+**In `/csetup` command, after phase generation:**
+
+```typescript
+// STEP 4: Generate phases from template
+let phases = generatePhasesFromTemplate(templateName, analyzedTasks)
+
+// STEP 4.5: Inject UX Testing phase (NEW v2.7.0)
+phases = injectUXTestingPhase(phases)
+
+output(`
+📊 Phases Generated:
+${phases.map(p => `   Phase ${p.number}: ${p.name} (${p.agent})`).join('\n')}
+
+${phases.some(p => p.agent === 'ux-tester') ?
+  '🧪 UX Testing phase auto-injected after uxui-frontend' : ''}
+`)
+
+// STEP 5: Write phases.md
+writePhasesFile(phases, changeId)
+```
+
+### Output Example
+
+**Before injection:**
+```
+Phase 1: Frontend Mockup (uxui-frontend)
+Phase 2: Backend API (backend)
+Phase 3: Database Schema (database)
+Phase 4: Frontend Integration (frontend)
+Phase 5: Testing (test-debug)
+```
+
+**After injection:**
+```
+Phase 1: Frontend Mockup (uxui-frontend)
+Phase 1.5: UX Testing (ux-tester) ← AUTO-INJECTED
+Phase 2: Backend API (backend)
+Phase 3: Database Schema (database)
+Phase 4: Frontend Integration (frontend)
+Phase 5: Testing (test-debug)
+```
+
+### Approval Gate Behavior
+
+When `/cdev` reaches Phase 1.5:
+
+1. `ux-tester` agent runs and generates report
+2. Workflow **PAUSES** - waits for user
+3. User options:
+   - `approve` → Continue to Phase 2
+   - `reject [feedback]` → Loop back to Phase 1
+
+```
+Phase 1 (uxui-frontend) ──► Phase 1.5 (ux-tester) ──► [PAUSE]
+        ▲                                                │
+        │                                                ▼
+        └──────────── reject ◄────────────────── User Decision
+                                                         │
+                                                         ▼
+                                               approve ──► Phase 2
+```
+
+### Skip Conditions
+
+**Do NOT inject UX Testing if:**
+
+```typescript
+function shouldSkipUXTesting(phases: Phase[], context: ChangeContext): boolean {
+  // 1. No UI work detected (redundant with shouldInjectUXTesting but kept for clarity)
+  if (!phases.some(p => p.agent === 'uxui-frontend')) {
+    return true
+  }
+
+  // 2. Backend-only or API-only change (detected from proposal/tasks)
+  const changeType = detectChangeType(context.proposal, context.tasks)
+  if (changeType === 'backend-only' || changeType === 'api-only') {
+    return true
+  }
+
+  // 3. User explicitly disabled (via flags.json)
+  if (context.flags?.skip_ux_testing === true) {
+    return true
+  }
+
+  // 4. Minor UI fix (average complexity < 3)
+  const uiPhases = phases.filter(p => p.agent === 'uxui-frontend')
+  if (uiPhases.length > 0) {
+    const avgComplexity = uiPhases.reduce((sum, p) => sum + (p.complexity || 5), 0) / uiPhases.length
+    if (avgComplexity < 3) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Helper: Detect change type from content
+function detectChangeType(proposal: string, tasks: string): string {
+  const content = `${proposal} ${tasks}`.toLowerCase()
+
+  // Check for UI indicators
+  const hasUI = content.match(/landing|page|component|ui|frontend|form|button|modal|dashboard/i)
+
+  // Check for backend-only indicators
+  const isBackendOnly = content.match(/api.only|backend.only|no.ui|cli|cron|migration|script/i)
+
+  if (isBackendOnly && !hasUI) return 'backend-only'
+  if (!hasUI) return 'api-only'
+
+  return 'full-stack' // default
 }
 ```
 

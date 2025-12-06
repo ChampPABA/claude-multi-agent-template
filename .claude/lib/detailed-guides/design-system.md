@@ -30,11 +30,12 @@
 
 ---
 
-## Generated File
+## Generated Files
 
 ```
 design-system/
-└── STYLE_GUIDE.md    ← Comprehensive 17-section guide
+├── data.yaml    ← Design tokens + psychology (agent reads this)
+└── README.md    ← Human-readable summary
 ```
 
 **All 17 Sections (Complete):**
@@ -69,7 +70,7 @@ design-system/
 # 2. Setup change and project (discovers style guide, auto-detects tech stack)
 /csetup feature-login
 
-# 3. Start development (agents use STYLE_GUIDE.md)
+# 3. Start development (agents use data.yaml)
 /cdev feature-login
 ```
 
@@ -78,7 +79,7 @@ design-system/
 ## Agent Discovery
 
 **uxui-frontend agent automatically reads:**
-1. `design-system/STYLE_GUIDE.md` (if exists) ← **Priority #1**
+1. `design-system/data.yaml` (if exists) ← **Priority #1**
 2. `.claude/contexts/design/*.md` (general principles) ← Fallback
 
 **Why this matters:**
@@ -92,6 +93,6 @@ design-system/
 ## 🔗 See Also
 
 - `../../commands/designsetup.md` - /designsetup command (generates style guide)
-- `context-optimization.md` - 3-tier loading strategy (STYLE_TOKENS.json)
+- `context-optimization.md` - 3-tier loading strategy (data.yaml)
 - `../../contexts/design/index.md` - General design principles (fallback)
 - `../../contexts/patterns/ui-component-consistency.md` - Component reuse patterns

@@ -8,8 +8,8 @@
 ## 🎨 Design System Overview
 
 **Status:** {DESIGN_SYSTEM_STATUS}
-- ✅ Complete (STYLE_GUIDE.md + STYLE_TOKENS.json exist)
-- ⚠️ Partial (STYLE_GUIDE.md only)
+- ✅ Complete (data.yaml + README.md exist)
+- ⚠️ Partial (only one file exists)
 - ❌ None (needs /designsetup)
 
 **Generated from:**
@@ -24,20 +24,20 @@
 
 ### Primary Reference (Lightweight)
 ```
-✅ STYLE_TOKENS.json (~500 tokens)
-   design-system/STYLE_TOKENS.json
+✅ data.yaml (~800 tokens)
+   design-system/data.yaml
 
    Contains: Colors, spacing, typography, shadows, borders, animations
    Use: Quick reference for all commands and agents
 ```
 
-### Full Reference (Optional - Load on Demand)
+### Human-Readable Summary (For Humans Only)
 ```
-📖 STYLE_GUIDE.md (~5000 tokens)
-   design-system/STYLE_GUIDE.md
+📖 README.md (~100 tokens)
+   design-system/README.md
 
-   Contains: 17 sections including component examples, layout patterns
-   Use: Only load specific sections when needed
+   Contains: Summary of design system for human review
+   Use: Humans reviewing design, NOT for agents
 ```
 
 ### Fallback (Universal Principles)
@@ -139,13 +139,13 @@ Read: .claude/contexts/domain/{PROJECT_NAME}/design-context.md
 Tokens: ~1000
 ```
 
-**Step 2: Load STYLE_TOKENS.json (if needed)**
+**Step 2: Load data.yaml (if needed)**
 ```
-Read: design-system/STYLE_TOKENS.json
-Tokens: ~500
+Read: design-system/data.yaml
+Tokens: ~800
 ```
 
-**Total: ~1500 tokens (vs 5000+ for full STYLE_GUIDE.md)**
+**Total: ~1500 tokens (efficient loading)**
 
 ---
 
@@ -158,22 +158,16 @@ Tokens: ~500
    - File paths
    - Critical rules
 
-2. **Read STYLE_TOKENS.json**
+2. **Read data.yaml**
    - Full design tokens
    - Component library info
    - Usage patterns
 
-3. **Optional: Read STYLE_GUIDE.md sections**
-   - Only load sections needed for current task
-   - Example: Component Styles, Layout Patterns
-   - Tokens: ~2000 (selective loading)
-
-4. **Report:**
+3. **Report:**
    ```
    ✅ Design Context Loaded
    📁 design-context.md ✓
-   📦 STYLE_TOKENS.json ✓
-   📖 STYLE_GUIDE.md (Section 6: Component Styles) ✓
+   📦 data.yaml ✓
 
    Design Tokens Extracted:
    - Primary: {PRIMARY_COLOR}
@@ -187,9 +181,8 @@ Tokens: ~500
 
 | Approach | Tokens | Speed | Recommended |
 |----------|--------|-------|-------------|
-| **Old: Load full STYLE_GUIDE.md** | ~5000 | Slow | ❌ |
-| **New: design-context.md + STYLE_TOKENS.json** | ~1500 | Fast | ✅ |
-| **Agent: Selective STYLE_GUIDE sections** | ~3500 | Medium | ✅ (when needed) |
+| **design-context.md + data.yaml** | ~1800 | Fast | ✅ |
+| **data.yaml only** | ~800 | Very Fast | ✅ (quick tasks) |
 
 ---
 
@@ -198,15 +191,15 @@ Tokens: ~500
 Run `/csetup` or `/designsetup` again when:
 - ✅ Design tokens change (new colors, spacing)
 - ✅ Component library changes (shadcn → Chakra UI)
-- ✅ STYLE_GUIDE.md updated
+- ✅ data.yaml updated
 - ✅ New project phase (rebrand, redesign)
 
 ---
 
 ## 📖 References
 
-- **Full Style Guide:** `design-system/STYLE_GUIDE.md`
-- **Design Tokens:** `design-system/STYLE_TOKENS.json`
+- **Design Tokens:** `design-system/data.yaml` (agent reads this)
+- **Human Summary:** `design-system/README.md` (for humans)
 - **Universal Design:** `.claude/contexts/design/`
 - **Best Practices:** `.claude/contexts/domain/{PROJECT_NAME}/best-practices/`
 
@@ -214,7 +207,7 @@ Run `/csetup` or `/designsetup` again when:
 
 **🎯 Next Steps for Agents:**
 1. Load design-context.md (~1K tokens) ✅
-2. Load STYLE_TOKENS.json (~500 tokens) ✅
+2. Load data.yaml (~800 tokens) ✅
 3. Extract design tokens ✅
 4. Report loaded context ✅
 5. Begin implementation with design system awareness ✅

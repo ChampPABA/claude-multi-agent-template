@@ -102,13 +102,13 @@ WHY routing matters: Specialist agents have domain-specific validation (design t
 ### STEP 0.5: Design Context (uxui-frontend only)
 
 ```
-6. Check: design-system/STYLE_GUIDE.md exists?
-   - If YES → Read STYLE_GUIDE.md (project-specific)
+6. Check: design-system/data.yaml exists?
+   - If YES → Read data.yaml (project-specific tokens + psychology)
    - If NO → Read .claude/contexts/design/*.md (fallback)
-7. Report: "✅ Style Guide Loaded"
+7. Report: "✅ Design Tokens Loaded"
 ```
 
-WHY: STYLE_GUIDE.md has project-specific tokens. design/*.md has universal principles.
+WHY: data.yaml has project-specific tokens. design/*.md has universal principles.
 
 **Fallback:** If discovery fails, suggest `/csetup` or `/designsetup`
 

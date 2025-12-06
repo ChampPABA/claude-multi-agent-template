@@ -31,7 +31,7 @@ Why: Lightweight summary that points to full resources
 
 ### Tier 2: Design Tokens (Load for UI Work)
 ```
-File: design-system/STYLE_TOKENS.json
+File: design-system/data.yaml
 Tokens: ~500
 Contains: Colors, spacing, typography, shadows, borders, animations
 
@@ -39,14 +39,14 @@ When: Commands/agents that need design tokens (pageplan, csetup, uxui-frontend)
 Why: Lightweight token-only file for quick reference
 ```
 
-### Tier 3: Full Style Guide (Optional - Selective Loading)
+### Tier 3: Human-Readable Summary (Optional)
 ```
-File: design-system/STYLE_GUIDE.md
-Tokens: ~5000 (full) or ~2000 (selective sections)
-Contains: 17 sections including examples, patterns, component library
+File: design-system/README.md
+Tokens: ~100 (human-readable summary)
+Contains: Quick reference for humans, not for agents
 
-When: Agent needs detailed examples or specific sections
-Why: Full reference, but load selectively to save tokens
+When: Human wants to read design summary
+Why: Short, scannable summary for humans
 ```
 
 ### Tier 4: Universal Principles (Fallback)
@@ -65,7 +65,7 @@ Why: Universal design principles apply to any project
 
 ### Pattern A: Planning Commands (/pageplan, /csetup)
 
-**Goal:** Understand design system without loading full STYLE_GUIDE
+**Goal:** Understand design system efficiently
 
 ```typescript
 function loadDesignContext(projectName: string) {
@@ -77,18 +77,15 @@ function loadDesignContext(projectName: string) {
     context.summary = Read(designContextPath) // ~1K tokens
   }
 
-  // 2. Load STYLE_TOKENS.json (design tokens only)
-  const tokensPath = 'design-system/STYLE_TOKENS.json'
+  // 2. Load data.yaml (design tokens only)
+  const tokensPath = 'design-system/data.yaml'
   if (exists(tokensPath)) {
     context.tokens = JSON.parse(Read(tokensPath)) // ~500 tokens
   }
 
-  // 3. Validate STYLE_GUIDE.md exists (don't load!)
-  const styleGuidePath = 'design-system/STYLE_GUIDE.md'
-  context.hasStyleGuide = exists(styleGuidePath)
-
-  if (!context.hasStyleGuide && hasFrontendWork) {
-    warn(`⚠️ UI work detected but no STYLE_GUIDE.md
+  // 3. Validate data.yaml loaded successfully
+  if (!context.tokens && hasFrontendWork) {
+    warn(`⚠️ UI work detected but no data.yaml
           Run: /designsetup`)
   }
 
@@ -115,8 +112,7 @@ const spacingScale = designContext.tokens.spacing.scale
 ```typescript
 function buildDesignReference(projectName: string): string {
   const designContextPath = `.claude/contexts/domain/${projectName}/design-context.md`
-  const tokensPath = 'design-system/STYLE_TOKENS.json'
-  const styleGuidePath = 'design-system/STYLE_GUIDE.md'
+  const tokensPath = 'design-system/data.yaml'
 
   // Don't load content! Just send paths + minimal summary
   return `
@@ -128,10 +124,7 @@ function buildDesignReference(projectName: string): string {
    → Project design summary, file paths
 
 2. Read: ${tokensPath} (~500 tokens)
-   → Design tokens (colors, spacing, typography)
-
-3. Optional: ${styleGuidePath} (selective sections ~2K tokens)
-   → Full guide - load Component Styles, Layout Patterns if needed
+   → Design tokens (colors, spacing, typography, psychology)
 
 **Style Guidelines:**
 | Instead of | Use | WHY |
@@ -140,7 +133,7 @@ function buildDesignReference(projectName: string): string {
 | p-5 | p-4 or p-6 | Spacing scale |
 
 **Report format:**
-"Design Context Loaded: design-context.md + STYLE_TOKENS.json"
+"Design Context Loaded: design-context.md + data.yaml"
 "Design Tokens Extracted: [list key tokens]"
   `
 
@@ -170,13 +163,13 @@ async function loadDesignSystem(projectName: string) {
     warn(`⚠️ No design-context.md - using fallback`)
   }
 
-  // STEP 0.5.2: Load STYLE_TOKENS.json
-  const tokensPath = 'design-system/STYLE_TOKENS.json'
+  // STEP 0.5.2: Load data.yaml
+  const tokensPath = 'design-system/data.yaml'
   let tokens = null
 
   if (exists(tokensPath)) {
     tokens = JSON.parse(Read(tokensPath)) // ~500 tokens
-    report.push(`✅ STYLE_TOKENS.json loaded`)
+    report.push(`✅ data.yaml loaded`)
   }
 
   // STEP 0.5.3: Extract key tokens
@@ -192,14 +185,7 @@ async function loadDesignSystem(projectName: string) {
   report.push(`   - Spacing: ${extractedTokens.spacing.join(', ')}px`)
   report.push(`   - Component Library: ${extractedTokens.componentLibrary}`)
 
-  // STEP 0.5.4: Optional - Load specific STYLE_GUIDE sections
-  const styleGuidePath = 'design-system/STYLE_GUIDE.md'
-  if (needsDetailedExamples && exists(styleGuidePath)) {
-    // Selective loading: Only Component Styles section
-    const fullGuide = Read(styleGuidePath)
-    const componentSection = extractSection(fullGuide, '## 6. Component Styles')
-    report.push(`✅ STYLE_GUIDE.md (Section 6: Component Styles) loaded`)
-  }
+  // STEP 0.5.4: data.yaml contains all design info - no need for separate files
 
   // Report to user
   output(`
@@ -220,10 +206,9 @@ ${report.join('\n')}
 
 | Approach | Tier 1 | Tier 2 | Tier 3 | Total | Use Case |
 |----------|--------|--------|--------|-------|----------|
-| **Planning** (pageplan, csetup) | design-context.md (1K) | STYLE_TOKENS.json (500) | - | **1.5K** | ✅ Efficient |
+| **Planning** (pageplan, csetup) | design-context.md (1K) | data.yaml (500) | - | **1.5K** | ✅ Efficient |
 | **Execution** (/cdev) | Reference only (200) | - | - | **200** | ✅ Very efficient |
-| **Agent** (uxui-frontend) | design-context.md (1K) | STYLE_TOKENS.json (500) | Selective sections (2K) | **3.5K** | ✅ Good |
-| **Old approach** | - | - | Full STYLE_GUIDE (5K) | **5K** | ❌ Wasteful |
+| **Agent** (uxui-frontend) | design-context.md (1K) | data.yaml (500) | - | **1.5K** | ✅ Efficient |
 
 **Savings: 70-95% reduction in tokens!**
 
@@ -234,8 +219,8 @@ ${report.join('\n')}
 | Practice | WHY |
 |----------|-----|
 | Load design-context.md first | Entry point with file paths |
-| Load STYLE_TOKENS.json for UI work | Lightweight token reference |
-| Load STYLE_GUIDE.md selectively | Save tokens (5K → 2K) |
+| Load data.yaml for UI work | Lightweight token reference |
+| Use data.yaml for tokens | ~500 tokens, contains all design info |
 | Validate files exist before loading | Prevent errors |
 | Report what was loaded | Transparency for debugging |
 | Skip design files for backend/database | Not needed, saves tokens |
@@ -252,13 +237,13 @@ function loadDesignFallback() {
   warn(`⚠️ No design-context.md found
        Attempting fallback...`)
 
-  // Option 1: Load STYLE_TOKENS.json directly
-  if (exists('design-system/STYLE_TOKENS.json')) {
-    return { tokens: JSON.parse(Read('design-system/STYLE_TOKENS.json')) }
+  // Option 1: Load data.yaml directly
+  if (exists('design-system/data.yaml')) {
+    return { tokens: JSON.parse(Read('design-system/data.yaml')) }
   }
 
   // Option 2: Load universal design principles
-  warn(`⚠️ No STYLE_TOKENS.json - using universal principles`)
+  warn(`⚠️ No data.yaml - using universal principles`)
   return {
     universal: [
       Read('.claude/contexts/design/box-thinking.md'),
@@ -286,8 +271,8 @@ if (designContext.tokens) {
   output(`Using primary color: ${primary}`)
 }
 
-if (!designContext.hasStyleGuide) {
-  warn(`⚠️ No STYLE_GUIDE.md - run /designsetup first`)
+if (!designContext.tokens) {
+  warn(`⚠️ No data.yaml - run /designsetup first`)
 }
 ```
 
@@ -339,8 +324,8 @@ const Button = `
 - [ ] Identify if command deals with UI/design
 - [ ] Use appropriate loading pattern (A, B, or C)
 - [ ] Load design-context.md first
-- [ ] Load STYLE_TOKENS.json if needed
-- [ ] Only load STYLE_GUIDE.md selectively
+- [ ] Load data.yaml if needed
+- [ ] Load data.yaml for design tokens
 - [ ] Validate files exist
 - [ ] Report what was loaded
 - [ ] Handle fallback gracefully

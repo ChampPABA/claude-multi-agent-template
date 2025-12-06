@@ -8,14 +8,14 @@
 
 **This file contains GENERIC spacing guidelines.**
 
-**If your project has a STYLE_GUIDE.md:**
-→ STYLE_GUIDE.md values take **priority** (use its spacing values)
+**If your project has a data.yaml:**
+→ data.yaml values take **priority** (use its spacing values)
 → This file = **reference** for concepts and principles only
 
-**Check:** `.claude/contexts/domain/{project}/STYLE_GUIDE.md`
+**Check:** `design-system/data.yaml`
 
 **Priority order:**
-1. `STYLE_GUIDE.md` (project-specific) ← **Use this if exists!**
+1. `data.yaml` (project-specific) ← **Use this if exists!**
 2. Existing components (brownfield) ← Extract from code
 3. This file (generic defaults) ← Fallback only
 

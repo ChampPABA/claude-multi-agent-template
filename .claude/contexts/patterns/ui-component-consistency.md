@@ -91,7 +91,7 @@ const ANIMATION_TOKENS = {
   hover: {
     properties: ['transform', 'box-shadow'],  // GPU-accelerated only
     values: ['scale(1.05)', 'shadow-lg'],
-    duration: '150ms',                         // From STYLE_TOKENS.json
+    duration: '150ms',                         // From data.yaml
     easing: 'ease-in-out',
     classes: 'hover:scale-105 hover:shadow-lg transition-all duration-150'
   },
@@ -121,7 +121,7 @@ const ANIMATION_TOKENS = {
 
 **Critical Rules:**
 1. ✅ Extract animation from reference component (same as colors, spacing)
-2. ✅ Use durations from STYLE_TOKENS.json (150ms, 300ms, 500ms)
+2. ✅ Use durations from data.yaml (150ms, 300ms, 500ms)
 3. ✅ Use GPU-accelerated properties (transform, opacity) - NOT width, height, top, left
 4. ✅ Same component type = same animation pattern (buttons scale, cards elevate shadow)
 5. ❌ NO random durations (200ms, 250ms) - only 150/300/500ms
@@ -308,7 +308,7 @@ transition: 'transition-colors'
 - [ ] Found similar reference component in codebase
 - [ ] Extracted all design tokens (icon, spacing, colors, states, **animations**)
 - [ ] Extracted animation tokens (hover, focus, active, durations)
-- [ ] Verified durations match STYLE_TOKENS.json (150/300/500ms)
+- [ ] Verified durations match data.yaml (150/300/500ms)
 - [ ] Verified animation properties are GPU-accelerated (transform, opacity)
 - [ ] Applied tokens exactly (no guessing, no random values)
 - [ ] Tested visual appearance in browser

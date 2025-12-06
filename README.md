@@ -21,6 +21,7 @@ cak init
 | Agent | Phase | Role |
 |-------|-------|------|
 | uxui-frontend | 1 | UI with mock data |
+| ux-tester | 1.5 | Persona-based UX testing (approval gate) |
 | backend | 2 | API endpoints |
 | database | 2 | Schemas |
 | integration | 2.5 | Contract validation |
@@ -29,12 +30,13 @@ cak init
 
 ## Features
 
+- **UX-Tester Agent (v2.7.0)** - Persona-based UX testing with weighted conversion prediction
 - **Smart Topic Query (v2.5.0)** - Cross-library integration detection + risk summary
 - **Adaptive Depth Research (v2.4.0)** - Dynamic research layers (0-10+) based on change complexity
 - **Zero-Maintenance Tech Detection** - Auto-detects ANY library in ANY language via Context7
 - **Visual Page Planning** - Layout wireframes, component plans, animation blueprints
 - **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
-- **Design System v2.0** - Interactive setup with theme selection
+- **Design System v2.1** - YAML-based extraction with single data.yaml output
 
 ## Smart Topic Query (v2.5.0)
 

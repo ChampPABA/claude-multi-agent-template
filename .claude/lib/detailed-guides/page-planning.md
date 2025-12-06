@@ -34,7 +34,7 @@ User: /pageplan @prd.md @project_brief.md
 Main Claude:
 1. Reads user-specified files (@prd.md, @brief.md)
 2. Reads proposal.md (technical architecture)
-3. Reads STYLE_GUIDE.md (visual design)
+3. Reads data.yaml (design tokens)
 4. Searches existing components (Glob/Grep)
 5. Generates: openspec/changes/{id}/page-plan.md
    - 🔄 Reuse: Navbar, Footer (found)
@@ -99,7 +99,7 @@ User: /cdev landing-page
 |----------------------|------------------------|
 | ❌ Agent guesses structure | ✅ Clear structure defined |
 | ❌ Duplicate components | ✅ Reuse existing components |
-| ❌ Inconsistent design | ✅ Sync with STYLE_GUIDE |
+| ❌ Inconsistent design | ✅ Sync with data.yaml |
 | ❌ Lorem ipsum content | ✅ Real content from PRD |
 | ❌ Missing assets | ✅ Asset checklist prepared |
 | ❌ Agent wastes time searching | ✅ Search done once upfront (25% faster) |
@@ -124,14 +124,14 @@ User: /cdev landing-page
 
 ---
 
-## Integration with STYLE_GUIDE
+## Integration with data.yaml
 
 ```
-STYLE_GUIDE.md → Visual design (colors, spacing, shadows)
+data.yaml      → Design tokens (colors, spacing, shadows, psychology)
 page-plan.md   → Content structure (sections, components, assets)
 
 uxui-frontend agent combines both:
-- Colors from STYLE_GUIDE (#0d7276)
+- Colors from data.yaml (#0d7276)
 - Content from page-plan ("Master TOEIC...")
 - Result: Consistent + Real content
 ```
@@ -141,7 +141,7 @@ uxui-frontend agent combines both:
 ## 🔗 See Also
 
 - `../../commands/pageplan.md` - /pageplan command implementation
-- `../../commands/designsetup.md` - /designsetup command (generates STYLE_GUIDE.md)
+- `../../commands/designsetup.md` - /designsetup command (generates data.yaml + README.md)
 - `../../contexts/patterns/ui-component-consistency.md` - Component reuse patterns
 - `../../contexts/patterns/frontend-component-strategy.md` - When to create vs reuse
 - `../document-loader.md` - Token-efficient loading patterns

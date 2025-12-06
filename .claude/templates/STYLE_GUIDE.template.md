@@ -734,10 +734,10 @@ module.exports = {
 
 **Priority:**
 ```
-STYLE_GUIDE.md > best-practices/ > generic design contexts
+data.yaml > best-practices/ > generic design contexts
 ```
 
-This file is the single source of truth for design.
+The data.yaml file is the single source of truth for design.
 
 ### For Designers
 
@@ -752,7 +752,7 @@ This file is the single source of truth for design.
 
 **Good:**
 ```tsx
-// Uses STYLE_GUIDE values
+// Uses data.yaml values
 <button className="bg-[#6366f1] px-4 py-2 rounded-md shadow-sm">
   Sign In
 </button>
@@ -760,7 +760,7 @@ This file is the single source of truth for design.
 
 **Bad:**
 ```tsx
-// Arbitrary values not in STYLE_GUIDE
+// Arbitrary values not in data.yaml
 <button className="bg-[#5555ff] px-5 py-3 rounded-lg shadow-md">
   Sign In
 </button>
@@ -800,7 +800,7 @@ Before submitting a new component, verify:
    ```
 
 2. **Review changes:**
-   - Compare new STYLE_GUIDE with old
+   - Compare new data.yaml with old
    - Identify breaking changes
    - Document migration path
 
@@ -846,11 +846,11 @@ Before submitting a new component, verify:
 
 ### Components look inconsistent
 
-**Cause:** Not following STYLE_GUIDE, using arbitrary values
+**Cause:** Not following data.yaml, using arbitrary values
 
 **Solution:**
 - Review component code
-- Compare against STYLE_GUIDE values
+- Compare against data.yaml values
 - Refactor to match specifications
 
 ---

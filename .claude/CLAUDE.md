@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.5.0 - Smart Topic Query
-> **Latest:** Cross-library integration detection + Integration risk summary + Proactive error prevention
+> **Template Version:** 2.1.0 - Universal Multi-Agent Template
+> **Latest:** Design System v2.1 - YAML-based extraction, single data.yaml output
 
 ---
 
@@ -23,8 +23,8 @@
 
 | File | Purpose | When to Read |
 |------|---------|--------------|
-| `STYLE_GUIDE.md` | **Visual design** (colors, typography, spacing) | UI/Frontend phases |
-| `tokens.json` | Design tokens with style/theme/animations (~800 tokens) | Quick UI reference |
+| `README.md` | **Visual design summary** (human-readable) | UI/Frontend phases |
+| `data.yaml` | Design tokens + psychology (~300 lines) | Quick UI reference |
 | `page-plan.md` | UI component layout + content strategy | uxui-frontend agent |
 | `phases.md` | Execution plan with agent assignments | All phases |
 | `flags.json` | Progress tracking | All phases |
@@ -33,14 +33,14 @@
 
 ```
 OpenSpec design.md    = Technical Architecture (data flow, API structure, system design)
-Template STYLE_GUIDE  = Visual Design (colors, fonts, spacing, component styles)
+Template data.yaml    = Visual Design (colors, fonts, spacing, component styles)
 ```
 
 **Agents should read BOTH when relevant:**
-- `uxui-frontend` → STYLE_GUIDE.md (visual) + design.md (if has UI architecture)
+- `uxui-frontend` → data.yaml (visual tokens) + design.md (if has UI architecture)
 - `backend` → design.md (API/data architecture)
 - `database` → design.md (data models, relationships)
-- `frontend` → STYLE_GUIDE.md (visual) + design.md (API contracts)
+- `frontend` → data.yaml (visual tokens) + design.md (API contracts)
 
 ---
 
@@ -49,7 +49,7 @@ Template STYLE_GUIDE  = Visual Design (colors, fonts, spacing, component styles)
 Universal, framework-agnostic template for AI-assisted development.
 
 **What's Included:**
-- ✅ 6 Specialized Agents (integration + 5 domain specialists)
+- ✅ 7 Specialized Agents (integration + ux-tester + 5 domain specialists)
 - ✅ Universal Patterns (logging, testing, error-handling, agent selection)
 - ✅ Design Foundation (color theory, spacing, typography)
 - ✅ **Auto-Generated Best Practices** (from Context7 MCP per project)
@@ -65,13 +65,12 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ## 📖 Quick Navigation
 
-**Design/UI (v2.0.0):**
-- `/extract https://site.com` - Extract design from reference sites (multi-URL, style detection)
+**Design/UI (v2.1.0):**
+- `/extract https://site.com` - Extract design from reference sites (one site at a time, incremental)
 - `/designsetup @prd.md` - Interactive design setup (3-round loop, theme selection)
-- `design-system/tokens.json` - Design tokens with style/theme/animations (~800 tokens) ✨
-- `design-system/patterns/*.md` - Selective code patterns (buttons, cards, forms, animations, decorations)
-- `design-system/STYLE_GUIDE.md` - Human-readable guide (no code, ~150 lines)
-- `.claude/extractions/*.json` - Extracted site data
+- `design-system/extracted/*/data.yaml` - Extracted site data (full YAML with 17+ sections)
+- `design-system/data.yaml` - **v2.1!** Complete design data for agents (~800 lines) ✨
+- `design-system/README.md` - Human-readable summary (~100 lines)
 - `@/.claude/lib/document-loader.md` - Token-efficient loading patterns
 - `@/.claude/contexts/design/index.md` (General design principles - fallback)
 
@@ -93,7 +92,7 @@ Universal, framework-agnostic template for AI-assisted development.
 - `/pageplan @prd.md @brief.md` - Generate page structure with auto page type detection
 - Output: `openspec/changes/{id}/page-plan.md` (component reuse, buyer avatar, conversion copy, asset checklist)
 - Auto-detects page type (landing/dashboard/auth) from proposal.md/tasks.md
-- Reads tokens.json for style/theme/animations
+- Reads data.yaml for style/theme/animations
 - Loads patterns/*.md selectively based on page type
 - Buyer avatar analysis (Eugene Schwartz framework) for marketing pages only
 - Used by: uxui-frontend agent (auto-reads in STEP 0.5)
@@ -179,67 +178,50 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
-## 🎨 Design System v2.0.0 (Interactive Setup)
+## 🎨 Design System v2.1.0 (YAML-based)
 
 **→ See:** `@/.claude/lib/detailed-guides/design-system.md` for complete guide
 
 **Quick Summary:**
-- `/extract https://site.com` → Extracts design from reference sites (multi-URL, style detection)
+- `/extract https://site.com` → Extracts design from reference site (one at a time, incremental)
 - `/designsetup @prd.md` → Interactive 3-round loop with theme selection
 - Generates:
-  - `tokens.json` - Design tokens with style/theme/animations (~800 tokens) **FOR AGENTS**
-  - `patterns/*.md` - Code patterns (buttons, cards, forms, animations, decorations) **SELECTIVE LOADING**
-  - `STYLE_GUIDE.md` - Human-readable guide (no code, ~150 lines) **FOR HUMANS**
+  - `data.yaml` - Complete design data (~800 lines) **FOR AGENTS**
+  - `README.md` - Human-readable summary (~100 lines) **FOR HUMANS**
 
-**New Features in v2.0.0:**
-- 🎯 **Style Detection:** Neo-Brutalism, Minimalist, Glassmorphism, Modern SaaS, etc.
-- 🎭 **Theme Selection:** AI recommends themes based on project context
-- 🎬 **Animation Support:** GSAP, ScrollTrigger, Framer Motion detection
-- 📜 **Scroll Patterns:** stacking-cards, parallax, fade-in, slide-in
-- 🖼️ **Decorative Direction:** USE/AVOID elements for theme consistency
+**Features:**
+- Style Detection: Neo-Brutalism, Minimalist, Glassmorphism, Modern SaaS, etc.
+- Theme Selection: AI recommends themes based on project context
+- Animation Support: GSAP, ScrollTrigger, Framer Motion detection
+- Scroll Patterns: stacking-cards, parallax, fade-in, slide-in
+- Decorative Direction: USE/AVOID elements for theme consistency
 
-**Flow (v2.4.0):**
+**Flow:**
 ```
-/extract → .claude/extractions/*.json
+/extract https://site1.com → design-system/extracted/site1/data.yaml
+/extract https://site2.com → design-system/extracted/site2/data.yaml (incremental)
            ↓
-/designsetup → tokens.json + patterns/*.md + STYLE_GUIDE.md
+/designsetup @prd.md → design-system/data.yaml + design-system/README.md
            ↓
-/pageplan → page-plan.md (VISUAL: layout, components, animations, assets)
+/pageplan → page-plan.md (reads data.yaml, auto-detects page type)
            ↓
-/csetup → research-checklist.md (RESEARCH: best practices, content, UX)
-        → best-practices/*.md (Stack: Context7)
-        → phases.md
+/csetup → phases.md (reads page-plan.md)
            ↓
-/cdev → uxui-frontend reads:
-        - tokens.json (design tokens)
-        - patterns/*.md (code patterns)
-        - page-plan.md (visual structure)
-        - research-checklist.md (content & UX)
+/cdev → uxui-frontend (reads data.yaml)
 ```
-
-**Separation of Concerns:**
-| Command | Focus | Output |
-|---------|-------|--------|
-| `/pageplan` | Visual (layout, wireframe, animations) | `page-plan.md` |
-| `/csetup` | Research (best practices, content, UX) | `research-checklist.md` |
 
 ---
 
-## ⚡ Context Optimization (v2.0.0)
+## ⚡ Context Optimization (v2.1.0)
 
 **→ See:** `@/.claude/lib/detailed-guides/context-optimization.md` for complete guide
 
 **Quick Summary:**
-- **Problem:** 20K tokens wasted (STYLE_GUIDE.md read 4x by different commands/agents)
-- **Solution (v2.0.0):**
-  - `tokens.json` (~800 tokens) - **PRIMARY: All agents read this**
-  - `patterns/*.md` - **SELECTIVE: Load based on page type**
-  - `STYLE_GUIDE.md` (~150 lines) - **HUMAN-READABLE: No code**
-- **Page Type Detection:**
-  - Landing/Marketing → Full patterns (buttons, cards, scroll-animations, decorations)
-  - Dashboard/Admin → Minimal patterns (buttons, cards, forms)
-  - Auth → Clean patterns (buttons, forms)
-- **Result:** 84% token reduction (~800 tokens vs ~5000), 4x faster, theme consistency
+- **Problem:** Multiple files read by different commands/agents
+- **Solution (v2.1.0):**
+  - `data.yaml` (~800 lines) - **SINGLE SOURCE: All agents read this**
+  - `README.md` (~100 lines) - **HUMAN-READABLE: Summary only**
+- **Result:** Single file for all design data, consistent across all agents
 
 ---
 
@@ -301,19 +283,82 @@ Universal, framework-agnostic template for AI-assisted development.
 **→ See:** `@/.claude/lib/detailed-guides/agent-system.md` for complete guide
 
 **Quick Summary:**
-- **6 specialist agents**: integration (validate contracts), uxui-frontend (UI with mock data), test-debug (tests/bugs), frontend (connect UI to API), backend (API endpoints), database (schemas/migrations)
+- **7 specialist agents**: integration (validate contracts), uxui-frontend (UI with mock data), **ux-tester** (persona-based UX testing), test-debug (tests/bugs), frontend (connect UI to API), backend (API endpoints), database (schemas/migrations)
 - **Main Claude's role**: Orchestrator (plan, coordinate, report), NOT implementer (no writing code directly)
 - **Self-check protocol**: Checklist before ANY work (detect work type → select agent → delegate)
 - **Agent pre-work**: STEP 0 (project discovery for ALL) + STEP 1-5 (design fundamentals for uxui-frontend only)
+- **Approval Gate (v2.7.0)**: ux-tester phase requires user approval before proceeding to backend
 
 **Example workflow:**
 ```
 User: "Build login system"
 → Phase 1: uxui-frontend (UI)
+→ Phase 1.5: ux-tester (approval gate) ← NEW!
 → Phase 2: backend + database (parallel)
 → Phase 2.5: integration (validate contracts)
 → Phase 3: frontend (connect UI to API)
 → Phase 4: test-debug (tests)
+```
+
+---
+
+## 🆕 v2.7.0: UX Testing Agent (Persona-Based)
+
+**Problem Solved:** UI was approved by developers, not real users. No validation that the UI actually converts customers before spending time on backend development.
+
+**Solution:** Auto-inject Phase 1.5 (ux-tester) after uxui-frontend with approval gate workflow.
+
+### How It Works
+
+```
+Phase 1: uxui-frontend (build UI)
+    ↓
+Phase 1.5: ux-tester (approval gate)
+    → Auto-generate personas from product context
+    → Test each persona via Chrome DevTools
+    → Calculate weighted conversion prediction
+    → Generate UX test report
+    → PAUSE for user approval
+    ↓
+[User approves] → Phase 2: backend + database
+[User rejects]  → Loop back to Phase 1 with feedback
+```
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Auto-Generated Personas** | 3-5 personas with % breakdown based on product context |
+| **Weighted Conversion** | Calculate purchase likelihood weighted by customer % |
+| **Chrome DevTools Testing** | Screenshots, snapshots, click tests, mobile responsive |
+| **Approval Gate** | PAUSE and wait for user approve/reject |
+| **Rejection Loop** | Feedback passed to uxui-frontend, re-run Phase 1 → 1.5 |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/agents/07-ux-tester.md` | New agent for persona-based UX testing |
+| `.claude/templates/phases-sections/ux-testing.md` | Phase template with approval gate |
+| `.claude/lib/task-analyzer.md` | Auto-inject Phase 1.5 after uxui-frontend |
+| `.claude/lib/agent-executor.md` | Approval gate execution logic |
+| `.claude/commands/cdev.md` | Step 4.6 approval gate handling |
+
+### UX Test Report Example
+
+```markdown
+# UX Test Report
+
+## Personas Tested
+| Persona | % ลูกค้า | Would Buy | Weighted |
+|---------|----------|-----------|----------|
+| นักศึกษา 18-24 | 40% | Maybe (50%) | +20% |
+| พนักงาน 25-35 | 35% | Yes (100%) | +35% |
+| ผู้สูงวัย 50-65 | 15% | No (0%) | +0% |
+| ผู้ปกครอง 35-50 | 10% | Maybe (50%) | +5% |
+
+## Conversion Prediction: 60%
+## Potential After Fixes: 92.5%
 ```
 
 ---

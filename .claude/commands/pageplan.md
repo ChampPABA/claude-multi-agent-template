@@ -26,8 +26,7 @@
    - Always reads `openspec/changes/{change-id}/proposal.md` (if exists)
    - Always reads `openspec/changes/{change-id}/tasks.md` (for page type detection)
    - **Always reads `openspec/changes/{change-id}/.claude/phases.md`** (if exists - for phase info) ✅ NEW v2.6.0
-   - **Always reads `design-system/STYLE_TOKENS.json`** (lightweight, ~500 tokens) ✅
-   - Validates `design-system/STYLE_GUIDE.md` exists (doesn't load full content)
+   - **Always reads `design-system/data.yaml`** (design tokens + psychology, ~500 tokens) ✅
 
 2. **Searches Existing Components:**
    - Glob: `**/{Navbar,Footer,Sidebar,Header}*.{tsx,jsx,vue}`
@@ -72,8 +71,8 @@ const userFiles = extractMentionedFiles(userMessage) // @prd.md, @brief.md
 
 // Always read (if exists)
 const proposalPath = `openspec/changes/${changeId}/proposal.md`
-const tokensPath = `design-system/STYLE_TOKENS.json` // 🆕 Lightweight tokens
-const styleGuidePath = `design-system/STYLE_GUIDE.md` // Validate only, don't load
+const tokensPath = `design-system/data.yaml` // Design tokens + psychology
+// data.yaml contains all design information - single source of truth
 
 const contextFiles = [
   ...userFiles,
@@ -124,20 +123,19 @@ if (briefFile && fileExists(briefFile)) {
 // 🆕 Load design tokens (lightweight)
 if (fileExists(tokensPath)) {
   const tokens = JSON.parse(Read(tokensPath))
-  context += `\n\n---\n\n# Design Tokens (STYLE_TOKENS.json)\n\n`
+  context += `\n\n---\n\n# Design Tokens (data.yaml)\n\n`
   context += `Primary Color: ${tokens.tokens.colors.primary.DEFAULT}\n`
   context += `Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px\n`
   context += `Component Library: ${tokens.component_library.name}\n`
   context += `Shadows: ${Object.keys(tokens.tokens.shadows).join(', ')}\n`
 }
 
-// Validate STYLE_GUIDE.md exists (don't load!)
-const hasStyleGuide = fileExists(styleGuidePath)
-if (!hasStyleGuide) {
-  warn(`⚠️ No STYLE_GUIDE.md found - run /designsetup first`)
+// Validate data.yaml exists
+if (!fileExists(tokensPath)) {
+  warn(`⚠️ No data.yaml found - run /designsetup first`)
 }
 
-// Total context: ~1.5K tokens (vs 5K+ if loading full STYLE_GUIDE.md)
+// Total context: ~1.5K tokens (data.yaml is lightweight)
 ```
 
 ### STEP 3: Search Existing Components
@@ -312,12 +310,12 @@ Based on context + found components, generate:
 ## 2.6. 🎬 Animation Blueprint (Micro-interactions)
 
 > **Purpose:** Define animation strategy BEFORE implementation to ensure consistency and polish
-> **Source:** `design-system/STYLE_TOKENS.json` (animation tokens)
+> **Source:** `design-system/data.yaml` (animation tokens)
 > **Philosophy:** Match Flow Engineer Step 3 - Design animations systematically, not randomly
 
 ### Animation Principles
 
-**From STYLE_TOKENS.json:**
+**From data.yaml:**
 - **Durations:** 150ms (quick), 300ms (normal), 500ms (slow)
 - **Easing:** ease-in-out (default), cubic-bezier for custom
 - **Properties:** GPU-accelerated ONLY (transform, opacity) - NOT width, height, top, left
@@ -512,7 +510,7 @@ className="hover:scale-105 transform"
 - [ ] All buttons use scale + shadow pattern (150ms)
 - [ ] All cards use shadow elevation pattern (300ms)
 - [ ] All inputs use ring pattern (200ms)
-- [ ] All durations from STYLE_TOKENS.json (150/300/500ms)
+- [ ] All durations from data.yaml (150/300/500ms)
 - [ ] All properties GPU-accelerated (transform, opacity)
 - [ ] No random durations (e.g., 200ms, 400ms) unless intentional
 - [ ] Tested on mobile (animations not janky)
@@ -528,7 +526,7 @@ className="hover:scale-105 transform"
 4. **Short Durations (150-300ms):** Feels responsive, not sluggish
 5. **GPU Properties:** 60fps smooth animations, no jank
 
-**Inspiration:** Based on extracted animations from reference sites + STYLE_TOKENS.json
+**Inspiration:** Based on extracted animations from reference sites + data.yaml
 
 ---
 
@@ -573,7 +571,7 @@ className="hover:scale-105 transform"
       → **Format:** SVG (preferred) or PNG sprite (if 10+ icons)
       → **Optimization:** Remove unnecessary metadata (use SVGO)
       → **Place at:** `/public/icons/` or inline in component
-      → **Style:** Match STYLE_GUIDE colors
+      → **Style:** Match data.yaml colors
       → **Estimated size:** 1-3KB per icon
 
 **If using 10+ icons:** Consider SVG sprite sheet (combine → 1 HTTP request)
@@ -588,18 +586,18 @@ className="hover:scale-105 transform"
 ## 4. Design Notes
 
 **Design System Files:**
-- Tokens (lightweight): \`design-system/STYLE_TOKENS.json\`
-- Full guide (reference): \`design-system/STYLE_GUIDE.md\`
+- Tokens + Psychology: \`design-system/data.yaml\` (agent reads this)
+- Human summary: \`design-system/README.md\` (for humans)
 
 **Key Design Tokens:**
-- Primary color: [from STYLE_TOKENS.json]
-- Font family: [from STYLE_TOKENS.json]
-- Spacing scale: [from STYLE_TOKENS.json]
-- Component library: [from STYLE_TOKENS.json]
-- Shadows: [from STYLE_TOKENS.json]
+- Primary color: [from data.yaml]
+- Font family: [from data.yaml]
+- Spacing scale: [from data.yaml]
+- Component library: [from data.yaml]
+- Shadows: [from data.yaml]
 
 **Agent Instructions:**
-- uxui-frontend reads STYLE_TOKENS.json in STEP 0.5
+- uxui-frontend reads data.yaml in STEP 0.5
 - Use theme tokens (text-foreground/70) for theme-awareness
 - Use spacing scale (p-4, p-6) for consistency
 
@@ -702,8 +700,8 @@ Result:
    - Warning: "This change appears to be backend/API work. /pageplan is for UI tasks."
    - Ask: "Continue anyway? (Y/N)"
 
-4. **STYLE_GUIDE.md missing:**
-   - Warning: "No STYLE_GUIDE.md found. Run /designsetup first for best results."
+4. **data.yaml missing:**
+   - Warning: "No data.yaml found. Run /designsetup first for best results."
    - Continue: Use general design principles as fallback
 
 ---
@@ -729,9 +727,9 @@ Result:
 ```
 /designsetup → /pageplan → /csetup → /cdev
      ↓             ↓            ↓         ↓
-  tokens.json   page-plan.md  research   uxui-frontend
+  data.yaml   page-plan.md  research   uxui-frontend
   patterns/     (visual)      -checklist reads both
-  STYLE_GUIDE               (content)
+  README.md                 (content)
 ```
 
 **Separation of Concerns:**

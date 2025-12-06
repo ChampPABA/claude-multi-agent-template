@@ -71,15 +71,15 @@ WHY: UI development shouldn't be blocked by backend availability. Mock data enab
 **STEP 0.5: Load Design & Content (uxui-frontend specific)**
 
 ```bash
-# Check for project-specific design
-Read: design-system/STYLE_GUIDE.md
+# Check for project-specific design tokens
+Read: design-system/data.yaml
 
 # Check for page plan (from /pageplan command)
 Read: openspec/changes/{change-id}/page-plan.md
 ```
 
 **Priority order:**
-1. **STYLE_GUIDE.md** (project-specific) → Use all tokens, colors, spacing
+1. **data.yaml** (project-specific) → Use all tokens, colors, spacing, psychology
 2. **page-plan.md** (if exists) → Use component plan, content draft, animation blueprint
 3. **design/*.md** (fallback) → General design principles
 
@@ -141,8 +141,7 @@ Page Structure Compliance:
 | patterns/ui-component-consistency.md | Always (component reuse) |
 | patterns/animation-patterns.md | Always (animations) |
 | patterns/performance-optimization.md | Always (images, lazy loading) |
-| STYLE_GUIDE.md | If exists (project-specific) |
-| STYLE_TOKENS.json | If exists (lightweight tokens) |
+| data.yaml | If exists (design tokens + psychology) |
 | page-plan.md | If exists (content plan) |
 
 **Context7 Framework Docs:**
@@ -200,7 +199,7 @@ const TOKENS = {
 }
 ```
 
-Use durations from STYLE_TOKENS.json (150ms, 300ms, 500ms). Random values (200ms, 250ms, 400ms) break visual consistency.
+Use durations from data.yaml (150ms, 300ms, 500ms). Random values (200ms, 250ms, 400ms) break visual consistency.
 
 ### Step 5: Performance Optimization
 

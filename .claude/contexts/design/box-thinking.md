@@ -8,12 +8,12 @@
 
 **This file contains layout analysis METHODOLOGY** (applies to all projects).
 
-**If your project has a STYLE_GUIDE.md with reference screenshot:**
-→ View the screenshot and apply Box Thinking to understand its layout
-→ Use STYLE_GUIDE.md spacing values when implementing boxes
+**If your project has a data.yaml:**
+→ Use data.yaml spacing values when implementing boxes
+→ Apply Box Thinking methodology with project-specific tokens
 
 Box Thinking = **How to think about layout**
-STYLE_GUIDE.md = **What values to use**
+data.yaml = **What values to use**
 
 ---
 

@@ -85,11 +85,12 @@
    - Asks: Application type (SaaS, Marketing, E-commerce, etc.)
    - Output: Modern, best-practice style guide
 
-### Generated File
+### Generated Files
 
 ```
 design-system/
-└── STYLE_GUIDE.md    ← Comprehensive 17-section guide
+├── data.yaml    ← Design tokens + psychology (agent reads this)
+└── README.md    ← Human-readable summary
 ```
 
 **All 17 Sections (Complete):**
@@ -122,14 +123,14 @@ design-system/
 # 2. Setup change and project (discovers style guide, auto-detects tech stack)
 /csetup feature-login
 
-# 3. Start development (agents use STYLE_GUIDE.md)
+# 3. Start development (agents use data.yaml)
 /cdev feature-login
 ```
 
 ### Agent Discovery
 
 **uxui-frontend agent automatically reads:**
-1. `design-system/STYLE_GUIDE.md` (if exists) ← **Priority #1**
+1. `design-system/data.yaml` (if exists) ← **Priority #1**
 2. `.claude/contexts/design/*.md` (general principles) ← Fallback
 
 **Why this matters:**

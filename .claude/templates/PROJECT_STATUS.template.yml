@@ -167,4 +167,4 @@ notes: |
 references:
   # roadmap: "docs/proposal_list.md"
   # architecture: "openspec/specs/architecture.md"
-  # style_guide: "design-system/STYLE_GUIDE.md"
+  # design_tokens: "design-system/data.yaml"

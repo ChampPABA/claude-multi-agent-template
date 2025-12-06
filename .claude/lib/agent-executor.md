@@ -154,6 +154,7 @@ WHY: Pre-work validation ensures agents loaded context before implementing. This
 | backend | Patterns Loaded ✓, Existing Endpoints Search ✓, TDD Workflow (if required) |
 | database | Schema Analysis ✓ |
 | test-debug | Test Infrastructure ✓ |
+| ux-tester | Personas Generated ✓, Dev Server Found ✓, Chrome DevTools Connected ✓ |
 
 **Validation Logic:**
 ```typescript
@@ -975,6 +976,228 @@ async function executePhase(phase: Phase, changeId: string) {
 ✅ **Progressive confidence** - Each milestone proves the next will likely work
 ✅ **Intelligent recovery** - Main Claude provides hints instead of blind retry
 ✅ **Human-in-the-loop** - Escalate complex issues that agents can't solve
+
+---
+
+## 🛑 Approval Gate Execution (v2.7.0)
+
+> **NEW:** Handle phases with `requires_approval: true` (e.g., ux-tester)
+
+### Detection
+
+```typescript
+function isApprovalGatePhase(phase: Phase): boolean {
+  return phase.requires_approval === true ||
+         phase.metadata?.includes('approval-gate')
+}
+```
+
+### Execution Flow
+
+```typescript
+async function executeApprovalGatePhase(phase: Phase, changeId: string): Promise<ApprovalResult> {
+  // Step 1: Execute the agent (e.g., ux-tester)
+  const agentResult = await executeAgent(phase.agent, buildPrompt(phase))
+
+  // Step 2: Validate agent output
+  if (!agentResult.success) {
+    return { status: 'failed', error: agentResult.error }
+  }
+
+  // Step 3: Update flags to "awaiting_approval"
+  updateFlags(changeId, {
+    [`phase_${phase.number}`]: {
+      status: 'awaiting_approval',
+      report_path: agentResult.reportPath
+    }
+  })
+
+  // Step 4: Display report summary to user
+  output(`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧪 ${phase.name} Complete - Awaiting Approval
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${agentResult.summary}
+
+📄 Full report: ${agentResult.reportPath}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+กรุณาตัดสินใจ:
+
+✅ "approve" → ไป Phase ${getNextPhase(phase).number}
+❌ "reject [feedback]" → กลับ Phase ${getPreviousPhase(phase).number} แก้ไข
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `)
+
+  // Step 5: PAUSE and wait for user response
+  const userResponse = await waitForUserInput()
+
+  // Step 6: Handle response
+  return handleApprovalResponse(userResponse, phase, changeId)
+}
+```
+
+### Response Handling
+
+```typescript
+function handleApprovalResponse(
+  response: string,
+  phase: Phase,
+  changeId: string,
+  allPhases: Phase[]  // Added: need all phases for loop back
+): ApprovalResult {
+  const normalized = response.trim().toLowerCase()
+
+  // Approve patterns
+  if (normalized.match(/^(approve|approved|ok|yes|ใช่|อนุมัติ|ผ่าน|ลุย)$/)) {
+    updateFlags(changeId, {
+      [`phase_${phase.number}`]: {
+        status: 'approved',
+        approved_at: new Date().toISOString()
+      }
+    })
+
+    output(`✅ ${phase.name} approved! Continuing to next phase...`)
+
+    return {
+      status: 'approved',
+      nextAction: 'continue'
+    }
+  }
+
+  // Reject patterns
+  if (normalized.startsWith('reject') || normalized.startsWith('ไม่') ||
+      normalized.startsWith('แก้') || normalized.startsWith('no')) {
+
+    // Extract feedback from rejection
+    const feedback = response.replace(/^(reject|ไม่อนุมัติ|แก้ไข|no)\s*/i, '').trim()
+
+    updateFlags(changeId, {
+      [`phase_${phase.number}`]: {
+        status: 'rejected',
+        rejected_at: new Date().toISOString(),
+        rejection_feedback: feedback || 'No specific feedback provided'
+      }
+    })
+
+    // Find the phase to loop back to
+    const loopBackPhase = findLoopBackPhase(phase, allPhases)
+
+    updateFlags(changeId, {
+      [`phase_${loopBackPhase.number}`]: {
+        status: 'pending',
+        rerun_reason: `Rejected from ${phase.name}: ${feedback}`
+      }
+    })
+
+    output(`
+🔄 ${phase.name} rejected
+
+📝 Feedback: ${feedback || 'None provided'}
+🔙 Looping back to: Phase ${loopBackPhase.number} - ${loopBackPhase.name}
+
+${loopBackPhase.agent} agent จะได้รับ feedback นี้เพื่อแก้ไข
+    `)
+
+    return {
+      status: 'rejected',
+      feedback,
+      nextAction: 'loop_back',
+      loopBackTo: loopBackPhase
+    }
+  }
+
+  // Unknown response - ask again
+  output(`
+⚠️ ไม่เข้าใจคำตอบ
+
+กรุณาตอบ:
+- "approve" เพื่อดำเนินการต่อ
+- "reject [feedback]" เพื่อกลับไปแก้ไข
+  `)
+
+  return {
+    status: 'pending',
+    nextAction: 'ask_again'
+  }
+}
+```
+
+### Loop Back Logic
+
+```typescript
+function findLoopBackPhase(currentPhase: Phase, allPhases: Phase[]): Phase {
+  // For ux-tester (Phase 1.5), loop back to uxui-frontend (Phase 1)
+  if (currentPhase.agent === 'ux-tester') {
+    const uxuiFrontendPhase = allPhases.find(p => p.agent === 'uxui-frontend')
+    if (uxuiFrontendPhase) {
+      return uxuiFrontendPhase
+    }
+  }
+
+  // Default: loop back to previous phase
+  const currentIndex = allPhases.findIndex(p => p.number === currentPhase.number)
+  if (currentIndex > 0) {
+    return allPhases[currentIndex - 1]
+  }
+
+  // Fallback: first phase
+  return allPhases[0]
+}
+
+// Helper: Read phases from phases.md file
+function getPhasesFromFile(changeId: string): Phase[] {
+  const phasesPath = `openspec/changes/${changeId}/.claude/phases.md`
+  const content = Read(phasesPath)
+  return parsePhasesFromMd(content)
+}
+```
+
+### Rejection Loop Cycle
+
+```
+Cycle 1:
+  Phase 1 (uxui-frontend) → Phase 1.5 (ux-tester) → [REJECT]
+  → Back to Phase 1 with feedback
+
+Cycle 2:
+  Phase 1 (uxui-frontend) [with feedback] → Phase 1.5 (ux-tester) → [APPROVE]
+  → Continue to Phase 2
+
+No limit on cycles - user decides when to stop
+```
+
+### Feedback Injection
+
+When looping back, inject rejection feedback into agent prompt:
+
+```typescript
+function buildPromptWithFeedback(phase: Phase, changeId: string): string {
+  const flags = readFlags(changeId)
+  const feedback = flags[`phase_${phase.number}`]?.rerun_reason
+
+  let prompt = buildBasePrompt(phase)
+
+  if (feedback) {
+    prompt += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ REJECTION FEEDBACK FROM UX TESTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${feedback}
+
+Please address this feedback in your implementation.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`
+  }
+
+  return prompt
+}
+```
 
 ---
 

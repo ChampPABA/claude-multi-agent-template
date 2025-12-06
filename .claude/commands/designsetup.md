@@ -24,56 +24,48 @@ Examples:
 
 ## 🎯 Mission
 
-Generate lean design system files:
-- `design-system/tokens.json` (~800 tokens) - **PRIMARY: Agent reads this**
-- `design-system/patterns/*.md` - Code patterns (selective loading)
-- `design-system/STYLE_GUIDE.md` (~2000 tokens) - **Human-readable (no code)**
+Generate design system files:
+- `design-system/data.yaml` (~300 lines) - **PRIMARY: Agent reads this** (merged tokens + psychology)
+- `design-system/README.md` (~100 lines) - **Human-readable summary**
 
 **Process:**
-1. Load all extracted data from `.claude/extractions/*.json`
+1. Load all extracted data from `design-system/extracted/*/data.yaml`
 2. Present verbose style options with Match scores
 3. **Interactive Loop** (max 3 rounds): Present → Feedback → Adjust
 4. Theme selection + Decorative direction recommendation
-5. Generate tokens.json + patterns/*.md + STYLE_GUIDE.md
+5. Merge psychology + tokens → Generate data.yaml + README.md
 
 **Key Principles:**
 1. **Interactive Loop**: User must accept 100% before generating
 2. **Verbose Options**: Show full details (characteristics, feel, examples)
 3. **Theme + Decorations**: Agent recommends based on project context
-4. **Lean Output**: tokens.json for agents, STYLE_GUIDE.md for humans
+4. **Psychology Preserved**: Emotions, target audience, why it works
 
 ---
 
 ## STEP 0: Discovery & Validation
 
 ```javascript
-// 1. Find extracted sites from .claude/extractions/
-const extractedFiles = glob('.claude/extractions/*.json').filter(f => !f.includes('merged-insights'));
-const mergedInsightsPath = '.claude/extractions/merged-insights.json';
+// 1. Find extracted sites from design-system/extracted/*/data.yaml
+const extractedDirs = glob('design-system/extracted/*/data.yaml');
 
-if (extractedFiles.length === 0) {
+if (extractedDirs.length === 0) {
   return error(`
     ❌ No extracted data found
 
     Please extract at least 1 site first:
       /extract https://motherduck.com
-      /extract https://linear.app https://stripe.com
+      /extract https://linear.app
 
     Then run: /designsetup @prd.md @project.md
   `);
 }
 
-// 2. Load all extracted site data
+// 2. Load all extracted site data (YAML format with psychology)
 const extractedData = {};
-for (const file of extractedFiles) {
-  const siteName = path.basename(file, '.json');
-  extractedData[siteName] = JSON.parse(Read(file));
-}
-
-// 3. Load merged insights if exists (for multi-site)
-let mergedInsights = null;
-if (exists(mergedInsightsPath)) {
-  mergedInsights = JSON.parse(Read(mergedInsightsPath));
+for (const file of extractedDirs) {
+  const siteName = path.basename(path.dirname(file)); // Get folder name
+  extractedData[siteName] = YAML.parse(Read(file));
 }
 
 // 4. Load context files
@@ -869,16 +861,16 @@ const selectedOption = styleOptions.options[selectedIndex];
 ```
 ✅ Style Selected: ${selectedOption.name}
 
-🔄 Generating comprehensive STYLE_GUIDE.md...
+🔄 Generating comprehensive design system...
 ```
 
 ---
 
-## STEP 5: Generate Final STYLE_GUIDE.md
+## STEP 5: Generate Final Design System (Legacy - See STEP 5.7)
 
 ```javascript
 const styleGuidePrompt = `
-You are generating the final, comprehensive STYLE_GUIDE.md file.
+You are generating the final, comprehensive design system file.
 
 Selected Style: ${selectedOption.name}
 Fit Score: ${selectedOption.fit_score}%
@@ -901,9 +893,9 @@ Project Context:
 - Audience: ${contextAnalysis.target_audience.demographics}
 - Brand: ${contextAnalysis.brand_personality.join(', ')}
 
-Task: Generate complete STYLE_GUIDE.md (1500-2000 lines) with ALL 17 sections.
+Task: Generate complete design system (1500-2000 lines) with ALL 17 sections.
 
-Follow this format for STYLE_GUIDE.md:
+Follow this format:
 
 # [Project Name] Design System - Style Guide (${selectedOption.name})
 
@@ -1110,7 +1102,7 @@ const styleGuideMD = await LLM({
   max_tokens: 16000
 });
 
-Write('design-system/STYLE_GUIDE.md', styleGuideMD);
+Write('design-system/README.md', styleGuideMD);
 ```
 
 ---
@@ -1132,7 +1124,7 @@ const tokensData = {
     "generated_at": new Date().toISOString(),
     "generated_by": "/designsetup command v2.0.0",
     "source_sites": Object.keys(extractedData),
-    "description": "Design tokens for agents (~800 tokens). Human-readable guide: STYLE_GUIDE.md"
+    "description": "Design tokens for agents (~800 tokens). Human-readable guide: README.md"
   },
 
   // ========== NEW: Style & Theme (from user selection) ==========
@@ -1325,9 +1317,10 @@ function darkenColor(hex, percent) {
   return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
 
-// Write tokens.json
-Write('design-system/tokens.json', JSON.stringify(tokensData, null, 2));
-output(`✅ tokens.json generated (~800 tokens)`);
+// Write data.yaml (includes psychology from extracted sites)
+const dataYaml = generateDataYaml(tokensData, extractedData, selectedStyle);
+Write('design-system/data.yaml', dataYaml);
+output(`✅ data.yaml generated (~300 lines)`);
 ```
 
 ---
@@ -1876,13 +1869,13 @@ output(`
 
 ---
 
-## STEP 5.7: Generate Lean STYLE_GUIDE.md (Human-Readable)
+## STEP 5.7: Generate Lean README.md (Human-Readable)
 
 > **Human-readable guide** - No code, just descriptions and visuals
 
 ```javascript
 output(`
-🔄 Generating lean STYLE_GUIDE.md (human-readable)...
+🔄 Generating lean README.md (human-readable)...
 `);
 
 const styleGuideMD = `# ${selectedStyle.style} Design System
@@ -2085,8 +2078,8 @@ ${tokensData.component_library.common_components.map(c => `- ${c}`).join('\n')}
 *Sources: ${Object.keys(extractedData).join(', ')}*
 `;
 
-Write('design-system/STYLE_GUIDE.md', styleGuideMD);
-output(`✅ STYLE_GUIDE.md generated (lean, human-readable, ~150 lines)`);
+Write('design-system/README.md', styleGuideMD);
+output(`✅ README.md generated (lean, human-readable, ~100 lines)`);
 ```
 
 ---
@@ -2116,24 +2109,24 @@ ${selectedStyle.characteristics.slice(0, 4).map(c => `   • ${c}`).join('\n')}
 
 📦 Files Created:
 
-   🤖 FOR AGENTS (code patterns):
-   ✓ design-system/tokens.json (~800 tokens)
+   🤖 FOR AGENTS (merged data + psychology):
+   ✓ design-system/data.yaml (~300 lines)
    ✓ design-system/patterns/buttons.md
    ✓ design-system/patterns/cards.md
    ✓ design-system/patterns/forms.md
    ✓ design-system/patterns/scroll-animations.md
    ✓ design-system/patterns/decorations.md
 
-   👤 FOR HUMANS (no code):
-   ✓ design-system/STYLE_GUIDE.md (~150 lines)
+   👤 FOR HUMANS (summary):
+   ✓ design-system/README.md (~100 lines)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🚀 Next Steps:
 
 1. Review generated files:
-   cat design-system/tokens.json | head -50
-   cat design-system/STYLE_GUIDE.md
+   cat design-system/data.yaml | head -50
+   cat design-system/README.md
 
 2. Plan your pages:
    /pageplan @prd.md @project.md
@@ -2147,22 +2140,152 @@ ${selectedStyle.characteristics.slice(0, 4).map(c => `   • ${c}`).join('\n')}
 📖 How It Works:
 
    /pageplan reads:
-   → tokens.json (style, theme, colors, animations)
+   → data.yaml (style, theme, colors, animations, psychology)
    → Auto-detects page type (landing/dashboard/auth)
    → Loads patterns/*.md selectively
 
    uxui-frontend agent reads:
-   → tokens.json (all tokens)
+   → data.yaml (tokens + psychology)
    → patterns/buttons.md (always)
    → patterns/cards.md (always)
    → patterns/scroll-animations.md (landing pages only)
    → patterns/decorations.md (landing pages only)
    → patterns/forms.md (forms only)
 
-   Token Savings: ~800 vs ~5000 (84% reduction) ✨
+   Content includes: Psychology, Target Audience, Why It Works ✨
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
+```
+
+---
+
+## Helper: Generate data.yaml
+
+```javascript
+function generateDataYaml(tokensData, extractedData, selectedStyle) {
+  // Get psychology from the selected extracted site
+  const selectedSiteData = extractedData[selectedStyle.site];
+  const psychology = selectedSiteData?.psychology || {};
+
+  return `# Design System Data
+# Generated by: /designsetup
+# Source: ${selectedStyle.site}
+# Style: ${selectedStyle.style}
+
+meta:
+  generated_at: ${new Date().toISOString()}
+  source_site: ${selectedStyle.site}
+  style: ${selectedStyle.style}
+  theme: ${tokensData.theme?.name || 'default'}
+
+# ============================================
+# PSYCHOLOGY & ANALYSIS
+# ============================================
+
+psychology:
+  style_classification: ${psychology.style_classification || selectedStyle.style}
+
+  emotions_evoked:
+${(psychology.emotions_evoked || []).map(e => `    - emotion: "${e.emotion}"
+      reason: "${e.reason}"`).join('\n') || '    # Not available'}
+
+  target_audience:
+    primary:
+      description: "${psychology.target_audience?.primary?.description || 'Not specified'}"
+      age_range: "${psychology.target_audience?.primary?.age_range || 'mixed'}"
+      tech_savvy: ${psychology.target_audience?.primary?.tech_savvy || 'medium'}
+    secondary:
+      description: "${psychology.target_audience?.secondary?.description || 'Not specified'}"
+
+  visual_principles:
+${(psychology.visual_principles || []).map(v => `    - name: "${v.name}"
+      description: "${v.description}"`).join('\n') || '    # Not available'}
+
+  why_it_works:
+${(psychology.why_it_works || []).map(w => `    - "${w}"`).join('\n') || '    # Not available'}
+
+  design_philosophy:
+    core_belief: "${psychology.design_philosophy?.core_belief || 'Not specified'}"
+    key_principles:
+${(psychology.design_philosophy?.key_principles || []).map(p => `      - "${p}"`).join('\n') || '      # Not available'}
+
+# ============================================
+# DESIGN TOKENS
+# ============================================
+
+style:
+  detected: ${tokensData.style.detected}
+  characteristics:
+${tokensData.style.characteristics.map(c => `    - "${c}"`).join('\n')}
+  feel: "${tokensData.style.feel}"
+
+colors:
+  primary: "${tokensData.colors.primary}"
+  secondary: "${tokensData.colors.secondary}"
+  background: "${tokensData.colors.background}"
+  foreground: "${tokensData.colors.foreground}"
+  muted: "${tokensData.colors.muted}"
+  accent: "${tokensData.colors.accent}"
+
+typography:
+  font_family: "${tokensData.typography.font_family}"
+  heading_font: "${tokensData.typography.heading_font}"
+  weights: [${tokensData.typography.weights.join(', ')}]
+  sizes:
+    h1: "${tokensData.typography.sizes.h1}"
+    h2: "${tokensData.typography.sizes.h2}"
+    h3: "${tokensData.typography.sizes.h3}"
+    body: "${tokensData.typography.sizes.body}"
+    small: "${tokensData.typography.sizes.small}"
+
+spacing:
+  base: ${tokensData.spacing.base}
+  scale: [${tokensData.spacing.scale.join(', ')}]
+
+border_radius:
+  sm: "${tokensData.border_radius.sm}"
+  md: "${tokensData.border_radius.md}"
+  lg: "${tokensData.border_radius.lg}"
+  full: "${tokensData.border_radius.full}"
+
+shadows:
+  sm: "${tokensData.shadows.sm}"
+  md: "${tokensData.shadows.md}"
+  lg: "${tokensData.shadows.lg}"
+
+# ============================================
+# ANIMATIONS
+# ============================================
+
+animations:
+  durations:
+    fast: "${tokensData.animations.durations.fast}"
+    normal: "${tokensData.animations.durations.normal}"
+    slow: "${tokensData.animations.durations.slow}"
+  easing:
+    default: "${tokensData.animations.easing.default}"
+    bounce: "${tokensData.animations.easing.bounce}"
+  component_animations:
+    button_hover: "${tokensData.animations.component_animations.button_hover}"
+    card_hover: "${tokensData.animations.component_animations.card_hover}"
+  scroll_animations:
+    enabled: ${tokensData.animations.scroll_animations.enabled}
+    patterns:
+${(tokensData.animations.scroll_animations.patterns || []).map(p => `      - "${p}"`).join('\n')}
+
+# ============================================
+# THEME DIRECTION
+# ============================================
+
+theme:
+  name: "${tokensData.theme?.name || 'default'}"
+  decorative_elements:
+${(tokensData.theme?.decorative_elements || []).map(d => `    - "${d}"`).join('\n')}
+  avoid_elements:
+${(tokensData.theme?.avoid_elements || []).map(a => `    - "${a}"`).join('\n')}
+`;
+}
 ```
 
 ---
@@ -2171,7 +2294,7 @@ ${selectedStyle.characteristics.slice(0, 4).map(c => `   • ${c}`).join('\n')}
 
 ```javascript
 // No extracted data
-if (extractedFiles.length === 0) {
+if (extractedDirs.length === 0) {
   return error(`
     ❌ No extracted data found
 
@@ -2214,13 +2337,13 @@ if (!userChoice) {
 
 // Write fails
 try {
-  Write('design-system/STYLE_GUIDE.md', styleGuideMD);
+  Write('design-system/README.md', styleGuideMD);
 } catch (error) {
   // Save backup
   Write('/tmp/style-guide-backup.md', styleGuideMD);
 
   return error(`
-    ❌ Failed to write STYLE_GUIDE.md
+    ❌ Failed to write README.md
 
     Check permissions: design-system/
 

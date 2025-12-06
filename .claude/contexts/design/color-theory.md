@@ -9,20 +9,20 @@
 
 **This file contains GENERIC color theory principles.**
 
-**If your project has a STYLE_GUIDE.md:**
-→ STYLE_GUIDE.md colors take **priority** (use exact hex values from it)
+**If your project has a data.yaml:**
+→ data.yaml colors take **priority** (use exact hex values from it)
 → This file = **reference** for color theory concepts only
 
-**Check:** `.claude/contexts/domain/{project}/STYLE_GUIDE.md`
+**Check:** `design-system/data.yaml`
 
 **Priority order:**
-1. `STYLE_GUIDE.md` (project-specific hex values) ← **Use this if exists!**
+1. `data.yaml` (project-specific hex values) ← **Use this if exists!**
 2. Existing components (brownfield) ← Extract colors from code
 3. This file (generic principles) ← Theory and fallback defaults
 
 **When using this file:**
 - Apply **concepts** (60-30-10 rule, accessibility, harmony)
-- Don't use **example colors** if STYLE_GUIDE.md exists
+- Don't use **example colors** if data.yaml exists
 
 ---
 
