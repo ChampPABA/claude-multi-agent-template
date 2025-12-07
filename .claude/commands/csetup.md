@@ -189,7 +189,7 @@ if (hasFrontend) {
 
   // ========== LOAD data.yaml (v2.0 structure) ==========
   if (hasTokens) {
-    tokens = JSON.parse(Read(tokensPath))
+    tokens = parseYaml(Read(tokensPath))
     output(`✅ data.yaml Loaded:`)
     output(`   - Style: ${tokens.style.name}`)
     output(`   - Theme: ${tokens.theme.name}`)
@@ -212,7 +212,7 @@ if (hasFrontend) {
     output(`   → Run /pageplan first for better component planning`)
   }
 
-  if (!hasTokens || !hasStyleGuide) {
+  if (!hasTokens || !hasReadme) {
     warn(`
 ⚠️ WARNING: UI work detected but design system incomplete!
 
@@ -318,7 +318,7 @@ for (const layer of requiredLayers) {
 // 5. Check for conflicts with design system (if exists)
 const tokensPath = 'design-system/data.yaml'
 if (fileExists(tokensPath) && researchResults.length > 0) {
-  const tokens = JSON.parse(Read(tokensPath))
+  const tokens = parseYaml(Read(tokensPath))
   const conflicts = checkDesignConflicts(tokens, researchResults, changeAnalysis)
 
   if (conflicts.length > 0) {
@@ -687,6 +687,7 @@ function executeLayerResearch(layer, changeAnalysis) {
     findings: [],
     recommendations: [],
     warnings: [],
+    requiredItems: [],  // Critical checklist items that MUST be addressed
     source: 'claude-knowledge'
   }
 
@@ -706,7 +707,323 @@ function executeLayerResearch(layer, changeAnalysis) {
   result.recommendations = generateRecommendations(layer, changeAnalysis)
   result.warnings = checkForWarnings(layer, changeAnalysis)
 
+  // Inject critical required items based on layer and context
+  // WHY: These are non-negotiable security/compliance requirements
+  result.requiredItems = injectCriticalRequiredItems(layer, changeAnalysis)
+
   return result
+}
+
+// ============================================================
+// CRITICAL FLOW REQUIREMENTS (v2.8.0)
+// ============================================================
+// These are non-negotiable items that MUST be in the checklist
+// WHY: Security/compliance failures have legal/financial consequences
+
+/**
+ * Inject critical required items based on layer type and change context
+ * Returns checklist items that agents MUST verify are implemented
+ */
+function injectCriticalRequiredItems(layer, changeAnalysis) {
+  const items = []
+
+  // Security Requirements Layer
+  if (layer.name === 'Security Requirements') {
+    // Auth-related critical items
+    if (changeAnalysis.hasAuth) {
+      items.push(...CRITICAL_FLOWS.auth.security)
+    }
+    // Payment-related critical items
+    if (changeAnalysis.hasPayment) {
+      items.push(...CRITICAL_FLOWS.payment.security)
+    }
+    // Sensitive data handling
+    if (changeAnalysis.hasSensitiveData) {
+      items.push(...CRITICAL_FLOWS.sensitiveData.security)
+    }
+  }
+
+  // Compliance Layer
+  if (layer.name.includes('Compliance')) {
+    if (changeAnalysis.industryContext === 'healthcare') {
+      items.push(...CRITICAL_FLOWS.healthcare.compliance)
+    }
+    if (changeAnalysis.industryContext === 'fintech') {
+      items.push(...CRITICAL_FLOWS.fintech.compliance)
+    }
+  }
+
+  // Data Architecture Layer
+  if (layer.name === 'Data Architecture') {
+    if (changeAnalysis.hasSensitiveData) {
+      items.push(...CRITICAL_FLOWS.sensitiveData.dataArchitecture)
+    }
+  }
+
+  return items
+}
+
+/**
+ * Critical Flow Definitions
+ * Format: { category: { layer: [...items] } }
+ * Each item has: id, check, why, severity
+ */
+const CRITICAL_FLOWS = {
+  // ============================================================
+  // AUTH CRITICAL FLOWS
+  // ============================================================
+  auth: {
+    security: [
+      {
+        id: 'auth-password-hash',
+        check: '☐ Password hashing with bcrypt/argon2 (cost factor ≥ 10)',
+        why: 'Plain text or weak hashing = immediate breach if DB leaked',
+        severity: 'critical'
+      },
+      {
+        id: 'auth-rate-limit',
+        check: '☐ Rate limiting on login (max 5 attempts per 15 min)',
+        why: 'Prevents brute force attacks',
+        severity: 'critical'
+      },
+      {
+        id: 'auth-session-timeout',
+        check: '☐ Session timeout configured (≤ 24h, ≤ 15min for sensitive)',
+        why: 'Abandoned sessions are attack vectors',
+        severity: 'high'
+      },
+      {
+        id: 'auth-csrf',
+        check: '☐ CSRF protection on all state-changing endpoints',
+        why: 'OWASP Top 10 vulnerability',
+        severity: 'critical'
+      },
+      {
+        id: 'auth-secure-cookies',
+        check: '☐ Cookies: httpOnly, secure, sameSite=strict',
+        why: 'Prevents XSS token theft and CSRF',
+        severity: 'critical'
+      },
+      {
+        id: 'auth-password-policy',
+        check: '☐ Password policy enforced (min 8 chars, complexity optional)',
+        why: 'Weak passwords are #1 breach cause',
+        severity: 'high'
+      },
+      {
+        id: 'auth-account-lockout',
+        check: '☐ Account lockout after repeated failures (with unlock mechanism)',
+        why: 'Prevents brute force, but needs recovery path',
+        severity: 'medium'
+      }
+    ],
+    flow: [
+      {
+        id: 'auth-flow-login',
+        check: '☐ Login flow: input → validate → session → redirect',
+        why: 'Standard secure login pattern',
+        severity: 'high'
+      },
+      {
+        id: 'auth-flow-logout',
+        check: '☐ Logout: invalidate session server-side (not just cookie)',
+        why: 'Client-side only logout leaves session valid',
+        severity: 'high'
+      },
+      {
+        id: 'auth-flow-forgot',
+        check: '☐ Forgot password: email → time-limited token → reset',
+        why: 'Token must expire (≤ 1 hour)',
+        severity: 'high'
+      }
+    ]
+  },
+
+  // ============================================================
+  // PAYMENT CRITICAL FLOWS
+  // ============================================================
+  payment: {
+    security: [
+      {
+        id: 'payment-no-card-storage',
+        check: '☐ NO raw card numbers stored (use Stripe/payment provider tokens)',
+        why: 'PCI-DSS requirement, storing cards = massive liability',
+        severity: 'critical'
+      },
+      {
+        id: 'payment-https',
+        check: '☐ HTTPS enforced on all payment pages',
+        why: 'Payment data in transit must be encrypted',
+        severity: 'critical'
+      },
+      {
+        id: 'payment-webhook-verify',
+        check: '☐ Webhook signature verification (never trust unverified webhooks)',
+        why: 'Attackers can fake payment success webhooks',
+        severity: 'critical'
+      },
+      {
+        id: 'payment-idempotency',
+        check: '☐ Idempotency keys for payment creation',
+        why: 'Prevents double charges on retry',
+        severity: 'high'
+      },
+      {
+        id: 'payment-amount-verify',
+        check: '☐ Server-side price verification (never trust client price)',
+        why: 'Attackers modify client-side prices',
+        severity: 'critical'
+      }
+    ],
+    flow: [
+      {
+        id: 'payment-flow-checkout',
+        check: '☐ Checkout flow: cart → address → payment → confirm → receipt',
+        why: 'Standard e-commerce pattern users expect',
+        severity: 'medium'
+      },
+      {
+        id: 'payment-flow-error',
+        check: '☐ Payment error handling with clear user message',
+        why: 'Failed payments need recovery path',
+        severity: 'high'
+      },
+      {
+        id: 'payment-flow-refund',
+        check: '☐ Refund flow documented (even if manual)',
+        why: 'Legal requirement in most jurisdictions',
+        severity: 'high'
+      }
+    ]
+  },
+
+  // ============================================================
+  // SENSITIVE DATA CRITICAL FLOWS
+  // ============================================================
+  sensitiveData: {
+    security: [
+      {
+        id: 'data-encryption-rest',
+        check: '☐ Encryption at rest for PII/PHI (AES-256 or DB-level)',
+        why: 'Breached DB without encryption = full exposure',
+        severity: 'critical'
+      },
+      {
+        id: 'data-encryption-transit',
+        check: '☐ Encryption in transit (TLS 1.2+)',
+        why: 'Data interception prevention',
+        severity: 'critical'
+      },
+      {
+        id: 'data-access-logging',
+        check: '☐ Audit logging for sensitive data access',
+        why: 'Required for breach investigation and compliance',
+        severity: 'high'
+      },
+      {
+        id: 'data-minimization',
+        check: '☐ Data minimization (only collect what is needed)',
+        why: 'GDPR principle, reduces breach impact',
+        severity: 'medium'
+      }
+    ],
+    dataArchitecture: [
+      {
+        id: 'data-arch-backup',
+        check: '☐ Backup strategy with encryption',
+        why: 'Backups are often unencrypted breach vector',
+        severity: 'high'
+      },
+      {
+        id: 'data-arch-retention',
+        check: '☐ Data retention policy defined',
+        why: 'Legal requirement (GDPR right to deletion)',
+        severity: 'medium'
+      }
+    ]
+  },
+
+  // ============================================================
+  // HEALTHCARE COMPLIANCE (HIPAA)
+  // ============================================================
+  healthcare: {
+    compliance: [
+      {
+        id: 'hipaa-phi-encrypt',
+        check: '☐ All PHI encrypted at rest and in transit',
+        why: 'HIPAA Security Rule requirement',
+        severity: 'critical'
+      },
+      {
+        id: 'hipaa-access-control',
+        check: '☐ Role-based access control for PHI',
+        why: 'Minimum necessary standard',
+        severity: 'critical'
+      },
+      {
+        id: 'hipaa-audit-trail',
+        check: '☐ Audit trail for all PHI access (who, what, when)',
+        why: 'HIPAA requires 6-year audit log retention',
+        severity: 'critical'
+      },
+      {
+        id: 'hipaa-baa',
+        check: '☐ BAA signed with all vendors handling PHI',
+        why: 'Business Associate Agreement legally required',
+        severity: 'critical'
+      },
+      {
+        id: 'hipaa-breach-plan',
+        check: '☐ Breach notification plan documented',
+        why: '60-day notification requirement',
+        severity: 'high'
+      }
+    ]
+  },
+
+  // ============================================================
+  // FINTECH COMPLIANCE (PCI-DSS)
+  // ============================================================
+  fintech: {
+    compliance: [
+      {
+        id: 'pci-no-pan',
+        check: '☐ No PAN (card numbers) stored unless PCI certified',
+        why: 'PCI-DSS Level 1 requirement',
+        severity: 'critical'
+      },
+      {
+        id: 'pci-tokenization',
+        check: '☐ Tokenization for card data (Stripe, Braintree)',
+        why: 'Removes PCI scope from your systems',
+        severity: 'critical'
+      },
+      {
+        id: 'pci-network-segment',
+        check: '☐ Network segmentation for payment systems',
+        why: 'Limits breach blast radius',
+        severity: 'high'
+      },
+      {
+        id: 'fintech-kyc',
+        check: '☐ KYC verification flow for financial accounts',
+        why: 'AML/KYC regulations',
+        severity: 'high'
+      },
+      {
+        id: 'fintech-transaction-limits',
+        check: '☐ Transaction limits and velocity checks',
+        why: 'Fraud prevention, regulatory requirement',
+        severity: 'high'
+      },
+      {
+        id: 'fintech-audit',
+        check: '☐ Transaction audit trail (immutable)',
+        why: 'Regulatory reporting requirement',
+        severity: 'critical'
+      }
+    ]
+  }
 }
 
 // Generate domain knowledge using Claude's reasoning
@@ -1221,16 +1538,18 @@ function extractPotentialLibraryNames(text: string): string[] {
   })
 
   // requirements.txt: sqlalchemy==2.0.0 → sqlalchemy
-  const pyDeps = text.match(/^([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/gm) || []
+  // Allow optional leading whitespace for indented requirements
+  const pyDeps = text.match(/^\s*([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/gm) || []
   pyDeps.forEach(m => {
-    const match = m.match(/^([a-zA-Z][a-zA-Z0-9_-]*)/)
+    const match = m.match(/([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/)
     if (match) candidates.add(match[1])
   })
 
   // Cargo.toml: tokio = "1.0" → tokio
-  const rustDeps = text.match(/^([a-z][a-z0-9_-]*)\s*=/gm) || []
+  // Allow optional leading whitespace for indented dependencies
+  const rustDeps = text.match(/^\s*([a-z][a-z0-9_-]*)\s*=/gm) || []
   rustDeps.forEach(m => {
-    const match = m.match(/^([a-z][a-z0-9_-]*)/)
+    const match = m.match(/([a-z][a-z0-9_-]*)\s*=/)
     if (match) candidates.add(match[1])
   })
 
@@ -1274,9 +1593,13 @@ function extractPotentialLibraryNames(text: string): string[] {
     if (match) candidates.add(match[1])
   })
 
-  // CamelCase words (FastAPI, SQLAlchemy, NextAuth)
+  // CamelCase words (FastAPI, NextAuth)
   const camelCase = text.match(/\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b/g) || []
   camelCase.forEach(w => candidates.add(w))
+
+  // Mixed case words (SQLAlchemy, PostgreSQL, GraphQL - uppercase prefix + CamelCase)
+  const mixedCase = text.match(/\b([A-Z]{2,}[a-z]+[A-Za-z]*)\b/g) || []
+  mixedCase.forEach(w => candidates.add(w))
 
   // === Pattern 3.5: PascalCase single words after tech keywords ===
   // "Framework: Mastra", "ORM: Prisma", "Database: PostgreSQL"
@@ -1342,34 +1665,35 @@ function extractPotentialLibraryNames(text: string): string[] {
   })
 
   // === Filter out noise ===
+  // Use lowercase for case-insensitive comparison
   const stopWords = new Set([
-    // Common English words
-    'The', 'This', 'That', 'With', 'From', 'Using', 'For', 'And', 'But', 'Not',
-    'All', 'Any', 'Can', 'Could', 'Should', 'Would', 'Will', 'May', 'Might',
-    'Each', 'Every', 'Some', 'Many', 'Most', 'Other', 'Such', 'Only', 'Just',
-    'Also', 'Well', 'Back', 'Even', 'Still', 'Already', 'Always', 'Never',
+    // Common English words (all lowercase for comparison)
+    'the', 'this', 'that', 'with', 'from', 'using', 'for', 'and', 'but', 'not',
+    'all', 'any', 'can', 'could', 'should', 'would', 'will', 'may', 'might',
+    'each', 'every', 'some', 'many', 'most', 'other', 'such', 'only', 'just',
+    'also', 'well', 'back', 'even', 'still', 'already', 'always', 'never',
     // Common programming terms that aren't libraries
-    'API', 'REST', 'HTTP', 'HTTPS', 'JSON', 'XML', 'HTML', 'CSS', 'SQL',
-    'GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'URL', 'URI', 'UUID', 'ID',
-    'True', 'False', 'None', 'Null', 'Undefined', 'Error', 'Exception',
-    'Class', 'Function', 'Method', 'Object', 'Array', 'String', 'Number',
-    'Boolean', 'Int', 'Float', 'Double', 'Char', 'Byte', 'Long', 'Short',
-    'Public', 'Private', 'Protected', 'Static', 'Final', 'Const', 'Let', 'Var',
-    'Import', 'Export', 'Module', 'Package', 'Interface', 'Type', 'Enum',
-    'Test', 'Tests', 'Spec', 'Specs', 'Mock', 'Stub', 'Fake', 'Spy',
-    'Config', 'Configuration', 'Settings', 'Options', 'Params', 'Args',
-    'User', 'Users', 'Admin', 'Auth', 'Login', 'Logout', 'Session', 'Token',
-    'Data', 'Database', 'Table', 'Column', 'Row', 'Index', 'Key', 'Value',
-    'File', 'Files', 'Path', 'Dir', 'Directory', 'Folder', 'Name', 'Size',
-    'Create', 'Read', 'Update', 'Delete', 'List', 'Get', 'Set', 'Add', 'Remove',
-    'Start', 'Stop', 'Run', 'Build', 'Deploy', 'Install', 'Setup', 'Init',
+    'api', 'rest', 'http', 'https', 'json', 'xml', 'html', 'css', 'sql',
+    'get', 'post', 'put', 'delete', 'patch', 'url', 'uri', 'uuid', 'id',
+    'true', 'false', 'none', 'null', 'undefined', 'error', 'exception',
+    'class', 'function', 'method', 'object', 'array', 'string', 'number',
+    'boolean', 'int', 'float', 'double', 'char', 'byte', 'long', 'short',
+    'public', 'private', 'protected', 'static', 'final', 'const', 'let', 'var',
+    'import', 'export', 'module', 'package', 'interface', 'type', 'enum',
+    'test', 'tests', 'spec', 'specs', 'mock', 'stub', 'fake', 'spy',
+    'config', 'configuration', 'settings', 'options', 'params', 'args',
+    'user', 'users', 'admin', 'auth', 'login', 'logout', 'session', 'token',
+    'data', 'database', 'table', 'column', 'row', 'index', 'key', 'value',
+    'file', 'files', 'path', 'dir', 'directory', 'folder', 'name', 'size',
+    'create', 'read', 'update', 'delete', 'list', 'get', 'set', 'add', 'remove',
+    'start', 'stop', 'run', 'build', 'deploy', 'install', 'setup', 'init',
     // Version/date patterns
-    'Version', 'Release', 'Beta', 'Alpha', 'Stable', 'Latest', 'Current'
+    'version', 'release', 'beta', 'alpha', 'stable', 'latest', 'current'
   ])
 
   return [...candidates]
     .filter(w => w.length > 2 && w.length < 30)
-    .filter(w => !stopWords.has(w))
+    .filter(w => !stopWords.has(w.toLowerCase())) // Case-insensitive comparison
     .filter(w => !/^\d+$/.test(w)) // Not pure numbers
     .filter(w => !/^v?\d+\.\d+/.test(w)) // Not version numbers
     .slice(0, 50) // Limit to avoid too many API calls
@@ -1457,6 +1781,12 @@ function parseContext7Response(response: string, searchTerm: string): {
 ```typescript
 output(`\n🔍 Validating Library Capabilities...`)
 
+// Initialize variables at function scope
+let detectedLibraries = []
+let specRequirements = []
+let capabilityGaps = []
+let customImplementationRequired = []
+
 // 1. Extract spec requirements from design.md
 const designPath = `openspec/changes/${changeId}/design.md`
 if (!fileExists(designPath)) {
@@ -1500,7 +1830,6 @@ if (!fileExists(designPath)) {
   }
 
   // 3. Detect which libraries are mentioned
-  const detectedLibraries = []
   for (const [libName, config] of Object.entries(libraryPatterns)) {
     if (config.patterns.some(p => designContent.toLowerCase().includes(p))) {
       detectedLibraries.push({ name: libName, ...config })
@@ -1524,7 +1853,6 @@ if (!fileExists(designPath)) {
       { name: 'Account lockout', pattern: /lockout|lock\s*account/i }
     ]
 
-    const specRequirements = []
     for (const rp of requirementPatterns) {
       if (rp.pattern.test(designContent)) {
         specRequirements.push(rp.name)
@@ -1536,8 +1864,6 @@ if (!fileExists(designPath)) {
       specRequirements.forEach(r => output(`   - ${r}`))
 
       // 5. Check each library's capability
-      const capabilityGaps = []
-
       for (const lib of detectedLibraries) {
         output(`\n🔍 Checking ${lib.name} capabilities...`)
 
@@ -1675,12 +2001,12 @@ if (!fileExists(designPath)) {
   }
 }
 
-// Store capability analysis
+// Store capability analysis (variables declared at function scope above)
 const capabilityAnalysis = {
-  libraries: detectedLibraries || [],
-  requirements: specRequirements || [],
-  gaps: capabilityGaps || [],
-  customRequired: customImplementationRequired || []
+  libraries: detectedLibraries,
+  requirements: specRequirements,
+  gaps: capabilityGaps,
+  customRequired: customImplementationRequired
 }
 ```
 

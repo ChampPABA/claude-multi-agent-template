@@ -30,6 +30,7 @@ cak init
 
 ## Features
 
+- **Critical Flow Injection (v2.8.0)** - Non-negotiable security items auto-injected for auth, payment, healthcare, fintech
 - **UX-Tester Agent (v2.7.0)** - Persona-based UX testing with weighted conversion prediction
 - **Smart Topic Query (v2.5.0)** - Cross-library integration detection + risk summary
 - **Adaptive Depth Research (v2.4.0)** - Dynamic research layers (0-10+) based on change complexity
@@ -37,6 +38,30 @@ cak init
 - **Visual Page Planning** - Layout wireframes, component plans, animation blueprints
 - **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
 - **Design System v2.1** - YAML-based extraction with single data.yaml output
+
+## Critical Flow Injection (v2.8.0)
+
+```
+Problem: Research is flexible, but security items are non-negotiable
+         e.g., Password hashing, PCI-DSS, HIPAA compliance
+
+Solution: Auto-inject critical items based on change analysis
+
+Detected Flows → Injected Items:
+  ├── Auth     → Password hashing, JWT secure storage, session mgmt (7 items)
+  ├── Payment  → PCI key security, no card storage, webhook verification (5 items)
+  ├── Healthcare → HIPAA: PHI encryption, access control, audit trail (5 items)
+  └── Fintech  → PCI-DSS: encryption, key rotation, audit logging (6 items)
+
+Each item has:
+  { id, check, why, severity: 'critical' }
+```
+
+**How it works:**
+1. `/csetup` analyzes change → detects `hasAuth`, `hasPayment`, `industryContext`
+2. Research layers are generated dynamically (flexible)
+3. Critical items are INJECTED into appropriate layers (non-negotiable)
+4. Agents receive checklist with both research + critical items
 
 ## Smart Topic Query (v2.5.0)
 

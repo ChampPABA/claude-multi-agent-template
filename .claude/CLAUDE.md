@@ -302,6 +302,55 @@ User: "Build login system"
 
 ---
 
+## 🆕 v2.8.0: Critical Flow Injection
+
+**Problem Solved:** Research layers are flexible and context-dependent, but security/compliance items are non-negotiable. Previously, critical requirements like password hashing, PCI-DSS compliance, or HIPAA regulations could be missed if research didn't surface them.
+
+**Solution:** Auto-inject critical required items into research layers based on change analysis.
+
+### How It Works
+
+```
+/csetup analyzes change:
+  ├── hasAuth: true → Inject auth security items (7 items)
+  ├── hasPayment: true → Inject payment security items (5 items)
+  ├── industryContext: healthcare → Inject HIPAA compliance items (5 items)
+  └── industryContext: fintech → Inject PCI-DSS compliance items (6 items)
+
+Research layers (flexible) + Critical items (non-negotiable)
+```
+
+### Critical Flow Categories
+
+| Flow | Layer | Items | Examples |
+|------|-------|-------|----------|
+| Auth | Security | 7 | Password hashing (bcrypt/argon2), JWT secure storage, session timeout |
+| Payment | Security | 5 | PCI key security, no card storage, webhook signature verification |
+| Healthcare | Compliance | 5 | PHI encryption, role-based access, audit trail, BAA, breach plan |
+| Fintech | Compliance | 6 | Data encryption, key rotation, audit logging, access controls |
+| Sensitive Data | Security + Data Architecture | 6 | Encryption at rest/transit, access logging, backup, retention |
+
+### Item Structure
+
+Each critical item has:
+```javascript
+{
+  id: 'auth-password-hash',           // Unique identifier
+  check: '☐ Password hashing...',     // Checklist item
+  why: 'Plain text passwords...',     // Explanation
+  severity: 'critical'                // Always 'critical'
+}
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `tests/helpers.js` | `CRITICAL_FLOWS` constant + `injectCriticalRequiredItems()` function |
+| `csetup.md` Step 2.6 | Calls `injectCriticalRequiredItems()` for each layer |
+
+---
+
 ## 🆕 v2.7.0: UX Testing Agent (Persona-Based)
 
 **Problem Solved:** UI was approved by developers, not real users. No validation that the UI actually converts customers before spending time on backend development.
