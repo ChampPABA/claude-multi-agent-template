@@ -530,6 +530,120 @@ className="hover:scale-105 transform"
 
 ---
 
+## 2.7. 🔄 UI States Definition
+
+> **Purpose:** Define ALL possible states for each interactive component BEFORE implementation
+> **Source:** Based on UX best practices and accessibility requirements
+> **Philosophy:** Users should NEVER see a blank screen or unexplained error
+
+### Why Define States Upfront?
+
+1. **Prevents blank screens** - Empty state planned from start
+2. **Better UX** - Loading indicators reduce perceived wait time
+3. **Accessibility** - Screen readers need proper ARIA attributes
+4. **Consistency** - Same state patterns across all components
+
+---
+
+### State Categories
+
+For each interactive component/page section, define:
+
+| State | When | Visual | Accessibility |
+|-------|------|--------|---------------|
+| **Empty** | No data exists | Illustration + CTA | `role="status"` |
+| **Loading** | Fetching data | Skeleton/Spinner | `aria-busy="true"` |
+| **Success** | Action completed | Checkmark + message | `aria-live="polite"` |
+| **Error** | Something failed | Error message + retry | `role="alert"` |
+| **Disabled** | Not available | Muted + explanation | `aria-disabled="true"` |
+
+---
+
+### State Definitions Per Component
+
+#### [Component Name] States
+
+**Empty State:**
+- Visual: [Illustration description]
+- Message: "[Friendly message explaining empty state]"
+- CTA: [Button text and action]
+- Example: "No notes yet. Start your first reflection!"
+
+**Loading State:**
+- Type: Skeleton / Spinner / Progress bar
+- Min duration: 300ms (prevent flash)
+- Placement: [Where loading indicator appears]
+
+**Success State:**
+- Visual: [Checkmark, animation, color]
+- Message: "[Confirmation message]"
+- Auto-dismiss: Yes/No (if yes, after X seconds)
+- Next action: [Suggested next step]
+
+**Error State:**
+- Visual: [Error icon, border color]
+- Message: "[Specific error description]"
+- Recovery: [Retry button, help text]
+- Inline vs Banner: [Where error appears]
+
+**Disabled State:**
+- Visual: [Opacity, cursor style]
+- Reason: "[Why it's disabled]"
+- When enabled: [Condition to enable]
+
+---
+
+### Example: Note List Component
+
+\`\`\`
+📝 Note List States:
+
+Empty:
+  Visual: Notebook illustration (aria-hidden="true")
+  Message: "No reflections yet"
+  CTA: "Start Writing" → opens editor
+
+Loading:
+  Type: Skeleton (3 note cards)
+  Duration: min 300ms
+  ARIA: aria-busy="true", aria-label="Loading notes"
+
+Success (after save):
+  Visual: Green checkmark toast
+  Message: "Note saved!"
+  Auto-dismiss: 3 seconds
+  ARIA: role="status", aria-live="polite"
+
+Error (failed to load):
+  Visual: Red banner at top
+  Message: "Unable to load notes. Check your connection."
+  CTA: "Retry" button
+  ARIA: role="alert"
+
+Disabled (offline mode):
+  Visual: Muted colors, no hover effects
+  Message: "You're offline. Notes will sync when connected."
+\`\`\`
+
+---
+
+### State Checklist
+
+**Before implementing each component:**
+
+- [ ] Empty state has friendly message + CTA
+- [ ] Loading uses skeleton (content) or spinner (actions)
+- [ ] Loading shows for minimum 300ms
+- [ ] Success confirms action clearly
+- [ ] Error explains what went wrong
+- [ ] Error provides recovery action (retry/help)
+- [ ] Disabled explains WHY
+- [ ] All states have proper ARIA attributes
+- [ ] Transitions between states are smooth (200ms)
+- [ ] Reduced motion respected for transitions
+
+---
+
 ## 3. 📦 Assets to Prepare (Performance-Optimized)
 
 > **Performance Note:** Follow image optimization best practices for faster load times and better SEO.
