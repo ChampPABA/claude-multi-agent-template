@@ -2569,6 +2569,21 @@ if (isBugFix) {
    - Reason: Frontend + Backend + Database detected
 ```
 
+### Step 4.5: Create .claude Directory
+
+**Create output directory before generating files:**
+```typescript
+// Create .claude directory for change-specific files
+const claudeDir = `openspec/changes/${changeId}/.claude`
+
+if (!fileExists(claudeDir)) {
+  mkdir(claudeDir)
+  output(`📁 Created: ${claudeDir}`)
+}
+```
+
+WHY: `/cdev` expects files at `openspec/changes/{id}/.claude/` - creating the directory first ensures consistent file paths.
+
 ### Step 5: Generate phases.md
 
 **Load template and phase sections:**

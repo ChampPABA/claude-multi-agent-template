@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.8.1] - 2025-12-09
+
+### Fixed
+
+- **`/csetup` missing .claude directory creation** - Added Step 4.5 to create `openspec/changes/{id}/.claude/` before generating `phases.md`, `flags.json`, and `context.md`. Previously files were written to change root instead of `.claude/` subdirectory, causing `/cdev` to fail with "Change not set up" error.
+
+---
+
 ## [2.2.0] - 2025-12-02
 
 ### 4-Layer Best Practice Validation - Prevent Spec Drift
