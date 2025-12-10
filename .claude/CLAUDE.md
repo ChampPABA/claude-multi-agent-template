@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 2.1.0 - Universal Multi-Agent Template
-> **Latest:** Design System v2.1 - YAML-based extraction, single data.yaml output
+> **Template Version:** 3.0.0 - Template-Free Architecture
+> **Latest:** Task Analyzer v2.0 - AI-driven analysis, no keyword matching, auto-add best practices
 
 ---
 
@@ -86,7 +86,7 @@ Universal, framework-agnostic template for AI-assisted development.
 **Project Setup:**
 - `/extract https://site.com` - Extract design from reference sites
 - `/designsetup @prd.md` - Interactive design system setup
-- `/csetup` - **v1.8.0+:** Now auto-detects tech stack + generates best practices (replaces /psetup, /agentsetup)
+- `/csetup` - **v3.0.0:** Template-free! AI-driven task analysis, auto-add best practices, incremental milestones
 
 **Page Planning (UI Tasks) - v2.0.0:**
 - `/pageplan @prd.md @brief.md` - Generate page structure with auto page type detection
@@ -123,7 +123,7 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/lib/README.md` - Implementation logic overview
 - `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev) + Incremental testing execution
 - `@/.claude/lib/tdd-classifier.md` - TDD classification logic (used by /csetup)
-- `@/.claude/lib/task-analyzer.md` - Task analysis with milestone generation
+- `@/.claude/lib/task-analyzer.md` - **v2.0!** Template-free AI-driven task analysis ✨
 - `@/.claude/lib/flags-updater.md` - Progress tracking protocol (Main Claude updates flags.json)
 - `@/.claude/lib/agent-router.md` - Mandatory agent routing rules (enforce delegation)
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
@@ -302,6 +302,87 @@ User: "Build login system"
 
 ---
 
+## 🆕 v3.0.0: Template-Free Architecture (Task Analyzer v2.0)
+
+**Problem Solved:** Phase templates (`phase-templates.json`) were limiting and caused task loss. When `tasks.md` had 5 detailed phases but template had only 2, tasks disappeared. Templates overrode the single source of truth.
+
+**Solution:** Delete templates entirely. Use AI-driven Task Analyzer to transform `tasks.md` (WHAT) into `phases.md` (HOW).
+
+### Key Changes
+
+| Component | Before (v2.x) | After (v3.0) |
+|-----------|---------------|--------------|
+| phases.md source | phase-templates.json | tasks.md (single source of truth) |
+| Agent assignment | Keyword matching | AI context understanding |
+| Missing best practices | Warning prompts | Auto-add automatically |
+| Complex tasks | Same as simple | Incremental milestones |
+| Task filtering | Templates filter tasks | No filtering, ALL tasks kept |
+
+### How It Works
+
+```
+tasks.md (WHAT to build)
+    ↓
+Step 1: Parse ALL tasks (no filtering)
+Step 2: AI-driven analysis (complexity, risk, agent, dependencies)
+Step 3: Auto-add best practices (no warnings)
+Step 4: Generate incremental milestones
+Step 5: Sort by priority (phase order → dependencies → risk)
+    ↓
+phases.md (HOW to build incrementally)
+```
+
+### AI-Driven Analysis (vs Keyword Matching)
+
+**Old (keyword matching):**
+```
+"Create user service that connects to database"
+Keywords: "service" (backend), "connects" (frontend), "database" (database)
+→ Conflict! Which agent?
+```
+
+**New (AI decision):**
+```
+"Create user service that connects to database"
+→ AI understands: This is a backend service layer
+→ Agent: backend ✓
+```
+
+### Auto-Add Best Practices (No Warnings)
+
+| Condition | Auto-Added Task |
+|-----------|-----------------|
+| HIGH risk task | Checkpoint: Verify before proceeding |
+| External API | Error handling + retry + timeout |
+| Implementation (complexity ≥ 5) | Verification task |
+| Database changes | Backup + rollback test |
+| Security-critical | Security review + log check |
+
+### Incremental Milestones
+
+Complex tasks (risk=HIGH OR complexity≥7) get automatic milestones:
+
+| Pattern | Strategy | Milestones |
+|---------|----------|------------|
+| Repository/Service | method-by-method | 1 method → half → all |
+| External API | mock-to-real | mock → 1 real → errors → scale |
+| Batch Processing | scale-up | 1 → 5 → 20 → full |
+| Complex Form | field-by-field | architecture → e2e → all fields |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `phase-templates.json` | **DELETED** |
+| `task-analyzer.md` | Complete rewrite (v2.0) - 666 lines |
+| `csetup.md` | Remove Steps 3-4 (keyword/template), new Step 3 (Task Analyzer) |
+
+### Migration
+
+No migration needed. Just run `/csetup` - it will generate phases.md from tasks.md directly.
+
+---
+
 ## 🆕 v2.8.0: Critical Flow Injection
 
 **Problem Solved:** Research layers are flexible and context-dependent, but security/compliance items are non-negotiable. Previously, critical requirements like password hashing, PCI-DSS compliance, or HIPAA regulations could be missed if research didn't surface them.
@@ -389,7 +470,7 @@ Phase 1.5: ux-tester (approval gate)
 |------|--------|
 | `.claude/agents/07-ux-tester.md` | New agent for persona-based UX testing |
 | `.claude/templates/phases-sections/ux-testing.md` | Phase template with approval gate |
-| `.claude/lib/task-analyzer.md` | Auto-inject Phase 1.5 after uxui-frontend |
+| `.claude/lib/task-analyzer.md` | **v2.0:** Complete rewrite - template-free, AI-driven |
 | `.claude/lib/agent-executor.md` | Approval gate execution logic |
 | `.claude/commands/cdev.md` | Step 4.6 approval gate handling |
 

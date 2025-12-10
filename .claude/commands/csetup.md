@@ -14,11 +14,15 @@ tags: [setup, change, multi-agent]
 ## What It Does
 
 Analyzes OpenSpec files (proposal, tasks, design) and:
-1. Detects task types (frontend, backend, API, script, etc.)
-2. Selects appropriate phase template
-3. Generates `.claude/phases.md` (agent workflow)
-4. Generates `.claude/flags.json` (progress tracking)
-5. Generates `.claude/context.md` (change-specific tech)
+1. **Parses ALL tasks** from tasks.md (single source of truth)
+2. **AI-driven analysis** - complexity, risk, dependencies, agent assignment
+3. **Auto-adds best practices** - checkpoints, error handling, verification
+4. **Generates incremental milestones** for complex tasks
+5. Generates `.claude/phases.md` (agent workflow)
+6. Generates `.claude/flags.json` (progress tracking)
+7. Generates `.claude/context.md` (change-specific tech)
+
+**v2.0 Architecture:** Template-Free, AI-Driven
 
 ## Steps
 
@@ -2358,218 +2362,191 @@ ${hasIntegrationRisks ? '3. Read `INTEGRATION_RISKS.md` for cross-library concer
 
 ---
 
-### Step 3: Analyze Tasks
+### Step 3: Task Analyzer v2.0 (Template-Free, AI-Driven)
 
-**Parse tasks.md content and detect keywords:**
-
-```typescript
-// Load detection keywords
-const keywords = Read('.claude/templates/phase-templates.json').detection_keywords
-
-// Analyze tasks.md
-const tasksContent = Read('openspec/changes/{change-id}/tasks.md')
-const lower = tasksContent.toLowerCase()
-
-// Detect categories
-const hasFrontend = keywords.frontend.some(kw => lower.includes(kw))
-const hasBackend = keywords.backend.some(kw => lower.includes(kw))
-const hasDatabase = keywords.database.some(kw => lower.includes(kw))
-const hasAPI = keywords.api_integration.some(kw => lower.includes(kw))
-const hasScript = keywords.script.some(kw => lower.includes(kw))
-const isBugFix = keywords.bug_fix.some(kw => lower.includes(kw))
-const isRefactor = keywords.refactor.some(kw => lower.includes(kw))
-```
-
-**Output detection results:**
-```
-🔍 Analyzing tasks.md...
-
-Detected:
-✅ Frontend work: YES (found: component, ui, responsive)
-✅ Backend work: YES (found: api, endpoint)
-✅ Database work: YES (found: database, schema)
-❌ Script/CLI: NO
-❌ Bug fix: NO
-❌ Refactor: NO
-
-Change type: feature
-```
-
----
-
-### Step 3.5: Analyze Tasks (TaskMaster-style - v1.3.0)
-
-> **NEW:** Enhanced task analysis with complexity, dependencies, risk assessment
-
-**See:** `.claude/lib/task-analyzer.md` for complete analysis logic
+> **NEW in v2.0:** No templates, no keyword matching. AI analyzes tasks and makes decisions.
+> **See:** `.claude/lib/task-analyzer.md` for complete analysis logic
 
 ```typescript
-import { analyzeTask } from '.claude/lib/task-analyzer.md'
+const tasksContent = Read(`openspec/changes/${changeId}/tasks.md`)
 
-// Parse tasks from tasks.md
-const tasks = parseTasksFromMd(tasksContent)
+output(`\n📊 Task Analyzer v2.0 (Template-Free)...`)
+
+// ========== 3.1 Parse ALL Tasks ==========
+// Extract EVERY task from tasks.md - nothing is filtered out
+const allTasks = parseAllTasks(tasksContent)
+output(`   Found: ${allTasks.length} tasks from tasks.md`)
+
+// ========== 3.2 AI-Driven Analysis ==========
+// Claude analyzes each task and decides:
+// - complexity (1-10)
+// - risk (LOW/MEDIUM/HIGH)
+// - agent (based on context, NOT keywords)
+// - dependencies (blocked_by, blocks)
+// - needsIncremental (boolean)
+
 const analyzedTasks = []
 
-output(`\n📊 Analyzing ${tasks.length} tasks...`)
+output(`\n🔍 Analyzing each task...`)
 
-for (const task of tasks) {
-  // 1. Complexity scoring (1-10)
-  const complexity = calculateComplexity(task)
+for (const task of allTasks) {
+  // AI reads the task description and context, then decides:
 
-  // 2. Dependency detection
-  const dependencies = detectDependencies(task, tasks)
+  const analysis = {
+    // Complexity: How many operations? Multiple systems? Business logic?
+    complexity: /* AI determines 1-10 based on task scope */,
 
-  // 3. Risk assessment
-  const risk = assessRisk(task, complexity)
-  risk.mitigation = generateMitigation(risk, task)
+    // Risk: What if this fails? Security/money/data involved?
+    risk: /* AI determines LOW/MEDIUM/HIGH */,
 
-  // 4. Research requirements
-  const research = detectResearchNeeds(task)
+    // Agent: Read the full context and decide which agent
+    // DO NOT use keyword matching - understand the task
+    agent: /* AI decides: uxui-frontend, backend, database, frontend, test-debug, integration */,
+    agentReason: /* Brief explanation why this agent */,
 
-  // 5. Subtask breakdown (if needed)
-  const needsBreakdown = needsSubtaskBreakdown(task, complexity)
-  const subtasks = needsBreakdown ? generateSubtasks(task) : []
-
-  // 6. Priority ranking
-  const priority = calculatePriority(task, { complexity, dependencies, risk })
-
-  analyzedTasks.push({
-    ...task,
-    complexity: {
-      score: complexity,
-      level: getComplexityLevel(complexity),
-      factors: explainComplexity(task, complexity)
+    // Dependencies: What must complete first? What's waiting for this?
+    dependencies: {
+      blockedBy: /* AI identifies blocking tasks */,
+      blocks: /* AI identifies tasks this blocks */,
+      canParallelize: /* Tasks with no shared dependencies */
     },
-    dependencies,
-    risk: {
-      ...risk,
-      mitigation
-    },
-    research,
-    subtasks,
-    priority: {
-      score: priority,
-      label: getPriorityLabel(priority),
-      reason: explainPriority(task, priority)
-    },
-    estimatedTime: {
-      original: task.estimatedTime,
-      adjusted: adjustTimeForComplexity(task.estimatedTime, complexity, risk),
-      buffer: calculateBuffer(complexity, risk)
-    }
-  })
+
+    // Incremental: Does this need milestone-based execution?
+    // YES if: batch processing, external API, data transformation,
+    //         multiple methods, complex form, HIGH risk, complexity >= 7
+    needsIncremental: /* AI determines based on task nature */
+  }
+
+  analyzedTasks.push({ ...task, ...analysis })
 }
 
-// Sort by priority (CRITICAL → HIGH → MEDIUM → LOW)
-analyzedTasks.sort((a, b) => b.priority.score - a.priority.score)
+// Report analysis
+output(`\n📊 Analysis Results:`)
+output(`   Complexity: avg ${avgComplexity}/10`)
+output(`   Risk: ${highRiskCount} HIGH, ${mediumRiskCount} MEDIUM, ${lowRiskCount} LOW`)
+output(`   Agents: ${agentBreakdown}`)
 
-// Calculate testing strategy stats (NEW in v1.4.0)
-const incrementalTasks = analyzedTasks.filter(t => t.testingStrategy?.type === 'incremental')
-const totalMilestones = incrementalTasks.reduce((sum, t) => sum + (t.testingStrategy?.milestones?.length || 0), 0)
+// ========== 3.3 Auto-Add Best Practices ==========
+// No warnings - just add what's needed automatically
 
-// Store for phases.md generation
-const taskAnalysis = {
-  tasks: analyzedTasks,
-  summary: {
-    total: analyzedTasks.length,
-    priority: {
-      critical: analyzedTasks.filter(t => t.priority.label === 'CRITICAL').length,
-      high: analyzedTasks.filter(t => t.priority.label === 'HIGH').length,
-      medium: analyzedTasks.filter(t => t.priority.label === 'MEDIUM').length,
-      low: analyzedTasks.filter(t => t.priority.label === 'LOW').length
-    },
-    risk: {
-      high: analyzedTasks.filter(t => t.risk.level === 'HIGH').length,
-      medium: analyzedTasks.filter(t => t.risk.level === 'MEDIUM').length,
-      low: analyzedTasks.filter(t => t.risk.level === 'LOW').length
-    },
-    researchRequired: analyzedTasks.filter(t => t.research?.required).length,
-    subtasksExpanded: analyzedTasks.filter(t => t.subtasks.length > 0).length,
-    averageComplexity: (analyzedTasks.reduce((sum, t) => sum + t.complexity.score, 0) / analyzedTasks.length).toFixed(1),
-    // NEW: Incremental Testing stats
-    incrementalTesting: incrementalTasks.length,
-    standardTesting: analyzedTasks.length - incrementalTasks.length,
-    totalMilestones: totalMilestones
+const additions = []
+
+for (const task of analyzedTasks) {
+  // Rule 1: HIGH Risk → Add checkpoint
+  if (task.risk === 'HIGH') {
+    additions.push({
+      id: `${task.id}.verify`,
+      description: `Checkpoint: Verify ${task.description} before proceeding`,
+      type: 'verification',
+      autoAdded: true,
+      reason: 'HIGH risk task requires verification checkpoint',
+      phase: task.phase
+    })
+  }
+
+  // Rule 2: External API → Add error handling
+  if (task.hasExternalAPI) {
+    if (!hasRelatedTask(allTasks, 'error handling')) {
+      additions.push({
+        id: `${task.id}.errors`,
+        description: `Add error handling for external API`,
+        type: 'implementation',
+        autoAdded: true,
+        reason: 'External APIs require error handling',
+        phase: task.phase
+      })
+    }
+  }
+
+  // Rule 3: Security-Critical → Add security review
+  if (task.isSecurityCritical) {
+    additions.push({
+      id: `${task.id}.security`,
+      description: `Security review: ${task.description}`,
+      type: 'verification',
+      autoAdded: true,
+      reason: 'Security-critical tasks require review',
+      phase: task.phase
+    })
+  }
+
+  // Rule 4: Database Changes → Add migration safety
+  if (task.involvesDatabaseChange) {
+    additions.push({
+      id: `${task.id}.backup`,
+      description: `Backup affected tables before ${task.description}`,
+      type: 'safety',
+      autoAdded: true,
+      reason: 'Database changes require backup',
+      phase: task.phase
+    })
   }
 }
-```
 
-**Output analysis report:**
-```
-✅ Task Analysis Complete
+output(`   Auto-added: ${additions.length} best practice tasks`)
 
-📊 Summary:
-   Total tasks: 8
-   Expanded to: 15 subtasks
+// ========== 3.4 Generate Incremental Milestones ==========
+// For tasks that need milestone-based execution
 
-📈 Priority Distribution:
-   🔴 CRITICAL: 2 tasks (Login, Payment)
-   🟠 HIGH: 3 tasks (User Profile, API endpoints)
-   🟡 MEDIUM: 2 tasks (Email notifications)
-   🟢 LOW: 1 task (Documentation)
+for (const task of analyzedTasks) {
+  if (task.needsIncremental) {
+    // AI generates appropriate milestones based on task type:
+    // - Repository/Service: method-by-method
+    // - External API: mock → single → errors → scale
+    // - Batch Processing: 1 → 5 → 20 → 100
+    // - Complex Form: architecture → e2e → all fields
 
-⚠️ Risk Assessment:
-   🔴 HIGH risk: 2 tasks (Payment integration, Auth system)
-      → Mitigation: TDD required, security checklist
-   ⚠️ MEDIUM risk: 3 tasks
-   ✅ LOW risk: 3 tasks
-
-🔄 Testing Strategy (NEW in v1.4.0):
-   🔄 Incremental: 3 tasks (11 milestones total)
-      → Payment integration (4 milestones)
-      → Auth system (4 milestones)
-      → User data migration (3 milestones)
-   ▶️ Standard: 5 tasks
-
-🔬 Research Required: 2 tasks
-   - React Query v5 migration (15 min)
-   - Stripe payment best practices (15 min)
-
-📦 Subtask Breakdown: 3 tasks expanded
-   - Login system → 3 subtasks (UI, API, Integration)
-   - User CRUD → 4 subtasks (Create, Read, Update, Delete)
-
-⏱️ Time Estimates:
-   Original: 6.5 hours
-   Adjusted: 9.2 hours (+41% buffer for complexity/risk)
-   Average complexity: 5.8/10
-```
-
----
-
-### Step 4: Select Template
-
-**Selection logic:**
-```typescript
-let template: string
-
-if (isBugFix) {
-  template = 'bug-fix'
-} else if (isRefactor) {
-  template = 'refactor'
-} else if (hasScript && !hasFrontend && !hasBackend) {
-  template = 'script-only'
-} else if (hasFrontend && hasBackend) {
-  template = 'full-stack'
-} else if (hasFrontend && !hasBackend && !hasAPI) {
-  template = 'frontend-only'
-} else if (hasBackend && !hasFrontend) {
-  template = 'backend-only'
-} else {
-  // Default to safest option
-  template = 'full-stack'
+    task.milestones = generateMilestones(task)
+  }
 }
+
+const incrementalCount = analyzedTasks.filter(t => t.milestones).length
+const totalMilestones = analyzedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+output(`   Incremental: ${incrementalCount} tasks with ${totalMilestones} milestones`)
+
+// ========== 3.5 Sort by Priority ==========
+// Respect original phase order, then sort within phases
+
+const sortedTasks = sortTasks([...analyzedTasks, ...additions])
+
+// Sorting rules:
+// 1. Preserve original phase order from tasks.md
+// 2. Within each phase:
+//    a. Dependencies first (no blockers)
+//    b. HIGH risk early (fail fast)
+//    c. Foundation before features
+//    d. Lower complexity first (quick wins)
+
+output(`\n✅ Task Analysis Complete`)
+output(`   Total: ${allTasks.length} original + ${additions.length} auto-added = ${sortedTasks.length} tasks`)
 ```
 
 **Output:**
 ```
-📋 Template selected: full-stack
-   - Total phases: 19
-   - Estimated time: 7 hours
-   - Reason: Frontend + Backend + Database detected
+📊 Task Analyzer v2.0 (Template-Free)...
+   Found: 47 tasks from tasks.md
+
+🔍 Analyzing each task...
+
+📊 Analysis Results:
+   Complexity: avg 5.8/10
+   Risk: 8 HIGH, 15 MEDIUM, 24 LOW
+   Agents: backend (35), test-debug (8), uxui-frontend (4)
+
+   Auto-added: 12 best practice tasks
+   Incremental: 6 tasks with 18 milestones
+
+✅ Task Analysis Complete
+   Total: 47 original + 12 auto-added = 59 tasks
+
+🧪 UX Testing Injection...
+   Injected Phase 1.5 (ux-tester) after Phase 1
+   ✅ 1 UX approval gate(s) added
 ```
 
-### Step 4.5: Create .claude Directory
+---
+
+### Step 4: Create .claude Directory
 
 **Create output directory before generating files:**
 ```typescript
@@ -2584,273 +2561,256 @@ if (!fileExists(claudeDir)) {
 
 WHY: `/cdev` expects files at `openspec/changes/{id}/.claude/` - creating the directory first ensures consistent file paths.
 
-### Step 5: Generate phases.md
+### Step 4.5: Inject UX Testing Phases (v2.7.0)
 
-**Load template and phase sections:**
+> **CRITICAL:** Auto-inject Phase X.5 (ux-tester) after EVERY uxui-frontend phase
+> **Purpose:** User approval gate before proceeding to backend development
+
 ```typescript
-// Load template
-const templateData = Read('.claude/templates/phase-templates.json').templates[template]
+// Group tasks by phase first
+let phases = groupTasksByPhase(sortedTasks)
 
-// Load phase sections
-const phaseSections = templateData.phases.map(phaseId => {
-  return Read(`.claude/templates/phases-sections/${phaseId}.md`)
+// Check if any phase has uxui-frontend agent
+const hasUIWork = phases.some(p => {
+  const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
+  return getMostCommonAgent(phaseTasks) === 'uxui-frontend'
 })
 
-// Extract task IDs from tasks.md
-const taskIds = extractTaskIds(tasksContent) // e.g., ["1.1", "1.2", "2.1", ...]
-```
+if (hasUIWork) {
+  output(`\n🧪 UX Testing Injection...`)
 
-**🆕 ENHANCED: Add TDD Classification**
-
-For each phase, add TDD metadata:
-1. Extract task description from tasks.md
-2. Estimate complexity (time + keywords + length)
-3. Classify TDD requirement (phase type + keywords + complexity)
-4. Add TDD metadata to phase: `tdd_required`, `tdd_reason`, `tdd_workflow`
-
-**See:** `.claude/lib/tdd-classifier.md` for complete classification logic
-
-**Quick Reference:**
-- Backend auth/payment → TDD required (critical logic)
-- Simple CRUD read → test-alongside OK
-- Multi-step wizard UI → TDD required (complex state machine)
-- Database schema → no TDD needed (declarative)
-
----
-
-**🆕 ENHANCED v1.3.0: Inject Task Analysis Metadata**
-
-```typescript
-// Add research phases (if needed)
-const researchPhases = []
-analyzedTasks.filter(t => t.research?.required).forEach((task, i) => {
-  researchPhases.push({
-    id: `research-${i + 1}`,
-    phaseNumber: `0.${i + 1}`, // Before implementation
-    name: `Research: ${task.research.category}`,
-    agent: 'integration',
-    estimatedMinutes: task.research.estimatedTime,
-    task: task,
-    queries: task.research.queries,
-    reason: task.research.reason
+  // Find all uxui-frontend phases
+  const uiFrontendPhases = phases.filter(p => {
+    const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
+    return getMostCommonAgent(phaseTasks) === 'uxui-frontend'
   })
-})
 
-// Merge with existing phases (research goes first)
-const allPhases = [...researchPhases, ...phaseSections]
+  // Inject .5 phase after each uxui-frontend phase
+  uiFrontendPhases.forEach(uiPhase => {
+    const uxTestingPhase = {
+      number: `${uiPhase.number}.5`,
+      name: 'UX Testing (Approval Gate)',
+      agent: 'ux-tester',
+      isApprovalGate: true,
+      strategy: 'approval-required',
+      tasks: [
+        { id: `${uiPhase.number}.5.1`, description: 'Generate personas from product context', autoAdded: true },
+        { id: `${uiPhase.number}.5.2`, description: 'Test UI from each persona perspective', autoAdded: true },
+        { id: `${uiPhase.number}.5.3`, description: 'Generate UX test report with conversion prediction', autoAdded: true },
+        { id: `${uiPhase.number}.5.4`, description: '⏸️ PAUSE: Wait for user approval', autoAdded: true }
+      ]
+    }
+
+    // Insert after the UI phase
+    const insertIndex = phases.findIndex(p => p.number === uiPhase.number) + 1
+    phases.splice(insertIndex, 0, uxTestingPhase)
+
+    output(`   Injected Phase ${uiPhase.number}.5 (ux-tester) after Phase ${uiPhase.number}`)
+  })
+
+  output(`   ✅ ${uiFrontendPhases.length} UX approval gate(s) added`)
+}
 ```
 
-**Generate enhanced phases.md:**
-```markdown
-# Agent Workflow: {CHANGE_ID} {Change Title}
-
-> **Auto-generated by `/csetup {change-id}`**
-> **Template:** {template-name} ({total-phases} phases)
-> **Reason:** {detection-reason}
-> **Source:** proposal.md + tasks.md (TaskMaster-analyzed)
-> **Last updated:** {current-datetime}
-
----
-
-## 📊 Task Analysis Summary (v1.4.0 - Incremental Testing)
-
-**Analyzed Tasks:** {taskAnalysis.summary.total}
-**Average Complexity:** {taskAnalysis.summary.averageComplexity}/10
-
-**Priority Distribution:**
-- 🔴 CRITICAL: {taskAnalysis.summary.priority.critical}
-- 🟠 HIGH: {taskAnalysis.summary.priority.high}
-- 🟡 MEDIUM: {taskAnalysis.summary.priority.medium}
-- 🟢 LOW: {taskAnalysis.summary.priority.low}
-
-**Risk Assessment:**
-- 🔴 HIGH risk: {taskAnalysis.summary.risk.high} tasks
-- ⚠️ MEDIUM risk: {taskAnalysis.summary.risk.medium} tasks
-- ✅ LOW risk: {taskAnalysis.summary.risk.low} tasks
-
-**Testing Strategy:** (NEW in v1.4.0)
-- 🔄 Incremental: {taskAnalysis.summary.incrementalTesting} tasks ({taskAnalysis.summary.totalMilestones} milestones)
-- ▶️ Standard: {taskAnalysis.summary.standardTesting} tasks
-
-**Research Phases:** {taskAnalysis.summary.researchRequired} added
-**Subtasks Expanded:** {taskAnalysis.summary.subtasksExpanded} tasks
-
-**Time Estimates:**
-- Original: {calculateOriginalTime(analyzedTasks)} hours
-- Adjusted: {calculateAdjustedTime(analyzedTasks)} hours
-- Buffer: +{calculateTotalBuffer(analyzedTasks)}%
+**Workflow with UX Testing:**
+```
+Phase 1: uxui-frontend (build UI)
+    ↓
+Phase 1.5: ux-tester (APPROVAL GATE)
+    → Generate personas
+    → Test from each persona
+    → Calculate conversion prediction
+    → ⏸️ PAUSE for user approval
+    ↓
+[User APPROVE] → Continue to Phase 2
+[User REJECT]  → Return to Phase 1 with feedback
+```
 
 ---
 
-## 📊 Workflow Overview
+### Step 5: Generate phases.md (Template-Free)
 
-| Phase | Agent | Type | Est. Time | Status |
-|-------|-------|------|-----------|--------|
-{phase-table-rows}
+> **v2.0:** No templates loaded. Phases generated directly from analyzed tasks.
+> **v2.7.0:** UX Testing phases already injected in Step 4.5
 
-**Total estimated time:** ~{total-hours} hours
+```typescript
+// Generate phases.md from phases (already includes UX Testing phases)
 
-**Phases skipped (not needed for {template-name}):**
-{skipped-phases-list}
+const phasesContent = generatePhasesMarkdown(phases, sortedTasks, changeId, proposal)
+
+function generatePhasesMarkdown(phases, tasks, changeId, proposal) {
+  const title = extractTitle(proposal)
+  const timestamp = new Date().toISOString()
+
+  // Calculate totals
+  const originalCount = tasks.filter(t => !t.autoAdded).length
+  const autoAddedCount = tasks.filter(t => t.autoAdded).length
+  const incrementalCount = tasks.filter(t => t.milestones).length
+  const totalMilestones = tasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+
+  // Generate overview table
+  const overviewRows = phases.map(phase => {
+    const phaseTasks = tasks.filter(t => t.phase?.number === phase.number)
+    const dominantAgent = getMostCommonAgent(phaseTasks)
+    const hasIncremental = phaseTasks.some(t => t.milestones)
+    const maxRisk = getMaxRisk(phaseTasks)
+
+    return `| ${phase.number} | ${phase.name} | ${phaseTasks.length} | ${dominantAgent} | ${hasIncremental ? 'incremental' : 'standard'} | ${maxRisk} |`
+  }).join('\n')
+
+  // Generate phase sections
+  const phaseSections = phases.map(phase => {
+    return generatePhaseSection(phase, tasks.filter(t => t.phase?.number === phase.number))
+  }).join('\n\n---\n\n')
+
+  // Generate auto-added summary
+  const autoAddedTasks = tasks.filter(t => t.autoAdded)
+  const autoAddedSummary = autoAddedTasks.length > 0 ? `
+## Auto-Added Tasks (Best Practices)
+
+| Task | Reason | Phase |
+|------|--------|-------|
+${autoAddedTasks.map(t => `| ${t.description} | ${t.reason} | ${t.phase?.number || '-'} |`).join('\n')}
+` : ''
+
+  return `# Phases: ${title}
+
+> **Generated by:** Task Analyzer v2.0 (Template-Free)
+> **Source:** tasks.md (Single Source of Truth)
+> **Strategy:** Incremental development (small → large)
+> **Generated:** ${timestamp}
+
+---
+
+## Overview
+
+| Phase | Name | Tasks | Agent | Strategy | Risk |
+|-------|------|-------|-------|----------|------|
+${overviewRows}
+
+**Total Tasks:** ${originalCount} original + ${autoAddedCount} auto-added = ${tasks.length}
+**Incremental Tasks:** ${incrementalCount} tasks with ${totalMilestones} milestones
 
 ---
 
----
+${phaseSections}
 
-## 🔬 Research Phases (if applicable)
-
-${researchPhases.map((phase, i) => `
-### Phase 0.${i + 1}: ${phase.name}
-
-**Agent:** integration
-**Estimated Time:** ${phase.estimatedMinutes} min
-**Type:** Research
-
-**Reason:** ${phase.reason}
-
-**Research Queries:**
-${phase.queries.map(q => `- ${q}`).join('\n')}
-
-**Instructions:**
-1. Use WebSearch or Context7 to gather information
-2. Summarize findings in research notes
-3. Update task context with relevant insights
-4. Proceed to implementation with informed decisions
-
----
-`).join('')}
-
----
-
-## 🚀 Implementation Phases
-
-${allPhases.map((phaseSection, index) => {
-  // Find matching task from analyzedTasks
-  const matchingTask = analyzedTasks.find(t =>
-    phaseSection.toLowerCase().includes(t.description.toLowerCase().split(' ')[0])
-  )
-
-  let metadata = ''
-  let milestonesSection = ''
-
-  if (matchingTask) {
-    // Standard metadata
-    metadata = `
-**Task Metadata (TaskMaster Analysis):**
-- **Complexity:** ${matchingTask.complexity.score}/10 (${matchingTask.complexity.level})
-  - Factors: ${matchingTask.complexity.factors.join(', ')}
-- **Priority:** ${matchingTask.priority.label} (${matchingTask.priority.score}/100)
-  - ${matchingTask.priority.reason}
-- **Risk:** ${matchingTask.risk.level}
-${matchingTask.risk.mitigation.length > 0 ? `  - Mitigation:\n${matchingTask.risk.mitigation.map(m => `    - ${m}`).join('\n')}` : ''}
-- **Dependencies:**
-  - Blocked by: ${matchingTask.dependencies.blockedBy.length > 0 ? matchingTask.dependencies.blockedBy.join(', ') : 'None'}
-  - Blocks: ${matchingTask.dependencies.blocks.length > 0 ? matchingTask.dependencies.blocks.join(', ') : 'None'}
-  - Can parallelize with: ${matchingTask.dependencies.parallelizable.length > 0 ? matchingTask.dependencies.parallelizable.slice(0, 3).join(', ') : 'None'}
-- **Time Estimate:** ${matchingTask.estimatedTime.original} min → ${matchingTask.estimatedTime.adjusted} min (+${matchingTask.estimatedTime.buffer}% buffer)
-
-${matchingTask.subtasks.length > 0 ? `**Subtasks:**\n${matchingTask.subtasks.map(st => `  - ${st.id}: ${st.description} (${st.estimatedTime} min)`).join('\n')}\n` : ''}
-`
-
-    // NEW: Incremental Testing Milestones (v1.4.0)
-    if (matchingTask.testingStrategy?.type === 'incremental' && matchingTask.testingStrategy.milestones) {
-      metadata += `
-**Testing Strategy:** 🔄 INCREMENTAL
-- **Reason:** ${matchingTask.testingStrategy.reason}
-- **Total Milestones:** ${matchingTask.testingStrategy.milestones.length}
-
-`
-
-      // Generate milestone subsections
-      milestonesSection = matchingTask.testingStrategy.milestones.map(milestone => `
-#### Milestone ${milestone.id}/${matchingTask.testingStrategy.milestones.length}: ${milestone.name}
-
-**Test Scope:** ${milestone.testScope}
-**Estimated Time:** ${milestone.estimatedTime} min
-**Retry Limit:** ${milestone.retryLimit} attempts
-
-**Exit Criteria:**
-${milestone.exitCriteria.map(criterion => `- [ ] ${criterion}`).join('\n')}
-
-**Instructions for Agent:**
-1. **Implement:** ${milestone.name}
-2. **Test:** ${milestone.testScope}
-3. **Validate:** Check ALL exit criteria above
-4. **Report results in this format:**
-
-\`\`\`
-## Milestone ${milestone.id} Results
-
-**Implementation Summary:**
-[Brief description of what was implemented]
-
-**Test Results:**
-${milestone.exitCriteria.map(criterion => `- [ ] ${criterion} - [PASS/FAIL] - [Brief explanation]`).join('\n')}
-
-**Issues Found (if any):**
-[List any issues encountered]
-
-**Conclusion:**
-[PASS → Ready for Milestone ${milestone.id + 1}]
-[FAIL → Need to fix [X] before retry]
-\`\`\`
-
-5. **IF FAILED:** Debug issues → Retry (max ${milestone.retryLimit} attempts)
-6. **IF ALL RETRIES FAIL:** Escalate to Main Claude for guidance
-7. **IF PASSED:** Proceed to ${milestone.id < matchingTask.testingStrategy.milestones.length ? `Milestone ${milestone.id + 1}` : 'next phase'}
-
----
-`).join('\n')
-    } else if (matchingTask.testingStrategy?.type === 'standard') {
-      metadata += `
-**Testing Strategy:** ▶️ STANDARD
-- **Reason:** ${matchingTask.testingStrategy.reason}
-
-`
-    }
-  }
-
-  return `${phaseSection}\n${metadata}${milestonesSection}`
-}).join('\n---\n\n')}
+${autoAddedSummary}
 
 ---
 
 **End of phases.md**
+`
+}
+
+function generatePhaseSection(phase, phaseTasks) {
+  const dominantAgent = getMostCommonAgent(phaseTasks)
+  const hasIncremental = phaseTasks.some(t => t.milestones)
+  const maxRisk = getMaxRisk(phaseTasks)
+  const needsTDD = phaseTasks.some(t => t.risk === 'HIGH' || t.complexity >= 7)
+
+  let section = `## Phase ${phase.number}: ${phase.name}
+
+**Agent:** ${dominantAgent}
+**Strategy:** ${hasIncremental ? '🔄 INCREMENTAL' : 'Standard'}
+**Risk:** ${maxRisk}
+${needsTDD ? '**TDD Required:** Yes' : ''}
+
+`
+
+  // Group tasks: incremental tasks get milestone sections, others get simple list
+  const incrementalTasks = phaseTasks.filter(t => t.milestones)
+  const standardTasks = phaseTasks.filter(t => !t.milestones)
+
+  // Standard tasks section
+  if (standardTasks.length > 0) {
+    section += `### Tasks\n\n`
+    standardTasks.forEach(task => {
+      const prefix = task.autoAdded ? '✨ ' : ''
+      section += `- [ ] ${prefix}${task.id} ${task.description}\n`
+    })
+    section += '\n'
+  }
+
+  // Incremental tasks with milestones
+  incrementalTasks.forEach(task => {
+    section += `### Task ${task.id}: ${task.description}
+**Complexity:** ${task.complexity}/10 | **Why Agent:** ${task.agentReason}
+
+`
+    task.milestones.forEach((milestone, idx) => {
+      section += `#### Milestone ${milestone.id}/${task.milestones.length}: ${milestone.name}
+**Goal:** ${milestone.goal}
+
+${milestone.tasks.map(t => `- [ ] ${t}`).join('\n')}
+
+**Exit Criteria:**
+${milestone.exitCriteria.map(c => `- [ ] ${c}`).join('\n')}
+
+**CHECKPOINT:** Report results before ${idx < task.milestones.length - 1 ? `Milestone ${milestone.id + 1}` : 'next phase'}
+
+---
+
+`
+    })
+  })
+
+  // Exit criteria for the phase
+  section += `### Phase ${phase.number} Exit Criteria
+- [ ] All tasks completed
+- [ ] All tests pass
+- [ ] No regression in existing functionality
+`
+
+  return section
+}
 ```
 
 Write to: `openspec/changes/{change-id}/.claude/phases.md`
 
-### Step 6: Generate flags.json
+### Step 6: Generate flags.json (Template-Free)
 
-**Load template and populate:**
+> **v2.0:** Flags generated from analyzed tasks, not templates.
+
 ```typescript
-// Load template
-const flagsTemplate = Read('.claude/templates/flags-template.json')
+// Generate flags.json from sortedTasks (from Step 3)
 
-// Populate with change data
+const phases = groupTasksByPhase(sortedTasks)
+
 const flags = {
-  ...flagsTemplate,
+  version: '2.0.0',
   change_id: changeId,
-  change_type: changeType, // from proposal or detection
-  template: templateName,
+  change_type: detectChangeType(sortedTasks), // AI determines from task analysis
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  current_phase: templateData.phases[0], // First phase
+  current_phase: phases[0]?.number || 1,
   meta: {
-    ...flagsTemplate.meta,
-    total_phases: templateData.total_phases,
-    pending_phases: templateData.total_phases,
-    total_estimated_minutes: templateData.estimated_minutes
-  }
+    total_phases: phases.length,
+    pending_phases: phases.length,
+    completed_phases: 0,
+    total_tasks: sortedTasks.length,
+    original_tasks: sortedTasks.filter(t => !t.autoAdded).length,
+    auto_added_tasks: sortedTasks.filter(t => t.autoAdded).length,
+    incremental_tasks: sortedTasks.filter(t => t.milestones).length,
+    total_milestones: sortedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+  },
+  phases: {}
 }
 
-// Initialize all phases as pending
-templateData.phases.forEach((phaseId, index) => {
-  flags.phases[phaseId] = {
+// Initialize all phases from analyzed tasks
+phases.forEach((phase, index) => {
+  const phaseTasks = sortedTasks.filter(t => t.phase?.number === phase.number)
+  const dominantAgent = getMostCommonAgent(phaseTasks)
+  const hasIncremental = phaseTasks.some(t => t.milestones)
+
+  flags.phases[phase.number] = {
     phase_number: index + 1,
+    name: phase.name,
     status: 'pending',
-    agent: getAgentForPhase(phaseId),
-    estimated_minutes: getEstimatedMinutes(phaseId)
+    agent: dominantAgent,
+    task_count: phaseTasks.length,
+    strategy: hasIncremental ? 'incremental' : 'standard',
+    milestones: hasIncremental ? phaseTasks.filter(t => t.milestones).reduce((sum, t) => sum + t.milestones.length, 0) : 0
   }
 })
 ```
@@ -2933,52 +2893,77 @@ pageType.includes('auth') ?
 `
 }
 
-// Replace placeholders
+// Replace placeholders (v2.0: use phases from Task Analyzer, not templates)
+const phases = groupTasksByPhase(sortedTasks)
+const totalPhases = phases.length
+
 contextTemplate = contextTemplate
   .replace('{CHANGE_ID}', changeId)
   .replace('{CHANGE_TITLE}', extractTitle(proposalContent))
-  .replace('{CHANGE_TYPE}', changeType)
+  .replace('{CHANGE_TYPE}', detectChangeType(sortedTasks))
   .replace('{CURRENT_PHASE_NUMBER}', '1')
-  .replace('{TOTAL_PHASES}', templateData.total_phases)
+  .replace('{TOTAL_PHASES}', totalPhases.toString())
   .replace('{CREATED_DATE}', new Date().toISOString())
   .replace('{CORE_TECH_LIST}', generateCoreTechList(projectTech))
   .replace('{ADDITIONAL_TECH_LIST}', generateAdditionalTechList(additionalTech))
-  .replace('{CURRENT_PHASE}', templateData.phases[0])
+  .replace('{CURRENT_PHASE}', phases[0]?.name || 'Phase 1')
   .replace('{STATUS}', 'pending')
   .replace('{DESIGN_SYSTEM}', designInfo) // 🆕 Add design section
 ```
 
 Write to: `openspec/changes/{change-id}/.claude/context.md`
 
-### Step 8: Output Summary (ENHANCED v2.6.0)
+### Step 8: Output Summary (v2.0.0 - Template-Free)
 
 ```typescript
-// Check if UI work was detected (from Step 2.5/Step 3)
-const hasUIWork = hasFrontend || (hasDatabase && lower.includes('ui'))
+// Calculate from analyzed tasks (not templates)
+const phases = groupTasksByPhase(sortedTasks)
+const totalPhases = phases.length
+const incrementalCount = sortedTasks.filter(t => t.milestones).length
+const totalMilestones = sortedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+const autoAddedCount = sortedTasks.filter(t => t.autoAdded).length
+
+// Check if UI work was detected
+const hasUIWork = sortedTasks.some(t => t.agent === 'uxui-frontend')
 
 // Check for existing page-plan.md
 const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
 const hasPagePlan = fileExists(pagePlanPath)
+
+// Agent breakdown
+const agentCounts = {}
+sortedTasks.forEach(t => {
+  agentCounts[t.agent] = (agentCounts[t.agent] || 0) + 1
+})
+const agentSummary = Object.entries(agentCounts)
+  .map(([agent, count]) => `${agent} (${count})`)
+  .join(', ')
 
 // Build output
 let output = `
 ✅ Change setup complete!
 
 📦 Change: ${changeId}
-📋 Template: ${templateName} (${totalPhases} phases)
-🛠️ Detected: ${detectedCategories.join(', ')}
+📊 Architecture: Task Analyzer v2.0 (Template-Free)
+🛠️ Agents: ${agentSummary}
 
 📁 Files created:
 ✓ openspec/changes/${changeId}/.claude/phases.md
 ✓ openspec/changes/${changeId}/.claude/flags.json
 ✓ openspec/changes/${changeId}/.claude/context.md
 
-📊 Workflow:
-   Phase 1: ${firstPhaseName} (${firstPhaseAgent} agent, ${firstPhaseMin} min)
-   ...
-   Phase ${totalPhases}: ${lastPhaseName}
+📊 Task Analysis:
+   Total: ${sortedTasks.length} tasks (${sortedTasks.filter(t => !t.autoAdded).length} original + ${autoAddedCount} auto-added)
+   Incremental: ${incrementalCount} tasks with ${totalMilestones} milestones
+   Phases: ${totalPhases}
+   UX Approval Gates: ${phases.filter(p => p.agent === 'ux-tester').length}
 
-⏱️ Total estimated time: ~${hours}h ${minutes}m
+📋 Phase Overview:
+${phases.map((p, i) => {
+  const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
+  const agent = getMostCommonAgent(phaseTasks)
+  return `   Phase ${p.number}: ${p.name} (${agent}, ${phaseTasks.length} tasks)`
+}).join('\n')}
 `
 
 // 🆕 v2.6.0: Recommend /pageplan if UI work detected
@@ -3051,38 +3036,69 @@ function extractTaskIds(content: string): string[] {
 }
 ```
 
-### getAgentForPhase()
+### getMostCommonAgent() (v2.0 - Template-Free)
 ```typescript
-function getAgentForPhase(phaseId: string): string {
-  const agentMap = {
-    'frontend-mockup': 'uxui-frontend',
-    'accessibility-test': 'test-debug',
-    'manual-ux-test': 'user',
-    'business-logic-validation': 'integration',
-    'user-approval': 'user',
-    'api-design': 'integration',
-    'backend': 'backend',
-    'database': 'database',
-    'backend-tests': 'test-debug',
-    'contract-backend': 'integration',
-    'frontend-integration': 'frontend',
-    'contract-frontend': 'integration',
-    'component-tests': 'test-debug',
-    'responsive-test': 'user',
-    'e2e-tests': 'test-debug',
-    'manual-flow-test': 'user',
-    'refactor': 'test-debug',
-    'regression-tests': 'test-debug',
-    'test-coverage': 'test-debug',
-    'script-implementation': 'backend',
-    'automated-tests': 'test-debug',
-    'manual-testing': 'user',
-    'fix-implementation': 'varies',
-    'unit-tests': 'test-debug',
-    'manual-verification': 'user',
-    'refactor-implementation': 'test-debug'
-  }
-  return agentMap[phaseId] || 'integration'
+// v2.0: Agent determined by AI analysis of tasks, not phase templates
+function getMostCommonAgent(tasks: AnalyzedTask[]): string {
+  if (tasks.length === 0) return 'integration'
+
+  const counts = {}
+  tasks.forEach(t => {
+    counts[t.agent] = (counts[t.agent] || 0) + 1
+  })
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])[0][0]
+}
+```
+
+### groupTasksByPhase()
+```typescript
+function groupTasksByPhase(tasks: AnalyzedTask[]): Phase[] {
+  const phaseMap = new Map()
+
+  tasks.forEach(task => {
+    const phaseNum = task.phase?.number || 1
+    const phaseName = task.phase?.name || `Phase ${phaseNum}`
+
+    if (!phaseMap.has(phaseNum)) {
+      phaseMap.set(phaseNum, {
+        number: phaseNum,
+        name: phaseName,
+        tasks: []
+      })
+    }
+    phaseMap.get(phaseNum).tasks.push(task)
+  })
+
+  return Array.from(phaseMap.values()).sort((a, b) => a.number - b.number)
+}
+```
+
+### getMaxRisk()
+```typescript
+function getMaxRisk(tasks: AnalyzedTask[]): string {
+  if (tasks.some(t => t.risk === 'HIGH')) return 'HIGH'
+  if (tasks.some(t => t.risk === 'MEDIUM')) return 'MEDIUM'
+  return 'LOW'
+}
+```
+
+### detectChangeType() (v2.0 - AI-Driven)
+```typescript
+function detectChangeType(tasks: AnalyzedTask[]): string {
+  // Detect from analyzed tasks, not keywords
+  const hasUI = tasks.some(t => t.agent === 'uxui-frontend')
+  const hasBackend = tasks.some(t => t.agent === 'backend')
+  const hasDatabase = tasks.some(t => t.agent === 'database')
+  const hasTests = tasks.some(t => t.agent === 'test-debug')
+
+  if (hasUI && hasBackend && hasDatabase) return 'full-stack'
+  if (hasUI && !hasBackend) return 'frontend-only'
+  if (hasBackend && !hasUI) return 'backend-only'
+  if (hasTests && tasks.length <= 5) return 'bug-fix'
+
+  return 'feature'
 }
 ```
 
@@ -3111,83 +3127,78 @@ function detectAdditionalTech(proposal: string, tasks: string): string[] {
 Please ensure the change has been properly initialized with OpenSpec
 ```
 
-**If template selection is ambiguous:**
+**If no tasks detected:**
 ```
-⚠️ Warning: Could not confidently detect change type
-Defaulting to 'full-stack' template (safest option)
-
-If this is incorrect, please:
-1. Add more descriptive keywords to tasks.md
-2. Or manually specify template (future feature)
+⚠️ Warning: No checkboxes found in tasks.md
+Please ensure tasks.md contains checkbox items:
+  - [ ] 1.1 Task description
+  - [ ] 1.2 Another task
 ```
 
 ---
 
-## Example Session
+## Example Session (v2.0 - Template-Free)
 
 ```bash
-$ /csetup CHANGE-003
+$ /csetup refactor-backend-architecture
 
 🔍 Reading OpenSpec files...
-✓ Read: proposal.md (2.3 KB)
-✓ Read: tasks.md (1.8 KB)
-✓ Read: design.md (not found - optional)
+✓ Read: proposal.md (3.1 KB)
+✓ Read: tasks.md (4.2 KB)
+✓ Read: design.md (1.8 KB)
 
-🔍 Analyzing tasks.md...
+📊 Task Analyzer v2.0 (Template-Free)...
+   Found: 47 tasks from tasks.md
 
-Detected:
-✅ Frontend work: YES (found: component, page, responsive, ui)
-❌ Backend work: NO
-❌ Database work: NO
-❌ API integration: NO
-❌ Script/CLI: NO
+🔍 Analyzing each task...
 
-Change type: feature
+📊 Analysis Results:
+   Complexity: avg 5.8/10
+   Risk: 8 HIGH, 15 MEDIUM, 24 LOW
+   Agents: backend (35), test-debug (8), uxui-frontend (4)
 
-📋 Template selected: frontend-only
-   - Total phases: 9
-   - Estimated time: 2h 50m
-   - Reason: Frontend work detected, no backend/API needed
+   Auto-added: 12 best practice tasks
+   Incremental: 6 tasks with 18 milestones
+
+✅ Task Analysis Complete
+   Total: 47 original + 12 auto-added = 59 tasks
+
+📁 Created: openspec/changes/refactor-backend-architecture/.claude
 
 Generating workflow...
-✓ Generated phases.md (115 lines, 9 phases)
-✓ Generated flags.json (initialized all phases as pending)
-✓ Generated context.md (change context with core tech references)
+✓ Generated phases.md (250 lines, 5 phases)
+✓ Generated flags.json (with task analysis metadata)
+✓ Generated context.md (change context with tech references)
 
 ✅ Change setup complete!
 
-📦 Change: CHANGE-003
-📋 Template: frontend-only (9 phases)
-🛠️ Detected: Frontend
+📦 Change: refactor-backend-architecture
+📊 Architecture: Task Analyzer v2.0 (Template-Free)
+🛠️ Agents: backend (35), test-debug (8), uxui-frontend (4)
 
 📁 Files created:
-✓ openspec/changes/CHANGE-003/.claude/phases.md
-✓ openspec/changes/CHANGE-003/.claude/flags.json
-✓ openspec/changes/CHANGE-003/.claude/context.md
+✓ openspec/changes/refactor-backend-architecture/.claude/phases.md
+✓ openspec/changes/refactor-backend-architecture/.claude/flags.json
+✓ openspec/changes/refactor-backend-architecture/.claude/context.md
 
-📊 Workflow:
-   Phase 1: Frontend Mockup (uxui-frontend, 90 min)
-   Phase 2: Accessibility Test (test-debug, 10 min)
-   Phase 3: Manual UX Test (user, 15 min)
-   Phase 4: Business Logic Validation (integration, 10 min)
-   Phase 5: User Approval (user, 5 min)
-   Phase 6: Component Tests (test-debug, 20 min)
-   Phase 7: Responsive Test (user, 15 min)
-   Phase 8: Refactor (test-debug, 20 min)
-   Phase 9: Test Coverage (test-debug, 5 min)
+📊 Task Analysis:
+   Total: 59 tasks (47 original + 12 auto-added)
+   Incremental: 6 tasks with 18 milestones
+   Phases: 5
 
-⏱️ Total estimated time: ~2h 50m
-
-💡 Note: Documentation/Report phases removed in v1.2.0
-   → Verbose summary output in terminal when change completes
-   → flags.json contains full execution history
+📋 Phase Overview:
+   Phase 1: Foundation (backend, 17 tasks)
+   Phase 2: Repository Layer (backend, 15 tasks)
+   Phase 3: Service Layer (backend, 12 tasks)
+   Phase 4: Migration (backend, 8 tasks)
+   Phase 5: Verification (test-debug, 7 tasks)
 
 🚀 Ready to start development!
 
 Next steps:
-1. Review workflow: openspec/changes/CHANGE-003/.claude/phases.md
-2. Start development: /cdev CHANGE-003
-3. View progress: /cview CHANGE-003
+1. Review workflow: openspec/changes/refactor-backend-architecture/.claude/phases.md
+2. Start development: /cdev refactor-backend-architecture
+3. View progress: /cview refactor-backend-architecture
 ```
 
 ---
@@ -3196,5 +3207,6 @@ Next steps:
 
 1. **Re-run safe:** Running `/csetup` again will **overwrite** existing files. Use with caution.
 2. **Manual adjustments:** You can manually edit phases.md after generation if needed
-3. **Template accuracy:** Detection is heuristic-based. Review generated workflow before starting.
-4. **Context7 integration:** Additional tech detection can trigger Context7 queries (future enhancement)
+3. **AI-driven analysis:** Agent assignment and complexity are determined by AI context understanding, not keyword matching
+4. **Incremental milestones:** Complex tasks automatically get milestone-based execution for progressive validation
+5. **Auto-added best practices:** Checkpoints, error handling, and verification tasks are added automatically (no warnings)

@@ -30,6 +30,8 @@ cak init
 
 ## Features
 
+- **Template-Free Architecture (v3.0.0)** - AI-driven task analysis, no hardcoded templates
+- **Task Analyzer v2.0** - Complexity scoring, auto-add best practices, incremental milestones
 - **Critical Flow Injection (v2.8.0)** - Non-negotiable security items auto-injected for auth, payment, healthcare, fintech
 - **UX-Tester Agent (v2.7.0)** - Persona-based UX testing with weighted conversion prediction
 - **Smart Topic Query (v2.5.0)** - Cross-library integration detection + risk summary
@@ -38,6 +40,46 @@ cak init
 - **Visual Page Planning** - Layout wireframes, component plans, animation blueprints
 - **Cross-session Context** - `PROJECT_STATUS.yml` maintains state across sessions
 - **Design System v2.1** - YAML-based extraction with single data.yaml output
+
+## Template-Free Architecture (v3.0.0)
+
+```
+Problem: Templates override user's tasks.md structure
+         e.g., "refactor" template = 2 phases, but tasks.md has 5 phases
+
+Solution: Task Analyzer v2.0 - AI-driven analysis, tasks.md is single source of truth
+
+Before (Template-based):
+  tasks.md (5 phases) → template selection → phases.md (2 phases) ❌ LOST TASKS
+
+After (Template-free):
+  tasks.md (5 phases) → AI analysis → phases.md (5 phases + auto-adds) ✅ ALL PRESERVED
+
+Task Analyzer v2.0 Pipeline:
+  1. Parse ALL tasks from tasks.md (preserve hierarchy)
+  2. AI Analysis: complexity, risk, agent, dependencies (NO keyword matching)
+  3. Auto-Add: security review, checkpoints, error handling (NO warnings)
+  4. Generate Milestones: batch processing, external API, repository patterns
+  5. Sort: dependencies first, HIGH risk early, foundation before features
+  6. Inject UX Testing: Phase X.5 after every uxui-frontend phase
+```
+
+**Auto-Add Rules (no user confirmation needed):**
+| Condition | Auto-Added Task |
+|-----------|-----------------|
+| HIGH risk | Checkpoint before next phase |
+| External API | Error handling, retry, timeout |
+| Implementation (complexity >= 5) | Verification task |
+| Database changes | Backup verification, rollback test |
+| Security-critical | Security review, log check |
+
+**Incremental Milestone Patterns:**
+| Pattern | Strategy | Example |
+|---------|----------|---------|
+| Batch Processing | 1 → 5 → 20 → full | "Process 10,000 records" |
+| External API | mock → single → errors → scale | "Send 100 API calls" |
+| Repository Layer | 1 method → half → all | "Implement 8 methods" |
+| Complex Form | 1 field → 1 step → full | "Multi-step wizard" |
 
 ## Critical Flow Injection (v2.8.0)
 
