@@ -111,6 +111,7 @@ These patterns apply to ALL agents regardless of role:
 - `@.claude/contexts/patterns/logging.md` (logging standards)
 - `@.claude/contexts/patterns/testing.md` (test conventions)
 - `@.claude/contexts/patterns/code-standards.md` (coding style)
+- `@.claude/contexts/patterns/development-principles.md` (SOLID, DRY, KISS, Separation of Concerns)
 
 **Why load these:**
 - Ensures consistent error messages across codebase
