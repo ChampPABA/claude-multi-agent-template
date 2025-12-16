@@ -6,6 +6,11 @@
 # - New Claude sessions lose context about infrastructure state, blockers, and priorities
 # - Reading multiple files (README, archived proposals, tasks.md) wastes tokens
 # - This single file provides quick context snapshot for AI sessions
+#
+# v2.2.0 (claude-mem integration):
+# - REMOVED: decisions, notes, future_ideas → claude-mem handles automatically
+# - KEPT: blockers, priorities, technical_debt → requires human decision
+# - Query past decisions: ask Claude "what decisions about X?" → mem-search auto-invoked
 
 last_updated: "YYYY-MM-DD"
 
@@ -105,21 +110,6 @@ next_priorities: []
   #   reason: "Dependency for RIASEC save feature"
 
 # -------------------------------------------------------------------
-# FUTURE IDEAS
-# Features/enhancements discussed but not yet planned
-# Captured from: "อยากให้มี...", "want to add...", "later...", "in the future..."
-# -------------------------------------------------------------------
-future_ideas: []
-  # Example:
-  # - idea: "Dark mode support"
-  #   context: "User requested during review"
-  #   date: "2025-12-01"
-  #
-  # - idea: "Export to PDF"
-  #   context: "Nice to have for reports"
-  #   date: "2025-11-28"
-
-# -------------------------------------------------------------------
 # TECHNICAL DEBT
 # Known issues to fix later
 # Captured from: "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..."
@@ -135,32 +125,6 @@ technical_debt: []
   #   priority: high
 
 # -------------------------------------------------------------------
-# DECISIONS
-# Important technical/product decisions made
-# Captured from: "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y"
-# -------------------------------------------------------------------
-decisions: []
-  # Example:
-  # - decision: "Use better-auth over NextAuth"
-  #   reason: "Better TypeScript support, simpler API"
-  #   date: "2025-12-01"
-  #
-  # - decision: "PostgreSQL over MongoDB"
-  #   reason: "Relational data, ACID compliance needed"
-  #   date: "2025-11-30"
-
-# -------------------------------------------------------------------
-# NOTES
-# Free-form context that doesn't fit above
-# -------------------------------------------------------------------
-notes: |
-  Add any additional context here.
-  Examples:
-  - Dev server running on localhost:3000
-  - Test with: curl http://localhost:3000/health
-  - Staging environment: https://staging.example.com
-
-# -------------------------------------------------------------------
 # REFERENCES (optional)
 # Quick links to important project files
 # -------------------------------------------------------------------
@@ -168,3 +132,14 @@ references:
   # roadmap: "docs/proposal_list.md"
   # architecture: "openspec/specs/architecture.md"
   # design_tokens: "design-system/data.yaml"
+
+# -------------------------------------------------------------------
+# QUERYING PAST CONTEXT (claude-mem)
+# -------------------------------------------------------------------
+# These fields were REMOVED because claude-mem handles them automatically:
+# - decisions → Query: "what decisions about X?"
+# - notes/learnings → Query: "what did we learn about X?"
+# - future_ideas → Query: "what ideas for X?"
+#
+# claude-mem auto-captures observations from tool usage.
+# Just ask naturally - mem-search skill is auto-invoked.

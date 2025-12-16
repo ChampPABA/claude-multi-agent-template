@@ -302,557 +302,34 @@ User: "Build login system"
 
 ---
 
-## 🆕 v3.0.0: Template-Free Architecture (Task Analyzer v2.0)
+## 📜 Version History
 
-**Problem Solved:** Phase templates (`phase-templates.json`) were limiting and caused task loss. When `tasks.md` had 5 detailed phases but template had only 2, tasks disappeared. Templates overrode the single source of truth.
+> **Full changelog with technical details, code examples, and migration guides:**
+> See [`.claude/CHANGELOG.md`](./CHANGELOG.md)
 
-**Solution:** Delete templates entirely. Use AI-driven Task Analyzer to transform `tasks.md` (WHAT) into `phases.md` (HOW).
-
-### Key Changes
-
-| Component | Before (v2.x) | After (v3.0) |
-|-----------|---------------|--------------|
-| phases.md source | phase-templates.json | tasks.md (single source of truth) |
-| Agent assignment | Keyword matching | AI context understanding |
-| Missing best practices | Warning prompts | Auto-add automatically |
-| Complex tasks | Same as simple | Incremental milestones |
-| Task filtering | Templates filter tasks | No filtering, ALL tasks kept |
-
-### How It Works
-
-```
-tasks.md (WHAT to build)
-    ↓
-Step 1: Parse ALL tasks (no filtering)
-Step 2: AI-driven analysis (complexity, risk, agent, dependencies)
-Step 3: Auto-add best practices (no warnings)
-Step 4: Generate incremental milestones
-Step 5: Sort by priority (phase order → dependencies → risk)
-    ↓
-phases.md (HOW to build incrementally)
-```
-
-### AI-Driven Analysis (vs Keyword Matching)
-
-**Old (keyword matching):**
-```
-"Create user service that connects to database"
-Keywords: "service" (backend), "connects" (frontend), "database" (database)
-→ Conflict! Which agent?
-```
-
-**New (AI decision):**
-```
-"Create user service that connects to database"
-→ AI understands: This is a backend service layer
-→ Agent: backend ✓
-```
-
-### Auto-Add Best Practices (No Warnings)
-
-| Condition | Auto-Added Task |
-|-----------|-----------------|
-| HIGH risk task | Checkpoint: Verify before proceeding |
-| External API | Error handling + retry + timeout |
-| Implementation (complexity ≥ 5) | Verification task |
-| Database changes | Backup + rollback test |
-| Security-critical | Security review + log check |
-
-### Incremental Milestones
-
-Complex tasks (risk=HIGH OR complexity≥7) get automatic milestones:
-
-| Pattern | Strategy | Milestones |
-|---------|----------|------------|
-| Repository/Service | method-by-method | 1 method → half → all |
-| External API | mock-to-real | mock → 1 real → errors → scale |
-| Batch Processing | scale-up | 1 → 5 → 20 → full |
-| Complex Form | field-by-field | architecture → e2e → all fields |
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `phase-templates.json` | **DELETED** |
-| `task-analyzer.md` | Complete rewrite (v2.0) - 666 lines |
-| `csetup.md` | Remove Steps 3-4 (keyword/template), new Step 3 (Task Analyzer) |
-
-### Migration
-
-No migration needed. Just run `/csetup` - it will generate phases.md from tasks.md directly.
-
----
-
-## 🆕 v2.8.0: Critical Flow Injection
-
-**Problem Solved:** Research layers are flexible and context-dependent, but security/compliance items are non-negotiable. Previously, critical requirements like password hashing, PCI-DSS compliance, or HIPAA regulations could be missed if research didn't surface them.
-
-**Solution:** Auto-inject critical required items into research layers based on change analysis.
-
-### How It Works
-
-```
-/csetup analyzes change:
-  ├── hasAuth: true → Inject auth security items (7 items)
-  ├── hasPayment: true → Inject payment security items (5 items)
-  ├── industryContext: healthcare → Inject HIPAA compliance items (5 items)
-  └── industryContext: fintech → Inject PCI-DSS compliance items (6 items)
-
-Research layers (flexible) + Critical items (non-negotiable)
-```
-
-### Critical Flow Categories
-
-| Flow | Layer | Items | Examples |
-|------|-------|-------|----------|
-| Auth | Security | 7 | Password hashing (bcrypt/argon2), JWT secure storage, session timeout |
-| Payment | Security | 5 | PCI key security, no card storage, webhook signature verification |
-| Healthcare | Compliance | 5 | PHI encryption, role-based access, audit trail, BAA, breach plan |
-| Fintech | Compliance | 6 | Data encryption, key rotation, audit logging, access controls |
-| Sensitive Data | Security + Data Architecture | 6 | Encryption at rest/transit, access logging, backup, retention |
-
-### Item Structure
-
-Each critical item has:
-```javascript
-{
-  id: 'auth-password-hash',           // Unique identifier
-  check: '☐ Password hashing...',     // Checklist item
-  why: 'Plain text passwords...',     // Explanation
-  severity: 'critical'                // Always 'critical'
-}
-```
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `tests/helpers.js` | `CRITICAL_FLOWS` constant + `injectCriticalRequiredItems()` function |
-| `csetup.md` Step 2.6 | Calls `injectCriticalRequiredItems()` for each layer |
-
----
-
-## 🆕 v2.7.0: UX Testing Agent (Persona-Based)
-
-**Problem Solved:** UI was approved by developers, not real users. No validation that the UI actually converts customers before spending time on backend development.
-
-**Solution:** Auto-inject Phase 1.5 (ux-tester) after uxui-frontend with approval gate workflow.
-
-### How It Works
-
-```
-Phase 1: uxui-frontend (build UI)
-    ↓
-Phase 1.5: ux-tester (approval gate)
-    → Auto-generate personas from product context
-    → Test each persona via Chrome DevTools
-    → Calculate weighted conversion prediction
-    → Generate UX test report
-    → PAUSE for user approval
-    ↓
-[User approves] → Phase 2: backend + database
-[User rejects]  → Loop back to Phase 1 with feedback
-```
-
-### Key Features
-
-| Feature | Description |
+**Recent versions:**
+| Version | Key Feature |
 |---------|-------------|
-| **Auto-Generated Personas** | 3-5 personas with % breakdown based on product context |
-| **Weighted Conversion** | Calculate purchase likelihood weighted by customer % |
-| **Chrome DevTools Testing** | Screenshots, snapshots, click tests, mobile responsive |
-| **Approval Gate** | PAUSE and wait for user approve/reject |
-| **Rejection Loop** | Feedback passed to uxui-frontend, re-run Phase 1 → 1.5 |
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `.claude/agents/07-ux-tester.md` | New agent for persona-based UX testing |
-| `.claude/templates/phases-sections/ux-testing.md` | Phase template with approval gate |
-| `.claude/lib/task-analyzer.md` | **v2.0:** Complete rewrite - template-free, AI-driven |
-| `.claude/lib/agent-executor.md` | Approval gate execution logic |
-| `.claude/commands/cdev.md` | Step 4.6 approval gate handling |
-
-### UX Test Report Example
-
-```markdown
-# UX Test Report
-
-## Personas Tested
-| Persona | % ลูกค้า | Would Buy | Weighted |
-|---------|----------|-----------|----------|
-| นักศึกษา 18-24 | 40% | Maybe (50%) | +20% |
-| พนักงาน 25-35 | 35% | Yes (100%) | +35% |
-| ผู้สูงวัย 50-65 | 15% | No (0%) | +0% |
-| ผู้ปกครอง 35-50 | 10% | Maybe (50%) | +5% |
-
-## Conversion Prediction: 60%
-## Potential After Fixes: 92.5%
-```
+| v3.0.0 | Template-Free Architecture (AI-driven Task Analyzer v2.0) |
+| v2.8.0 | Critical Flow Injection (auto-inject security/compliance items) |
+| v2.7.0 | UX Testing Agent (persona-based, approval gate) |
+| v2.5.0 | Smart Topic Query + Integration Risk Detection |
+| v2.4.0 | Adaptive Depth Research (0-10+ dynamic layers) |
+| v2.3.0 | Zero-Maintenance Tech Stack Detection |
+| v2.2.0 | claude-mem Integration |
+| v2.1.0 | Design System v2 (YAML-based) |
+| v2.0.0 | Claude 4.5 Optimization (61% token reduction) |
 
 ---
 
-## 🆕 v2.5.0: Smart Topic Query + Integration Risk Detection
-
-**Problem Solved:** Context7 queries used static topic "best practices" which missed adapter/integration documentation. Example: Drizzle + Auth.js requires specific column naming (snake_case) but this wasn't detected, causing runtime errors.
-
-**Solution:** Smart Topic Query includes other library names in topic + automatic integration risk detection.
-
-### How Smart Topic Query Works
-
-```
-Old (v2.4.0):
-  topic: "best practices, patterns, anti-patterns, common mistakes"
-  → Misses adapter-specific docs
-
-New (v2.5.0):
-  topic: "best practices, patterns, adapter, integration, schema, {other-lib-names}"
-  → Gets cross-library integration docs automatically
-```
-
-### Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **Smart Topic** | Includes other detected library names in Context7 topic |
-| **Bidirectional Query** | Query BOTH libraries (Auth.js → Drizzle, Drizzle → Auth.js) |
-| **Risk Pattern Detection** | Scans docs for adapter, schema, column, sync, webhook patterns |
-| **INTEGRATION_RISKS.md** | Auto-generated summary of detected integration concerns |
-| **Zero Maintenance** | No hardcoded library pairs - works with any combination |
-
-### Integration Risk Patterns Detected
-
-| Pattern | Keywords | Example |
-|---------|----------|---------|
-| Adapter | adapter, drizzleadapter, prismaadapter | ORM + Auth integrations |
-| Schema | column, snake_case, camelcase, mapping | Column naming mismatches |
-| Sync | sync, migrate, syncurl, embedded replica | Mobile/Edge data sync |
-| Webhook | webhook, webhookendpoint | Payment/notification handlers |
-| Lifecycle | beforeall, aftereach, setup, teardown | Test configuration |
-
-### Output Files
-
-| File | Content |
-|------|---------|
-| `best-practices/{lib}.md` | Library-specific best practices (enhanced with integration docs) |
-| `best-practices/INTEGRATION_RISKS.md` | Cross-library risk summary + checklist |
-
-### Example Flow
-
-```
-Detected: [drizzle, auth.js, stripe]
-
-Query drizzle with topic: "best practices, adapter, integration, auth.js, stripe"
-  → Gets: Drizzle adapter patterns, column naming
-
-Query auth.js with topic: "best practices, adapter, integration, drizzle, stripe"
-  → Gets: DrizzleAdapter config, usersTable/accountsTable schema
-
-Query stripe with topic: "best practices, adapter, integration, drizzle, auth.js"
-  → Gets: Webhook patterns, payment integration
-
-Risk Detection:
-  → auth.js mentions "drizzleadapter", "userstable" → SCHEMA pattern
-  → stripe mentions "webhook", "webhooksecret" → WEBHOOK pattern
-
-Output:
-  → drizzle.md (with auth.js integration info)
-  → auth-js.md (with Drizzle adapter config)
-  → stripe.md (with webhook patterns)
-  → INTEGRATION_RISKS.md (summary of all detected risks)
-```
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `csetup.md` Step 2.7 | Smart Topic Query implementation |
-| `detectIntegrationRisks()` | New: Pattern detection from docs |
-| `generateIntegrationRiskSummary()` | New: INTEGRATION_RISKS.md output |
-
----
-
-## 🆕 v2.4.0: Adaptive Depth Research
-
-**Problem Solved:** Previous feature detection was hardcoded (only 4 types: auth, payment, fileUpload, apiDesign) and used fixed standards. Missing domain-level best practices like "how to design a good database" or "healthcare compliance requirements."
-
-**Solution:** Dynamic research layers that adapt to each change's complexity (0 to 10+ layers).
-
-### Key Principles
-
-| Principle | Description |
-|-----------|-------------|
-| L1 = Best Practice (ALWAYS) | "คนอื่นทำกันยังไง?" (How do others do it?) for ALL non-trivial changes |
-| Dynamic Depth | No fixed min/max - truly adaptive (0-10+ layers) |
-| Separation of Concerns | Visual (/designsetup) is STATIC, Strategy (research) is DYNAMIC |
-| Per-Change Output | Generates `research-checklist.md` for each change |
-| Design Conflict Warnings | Warns if industry practice conflicts with user's design choices |
-
-### Layer Examples by Change Type
-
-| Change Type | Layers | Example Layers |
-|-------------|--------|----------------|
-| Typo fix, debug log | 0 | None needed |
-| Simple API endpoint | 2 | Best Practice, API Design |
-| Auth system | 4 | Best Practice, Security, API Design, Testing |
-| E-commerce checkout | 7 | Best Practice, Security, UX, Payment, Integration, Performance, Testing |
-| Healthcare portal | 10 | Best Practice, Security, Compliance (HIPAA), UX, Data Architecture, API, Performance, Testing, Integration, Audit |
-
-### Knowledge Sources (Separated)
-
-| Step | Knowledge Type | Source | Example |
-|------|----------------|--------|---------|
-| **2.6** | Domain (HOW to design) | Claude's Knowledge | Normalization, UX patterns, Security |
-| **2.7** | Stack (HOW to use tool) | Context7 | Prisma, React, Next.js |
-
-### How It Works
-
-```
-1. Analyze change from proposal.md, tasks.md, design.md
-   → Detect: primaryType, complexity, riskLevel, domains, features
-
-2. Determine research layers dynamically:
-   - Trivial (complexity ≤ 1, no UI/API/DB) → 0 layers
-   - Non-trivial → L1 Best Practice + context-specific layers
-
-3. Execute research per layer using Claude's knowledge:
-   - Claude knows: UX (Nielsen Norman, Baymard), DB (Codd), Security (OWASP)
-   - No static files needed - Claude reasons from training
-   - No WebSearch needed - domain knowledge is stable
-
-4. Generate research-checklist.md with:
-   - Key questions per layer
-   - Best practices (from Claude's knowledge)
-   - Anti-patterns to avoid
-   - Trade-offs explained
-   - Recommendations specific to THIS change
-
-5. Agents read research-checklist.md before implementing
-```
-
-**WHY Claude's Knowledge?**
-- Domain principles rarely change (Normalization = 50 years, REST = 20 years)
-- No maintenance needed (no static files to update)
-- Context-aware (Claude applies principles to YOUR specific change)
-- Stack knowledge goes to Context7 (Step 2.7) which has live docs
-
-### Available Research Layers
-
-| Layer | Triggered By |
-|-------|--------------|
-| Best Practice / Industry Standard | Always (non-trivial changes) |
-| Security Requirements | hasAuth, hasPayment, hasSensitiveData |
-| {Industry} Compliance | healthcare, fintech, or other regulated industries |
-| User Experience Patterns | isExternalFacing + hasUI |
-| Conversion Psychology | marketing/sales pages |
-| Content Strategy | marketing/content pages |
-| Data Architecture | hasDatabase, data-intensive |
-| API Design | hasAPI |
-| Multi-tenancy Patterns | SaaS with tenant isolation |
-| Real-time Architecture | WebSocket, collaboration features |
-| Performance Optimization | external-facing OR complexity ≥ 6 |
-| Integration Patterns | external APIs, webhooks |
-| Testing Strategy | HIGH risk OR complexity ≥ 7 |
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `csetup.md` Step 2.6 | Complete rewrite - Adaptive Depth Research |
-| `analyzeChangeCharacteristics()` | New: semantic analysis of change context |
-| `determineResearchLayers()` | New: dynamic layer selection |
-| `executeLayerResearch()` | New: Context7 + semantic research |
-| `generateResearchChecklist()` | New: markdown output per change |
-| `checkDesignConflicts()` | New: warns on design vs industry fit |
-
-### Output Example
-
-```markdown
-# Research Checklist: healthcare-portal
-
-> Generated by Adaptive Depth Research (v2.4.0)
-> Complexity: 9/10 | Risk: HIGH
-
-## Summary
-
-| Layer | Focus | Status |
-|-------|-------|--------|
-| L1: Best Practice | How do others implement healthcare? | ⏳ Pending |
-| L2: Security Requirements | What security measures? | ⏳ Pending |
-| L3: Healthcare Compliance | What HIPAA regulations? | ⏳ Pending |
-...
-
-## L1: Best Practice / Industry Standard
-
-**Focus:** How do others implement healthcare portals?
-
-### Key Questions
-- [ ] What is the industry standard for healthcare portals?
-- [ ] What are common patterns and anti-patterns?
-...
-```
-
----
-
-## 🆕 v2.3.0: Zero-Maintenance Tech Stack Detection
-
-**Problem Solved:** Previously, `/csetup` required hardcoded regex patterns and Context7 ID mappings for each library. Adding support for new libraries (like SQLAlchemy, Pydantic, Rust crates) required code changes.
-
-**Solution:** Dynamic detection that works with any library in any language without maintenance.
-
-### How It Works
-
-```
-1. Extract potential library names from ALL text sources:
-   - Spec files (proposal.md, design.md, tasks.md)
-   - Package files (package.json, requirements.txt, Cargo.toml, go.mod, etc.)
-   - Import statements in code snippets
-   - Prose mentions ("using FastAPI", "with Prisma")
-
-2. Send each candidate to Context7 resolve-library-id:
-   - If Context7 recognizes it → confirmed library ✅
-   - If not recognized → not a library, skip ❌
-
-3. For confirmed libraries, fetch best practices:
-   - Context7 get-library-docs with "best practices" topic
-   - Generate .md file with patterns, anti-patterns, checklist
-
-4. Result: Best practices for ANY library, automatically!
-```
-
-### Benefits
-
-| Aspect | Before (v1.8.0) | After (v2.3.0) |
-|--------|-----------------|----------------|
-| New library support | Manual code change | Automatic |
-| Python stack | Partial (FastAPI, Django only) | Full (SQLAlchemy, Pydantic, Click, etc.) |
-| Rust support | None | Automatic |
-| Go support | None | Automatic |
-| Maintenance | Required for each library | Zero |
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `csetup.md` Step 2.7 | Complete rewrite with dynamic detection |
-| `extractPotentialLibraryNames()` | New helper for NLP extraction |
-| `parseContext7Response()` | New helper for Context7 response parsing |
-| `generateBestPracticesFile()` | Updated signature, includes Context7 ID |
-| `detectAdditionalTech()` | Deprecated, delegates to new system |
-
----
-
-## 🆕 v2.0.0: Claude 4.5 Optimization + Design System v2.0
-
-**Based on:** [Claude 4 Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
-
-### Claude 4.5 Changes Applied
-
-| Before | After | WHY |
-|--------|-------|-----|
-| "MUST", "WILL BE REJECTED" | Professional tone | Claude 4.5 works better with respectful instructions |
-| "Don't do X", "Never Y" | "Use X instead" | Positive instructions are clearer |
-| Rules without context | Rules with WHY | Claude applies rules more intelligently |
-| Duplicated content (6x) | Shared `_shared/` folder | 83% token reduction |
-| ~1000 lines per agent | ~250-350 lines | 65% smaller |
-
-### New Shared Components
-
-```
-.claude/agents/_shared/
-├── pre-work-checklist.md     # Common validation steps
-├── package-manager.md        # Package manager protocol
-├── documentation-policy.md   # What files to create
-├── agent-boundaries.md       # When to use which agent
-└── README.md                 # Overview
-```
-
-### Token Savings
-
-| Agent | Before | After | Reduction |
-|-------|--------|-------|-----------|
-| uxui-frontend | ~1037 | ~375 | 64% |
-| integration | ~600 | ~210 | 65% |
-| backend | ~700 | ~244 | 65% |
-| database | ~680 | ~273 | 60% |
-| frontend | ~650 | ~296 | 54% |
-| test-debug | ~580 | ~252 | 57% |
-| **Total** | **~4247** | **~1650** | **61%** |
-
-Plus ~500 tokens in shared files = **~2150 total** (was ~4247)
-
-### Best Practices Applied
-
-1. **Tone Calibration** - Professional, direct (not aggressive)
-2. **Action Orientation** - Explicit "Write code" vs "Consider"
-3. **Prevent Overengineering** - Clear boundaries
-4. **Encourage Exploration** - Read before implementing
-5. **Rich Output When Needed** - Specify requirements
-6. **Context for Rules** - Explain WHY
-7. **Positive Instructions** - "Use X" not "Don't Y"
-
-### Additional Files Refactored
-
-Beyond the 6 agent files, these supporting files were also updated:
-
-**Implementation Logic (lib/):**
-| File | Changes |
-|------|---------|
-| `agent-router.md` | Routing table format, removed "CANNOT/forbidden" language |
-| `agent-executor.md` | Professional rejection messages, table format |
-| `context-loading-protocol.md` | WHY explanations, removed "CRITICAL" warnings |
-| `flags-updater.md` | Best practices table, removed "Step 3 CANNOT be skipped" |
-| `document-loader.md` | Table format for DO/DON'T sections |
-| `detailed-guides/agent-system.md` | Compact table format, shared file references |
-
-**Commands:**
-| File | Changes |
-|------|---------|
-| `cdev.md` | WHY context for best practices, softer tone |
-| `csetup.md` | Best Practices / Anti-Patterns format |
-| `pageplan.md` | "Guidelines" instead of "CRITICAL Rules" |
-| `designsetup.md` | "Follow this format" instead of "EXACT format" |
-
-**Patterns (contexts/patterns/):**
-| File | Changes |
-|------|---------|
-| `validation-framework.md` | WHY explanations, removed "🚨" symbols |
-| `error-recovery.md` | "⚠️" instead of "🚨", professional escalation format |
-| `ui-component-consistency.md` | "Common Issues" instead of "Red Flags" |
-| `task-breakdown.md` | Positive framing for incremental approach |
-| `agent-discovery.md` | Softer language, "⚠️ Fallback" instead of "🚨" |
-| `code-standards.md` | "File Creation Policy" with WHY table |
-| `animation-patterns.md` | "⚠️ Common Mistakes" instead of "🚨" |
-| `frontend-component-strategy.md` | "⚠️ Anti-Patterns" instead of "🚨" |
-| `performance-optimization.md` | "⚠️ Common Mistakes" instead of "🚨" |
-| `change-workflow.md` | Table format for read-only files |
-| `task-classification.md` | "Agent Capabilities Reference" section title |
-
-**Design (contexts/design/):**
-| File | Changes |
-|------|---------|
-| `index.md` | "should check" instead of "MUST check" |
-| `box-thinking.md` | "⚠️ Common Mistakes" instead of "🚨" |
-
-**Templates:**
-| File | Changes |
-|------|---------|
-| `phases-sections/frontend-mockup.md` | Table with WHY for design rules |
-| `design-context-template.md` | "⚠️ Design Rules" instead of "🚨 Critical" |
-| `STYLE_GUIDE.template.md` | "🔧 Troubleshooting" instead of "🚨" |
-
-**Other lib files:**
-| File | Changes |
-|------|---------|
-| `lib/README.md` | Softer descriptions, "📌 Important" |
-| `detailed-guides/taskmaster-analysis.md` | "🔴 HIGH" instead of "🚨 HIGH" |
-
----
-
-## 📊 PROJECT_STATUS.yml Protocol (v2.1.0)
+## 📊 PROJECT_STATUS.yml Protocol (v2.2.0 - claude-mem Integration)
 
 **WHY this exists:** New Claude sessions lose context about infrastructure state, blockers, and priorities. This file provides a quick snapshot.
+
+**v2.2.0 Changes (claude-mem integration):**
+- **REMOVED:** `decisions`, `notes`, `future_ideas` → claude-mem handles automatically
+- **KEPT:** `blockers`, `next_priorities`, `technical_debt` → requires human decision
+- **Query past context:** Just ask naturally → mem-search skill auto-invoked
 
 ### Session Start Behavior
 
@@ -873,15 +350,13 @@ Prompt "Update PROJECT_STATUS.yml?" when detecting these patterns:
 | Infrastructure change (deploy, tunnel, DB migration) | Update `infrastructure` |
 | User discusses priority shift | Update `next_priorities` |
 | `/csetup {change-id}` started | Update `current_focus` + **check `pending_followups` for related items** |
-| **Future features/ideas:** "อยากให้มี...", "want to add...", "later we should...", "in the future..." | Add to `future_ideas` |
 | **Technical debt:** "ต้องแก้...", "should refactor...", "tech debt...", "needs cleanup..." | Add to `technical_debt` |
-| **Decisions made:** "ตัดสินใจว่า...", "we decided...", "going with...", "chose X over Y" | Add to `decisions` |
-| **Learnings/notes:** "พบว่า...", "discovered...", "note:...", "important:..." | Add to `notes` |
 | **Problems found (by Claude):** "⚠️ ปัญหาที่พบ", "ไม่มี X", "missing X", "not configured" | Add to `technical_debt` or `blockers` |
 | **Config gaps:** "ไม่ได้ตั้งค่า...", "need to configure...", "should add to CI/CD" | Add to `technical_debt` |
 | **Sync issues:** "DB not synced", "schema mismatch", "local vs production differs" | Add to `blockers` + `infrastructure` |
 | **Non-Goal needs follow-up:** design.md has "Non-Goal: X (separate proposal)" | Add to `pending_followups` when archiving |
 | **Pending resolved:** User creates proposal for pending item | Remove from `pending_followups` |
+| ~~**Future ideas, Decisions, Notes**~~ | **REMOVED** - claude-mem handles automatically |
 
 ### Update Protocol
 
@@ -906,67 +381,104 @@ Claude: "Update PROJECT_STATUS.yml?
 # After archiving
 Claude: "Auth-system archived. Add to completed_changes?"
 
-# Casual conversation - future idea
-User: "อยากให้มี dark mode ด้วยนะ ไว้ทำทีหลัง"
-Claude: "Add to PROJECT_STATUS.yml future_ideas?
-         - idea: Dark mode support
-         - context: User requested, low priority"
-
-# Discussion - technical debt
+# Discussion - technical debt (still tracked in PROJECT_STATUS)
 User: "ตรงนี้ code มันซ้ำๆ ต้องแก้ทีหลัง"
 Claude: "Add to PROJECT_STATUS.yml technical_debt?
          - item: Refactor duplicated code in auth middleware
          - priority: medium"
-
-# Decision made
-User: "ตัดสินใจใช้ Drizzle แทน Prisma แล้ว เพราะ type-safe กว่า"
-Claude: "Add to PROJECT_STATUS.yml decisions?
-         - decision: Use Drizzle over Prisma
-         - reason: Better type safety"
 
 # Problem found by Claude during analysis
 Claude: "⚠️ ปัญหาที่พบ: ไม่มี migration step ใน CI/CD!"
 Claude: "Add to PROJECT_STATUS.yml?
          technical_debt:
          - item: Add DB migration to CI/CD
-         - reason: Schema not synced between local and VPS
          - priority: high"
 
-# Config gap discovered
-Claude: "Local DB กับ VPS schema ไม่ sync กัน"
-Claude: "Add to PROJECT_STATUS.yml?
-         blockers:
-         - id: db-schema-sync
-         - description: Local and VPS DB schemas out of sync
-         infrastructure.database:
-         - status: degraded
-         - notes: Schema mismatch, need migration"
+# Query past decisions (claude-mem handles this now!)
+User: "เราตัดสินใจเรื่อง database ว่ายังไงมาก่อน?"
+Claude: *auto-invokes mem-search skill*
+Claude: "จากการค้นหา พบ 2 decisions เกี่ยวกับ database:
+         - #12345: Chose Drizzle over Prisma (3 days ago)
+         - #12340: PostgreSQL over MongoDB (1 week ago)"
 
-# Archive with Non-Goals that need follow-up
-Claude: "Archiving add-infrastructure-cicd..."
-Claude: *reads design.md, finds Non-Goals: "Database migrations (separate proposal)"*
-Claude: "Add to PROJECT_STATUS.yml pending_followups?
-         - item: Database migration strategy
-         - from_change: add-infrastructure-cicd
-         - reason: Non-Goal marked 'separate proposal'
-         - affects: ['any change with DB schema']"
+# Query past learnings (claude-mem handles this now!)
+User: "เราเคยเจอ bug เกี่ยวกับ auth ไหม?"
+Claude: *auto-invokes mem-search skill*
+Claude: "พบ 1 bugfix เกี่ยวกับ auth:
+         - #12330: Fixed token refresh race condition"
 
-# /csetup checks pending_followups (Medium aggressiveness)
+# /csetup checks pending_followups
 User: "/csetup add-auth-system"
 Claude: *reads PROJECT_STATUS.yml pending_followups*
 Claude: "⚠️ Found related pending follow-up:
          - 'Database migration strategy' (from add-infrastructure-cicd)
-         - Affects: 'any change with DB schema'
-
-         This change adds DB tables. The migration strategy hasn't been addressed yet.
 
          Options:
          1. Continue anyway (risk: schema sync issues)
-         2. Address migration first (create proposal)
-         3. Add migration step to this change's scope
-
-         Which approach?"
+         2. Address migration first
+         3. Add migration step to this change's scope"
 ```
+
+---
+
+## 🧠 claude-mem Integration (v2.2.0)
+
+**What is claude-mem?** A Claude Code plugin that automatically captures tool usage observations and provides persistent memory across sessions.
+
+### Division of Responsibilities
+
+| Data Type | Source | How to Access |
+|-----------|--------|---------------|
+| Past decisions | claude-mem (auto) | Ask: "what decisions about X?" |
+| Past learnings | claude-mem (auto) | Ask: "what did we learn about X?" |
+| Past bugs/fixes | claude-mem (auto) | Ask: "what bugs with X?" |
+| Future ideas | claude-mem (auto) | Ask: "what ideas for X?" |
+| **Blockers** | PROJECT_STATUS.yml | Read file (requires human decision) |
+| **Priorities** | PROJECT_STATUS.yml | Read file (requires human decision) |
+| **Tech debt** | PROJECT_STATUS.yml | Read file (actionable items) |
+| What to build | tasks.md → phases.md | /csetup generates |
+| How to build | Agents | /cdev executes |
+
+### How claude-mem Works
+
+```
+1. You work normally (Read, Write, Edit, Bash, etc.)
+   → claude-mem captures tool usage automatically
+
+2. Session ends (/clear or exit)
+   → claude-mem generates session summary
+
+3. New session starts
+   → claude-mem injects recent observations
+
+4. You ask about past work
+   → mem-search skill auto-invoked
+```
+
+### Query Examples
+
+```
+# Query past decisions
+"เราตัดสินใจเรื่อง authentication ยังไง?"
+→ Claude auto-invokes mem-search → shows past decisions
+
+# Query past bugs
+"เราเคยแก้ bug เกี่ยวกับ token ไหม?"
+→ Claude shows past bugfixes
+
+# Query implementation details
+"เราทำ pagination ยังไง?"
+→ Claude shows past implementation observations
+```
+
+### Agent Memory Access
+
+Agents query claude-mem in STEP 0 before implementation:
+- Check for past decisions about similar components
+- Find previous solutions to similar problems
+- Avoid repeating past mistakes
+
+→ See: `.claude/agents/_shared/pre-work-checklist.md` Step 0.6
 
 ---
 

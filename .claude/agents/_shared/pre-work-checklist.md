@@ -131,6 +131,52 @@ Reporting to Main Claude...
 
 ---
 
+### Step 0.6: Memory Context Query (v2.2.0 - claude-mem Integration)
+
+**Before implementation, query claude-mem for related past work:**
+
+WHY: Avoid repeating mistakes, leverage past decisions, maintain consistency.
+
+1. **Identify current task keywords:**
+   - Component name (e.g., "authentication", "payment")
+   - Technology (e.g., "JWT", "Stripe")
+   - Pattern type (e.g., "form validation", "API endpoint")
+
+2. **Query past observations:**
+   Ask naturally - mem-search skill auto-invokes:
+   ```
+   "What decisions were made about {component}?"
+   "Did we solve similar problems with {technology}?"
+   "Any past bugs related to {pattern}?"
+   ```
+
+3. **Apply relevant learnings:**
+   - If past decision exists → Follow established pattern
+   - If past bug was fixed → Apply the fix
+   - If conflict with current spec → Note and report to Main Claude
+
+4. **Report in validation:**
+   ```markdown
+   Memory Context: (Step 0.6)
+   - [ ] Queried claude-mem for related past work
+   - Relevant observations found:
+     - [#ID] {summary} → Will apply: {how}
+   - No relevant observations: Proceeding fresh
+   ```
+
+**Example:**
+```
+Task: Implement refresh token endpoint
+
+Query: "decisions about refresh tokens"
+Result: #12345 - "Chose rotating refresh tokens with Redis storage"
+
+→ Apply: Use rotating tokens + Redis (not in-memory)
+→ Report: "Following decision #12345 - rotating tokens"
+```
+
+---
+
 ### Step 1-4: Standard Checks
 
 1. **Context Discovery** - Load project context via agent-discovery.md
@@ -159,6 +205,12 @@ Design Spec Implementation: (Step 5)
   - {requirement 1 from design.md}
   - {requirement 2 from design.md}
 
+Memory Context: (Step 0.6 - claude-mem)
+- [ ] Queried claude-mem for related past work
+- Relevant observations:
+  - {#ID: summary → will apply how}
+  - OR: No relevant observations found
+
 Project Context:
 - Project: {name}
 - Stack: {tech-stack}
@@ -178,6 +230,7 @@ Ready to Implement:
 - [ ] Task understood
 - [ ] Dependencies identified
 - [ ] Required libraries identified
+- [ ] Memory context applied (if available)
 - [ ] Approach planned (using specified libraries)
 ```
 

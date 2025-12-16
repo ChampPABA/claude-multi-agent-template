@@ -158,6 +158,71 @@ if (fileExists(projectStatusPath)) {
 }
 ```
 
+### Step 1.6: Memory Context Query (v2.2.0 - claude-mem Integration)
+
+**WHY:** Query past work to leverage decisions, avoid repeating mistakes, and maintain consistency.
+
+```typescript
+// Extract keywords from change-id and proposal title
+const changeKeywords = changeId.split('-').join(' ')
+const proposalPath = `openspec/changes/${changeId}/proposal.md`
+const proposalContent = fileExists(proposalPath) ? Read(proposalPath) : ''
+const proposalTitle = proposalContent.match(/^#\s+(.+)/m)?.[1] || changeId
+
+output(`\n🧠 Querying claude-mem for related past work...`)
+
+// Use mem-search skill to find related observations
+// The skill auto-invokes when asking about past work
+const queries = [
+  `decisions about ${changeKeywords}`,
+  `bugs related to ${changeKeywords}`,
+  `implementations of ${changeKeywords}`
+]
+
+// Claude will auto-invoke mem-search for these queries
+// Results are stored for inclusion in research-checklist.md
+
+let pastLearnings = []
+
+// Note: In practice, Main Claude asks these questions naturally
+// and mem-search skill returns relevant observations
+
+output(`   Searched for: ${changeKeywords}`)
+output(`   (Results will be included in research-checklist.md if relevant)`)
+output(``)
+
+// Store for later use in research-checklist.md generation
+// pastLearnings will be populated by mem-search results
+```
+
+**Integration with research-checklist.md:**
+
+When generating `research-checklist.md` (Step 2.6), include a "Past Learnings" section:
+
+```markdown
+## Past Learnings (from claude-mem)
+
+> Related observations from previous sessions:
+
+| ID | Type | Summary | Relevance |
+|----|------|---------|-----------|
+| #12345 | decision | Chose Drizzle over Prisma | HIGH |
+| #12340 | bugfix | Fixed N+1 query in user list | MEDIUM |
+
+### Key Takeaways:
+- Use Drizzle patterns established in #12345
+- Watch for N+1 queries (see #12340 for solution)
+```
+
+If no relevant observations found:
+```markdown
+## Past Learnings (from claude-mem)
+
+No related past work found. Proceeding fresh.
+```
+
+---
+
 ### Step 2: Read OpenSpec Files
 
 Read in order:
