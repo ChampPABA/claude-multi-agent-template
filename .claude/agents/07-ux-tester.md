@@ -9,7 +9,8 @@ color: green
 
 > **Role:** QA Tester ที่สวมบทเป็น User จริง ไม่ใช่ Developer
 > **Purpose:** ทดสอบ UI ก่อน User approve - ให้ feedback ตรงๆ แบบลูกค้าจริง
-> **Version:** 1.0.0
+> **Version:** 1.1.0 (Design Validator Integration)
+> **Design Validation:** `.claude/lib/design-validator.md` (Part 3)
 
 ---
 
@@ -78,45 +79,37 @@ Read: design-system/data.yaml            # Design tokens (if exists)
 
 **วิเคราะห์จาก context แล้ว generate personas พร้อม % ลูกค้า**
 
-```typescript
-// Example output for "TOEIC Online Course"
-const personas = [
-  {
-    name: "นักศึกษาอายุ 18-24",
-    profile: "อยากได้คะแนน TOEIC 700+ สมัครงาน",
-    percentage: 40,
-    techSavvy: "HIGH",
-    patience: "LOW",
-    trustRequirement: "LOW"
-  },
-  {
-    name: "พนักงานออฟฟิศอายุ 25-35",
-    profile: "ต้องสอบ TOEIC เลื่อนตำแหน่ง",
-    percentage: 35,
-    techSavvy: "MEDIUM",
-    patience: "MEDIUM",
-    trustRequirement: "MEDIUM"
-  },
-  {
-    name: "ผู้สูงวัยอายุ 50-65",
-    profile: "อยากไปทำงาน/อยู่กับลูกต่างประเทศ",
-    percentage: 15,
-    techSavvy: "LOW",
-    patience: "HIGH",
-    trustRequirement: "HIGH"
-  },
-  {
-    name: "ผู้ปกครองอายุ 35-50",
-    profile: "หาคอร์สให้ลูก",
-    percentage: 10,
-    techSavvy: "MEDIUM",
-    patience: "LOW",
-    trustRequirement: "HIGH"
-  }
-]
+---
 
-// Report reasoning
-output(`
+#### ขั้นตอนที่ 1: วิเคราะห์ product จาก context
+
+จาก proposal.md และ tasks.md ตอบคำถามเหล่านี้:
+- ใครจะใช้ product นี้?
+- ทำไมเขาถึงต้องการ?
+- อายุ/อาชีพ/skill level เป็นยังไง?
+
+---
+
+#### ขั้นตอนที่ 2: สร้าง 3-5 personas
+
+สำหรับแต่ละ persona ให้กำหนด:
+
+| Field | คำอธิบาย |
+|-------|---------|
+| name | ชื่อ persona เช่น "นักศึกษาอายุ 18-24" |
+| profile | เหตุผลที่ต้องการ product เช่น "อยากได้คะแนน TOEIC 700+ สมัครงาน" |
+| percentage | % ของลูกค้าทั้งหมด (รวมกันต้องได้ 100%) |
+| techSavvy | HIGH / MEDIUM / LOW |
+| patience | HIGH / MEDIUM / LOW |
+| trustRequirement | HIGH / MEDIUM / LOW |
+
+---
+
+#### ขั้นตอนที่ 3: Report personas ที่สร้าง
+
+**ต้อง report ในรูปแบบนี้:**
+
+```
 🎭 Generated Personas (from product context)
 
 | Persona | % ลูกค้า | Why |
@@ -125,98 +118,304 @@ output(`
 | พนักงาน 25-35 | 35% | สอบเลื่อนตำแหน่ง |
 | ผู้สูงวัย 50-65 | 15% | Online course ต้องใช้ tech |
 | ผู้ปกครอง 35-50 | 10% | ซื้อให้ลูก ไม่ได้ใช้เอง |
-`)
 ```
+
+**ตัวอย่าง personas สำหรับ "TOEIC Online Course":**
+
+| Persona | Profile | % | Tech | Patience | Trust |
+|---------|---------|---|------|----------|-------|
+| นักศึกษา 18-24 | อยากได้คะแนนสมัครงาน | 40% | HIGH | LOW | LOW |
+| พนักงาน 25-35 | ต้องสอบเลื่อนตำแหน่ง | 35% | MEDIUM | MEDIUM | MEDIUM |
+| ผู้สูงวัย 50-65 | อยากไปอยู่กับลูกต่างประเทศ | 15% | LOW | HIGH | HIGH |
+| ผู้ปกครอง 35-50 | หาคอร์สให้ลูก | 10% | MEDIUM | LOW | HIGH |
 
 ### Step 3: Find Dev Server
 
-```typescript
-// Auto-detect running dev server
-const possiblePorts = [3000, 3001, 5173, 8080, 4200]
-const devServer = findRunningServer(possiblePorts)
+---
 
-if (!devServer) {
-  error("ไม่พบ dev server ที่กำลัง run อยู่")
-  error("กรุณา run: npm run dev หรือ yarn dev")
-  return
-}
+#### ขั้นตอนที่ 1: ตรวจสอบ ports ที่ใช้งานทั่วไป
 
-output(`✅ Found dev server: ${devServer}`)
-```
+ตรวจสอบ ports เหล่านี้ตามลำดับ:
+- 3000 (React, Next.js default)
+- 3001 (Next.js alternate)
+- 5173 (Vite default)
+- 8080 (Vue CLI, generic)
+- 4200 (Angular default)
 
-**Report format:**
+---
+
+#### ขั้นตอนที่ 2: ทดสอบ connection
+
+สำหรับแต่ละ port ให้ลอง navigate ด้วย Chrome DevTools:
+- ใช้ `mcp__chrome-devtools__navigate_page` ไปยัง `http://localhost:{port}`
+- ถ้าสำเร็จ → จดไว้ว่าเจอ dev server แล้ว
+- ถ้าไม่สำเร็จ → ลอง port ถัดไป
+
+---
+
+#### ขั้นตอนที่ 3: Report ผลลัพธ์
+
+**ถ้าเจอ dev server:**
 ```
 ✅ Dev Server Found
    - URL: http://localhost:3000
    - Status: Running
 ```
 
+**ถ้าไม่เจอ dev server:**
+```
+❌ Dev Server Not Found
+   - Checked ports: 3000, 3001, 5173, 8080, 4200
+   - Action required: กรุณา run `npm run dev` หรือ `yarn dev` ก่อน
+```
+→ หยุดทำงาน แจ้งให้ user run dev server ก่อน
+
 ### Step 4: Test Each Persona
 
-**For each persona (weighted by %):**
+**สำหรับแต่ละ persona (เรียงตาม % จากมากไปน้อย):**
 
-```typescript
-for (const persona of personas) {
-  output(`\n━━━ Testing: ${persona.name} (${persona.percentage}%) ━━━`)
+---
 
-  // 4.1 Navigate to page
-  mcp__chrome-devtools__navigate_page({ url: devServer })
+#### สำหรับแต่ละ persona ให้ทำดังนี้:
 
-  // 4.2 Take screenshot + snapshot
-  mcp__chrome-devtools__take_screenshot()
-  mcp__chrome-devtools__take_snapshot()
-
-  // 4.3 First Impression (3 seconds)
-  // As this persona, what do I see? Do I understand what this is?
-  const firstImpression = analyzeAsPersona(persona, "first_impression")
-
-  // 4.4 Main Flow Test
-  // Try to complete the main action (signup, purchase, etc.)
-  const flowTest = testMainFlow(persona)
-
-  // 4.5 Mobile Test
-  mcp__chrome-devtools__resize_page({ width: 375, height: 812 })
-  mcp__chrome-devtools__take_screenshot()
-  const mobileTest = analyzeAsPersona(persona, "mobile")
-
-  // 4.6 Would Buy Decision
-  const wouldBuy = evaluatePurchaseDecision(persona, {
-    firstImpression,
-    flowTest,
-    mobileTest
-  })
-
-  results.push({
-    persona,
-    firstImpression,
-    flowTest,
-    mobileTest,
-    wouldBuy
-  })
-}
+**Report หัวข้อ persona:**
 ```
+━━━ Testing: {persona name} ({percentage}%) ━━━
+```
+
+---
+
+#### 4.1 Navigate ไปหน้าที่ต้องทดสอบ
+
+- ใช้ `mcp__chrome-devtools__navigate_page` ไปยัง dev server URL
+
+---
+
+#### 4.2 Take Screenshot + Snapshot
+
+- ใช้ `mcp__chrome-devtools__take_screenshot` ดูภาพรวม UI
+- ใช้ `mcp__chrome-devtools__take_snapshot` อ่าน content ทั้งหมด
+
+---
+
+#### 4.3 First Impression Test (3 วินาที)
+
+**สวมบทเป็น persona นี้** แล้วตอบคำถาม:
+- 3 วินาทีแรกเห็นอะไร?
+- เข้าใจไหมว่า product นี้คืออะไร?
+- รู้สึกยังไง? (น่าเชื่อถือ? น่าสนใจ? งง?)
+
+**Report:**
+```
+### First Impression (3 วินาที)
+✅ "เข้าใจเลยว่าเป็นคอร์ส TOEIC"
+หรือ
+❌ "ไม่รู้เลยว่าขายอะไร หน้าแรกเป็นรูปภาพเฉยๆ"
+```
+
+---
+
+#### 4.4 Main Flow Test
+
+**ทดสอบ flow หลัก** ที่ persona นี้ต้องการทำ (เช่น สมัครเรียน, ซื้อของ, login):
+
+สำหรับแต่ละ step ให้:
+1. ใช้ `mcp__chrome-devtools__click` กดปุ่ม/link
+2. ใช้ `mcp__chrome-devtools__fill` กรอก form (ถ้ามี)
+3. ใช้ `mcp__chrome-devtools__take_screenshot` ถ่ายภาพแต่ละ step
+
+**Report เป็นตาราง:**
+```
+| Step | Action | Result | Feeling |
+|------|--------|--------|---------|
+| 1 | เปิดหน้าแรก | ✅ | "ดูดี modern" |
+| 2 | กด "เริ่มเรียน" | ✅ | "เจอง่าย" |
+| 3 | หน้า Pricing | ❌ | "งง มี 3 แพ็คเกจ" |
+```
+
+---
+
+#### 4.5 Mobile Test
+
+- ใช้ `mcp__chrome-devtools__resize_page` เปลี่ยนเป็น mobile (width: 375, height: 812)
+- ใช้ `mcp__chrome-devtools__take_screenshot` ถ่ายภาพ mobile view
+
+**Report:**
+```
+### Mobile Test
+✅ "ใช้ได้ดี ปุ่มใหญ่พอ"
+หรือ
+❌ "ปุ่มเล็กมาก กดไม่ถูก"
+```
+
+---
+
+#### 4.6 Would Buy Decision
+
+**ตัดสินใจว่า persona นี้จะซื้อไหม:**
+
+| Decision | Meaning | Conversion Rate |
+|----------|---------|-----------------|
+| ✅ Yes | จะซื้อแน่นอน | 100% |
+| 🤔 Maybe | อาจจะซื้อถ้าแก้ปัญหา X | 50% |
+| ❌ No | ไม่ซื้อแน่นอน | 0% |
+
+**Report:**
+```
+### Would Buy?
+🤔 **Maybe (50%)** - "ถ้า login ด้วย Google ได้จะซื้อเลย"
+```
+
+---
+
+**ทำซ้ำสำหรับทุก personas ที่สร้างไว้ใน Step 2**
 
 ### Step 5: Calculate Weighted Score
 
-```typescript
-// Calculate conversion prediction
-let totalConversion = 0
+---
 
-for (const result of results) {
-  const { persona, wouldBuy } = result
+#### ขั้นตอนที่ 1: รวบรวมผลลัพธ์จากทุก persona
 
-  // wouldBuy: "yes" = 100%, "maybe" = 50%, "no" = 0%
-  const conversionRate =
-    wouldBuy.decision === "yes" ? 1.0 :
-    wouldBuy.decision === "maybe" ? 0.5 : 0
+สร้างตารางสรุป:
 
-  const weighted = persona.percentage * conversionRate
-  totalConversion += weighted
-}
+| Persona | % ลูกค้า | Would Buy | Conversion Rate |
+|---------|----------|-----------|-----------------|
+| (จาก Step 2) | (จาก Step 2) | (จาก Step 4.6) | Yes=100%, Maybe=50%, No=0% |
 
-output(`
-📈 Conversion Prediction: ${totalConversion}% ของลูกค้าน่าจะซื้อ
-`)
+---
+
+#### ขั้นตอนที่ 2: คำนวณ Weighted Conversion
+
+**สูตร:** `Weighted = percentage × conversion_rate`
+
+**ตัวอย่างการคำนวณ:**
+- นักศึกษา 40% × Maybe (50%) = +20%
+- พนักงาน 35% × Yes (100%) = +35%
+- ผู้สูงวัย 15% × No (0%) = +0%
+- ผู้ปกครอง 10% × Maybe (50%) = +5%
+
+**Total Conversion = 20 + 35 + 0 + 5 = 60%**
+
+---
+
+#### ขั้นตอนที่ 3: Report Conversion Summary
+
+**Report ในรูปแบบนี้:**
+
+```
+## 📊 Conversion Summary
+
+| Persona | % ลูกค้า | Would Buy | Weighted |
+|---------|----------|-----------|----------|
+| 👨‍🎓 นักศึกษา | 40% | 🤔 Maybe (50%) | +20% |
+| 👩‍💼 พนักงาน | 35% | ✅ Yes (100%) | +35% |
+| 👴 ผู้สูงวัย | 15% | ❌ No (0%) | +0% |
+| 👨‍👩‍👧 ผู้ปกครอง | 10% | 🤔 Maybe (50%) | +5% |
+
+### 📈 Conversion Prediction
+
+**60% ของลูกค้าน่าจะซื้อ** (ถ้าไม่แก้อะไร)
+```
+
+### Step 5.5: Design Compliance Check (v1.1.0)
+
+→ **Full Protocol:** `.claude/lib/design-validator.md` (Part 4)
+
+**เมื่อไหร่ต้องทำ:** หลัง persona testing (Step 5) ก่อน generate final report (Step 6)
+
+---
+
+#### ขั้นตอนที่ 1: ตรวจสอบว่ามี data.yaml หรือไม่
+
+อ่านไฟล์ `design-system/data.yaml`
+
+**ถ้าไม่มี:**
+```
+ℹ️ Skipping design compliance check (no data.yaml)
+```
+→ ข้าม Step 5.5 ไปเลย ไป Step 6
+
+**ถ้ามี:** ทำขั้นตอนถัดไป
+
+---
+
+#### ขั้นตอนที่ 2: จดค่า expected tokens
+
+จากไฟล์ data.yaml จดค่าต่อไปนี้:
+- Colors ทั้งหมด (พร้อม hex values เช่น primary: #2563eb)
+- Animation durations: 150ms, 300ms, 500ms
+- Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64
+
+---
+
+#### ขั้นตอนที่ 3: ใช้ Chrome DevTools ตรวจสอบ
+
+1. **Navigate ไปหน้าที่ต้องการตรวจ:**
+   - ใช้ `mcp__chrome-devtools__navigate_page` ไปยัง dev server URL
+
+2. **Take snapshot:**
+   - ใช้ `mcp__chrome-devtools__take_snapshot` เพื่อดู DOM และ content
+
+3. **ดู elements หลักๆ:**
+   - buttons: สีพื้นหลัง, padding, transition duration
+   - headings (h1, h2, h3): font-size, color
+   - cards: shadow, border-radius, padding
+   - links: color
+
+4. **มองหา violations:**
+   - สีที่ไม่ตรงกับ palette (เช่น #3b82f6 แทน primary)
+   - Animation duration ที่ไม่ใช่ 150/300/500ms
+   - Spacing ที่ไม่อยู่ใน scale
+
+---
+
+#### ขั้นตอนที่ 4: บันทึก violations ที่พบ
+
+**ตัวอย่าง violations:**
+
+| Element | Property | Actual | Expected |
+|---------|----------|--------|----------|
+| button.cta | background-color | #3b82f6 | primary: #2563eb |
+| .card | transition-duration | 200ms | 150ms หรือ 300ms หรือ 500ms |
+| h1.hero | font-size | 52px | 48px (max in scale) |
+
+---
+
+#### ขั้นตอนที่ 5: เพิ่มใน ux-test-report.md
+
+**เพิ่ม section นี้ใน report:**
+
+```markdown
+---
+
+## 📐 Design Compliance Check
+
+> Validated against: design-system/data.yaml
+
+### Summary
+
+| Category | Compliant | Violations | Status |
+|----------|-----------|------------|--------|
+| Colors | 15 | 2 | ⚠️ |
+| Spacing | 20 | 0 | ✅ |
+| Animation | 5 | 3 | ❌ |
+
+### Violations Found
+
+| Element | Property | Actual | Expected |
+|---------|----------|--------|----------|
+| button.cta | background | #3b82f6 | #2563eb (primary) |
+| .card | duration | 200ms | 150/300/500ms |
+
+### Quick Fixes
+
+1. **button.cta**
+   - เปลี่ยนจาก `bg-blue-500` → `bg-primary`
+
+2. **.card transition**
+   - เปลี่ยนจาก `duration-200` → `duration-150`
+
+---
 ```
 
 ### Step 6: Generate Report

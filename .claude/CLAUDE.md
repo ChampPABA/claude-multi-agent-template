@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 3.2.0 - Consolidated Pre-Work Context
-> **Latest:** Step 2.6 generates `pre-work-context.md` - single file with all agent context
+> **Template Version:** 3.3.0 - Design Validation System
+> **Latest:** Single Source of Truth for design compliance (prevention + detection)
 
 ---
 
@@ -128,6 +128,7 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/lib/task-analyzer.md` - **v3.1.0!** Template-free task analysis with TDD classification (Step 2.6) ✨
 - `@/.claude/lib/flags-updater.md` - Progress tracking protocol (Main Claude updates flags.json)
 - `@/.claude/lib/agent-router.md` - Mandatory agent routing rules (enforce delegation)
+- `@/.claude/lib/design-validator.md` - **v3.3.0!** Design system validation (prevention + detection) ✨
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 
 ---
@@ -209,6 +210,58 @@ Universal, framework-agnostic template for AI-assisted development.
            ↓
 /cdev → uxui-frontend (reads data.yaml)
 ```
+
+---
+
+## 🎯 Design Validation System (v3.3.0 - NEW!)
+
+**→ See:** `@/.claude/lib/design-validator.md` for full specification
+
+**Problem Solved:**
+- uxui-frontend agent ไม่อ่าน design-system/data.yaml → CSS ไม่ตรง design
+- ux-tester อ่านแค่ code ไม่ได้เห็น actual rendered output
+- Logic กระจายหลายไฟล์ → ไม่มี enforcement
+
+**Solution: Single Source of Truth**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PREVENTION (Pre-Work)                     │
+├─────────────────────────────────────────────────────────────┤
+│  Main Claude → Pre-Flight Design Check (before /cdev)        │
+│  uxui-frontend → STEP 0.5: Read data.yaml (MANDATORY)       │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    DETECTION (Post-Work)                     │
+├─────────────────────────────────────────────────────────────┤
+│  ux-tester → Chrome DevTools Style Comparison                │
+│              Compare computed styles vs data.yaml tokens     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**What Gets Validated:**
+
+| Token Category | Example Violation | Expected |
+|----------------|-------------------|----------|
+| Colors | #3b82f6 | bg-primary (from data.yaml) |
+| Spacing | p-5, gap-7 | p-4, p-6, gap-8 (scale) |
+| Animation | duration-200 | duration-150, 300, 500ms |
+| Shadows | mixed sm+xl | consistent level |
+
+**Agent Responsibilities:**
+
+| Agent | What to Do |
+|-------|------------|
+| Main Claude | Pre-flight check before invoking uxui-frontend |
+| uxui-frontend | STEP 0.5: Read data.yaml, report loaded tokens |
+| ux-tester | Step 5.5: Chrome DevTools validation |
+
+**Files Updated:**
+- `.claude/lib/design-validator.md` (NEW - Single Source of Truth)
+- `.claude/agents/02-uxui-frontend.md` (v2.1.0 - references design-validator)
+- `.claude/agents/07-ux-tester.md` (v1.1.0 - Design Compliance Check)
+- `.claude/commands/cdev.md` (Step 4.0 - Pre-Flight Check)
 
 ---
 
@@ -310,6 +363,7 @@ User: "Build login system"
 **Recent versions:**
 | Version | Key Feature |
 |---------|-------------|
+| v3.3.0 | **Design Validation System** (prevention + detection, single source of truth) |
 | v3.2.0 | Consolidated Pre-Work Context (single `pre-work-context.md` for agents) |
 | v3.1.1 | Direct Best Practices Execution (Step 2.7 rewritten, no pseudocode) |
 | v3.1.0 | TDD Classification + Development Principles Injection |

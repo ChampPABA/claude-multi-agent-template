@@ -19,6 +19,14 @@ Ensures Main Claude updates flags.json after EVERY phase completion. Provides he
 **`agent-router.md`** - Agent routing rules
 Defines agent boundaries. Main Claude delegates implementation work to specialized agents. Includes work type detection patterns and self-check protocol.
 
+**`design-validator.md`** - Design system validation (v3.3.0 NEW!)
+Single Source of Truth for design compliance. Contains:
+- Part 1: Design token loading protocol
+- Part 2: Pre-work validation (uxui-frontend)
+- Part 3: Post-work validation (ux-tester with Chrome DevTools)
+- Part 4: Main Claude pre-flight checklist
+Used by: Main Claude (/cdev), uxui-frontend agent, ux-tester agent
+
 **`validation-gates.md`** - Validation checkpoints
 Four validation gates that Main Claude passes: before work, after agent responds, before reporting, and before phase start. Ensures quality and correctness at each step.
 

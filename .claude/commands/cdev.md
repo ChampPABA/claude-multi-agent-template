@@ -40,39 +40,69 @@ Run: /csetup {change-id}
 
 ### Step 2: Read Current Phase
 
-```typescript
-const flags = JSON.parse(Read('openspec/changes/{change-id}/.claude/flags.json'))
-const currentPhase = flags.current_phase
-const phaseData = flags.phases[currentPhase]
+---
 
-if (phaseData.status === 'completed') {
-  // Move to next phase
-  currentPhase = getNextPhase(flags)
-}
+#### ขั้นตอนที่ 1: อ่าน flags.json
+
+อ่านไฟล์ `openspec/changes/{change-id}/.claude/flags.json`
+
+จดข้อมูลต่อไปนี้:
+- `current_phase`: ชื่อ phase ปัจจุบัน
+- `phases[current_phase].status`: สถานะของ phase
+- `phases[current_phase].agent`: agent ที่ต้องใช้
+
+---
+
+#### ขั้นตอนที่ 2: ตรวจสอบสถานะ phase
+
+**ถ้า status = "completed":**
+- หา phase ถัดไปจาก phases.md
+- อัพเดต current_phase เป็น phase ถัดไป
+
+**ถ้า status = "pending" หรือ "in_progress":**
+- ใช้ phase ปัจจุบัน
+
+---
+
+#### ขั้นตอนที่ 3: Report สถานะ
+
 ```
+📍 Current Phase: {phase_number} - {phase_name}
+   Agent: {agent}
+   Status: {status}
+```
+
+---
 
 ### Step 3: Check Phase Type
 
-```typescript
-const agent = phaseData.agent
+---
 
-if (agent === 'user') {
-  // Manual action required
-  output(`🛑 Phase ${phaseData.phase_number} requires manual action`)
-  output(`Instructions: ${getInstructions(currentPhase)}`)
-  output(`When done: /cdev ${changeId} --continue`)
-  return
-}
+#### ตรวจสอบว่า phase ต้องการ manual action หรือไม่
 
-if (agent.includes('+')) {
-  // Multiple agents (parallel)
-  agents = agent.split('+').map(a => a.trim())
-  invokeMultipleAgents(agents, changeId, currentPhase)
-} else {
-  // Single agent
-  invokeAgent(agent, changeId, currentPhase)
-}
+**ถ้า agent = "user":**
 ```
+🛑 Phase {phase_number} requires manual action
+
+Instructions:
+{instructions from phases.md}
+
+When done: /cdev {change-id} --continue
+```
+→ หยุดทำงาน รอ user ทำเสร็จแล้ว run /cdev ใหม่
+
+---
+
+#### ตรวจสอบว่ามี agent หลายตัวหรือไม่
+
+**ถ้า agent มีเครื่องหมาย "+" (เช่น "backend + database"):**
+- แยก agents ออกมาเป็น list
+- Invoke agents พร้อมกัน (parallel)
+- รอทุก agent เสร็จก่อนไปต่อ
+
+**ถ้ามี agent ตัวเดียว:**
+- Invoke agent ตัวนั้น
+- รอเสร็จแล้วไป Step 4
 
 ### Step 4: Invoke Agent with Retry & Validation
 
@@ -84,283 +114,251 @@ See: `.claude/lib/agent-executor.md` for full implementation
 
 1. **Calculate Context Size** (for model selection)
 2. **Select Model** (haiku vs sonnet based on complexity)
-3. **Execute Agent with Retry** (automatic retry on failure)
-4. **Validate Pre-Work** (enforce mandatory checklist)
-5. **Validate Output Quality** (check completeness)
-6. **Handle Errors** (retry or escalate)
+3. **Pre-Flight Design Check** (for visual agents) ← NEW v3.3.0
+4. **Execute Agent with Retry** (automatic retry on failure)
+5. **Validate Pre-Work** (enforce mandatory checklist)
+6. **Validate Output Quality** (check completeness)
+7. **Handle Errors** (retry or escalate)
 
-**Implementation:**
+### Step 4.0: Pre-Flight Design Check (v3.3.0)
 
-```typescript
-// Step 4: Invoke Agent with Retry & Validation
+→ **Full Protocol:** `.claude/lib/design-validator.md` (Part 2)
 
-// 4.1: Build agent prompt (with design reference + best practices - v2.1.2)
-function buildAgentPrompt(phase, changeContext) {
-  let prompt = `
-# Phase ${phase.phase_number}: ${phase.name}
-
-## Change Context
-${changeContext.proposal}
-
-## Tasks
-${changeContext.tasks}
-
-## Design Decisions (from design.md)
-${changeContext.design || '(no design.md found)'}
-
-${phase.instructions}
+**เมื่อไหร่ต้องทำ:** ก่อน invoke uxui-frontend หรือ frontend agent ทุกครั้ง
 
 ---
 
-## 📦 Library Requirements
+#### ขั้นตอนที่ 1: ตรวจสอบว่าเป็น visual agent หรือไม่
 
-**Scan for required libraries before implementation:**
+ดู phase.agent ว่าเป็น `uxui-frontend` หรือ `frontend` หรือไม่
 
-1. **Review tasks.md above** for these patterns:
-   - "Install X and dependencies" → Use library X
-   - "Configure X with Y adapter" → Use X with adapter Y
-   - Backtick packages like \`better-auth\` → Required dependency
+**ถ้าไม่ใช่:** ข้าม Step 4.0 ไปเลย
 
-2. **Review "Design Decisions" section above** for:
-   - "### D1: Use X Library" → Decision to use X
-   - "**Decision:** Use X" → Chosen library
-   - Specific configurations (e.g., "JWT 15min", "Redis refresh token 30d")
-   - Architecture decisions (e.g., "Hybrid Session Strategy")
-
-3. **Use the specified libraries**
-   - WHY: The team chose these for compatibility, features, or constraints
-   - Custom implementations duplicate effort and miss edge cases the library handles
-
-4. **Implement according to Design Spec (not library defaults)**
-   - If design.md specifies "JWT 15min + Redis refresh 30d" → Configure library with these values
-   - If design.md specifies custom endpoints → Implement those endpoints
-   - Library defaults are starting points, not final implementation
-   - WHY: Design decisions were made for specific project requirements
-
-**Example:**
-\`\`\`
-design.md says:
-  "Hybrid Session Strategy: JWT 15min + Redis refresh 30d"
-
-→ Use better-auth library (from tasks.md)
-→ Configure JWT plugin with 15min expiry
-→ Configure refresh token with 30d in Redis
-→ Implement /api/auth/refresh endpoint
-
-WHY not defaults? Design spec has project-specific security requirements
-that differ from library defaults.
-\`\`\`
-
-**Report in validation:**
-\`\`\`
-Libraries: better-auth, @better-auth/drizzle, ioredis
-Design Spec Implementation:
-- [x] JWT access token: 15min (design.md D1)
-- [x] Redis refresh token: 30d (design.md D2)
-- [x] /api/auth/refresh endpoint (design.md D3)
-\`\`\`
-
----
-`
-
-  // v3.1.0: Add Level 1 Universal Patterns (development-principles.md) for ALL agents
-  // Source: context-loading-protocol.md - Level 1 patterns apply to ALL agents
-  const devPrinciplesPath = '.claude/contexts/patterns/development-principles.md'
-  if (fileExists(devPrinciplesPath)) {
-    prompt += `
+**ถ้าใช่:** ทำขั้นตอนถัดไป
 
 ---
 
-## 🏛️ Development Principles (Level 1 - ALL Agents)
+#### ขั้นตอนที่ 2: ตรวจสอบว่ามี design system หรือไม่
 
-**REQUIRED READING:** @${devPrinciplesPath}
+อ่านไฟล์ `design-system/data.yaml`
 
-These principles apply to ALL code written by ALL agents:
+**ถ้ามีไฟล์:**
+```
+✅ Design system found: design-system/data.yaml
+```
+→ ไปขั้นตอนที่ 3
 
-**Quick Reference:**
-| Principle | Summary |
-|-----------|---------|
-| **KISS** | Choose simple solutions over complex ones |
-| **YAGNI** | Build only what you need now |
-| **SRP** | One responsibility per module |
-| **DRY** | Single source of truth for all knowledge |
-| **Fail Fast** | Detect and raise errors immediately |
-| **Observability** | Log everything that matters |
+**ถ้าไม่มีไฟล์:**
+```
+⚠️ WARNING: No design system found!
+   Path: design-system/data.yaml (not found)
 
-**Report format:**
-\`\`\`
-✅ Development Principles Applied
-   - KISS ✓ (simple implementation)
-   - DRY ✓ (no duplication)
-   - Separation of Concerns ✓
-\`\`\`
+   Options:
+   1. Run /designsetup first (recommended)
+   2. Continue with fallback design principles
 
----
-`
-  }
-
-  // Add best-practices reference for ALL agents
-  const bpDir = '.claude/contexts/domain/project/best-practices/'
-  if (fileExists(bpDir)) {
-    const bpFiles = listFiles(bpDir).filter(f => f.endsWith('.md') && f !== 'index.md')
-
-    // Map agent type to relevant best-practices
-    const agentBpMapping = {
-      'uxui-frontend': ['react', 'nextjs', 'vue', 'tailwind'],
-      'frontend': ['react', 'nextjs', 'vue', 'typescript'],
-      'backend': ['express', 'fastapi', 'django', 'prisma', 'drizzle'],
-      'database': ['prisma', 'drizzle', 'postgres', 'mongodb'],
-      'test-debug': ['vitest', 'jest', 'playwright'],
-      'integration': ['typescript'], // minimal
-      'ux-tester': [] // No best practices needed - uses Chrome DevTools
-    }
-
-    const relevantTechs = agentBpMapping[phase.agent] || []
-    const relevantFiles = bpFiles.filter(f =>
-      relevantTechs.some(tech => f.toLowerCase().includes(tech))
-    )
-
-    if (relevantFiles.length > 0) {
-      prompt += `
+   Proceeding with fallback...
+```
+→ ไปขั้นตอนที่ 4 โดยไม่ inject instruction
 
 ---
 
-## 📚 Best Practices (STEP 0)
+#### ขั้นตอนที่ 3: บอก agent ให้อ่าน design system
 
-Read these files before implementation for quality output:
+เมื่อ invoke agent ต้องบอกใน prompt ว่า:
 
-${relevantFiles.map(f => `- Read: ${bpDir}${f}`).join('\n')}
+```
+MANDATORY: Read design-system/data.yaml before writing any CSS/Tailwind.
+Report the tokens you loaded before starting implementation.
 
-**Report format:**
-\`\`\`
-✅ Best Practices Loaded
-   ${relevantFiles.map(f => `- ${f.replace('.md', '')} ✓`).join('\n   ')}
-\`\`\`
+You must report:
+- Colors: primary=#xxx, secondary=#xxx, etc.
+- Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64
+- Animation durations: 150ms, 300ms, 500ms ONLY
 
-WHY: Best practices ensure consistency with project patterns.
-
----
-`
-    }
-  }
-
-  // Add design reference for uxui-frontend agent (not full content!)
-  if (phase.agent === 'uxui-frontend') {
-    const tokensPath = 'design-system/data.yaml'
-    const dataYamlPath = 'design-system/data.yaml'
-    const hasTokens = fileExists(tokensPath)
-
-    if (hasTokens) {
-      prompt += `
-
----
-
-## 🎨 Design System (STEP 0.5)
-
-**Files to read:**
-
-${hasTokens ? `- design-system/data.yaml (~500 tokens) - Colors, spacing, typography, psychology` : ''}
-
-**Style Guidelines:**
-
-| Instead of | Use | WHY |
-|------------|-----|-----|
-| text-gray-500, #64748b | text-foreground/70, bg-muted | Theme-aware |
-| p-5, gap-7 | p-4, p-6, gap-8 | Spacing scale |
-| mixing shadow-sm/lg | consistent shadow-md | Visual consistency |
-
-**Report format:**
-\`\`\`
-✅ Design System Loaded
-   - data.yaml ✓
-   - Design Tokens Extracted: [list key tokens]
-\`\`\`
-
-WHY: Design tokens ensure visual consistency across components.
-
----
-`
-    } else {
-      prompt += `
-
----
-
-⚠️ **WARNING:** No design system found!
-Using fallback: .claude/contexts/design/*.md (universal principles)
-
-Run \`/designsetup\` to generate project-specific design system.
-
----
-`
-    }
-  }
-
-  return prompt
-}
-
-const prompt = buildAgentPrompt(phase, changeContext)
-
-// 4.2: Execute agent with retry & validation
-output(`\n🚀 Invoking ${phase.agent} agent (model: opus)...`)
-
-const result = await executeAgentWithRetry(
-  phase.agent,
-  phase,
-  changeContext,
-  {
-    max_retries: 2,
-    retry_delay: 5000,
-    timeout: 600000,  // 10 minutes
-    validate_output: true
-  }
-)
-
-// 4.3: Handle result
-if (result.success) {
-  output(`\n✅ Phase ${phase.phase_number} completed successfully!`)
-  output(`⏱️ Execution time: ${(result.execution_time / 1000).toFixed(1)}s`)
-  output(`🔄 Retries used: ${result.retries_used}`)
-  output(`✅ Validation: ${result.validation_passed ? 'PASSED' : 'SKIPPED'}`)
-
-  // Continue to Step 5: Post-Execution
-} else {
-  output(`\n❌ Phase ${phase.phase_number} failed`)
-  output(`Error: ${result.error}`)
-  output(`Retries used: ${result.retries_used}`)
-
-  // Escalate to user
-  const action = await escalateToUser(phase.agent, phase, result)
-
-  switch (action) {
-    case 'retry':
-      output(`Retrying Phase ${phase.phase_number}...`)
-      // Restart Step 4
-      return executePhaseAgain(changeId, phase)
-
-    case 'skip':
-      output(`⚠️ Skipping Phase ${phase.phase_number}`)
-      await markPhaseAsSkipped(changeId, phase, result.error)
-      // Continue to next phase
-      break
-
-    case 'abort':
-      output(`🛑 Workflow aborted`)
-      output(`Resume with: /cdev ${changeId}`)
-      return
-  }
-}
+DO NOT use:
+- Hardcoded colors (#3b82f6, rgb())
+- Arbitrary spacing (p-5, gap-7)
+- Random durations (duration-200, duration-250)
 ```
 
-**Helper Functions Used:**
+---
 
-1. **buildAgentPrompt()**: See `.claude/lib/agent-executor.md`
-2. **executeAgentWithRetry()**: See `.claude/lib/agent-executor.md`
-3. **escalateToUser()**: See `.claude/lib/agent-executor.md`
+#### ขั้นตอนที่ 4: Verify agent compliance หลัง agent ตอบกลับ
+
+ตรวจสอบว่า agent output มี report นี้หรือไม่:
+
+```
+✅ Design System Loaded (STEP 0.5)
+   - Source: design-system/data.yaml
+   - Colors: [list]
+   - Spacing: [list]
+   - Animation: [list]
+```
+
+**ถ้ามี report:** ผ่าน ไปต่อได้
+
+**ถ้าไม่มี report:** ถาม agent ว่าอ่าน design system หรือยัง
+
+---
+
+### Step 4.1: Build Agent Prompt
+
+**สร้าง prompt สำหรับ agent โดยประกอบด้วย:**
+
+---
+
+#### ส่วนที่ 1: Change Context
+
+ประกอบข้อมูลจาก:
+- `proposal.md` - What we're building and why
+- `tasks.md` - Tasks for this phase
+- `design.md` - Design decisions (if exists)
+- `phases.md` - Phase instructions
+
+---
+
+#### ส่วนที่ 2: Library Requirements (v2.1.2)
+
+เพิ่มคำสั่งให้ agent:
+1. Scan tasks.md หา patterns: "Install X", "Configure X"
+2. Scan design.md หา: "D1: Use X Library", "Decision: Use X"
+3. ใช้ libraries ที่ระบุ ไม่ใช่ custom implementation
+4. Implement ตาม design spec ไม่ใช่ library defaults
+
+---
+
+#### ส่วนที่ 3: Development Principles (v3.1.0 - ALL agents)
+
+**ถ้ามีไฟล์** `.claude/contexts/patterns/development-principles.md`:
+
+เพิ่มใน prompt:
+```
+## 🏛️ Development Principles (Level 1 - ALL Agents)
+
+REQUIRED READING: @.claude/contexts/patterns/development-principles.md
+
+Quick Reference:
+| Principle | Summary |
+|-----------|---------|
+| KISS | Choose simple solutions |
+| YAGNI | Build only what you need now |
+| SRP | One responsibility per module |
+| DRY | Single source of truth |
+| Fail Fast | Detect errors immediately |
+```
+
+---
+
+#### ส่วนที่ 4: Best Practices (agent-specific)
+
+**ถ้ามี directory** `.claude/contexts/domain/project/best-practices/`:
+
+หา best-practices files ที่ตรงกับ agent:
+
+| Agent | Relevant Topics |
+|-------|-----------------|
+| uxui-frontend | react, nextjs, vue, tailwind |
+| frontend | react, nextjs, vue, typescript |
+| backend | express, fastapi, django, prisma, drizzle |
+| database | prisma, drizzle, postgres, mongodb |
+| test-debug | vitest, jest, playwright |
+| integration | typescript |
+| ux-tester | (none) |
+
+เพิ่มใน prompt:
+```
+## 📚 Best Practices (STEP 0)
+
+Read these files before implementation:
+- Read: .claude/contexts/domain/project/best-practices/{relevant-file}.md
+```
+
+---
+
+#### ส่วนที่ 5: Design System (uxui-frontend only)
+
+**ถ้า agent = uxui-frontend:**
+
+**ถ้ามี** `design-system/data.yaml`:
+```
+## 🎨 Design System (STEP 0.5)
+
+Files to read:
+- design-system/data.yaml
+
+Style Guidelines:
+| Instead of | Use |
+|------------|-----|
+| text-gray-500, #64748b | text-foreground, bg-muted |
+| p-5, gap-7 | p-4, p-6, gap-8 |
+| mixing shadow-sm/lg | consistent shadow-md |
+```
+
+**ถ้าไม่มี:**
+```
+⚠️ WARNING: No design system found!
+Using fallback: .claude/contexts/design/*.md
+```
+
+---
+
+### Step 4.2: Execute Agent with Retry
+
+---
+
+#### การ invoke agent
+
+Report ก่อน invoke:
+```
+🚀 Invoking {agent} agent (model: opus)...
+```
+
+Invoke agent ด้วย:
+- Model: opus (fixed)
+- Timeout: 10 นาที
+- Max retries: 2 ครั้ง
+
+---
+
+#### Handle Result
+
+**ถ้าสำเร็จ:**
+```
+✅ Phase {phase_number} completed successfully!
+⏱️ Execution time: {time}s
+🔄 Retries used: {retries}
+✅ Validation: PASSED
+```
+→ ไป Step 5
+
+**ถ้าล้มเหลว:**
+```
+❌ Phase {phase_number} failed
+Error: {error}
+Retries used: {retries}
+```
+
+ถาม user:
+```
+Options:
+[retry] - ลองใหม่
+[skip]  - ข้าม phase นี้
+[abort] - หยุดทำงาน
+```
+
+---
+
+**Helper Functions:**
+
+See `.claude/lib/agent-executor.md` for:
+- buildAgentPrompt()
+- executeAgentWithRetry()
+- escalateToUser()
 
 **Model Strategy:**
 - All agents use `model: opus` (fixed)
 - Opus 4.5 is the latest Claude model with best performance
-- Quality maintained through comprehensive validation framework
 
 ---
 
@@ -389,26 +387,32 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ### Step 4.6: Approval Gate Handling (v2.7.0)
 
-**NEW:** Handle phases with `requires_approval: true` (e.g., ux-tester Phase 1.5)
+**สำหรับ phases ที่มี** `requires_approval: true` (เช่น ux-tester Phase 1.5)
 
-```typescript
-// Check if this phase requires user approval
-const isApprovalGate = phase.requires_approval === true ||
-                       phase.metadata?.includes('approval-gate')
+---
 
-if (isApprovalGate && result.success) {
-  // Read all phases for loop back logic
-  const phasesPath = `openspec/changes/${changeId}/.claude/phases.md`
-  const allPhases = parsePhasesFromMd(Read(phasesPath))
+#### ขั้นตอนที่ 1: ตรวจสอบว่า phase ต้องการ approval หรือไม่
 
-  output(`
+ดูใน phases.md ว่า phase ปัจจุบันมี:
+- `requires_approval: true`
+- หรือ metadata มีคำว่า `approval-gate`
+
+**ถ้าไม่ต้องการ approval:** ข้าม Step 4.6 ไปเลย
+
+**ถ้าต้องการ approval:** ทำขั้นตอนถัดไป
+
+---
+
+#### ขั้นตอนที่ 2: แสดงผลและรอ user ตัดสินใจ
+
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧪 ${phase.name} Complete - Awaiting Approval
+🧪 {phase_name} Complete - Awaiting Approval
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${result.summary || 'Report generated successfully'}
+{result_summary}
 
-📄 Full report: ${result.reportPath || `openspec/changes/${changeId}/ux-test-report.md`}
+📄 Full report: openspec/changes/{change-id}/ux-test-report.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -418,75 +422,43 @@ ${result.summary || 'Report generated successfully'}
 ❌ "reject [feedback]" → กลับแก้ไข Phase ก่อนหน้า
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  `)
-
-  // PAUSE - Main Claude waits for user's next message
-  // User responds with "approve" or "reject [feedback]"
-  return { status: 'awaiting_approval', phase, changeId }
-}
-
-// When user responds (in next message):
-function handleUserApprovalResponse(userResponse: string, phase: Phase, changeId: string, allPhases: Phase[]) {
-  const normalized = userResponse.trim().toLowerCase()
-
-  // Handle APPROVE
-  if (normalized.match(/^(approve|approved|ok|yes|ใช่|อนุมัติ|ผ่าน|ลุย|ได้|ดี)$/)) {
-    output(`✅ ${phase.name} approved! Continuing to next phase...`)
-    updateFlags(changeId, {
-      [`phase_${phase.phase_number}`]: {
-        status: 'approved',
-        approved_at: new Date().toISOString()
-      }
-    })
-    // Continue to Step 5
-    return { action: 'continue' }
-  }
-
-  // Handle REJECT
-  if (normalized.startsWith('reject') || normalized.startsWith('ไม่') ||
-      normalized.startsWith('แก้') || normalized.startsWith('no')) {
-
-    const feedback = userResponse.replace(/^(reject|ไม่อนุมัติ|แก้ไข|no)\s*/i, '').trim()
-
-    // Find the phase to loop back to
-    const loopBackPhase = allPhases.find(p => p.agent === 'uxui-frontend') || allPhases[0]
-
-    output(`
-🔄 ${phase.name} rejected
-
-📝 Feedback: ${feedback || 'None provided'}
-🔙 Looping back to: Phase ${loopBackPhase.phase_number} - ${loopBackPhase.name}
-
-${loopBackPhase.agent} agent จะได้รับ feedback นี้เพื่อแก้ไข
-    `)
-
-    // Update flags for rejection
-    updateFlags(changeId, {
-      [`phase_${phase.phase_number}`]: {
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
-        rejection_feedback: feedback
-      },
-      [`phase_${loopBackPhase.phase_number}`]: {
-        status: 'pending',
-        rerun_reason: `Rejected from UX Testing: ${feedback}`
-      }
-    })
-
-    // Loop back to uxui-frontend phase
-    output(`\n🔄 Restarting Phase ${loopBackPhase.phase_number}: ${loopBackPhase.name}`)
-    return {
-      action: 'loop_back',
-      loopBackPhase,
-      feedback
-    }
-  }
-
-  // Unknown response - ask again
-  output(`⚠️ ไม่เข้าใจคำตอบ กรุณาตอบ "approve" หรือ "reject [feedback]"`)
-  return { action: 'ask_again' }
-}
 ```
+
+→ หยุดรอ user ตอบ
+
+---
+
+#### ขั้นตอนที่ 3: Handle user response
+
+**ถ้า user ตอบ approve:**
+- คำที่ยอมรับ: approve, approved, ok, yes, ใช่, อนุมัติ, ผ่าน, ลุย, ได้, ดี
+- Output: `✅ {phase_name} approved! Continuing to next phase...`
+- อัพเดต flags.json: status = "approved"
+- ไป Step 5
+
+**ถ้า user ตอบ reject:**
+- คำที่ยอมรับ: reject, ไม่, แก้, no (ตามด้วย feedback)
+- ดึง feedback จาก message
+- หา phase ที่ต้องกลับไปแก้ (uxui-frontend)
+- Output:
+```
+🔄 {phase_name} rejected
+
+📝 Feedback: {feedback}
+🔙 Looping back to: Phase {X} - {phase_name}
+
+{agent} agent จะได้รับ feedback นี้เพื่อแก้ไข
+```
+- อัพเดต flags.json: status = "rejected"
+- กลับไป run phase ที่ต้องแก้ไข
+
+**ถ้าไม่เข้าใจคำตอบ:**
+```
+⚠️ ไม่เข้าใจคำตอบ กรุณาตอบ "approve" หรือ "reject [feedback]"
+```
+→ ถาม user อีกครั้ง
+
+---
 
 **See:** `.claude/lib/agent-executor.md` → "Approval Gate Execution" section for complete flow
 
@@ -494,204 +466,205 @@ ${loopBackPhase.agent} agent จะได้รับ feedback นี้เพ�
 
 ### Step 4.7: Validate Page Plan Compliance (uxui-frontend only)
 
-**Only runs for uxui-frontend agent when page-plan.md exists:**
+**เฉพาะ uxui-frontend agent เมื่อมี page-plan.md**
 
-**Purpose:** Verify agent implemented ALL sections from page-plan.md, not a subset.
+**Purpose:** ตรวจสอบว่า agent implement ครบทุก section ตาม page-plan.md
 
-```typescript
-// Check if page-plan.md exists
-const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
-const hasPagePlan = fileExists(pagePlanPath)
+---
 
-if (phase.agent === 'uxui-frontend' && hasPagePlan) {
-  output(`\n🔍 Validating page-plan.md compliance...`)
+#### ขั้นตอนที่ 1: ตรวจสอบเงื่อนไข
 
-  // Extract sections from page-plan.md Section 2 (Page Structure)
-  const pagePlan = Read(pagePlanPath)
-  const section2Match = pagePlan.match(/## 2\. Page Structure[\s\S]*?(?=## 3\.|## 2\.5|## 2\.6|$)/)
+**ถ้า agent ไม่ใช่ uxui-frontend หรือไม่มี page-plan.md:**
+```
+ℹ️ Page plan validation: N/A (agent: {agent}, has plan: {true/false})
+```
+→ ข้าม Step 4.7 ไปเลย
 
-  if (section2Match) {
-    // Count expected sections (extract component names from JSX)
-    const componentMatches = section2Match[0].match(/<([A-Z]\w+)/g) || []
-    const expectedComponents = componentMatches
-      .map(m => m.replace('<', ''))
-      .filter(name => name !== 'Layout' && name !== 'div') // Exclude wrappers
+**ถ้า agent = uxui-frontend และมี page-plan.md:**
+→ ทำขั้นตอนถัดไป
 
-    const uniqueComponents = [...new Set(expectedComponents)] // Remove duplicates
+---
 
-    output(`\n📋 Page Plan Analysis:`)
-    output(`   Expected sections: ${uniqueComponents.length}`)
-    output(`   Components: ${uniqueComponents.join(', ')}`)
+#### ขั้นตอนที่ 2: วิเคราะห์ page-plan.md
 
-    // Prompt user to verify agent compliance
-    output(`\n⚠️ VALIDATION REQUIRED:`)
-    output(`\nDid the agent implement ALL ${uniqueComponents.length} sections?`)
-    output(`\nPlease verify the implementation includes:`)
-    uniqueComponents.forEach(c => output(`   - ${c}`))
+อ่าน `openspec/changes/{change-id}/page-plan.md`
 
-    output(`\nOptions:`)
-    output(`  [yes]   - All sections implemented ✓`)
-    output(`  [retry] - Agent skipped sections, retry with strict enforcement`)
-    output(`  [skip]  - Skip validation (not recommended)`)
+หา Section 2 (Page Structure) และนับจำนวน components:
+- ดู JSX elements ที่ขึ้นต้นด้วยตัวใหญ่ (เช่น `<HeroSection>`, `<PricingTable>`)
+- ไม่นับ Layout, div (wrapper elements)
+- Remove duplicates
 
-    const answer = await askUser(`\nConfirm all sections implemented?`)
-
-    if (answer === 'retry') {
-      output(`\n🔄 Retrying phase with enhanced enforcement...`)
-      output(`Agent will be explicitly instructed to implement all ${uniqueComponents.length} sections`)
-
-      // Restart phase with enhanced prompt
-      return executePhaseAgain(changeId, phase, {
-        enforce_page_plan: true,
-        required_sections: uniqueComponents
-      })
-    } else if (answer === 'skip') {
-      warn(`\n⚠️ Skipping validation - proceed with caution`)
-      warn(`   This may result in incomplete implementation`)
-    } else {
-      output(`\n✅ Page plan compliance confirmed`)
-      output(`   All ${uniqueComponents.length} sections implemented`)
-    }
-  } else {
-    warn(`\n⚠️ Could not parse page-plan.md Section 2`)
-    warn(`   Skipping compliance validation`)
-  }
-} else {
-  // Not uxui-frontend or no page-plan.md - skip validation
-  output(`\nℹ️ Page plan validation: N/A (agent: ${phase.agent}, has plan: ${hasPagePlan})`)
-}
+Report:
+```
+📋 Page Plan Analysis:
+   Expected sections: {count}
+   Components: {list}
 ```
 
+---
+
+#### ขั้นตอนที่ 3: ถาม user ยืนยัน
+
+```
+⚠️ VALIDATION REQUIRED:
+
+Did the agent implement ALL {count} sections?
+
+Please verify the implementation includes:
+   - {Component1}
+   - {Component2}
+   - ...
+
+Options:
+  [yes]   - All sections implemented ✓
+  [retry] - Agent skipped sections, retry with strict enforcement
+  [skip]  - Skip validation (not recommended)
+```
+
+---
+
+#### ขั้นตอนที่ 4: Handle user response
+
+**ถ้า user ตอบ yes:**
+```
+✅ Page plan compliance confirmed
+   All {count} sections implemented
+```
+→ ไป Step 5
+
+**ถ้า user ตอบ retry:**
+```
+🔄 Retrying phase with enhanced enforcement...
+Agent will be explicitly instructed to implement all {count} sections
+```
+→ กลับไป run phase อีกครั้งพร้อม enhanced prompt
+
+**ถ้า user ตอบ skip:**
+```
+⚠️ Skipping validation - proceed with caution
+   This may result in incomplete implementation
+```
+→ ไป Step 5
+
+---
+
 **When to use:**
-- ✅ Agent: uxui-frontend
-- ✅ page-plan.md exists
-- ✅ Phase completed successfully
+- Agent: uxui-frontend
+- page-plan.md exists
+- Phase completed successfully
 
 **Common issues caught:**
 - Agent implemented 5/10 sections (missing ProblemSection, ComparisonTable, etc.)
 - Agent followed tasks.md ("4-5 components") instead of page-plan.md (10 sections)
 - Agent skipped sections they thought were "optional"
 
-**Remediation:**
-- If validation fails → Retry with `enforce_page_plan: true`
-- Agent will receive enhanced prompt with explicit section list
-- Validation runs again after retry
-
 ---
 
 ### Step 5: Post-Execution (Flags Update)
 
-**Main Claude updates flags.json after each phase completion.**
+**Main Claude อัพเดต flags.json หลังจบแต่ละ phase**
 
 → See: `.claude/lib/flags-updater.md` for complete protocol
 
 WHY: Immediate updates ensure /cstatus shows accurate progress.
 
-**Execution Order:**
+---
 
-```typescript
-// 1. Update flags.json
-output(`\n🔄 Updating progress tracking...`)
+#### ขั้นตอนที่ 1: อัพเดต flags.json
 
-// See flags-updater.md for updateFlagsAfterPhase() implementation
-updateFlagsAfterPhase(changeId, currentPhase, agentResponse)
-
-// This function:
-// - Marks phase as completed
-// - Records actual duration
-// - Extracts files created/modified
-// - Updates meta statistics (progress %, time remaining)
-// - Moves current_phase to next phase
-// - Writes back to flags.json
-// - Reports progress to user
-
-// 2. Read updated flags
-const flagsPath = `openspec/changes/${changeId}/.claude/flags.json`
-const flags = JSON.parse(Read(flagsPath))
-
-// 3. Report progress to user
-output(`\n📊 Progress Update:`)
-output(`   ✅ ${flags.meta.completed_phases}/${flags.meta.total_phases} phases complete`)
-output(`   📈 ${flags.meta.progress_percentage}% progress`)
-output(`   ⏱️  ${formatDuration(flags.meta.total_actual_minutes)} spent`)
-output(`   ⏱️  ${formatDuration(flags.meta.time_remaining_estimate)} remaining`)
-
-// 4. Check next phase
-if (flags.ready_to_archive) {
-  // 🆕 v1.2.0: Verbose Summary Output (replaces documentation/report phases)
-  output(`\n`)
-  output(`╔════════════════════════════════════════════════════════════╗`)
-  output(`║           ✅ CHANGE COMPLETED SUCCESSFULLY                 ║`)
-  output(`╚════════════════════════════════════════════════════════════╝`)
-  output(``)
-  output(`📦 Change: ${changeId}`)
-  output(`📋 Template: ${flags.template} (${flags.meta.total_phases} phases)`)
-  output(``)
-  output(`═══════════════════════════════════════════════════════════════`)
-  output(`📊 EXECUTION SUMMARY`)
-  output(`═══════════════════════════════════════════════════════════════`)
-  output(``)
-  output(`⏱️  Time:`)
-  output(`   • Estimated: ${formatDuration(flags.meta.total_estimated_minutes)}`)
-  output(`   • Actual:    ${formatDuration(flags.meta.total_actual_minutes)}`)
-  output(`   • Variance:  ${calculateVariance(flags.meta)}`)
-  output(``)
-  output(`📈 Phases Completed: ${flags.meta.completed_phases}/${flags.meta.total_phases}`)
-
-  // List all phases with status
-  Object.entries(flags.phases).forEach(([phaseId, phase]) => {
-    const status = phase.status === 'completed' ? '✅' :
-                   phase.status === 'skipped' ? '⏭️' : '❌'
-    const time = phase.actual_minutes ? `(${phase.actual_minutes}m)` : ''
-    output(`   ${status} ${phase.phase_number}. ${phaseId} ${time}`)
-  })
-
-  output(``)
-  output(`═══════════════════════════════════════════════════════════════`)
-  output(`📁 FILES CREATED/MODIFIED`)
-  output(`═══════════════════════════════════════════════════════════════`)
-
-  // Collect all files from phase outputs
-  const allFiles = collectFilesFromPhases(flags.phases)
-  if (allFiles.created.length > 0) {
-    output(``)
-    output(`✨ Created (${allFiles.created.length}):`)
-    allFiles.created.forEach(f => output(`   • ${f}`))
-  }
-  if (allFiles.modified.length > 0) {
-    output(``)
-    output(`📝 Modified (${allFiles.modified.length}):`)
-    allFiles.modified.forEach(f => output(`   • ${f}`))
-  }
-
-  output(``)
-  output(`═══════════════════════════════════════════════════════════════`)
-  output(`🚀 NEXT STEPS`)
-  output(`═══════════════════════════════════════════════════════════════`)
-  output(``)
-  output(`1. Review changes:  /cview ${changeId}`)
-  output(`2. Test manually:   Verify the implementation works`)
-  output(`3. Mark complete:   Update tasks.md (mark all [x])`)
-  output(`4. Archive:         openspec archive ${changeId}`)
-  output(``)
-  output(`💡 Note: flags.json contains full execution history`)
-  output(`   Path: openspec/changes/${changeId}/.claude/flags.json`)
-  output(``)
-} else {
-  const nextPhase = flags.phases[flags.current_phase]
-
-  output(`\n📍 Next: Phase ${nextPhase.phase_number}: ${flags.current_phase}`)
-  output(`   Agent: ${nextPhase.agent}`)
-  output(`   Estimated: ${nextPhase.estimated_minutes} min`)
-
-  if (nextPhase.agent === 'user') {
-    output('\n🛑 Next phase requires your action')
-    output(`When done: /cdev ${changeId} --continue`)
-  } else {
-    output('\nContinue? (yes/no)')
-  }
-}
 ```
+🔄 Updating progress tracking...
+```
+
+อัพเดตข้อมูลต่อไปนี้:
+- Mark phase as completed
+- Record actual duration
+- Extract files created/modified
+- Update meta statistics (progress %, time remaining)
+- Move current_phase to next phase
+
+---
+
+#### ขั้นตอนที่ 2: Report Progress
+
+```
+📊 Progress Update:
+   ✅ {completed}/{total} phases complete
+   📈 {percentage}% progress
+   ⏱️  {time_spent} spent
+   ⏱️  {time_remaining} remaining
+```
+
+---
+
+#### ขั้นตอนที่ 3: Check next phase
+
+**ถ้าทุก phases เสร็จหมดแล้ว (ready_to_archive):**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║           ✅ CHANGE COMPLETED SUCCESSFULLY                 ║
+╚════════════════════════════════════════════════════════════╝
+
+📦 Change: {change-id}
+📋 Template: {template} ({total_phases} phases)
+
+═══════════════════════════════════════════════════════════════
+📊 EXECUTION SUMMARY
+═══════════════════════════════════════════════════════════════
+
+⏱️  Time:
+   • Estimated: {estimated}
+   • Actual:    {actual}
+   • Variance:  {variance}
+
+📈 Phases Completed: {completed}/{total}
+   ✅ 1. phase-name (Xm)
+   ✅ 2. phase-name (Xm)
+   ...
+
+═══════════════════════════════════════════════════════════════
+📁 FILES CREATED/MODIFIED
+═══════════════════════════════════════════════════════════════
+
+✨ Created ({count}):
+   • {file1}
+   • {file2}
+
+📝 Modified ({count}):
+   • {file1}
+   • {file2}
+
+═══════════════════════════════════════════════════════════════
+🚀 NEXT STEPS
+═══════════════════════════════════════════════════════════════
+
+1. Review changes:  /cview {change-id}
+2. Test manually:   Verify the implementation works
+3. Mark complete:   Update tasks.md (mark all [x])
+4. Archive:         openspec archive {change-id}
+```
+
+**ถ้ายังมี phases ที่ยังไม่เสร็จ:**
+
+```
+📍 Next: Phase {X}: {phase_name}
+   Agent: {agent}
+   Estimated: {X} min
+```
+
+**ถ้า next phase ต้องการ manual action:**
+```
+🛑 Next phase requires your action
+When done: /cdev {change-id} --continue
+```
+
+**ถ้า next phase เป็น agent:**
+```
+Continue? (yes/no)
+```
+
+---
 
 **Key points:**
 - Main Claude updates flags.json (sub-agents don't have access)

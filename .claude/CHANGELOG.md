@@ -5,6 +5,68 @@
 
 ---
 
+## v3.3.0: Design Validation System (No Pseudocode)
+
+**Problem Solved:** Design system compliance was not enforced. uxui-frontend agents didn't read `design-system/data.yaml`, resulting in hardcoded colors, arbitrary spacing, and inconsistent animations. The validation logic was written as TypeScript pseudocode that Claude never executed.
+
+**Solution:** Created a single source of truth (`design-validator.md`) with imperative Thai/English instructions. Converted all procedural pseudocode to step-by-step commands that Claude follows.
+
+### Key Changes
+
+| Component | Before | After |
+|-----------|--------|-------|
+| design-validator.md | Did not exist | NEW - Single source of truth |
+| cdev.md Step 2-5 | TypeScript pseudocode | Imperative instructions |
+| ux-tester.md Steps 2-5 | TypeScript pseudocode | Imperative instructions |
+| uxui-frontend STEP 0.5 | Brief mention | Full step-by-step protocol |
+
+### Design Validation Flow
+
+```
+PREVENTION (Before Implementation)
+├── Main Claude: Pre-Flight Check before invoking uxui-frontend
+└── uxui-frontend: STEP 0.5 - Read data.yaml, report tokens
+
+DETECTION (After Implementation)
+└── ux-tester: Step 5.5 - Chrome DevTools style comparison
+```
+
+### What Gets Validated
+
+| Token Category | Violation Example | Expected |
+|----------------|-------------------|----------|
+| Colors | #3b82f6, text-blue-500 | bg-primary, text-foreground |
+| Spacing | p-5, gap-7 | p-4, p-6, gap-8 (scale) |
+| Animation | duration-200 | duration-150, 300, 500ms |
+| Shadows | mixed sm+xl | consistent level |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/lib/design-validator.md` | NEW - Single source of truth |
+| `.claude/agents/02-uxui-frontend.md` | v2.1.0 - Enhanced STEP 0.5 |
+| `.claude/agents/07-ux-tester.md` | v1.1.0 - Steps 2-5 rewritten |
+| `.claude/commands/cdev.md` | Steps 2-5 rewritten, Step 4.0 added |
+| `.claude/lib/README.md` | Added design-validator.md entry |
+| `.claude/CLAUDE.md` | v3.3.0 + Design Validation section |
+
+### Why This Matters
+
+**Before:**
+- Logic scattered across 4 files
+- TypeScript pseudocode that Claude ignored
+- No enforcement of design tokens
+- ux-tester couldn't validate actual CSS
+
+**After:**
+- Single source of truth (design-validator.md)
+- Imperative instructions Claude follows
+- Pre-flight check before visual agents
+- Chrome DevTools validation of computed styles
+
+---
+
 ## v3.2.0: Consolidated Pre-Work Context
 
 **Problem Solved:** `/csetup` generated two separate pseudocode outputs (`research-checklist.md` and `INTEGRATION_RISKS.md`) that were never actually created. Agents had to discover context from multiple scattered sources.
