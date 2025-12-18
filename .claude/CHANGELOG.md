@@ -5,6 +5,186 @@
 
 ---
 
+## v3.2.0: Consolidated Pre-Work Context
+
+**Problem Solved:** `/csetup` generated two separate pseudocode outputs (`research-checklist.md` and `INTEGRATION_RISKS.md`) that were never actually created. Agents had to discover context from multiple scattered sources.
+
+**Solution:** Consolidated all agent context into a single `pre-work-context.md` file with direct execution instructions. Merged Step 2.7 (Best Practices) into Step 2.6.
+
+### Key Changes
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Step 2.6 | ~1000 lines of pseudocode | ~300 lines of direct instructions |
+| Step 2.7 | Separate best practices step | Merged into Step 2.6 |
+| Output files | research-checklist.md + INTEGRATION_RISKS.md + best-practices/*.md | Single `pre-work-context.md` |
+| Agent discovery | Multiple files to read | One file with all context |
+
+### Step 2.6 Structure (New - v3.2.0)
+
+```
+Step 2.6.1: Analyze Change Characteristics (type, complexity, risk)
+Step 2.6.2: Detect Libraries (from package files + specs)
+Step 2.6.3: Fetch Best Practices via Context7 (direct MCP calls)
+Step 2.6.4: Determine Research Layers (adaptive depth)
+Step 2.6.5: Detect Integration Warnings (cross-library)
+Step 2.6.6: Generate Critical Checklist Items (security/compliance)
+Step 2.6.7: Write pre-work-context.md (single consolidated file)
+Step 2.6.8: Output Summary
+Step 2.6.9: Skip Conditions
+```
+
+### pre-work-context.md Structure
+
+```markdown
+# Pre-Work Context: {changeId}
+
+## 1. Change Analysis (type, complexity, risk)
+## 2. Library Best Practices (from Context7)
+## 3. Research Findings (domain knowledge)
+## 4. Integration Warnings (cross-library concerns)
+## 5. Critical Checklist (security/compliance must-haves)
+## 6. Quick Reference (package manager, commands)
+```
+
+### Agent Pre-Work Checklist Update
+
+**Version:** 3.0.0 (Pre-Work Context Integration)
+
+- Step 0: Read pre-work-context.md (NEW - primary source)
+- Step 0.1: Library Requirements Check (fallback)
+- Step 0.2: Library Feasibility Validation (was 0.5)
+- Step 0.3: Memory Context Query (was 0.6)
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `csetup.md` | Rewrote Step 2.6 with direct execution |
+| `csetup.md` | Removed Step 2.7 (merged into 2.6) |
+| `csetup.md` | Renumbered Step 2.8 → Step 2.7 |
+| `pre-work-checklist.md` | Added Step 0 (read pre-work-context.md) |
+| `pre-work-checklist.md` | Renumbered steps (0.5→0.2, 0.6→0.3) |
+| `CLAUDE.md` | Updated to v3.2.0 |
+
+### Why This Matters
+
+**Before:**
+- Agents had to read 5+ files to get context
+- research-checklist.md was pseudocode that never executed
+- INTEGRATION_RISKS.md was pseudocode that never executed
+- Context was scattered and inconsistent
+
+**After:**
+- Agents read ONE file (`pre-work-context.md`) in STEP 0
+- All context is consolidated and actually generated
+- Main Claude follows direct instructions (not pseudocode)
+- Integration warnings + checklist items in one place
+
+---
+
+## v3.1.1: Direct Best Practices Execution
+
+**Problem Solved:** Step 2.7 (Auto-Setup Best Practices) was written as pseudocode with helper functions (`extractLibrariesSemantically`, `parseContext7Response`, etc.) that Main Claude never actually executed. Best practices files were documented but never created.
+
+**Solution:** Rewrote Step 2.7 as direct, executable instructions that Main Claude can follow. No more pseudocode - just clear steps with actual MCP tool names.
+
+### Key Changes
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Step 2.7 | ~1000 lines of pseudocode | ~130 lines of direct instructions |
+| Helper functions | 6 fake functions | Removed entirely |
+| MCP tool calls | Written as code syntax | Written as clear instructions |
+| Output format | Complex extraction logic | Simple template |
+
+### Step 2.7 Structure (New)
+
+```
+Step 2.7.1: Detect Libraries (from package.json, requirements.txt, spec files)
+Step 2.7.2: Resolve via Context7 (call MCP tools directly)
+Step 2.7.3: Create Best Practices Files (using template)
+Step 2.7.4: Create index.md (registry)
+Step 2.7.5: Output Summary
+Step 2.7.6: Skip Conditions
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `csetup.md` | Rewrote Step 2.7, removed ~1000 lines of pseudocode |
+| `csetup.md` | Removed helper functions (extractLibrariesSemantically, etc.) |
+| `csetup.md` | Updated detectAdditionalTech as REMOVED |
+| `CLAUDE.md` | Updated version to 3.1.1 |
+
+### Why This Matters
+
+Before: Main Claude would read Step 2.7 as documentation and skip it.
+After: Main Claude follows clear instructions and actually calls Context7.
+
+---
+
+## v3.1.0: TDD Classification + Development Principles Injection
+
+**Problem Solved:** TDD classification was a simple one-liner (`risk=HIGH || complexity>=7`) that missed critical patterns like auth, payment, and external integrations. Development principles (SOLID, DRY, KISS) were documented but never injected to agents.
+
+**Solution:** Comprehensive TDD classification based on `tdd-classification.md` patterns, integrated into `task-analyzer.md` Step 2.6. Development principles injected to ALL agents via `/cdev`.
+
+### Key Changes
+
+| Component | Before | After |
+|-----------|--------|-------|
+| TDD classification | 1-line in csetup.md | Full pattern matching in task-analyzer.md |
+| development-principles.md | Listed but not used | Injected to ALL agents via /cdev |
+| tdd-classifier.md | Duplicate file | Deleted (merged into tdd-classification.md) |
+
+### TDD Classification (Step 2.6)
+
+Now classifies based on:
+
+| Pattern | Examples | TDD Required |
+|---------|----------|--------------|
+| Security operations | auth, jwt, encrypt, permission | ✅ Always |
+| Financial operations | payment, stripe, calculate, tax | ✅ Always |
+| External integrations | webhook, sendgrid, twilio | ✅ Always |
+| Data transformations | serialize, parse, etl | ✅ Always |
+| Complex UI | multi-step, wizard, keyboard-nav | ✅ Always |
+| Simple CRUD reads | get, list, fetch | ❌ Test-alongside OK |
+| Presentational UI | button, card, modal | ❌ No TDD |
+| Database/Integration | schema, migration, validation | ❌ No TDD |
+
+### Development Principles Injection
+
+`/cdev` now injects to ALL agent prompts:
+
+```markdown
+## 🏛️ Development Principles (Level 1 - ALL Agents)
+
+**REQUIRED READING:** @.claude/contexts/patterns/development-principles.md
+
+| Principle | Summary |
+|-----------|---------|
+| **KISS** | Choose simple solutions over complex ones |
+| **YAGNI** | Build only what you need now |
+| **SRP** | One responsibility per module |
+| **DRY** | Single source of truth for all knowledge |
+| **Fail Fast** | Detect and raise errors immediately |
+| **Observability** | Log everything that matters |
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `task-analyzer.md` | Added Step 2.6 TDD Classification |
+| `csetup.md` | Updated phase generation to use TDD from tasks |
+| `cdev.md` | Added development-principles injection |
+| `tdd-classifier.md` | **DELETED** (merged) |
+| `CLAUDE.md` | Updated references and version |
+
+---
+
 ## v3.0.0: Template-Free Architecture (Task Analyzer v2.0)
 
 **Problem Solved:** Phase templates (`phase-templates.json`) were limiting and caused task loss. When `tasks.md` had 5 detailed phases but template had only 2, tasks disappeared. Templates overrode the single source of truth.

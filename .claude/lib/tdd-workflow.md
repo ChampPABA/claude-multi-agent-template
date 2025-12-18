@@ -885,7 +885,8 @@ Before starting TDD workflow:
 
 ## 🔗 See Also
 
-- `tdd-classifier.md` - Logic to determine when `tdd_required: true`
+- `task-analyzer.md` Step 2.6 - TDD classification logic (integrated with task analysis)
+- `@/.claude/contexts/patterns/tdd-classification.md` - Full TDD classification patterns
 - `validation-framework.md` - Agent validation requirements
 - `context-loading-protocol.md` - How agents load testing frameworks
 - `contexts/patterns/testing.md` - General testing patterns

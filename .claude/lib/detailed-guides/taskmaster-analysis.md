@@ -260,4 +260,4 @@ User: "Build login system"
 
 - `../../commands/csetup.md` - /csetup command (uses TaskMaster)
 - `../task-analyzer.md` - Complete analysis logic implementation
-- `../tdd-classifier.md` - TDD decision logic (integrated with TaskMaster)
+- `../task-analyzer.md` Step 2.6 - TDD classification logic (integrated with task analysis)

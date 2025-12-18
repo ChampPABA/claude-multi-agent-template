@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 3.0.0 - Template-Free Architecture
-> **Latest:** Task Analyzer v2.0 - AI-driven analysis, no keyword matching, auto-add best practices
+> **Template Version:** 3.2.0 - Consolidated Pre-Work Context
+> **Latest:** Step 2.6 generates `pre-work-context.md` - single file with all agent context
 
 ---
 
@@ -26,6 +26,7 @@
 | `README.md` | **Visual design summary** (human-readable) | UI/Frontend phases |
 | `data.yaml` | Design tokens + psychology (~300 lines) | Quick UI reference |
 | `page-plan.md` | UI component layout + content strategy | uxui-frontend agent |
+| `pre-work-context.md` | **v3.2.0!** All agent context (best practices, warnings, checklist) | All agents - STEP 0 ✨ |
 | `phases.md` | Execution plan with agent assignments | All phases |
 | `flags.json` | Progress tracking | All phases |
 
@@ -75,6 +76,8 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/contexts/design/index.md` (General design principles - fallback)
 
 **Development:**
+- `@/.claude/contexts/patterns/development-principles.md` - **v3.1.0!** SOLID, DRY, KISS, Fail Fast (Level 1 - ALL agents) ✨
+- `@/.claude/contexts/patterns/tdd-classification.md` - TDD workflow classification patterns
 - `@/.claude/contexts/patterns/task-classification.md` (Agent selection guide)
 - `@/.claude/contexts/patterns/agent-coordination.md` (When to run agents parallel/sequential)
 - `@/.claude/contexts/patterns/error-recovery.md` (How agents handle errors & escalate)
@@ -86,7 +89,7 @@ Universal, framework-agnostic template for AI-assisted development.
 **Project Setup:**
 - `/extract https://site.com` - Extract design from reference sites
 - `/designsetup @prd.md` - Interactive design system setup
-- `/csetup` - **v3.0.0:** Template-free! AI-driven task analysis, auto-add best practices, incremental milestones
+- `/csetup` - **v3.2.0:** Generates `pre-work-context.md` with best practices, research, warnings, checklists
 
 **Page Planning (UI Tasks) - v2.0.0:**
 - `/pageplan @prd.md @brief.md` - Generate page structure with auto page type detection
@@ -122,30 +125,28 @@ Universal, framework-agnostic template for AI-assisted development.
 **Implementation Logic:**
 - `@/.claude/lib/README.md` - Implementation logic overview
 - `@/.claude/lib/agent-executor.md` - Agent retry & escalation logic (used by /cdev) + Incremental testing execution
-- `@/.claude/lib/tdd-classifier.md` - TDD classification logic (used by /csetup)
-- `@/.claude/lib/task-analyzer.md` - **v2.0!** Template-free AI-driven task analysis ✨
+- `@/.claude/lib/task-analyzer.md` - **v3.1.0!** Template-free task analysis with TDD classification (Step 2.6) ✨
 - `@/.claude/lib/flags-updater.md` - Progress tracking protocol (Main Claude updates flags.json)
 - `@/.claude/lib/agent-router.md` - Mandatory agent routing rules (enforce delegation)
 - `@/.claude/contexts/patterns/agent-discovery.md` - Shared agent discovery flow
 
 ---
 
-## 📚 Best Practices System (v2.5.0 - Smart Topic Query)
+## 📚 Best Practices System (v3.2.0 - Consolidated Pre-Work Context)
 
 **Quick Summary:**
-- `/csetup` **dynamically detects any library** from spec text + package files (no hardcoded mappings)
-- **Works with any language:** JavaScript, Python, Rust, Go, PHP, Ruby - automatically
-- **Context7 validates** each potential library name and resolves to official docs
-- **v2.5.0:** Smart Topic Query includes other library names for cross-library integration docs
-- **v2.5.0:** Auto-generates `INTEGRATION_RISKS.md` with detected concerns
-- Files created in `.claude/contexts/domain/project/best-practices/`
-- **Agents read** best practices + integration risks before coding
+- `/csetup` generates **single `pre-work-context.md`** with ALL agent context
+- **Consolidates:** Best practices, research findings, integration warnings, critical checklists
+- **Context7 validates** each library and fetches best practices
+- **Agents read ONE file** instead of multiple scattered files
+- **File location:** `openspec/changes/{changeId}/pre-work-context.md`
 
 **Key Changes:**
 | Version | Change |
 |---------|--------|
 | v2.3.0 | NLP extraction + Context7 resolution (zero maintenance) |
 | v2.5.0 | Smart Topic Query + Integration Risk Detection |
+| v3.2.0 | **Consolidated `pre-work-context.md`** (single file for all agent context) |
 
 **Detection Sources:**
 | Source | Examples |
@@ -158,23 +159,22 @@ Universal, framework-agnostic template for AI-assisted development.
 | PHP | composer.json |
 | Ruby | Gemfile |
 
-**Flow (v2.5.0):**
+**Flow (v3.2.0):**
 ```
-/csetup → extract potential library names from ALL text sources
-        → Context7 resolve-library-id (validates if real library)
-        → Context7 get-library-docs (Smart Topic Query with other lib names)
-        → detect integration risks from docs content
-        → generate .md files for each verified library
-        → generate INTEGRATION_RISKS.md if risks detected
-/cdev   → inject paths into prompt → agent reads → validation checks
+/csetup → analyze change (type, complexity, risk)
+        → detect libraries from spec + package files
+        → Context7 resolve + fetch best practices
+        → determine research layers
+        → detect integration warnings
+        → generate critical checklist items
+        → write pre-work-context.md (single file)
+/cdev   → agents read pre-work-context.md in STEP 0
 ```
 
-**Output Files:**
-| File | Content |
-|------|---------|
-| `{lib}.md` | Library best practices with integration info |
-| `INTEGRATION_RISKS.md` | Cross-library risks + checklist (if any detected) |
-| `index.md` | Registry of all best practices files |
+**Output File:**
+| File | Sections |
+|------|----------|
+| `pre-work-context.md` | 1. Change Analysis, 2. Library Best Practices, 3. Research Findings, 4. Integration Warnings, 5. Critical Checklist, 6. Quick Reference |
 
 ---
 
@@ -310,6 +310,9 @@ User: "Build login system"
 **Recent versions:**
 | Version | Key Feature |
 |---------|-------------|
+| v3.2.0 | Consolidated Pre-Work Context (single `pre-work-context.md` for agents) |
+| v3.1.1 | Direct Best Practices Execution (Step 2.7 rewritten, no pseudocode) |
+| v3.1.0 | TDD Classification + Development Principles Injection |
 | v3.0.0 | Template-Free Architecture (AI-driven Task Analyzer v2.0) |
 | v2.8.0 | Critical Flow Injection (auto-inject security/compliance items) |
 | v2.7.0 | UX Testing Agent (persona-based, approval gate) |

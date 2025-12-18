@@ -1,6 +1,6 @@
 # Pre-Work Checklist (Shared by All Agents)
 
-> **Version:** 2.2.0 (Library Feasibility Validation)
+> **Version:** 3.0.0 (Pre-Work Context Integration)
 > **Purpose:** Single source of truth for pre-work validation
 
 ---
@@ -9,7 +9,40 @@
 
 Complete these steps before implementation to ensure alignment with project standards:
 
-### Step 0: Library Requirements Check
+### Step 0: Read Pre-Work Context (v3.2.0 - NEW)
+
+**FIRST: Check if pre-work-context.md exists:**
+
+```
+openspec/changes/{changeId}/pre-work-context.md
+```
+
+**If file exists, read it and extract:**
+1. **Change Analysis** - Type, complexity, risk level
+2. **Library Best Practices** - DO's and DON'Ts for each library
+3. **Research Findings** - Domain-specific considerations
+4. **Integration Warnings** - Cross-library concerns
+5. **Critical Checklist** - Security/compliance items to verify
+
+**Report:**
+```markdown
+Pre-Work Context: (Step 0)
+- [x] Read pre-work-context.md
+- Change Type: {type}
+- Complexity: {n}/10
+- Risk: {level}
+- Libraries: {list}
+- Critical Items: {count}
+```
+
+**If file doesn't exist:**
+- User may not have run `/csetup` with v3.2.0+
+- Fall back to Step 0.1 (Library Requirements Check)
+- Suggest: "Run /csetup to generate pre-work-context.md"
+
+---
+
+### Step 0.1: Library Requirements Check
 
 **Scan for required libraries before writing code:**
 
@@ -49,7 +82,7 @@ WHY not defaults? Design spec has project-specific security requirements.
 
 ---
 
-### Step 0.5: Library Feasibility Validation (v2.2.0)
+### Step 0.2: Library Feasibility Validation (v2.2.0)
 
 **Before implementing, verify the chosen library supports ALL spec requirements:**
 
@@ -131,7 +164,7 @@ Reporting to Main Claude...
 
 ---
 
-### Step 0.6: Memory Context Query (v2.2.0 - claude-mem Integration)
+### Step 0.3: Memory Context Query (v2.2.0 - claude-mem Integration)
 
 **Before implementation, query claude-mem for related past work:**
 
@@ -193,7 +226,17 @@ Result: #12345 - "Chose rotating refresh tokens with Redis storage"
 ```markdown
 Pre-Implementation Validation
 
-Library Requirements: (Step 0)
+Pre-Work Context: (Step 0 - v3.2.0)
+- [ ] Read pre-work-context.md (if exists)
+- Change Type: {type}
+- Complexity: {n}/10
+- Risk Level: {level}
+- Libraries: {list from pre-work-context.md}
+- Critical Checklist Items: {count}
+- Integration Warnings: {count}
+(OR: pre-work-context.md not found - using fallback steps)
+
+Library Requirements: (Step 0.1 - fallback)
 - [ ] Scanned tasks.md for "Install X" patterns
 - [ ] Scanned design.md for design decisions
 - Required libraries: {list from tasks.md/design.md}
@@ -205,7 +248,7 @@ Design Spec Implementation: (Step 5)
   - {requirement 1 from design.md}
   - {requirement 2 from design.md}
 
-Memory Context: (Step 0.6 - claude-mem)
+Memory Context: (Step 0.3 - claude-mem)
 - [ ] Queried claude-mem for related past work
 - Relevant observations:
   - {#ID: summary → will apply how}
@@ -214,7 +257,7 @@ Memory Context: (Step 0.6 - claude-mem)
 Project Context:
 - Project: {name}
 - Stack: {tech-stack}
-- Package Manager: {pm} (from tech-stack.md)
+- Package Manager: {pm} (from tech-stack.md or pre-work-context.md)
 
 Patterns Loaded:
 - [ ] error-handling.md
@@ -223,13 +266,18 @@ Patterns Loaded:
 - [ ] code-standards.md
 - [ ] {agent-specific patterns}
 
-Best Practices:
-- [ ] {framework} best practices loaded (from Context7)
+Best Practices: (from pre-work-context.md Section 2)
+- [ ] {framework} best practices loaded
+
+Critical Checklist: (from pre-work-context.md Section 5)
+- [ ] {critical item 1}
+- [ ] {critical item 2}
 
 Ready to Implement:
 - [ ] Task understood
 - [ ] Dependencies identified
 - [ ] Required libraries identified
+- [ ] Critical checklist reviewed
 - [ ] Memory context applied (if available)
 - [ ] Approach planned (using specified libraries)
 ```

@@ -157,6 +157,150 @@ Determine if this task needs milestone-based execution:
 - Low risk, low complexity
 ```
 
+### 2.6 TDD Classification (v3.1.0)
+
+> **Source:** Uses patterns from `@/.claude/contexts/patterns/tdd-classification.md`
+> **Purpose:** Determine if task requires TDD (Test-Driven Development) workflow
+
+**Classification Algorithm:**
+
+```typescript
+function classifyTDD(task: AnalyzedTask): TDDClassification {
+  const description = task.description.toLowerCase()
+  const agent = task.agent
+
+  // Rule 1: Database/Integration/Test agents → Never TDD
+  if (['database', 'integration', 'test-debug'].includes(agent)) {
+    return {
+      tdd_required: false,
+      workflow: 'none',
+      reason: 'Schema/validation work is declarative - no TDD needed'
+    }
+  }
+
+  // Rule 2: Critical Backend Patterns → Always TDD
+  const CRITICAL_PATTERNS = [
+    // Security operations
+    /\b(auth|login|register|password|token|jwt|oauth|session)\b/i,
+    /\b(encrypt|decrypt|hash|sign|permission|access.*control)\b/i,
+
+    // Financial operations
+    /\b(payment|stripe|paypal|charge|refund|transaction)\b/i,
+    /\b(calculate|compute|discount|pricing|tax|fee)\b/i,
+
+    // External integrations
+    /\b(webhook|callback|external.*api|third-party)\b/i,
+    /\b(sendgrid|twilio|s3|analytics)\b/i,
+
+    // Data transformations
+    /\b(serialize|deserialize|transform|convert|parse|etl)\b/i,
+    /\b(validate|verify|check|business.*rule)\b/i
+  ]
+
+  for (const pattern of CRITICAL_PATTERNS) {
+    if (pattern.test(description)) {
+      return {
+        tdd_required: true,
+        workflow: 'red-green-refactor',
+        reason: `Critical pattern matched: ${pattern.source}`,
+        confidence: 'high'
+      }
+    }
+  }
+
+  // Rule 3: Complex UI Patterns → TDD Required
+  if (agent === 'uxui-frontend' || agent === 'frontend') {
+    const COMPLEX_UI_PATTERNS = [
+      /\b(multi-step|wizard|stepper|checkout)\b/i,
+      /\b(state.*machine|workflow|onboarding)\b/i,
+      /\b(keyboard.*navigation|accessibility|aria)\b/i,
+      /\b(dynamic.*form|conditional.*field)\b/i
+    ]
+
+    for (const pattern of COMPLEX_UI_PATTERNS) {
+      if (pattern.test(description)) {
+        return {
+          tdd_required: true,
+          workflow: 'red-green-refactor',
+          reason: 'Complex UI logic requires TDD',
+          confidence: 'high'
+        }
+      }
+    }
+
+    // Simple UI → No TDD
+    return {
+      tdd_required: false,
+      workflow: 'test-alongside',
+      reason: 'Presentational component - test-alongside OK'
+    }
+  }
+
+  // Rule 4: Backend with Risk/Complexity threshold
+  if (agent === 'backend') {
+    // Simple CRUD reads → No TDD
+    if (/\b(get|list|fetch|read|retrieve|view)\b/i.test(description) &&
+        !CRITICAL_PATTERNS.some(p => p.test(description))) {
+      return {
+        tdd_required: false,
+        workflow: 'test-alongside',
+        reason: 'Simple CRUD read operation'
+      }
+    }
+
+    // Complex backend → TDD
+    if (task.complexity >= 7 || task.risk === 'HIGH') {
+      return {
+        tdd_required: true,
+        workflow: 'red-green-refactor',
+        reason: `High complexity (${task.complexity}) or risk (${task.risk})`,
+        confidence: 'medium'
+      }
+    }
+  }
+
+  // Default: No TDD required
+  return {
+    tdd_required: false,
+    workflow: 'test-alongside',
+    reason: 'Standard task - test-alongside OK',
+    confidence: 'low'
+  }
+}
+```
+
+**Output Format (added to task analysis):**
+
+```typescript
+interface TDDClassification {
+  tdd_required: boolean
+  workflow: 'red-green-refactor' | 'test-alongside' | 'none'
+  reason: string
+  confidence?: 'high' | 'medium' | 'low'
+}
+
+// Added to each AnalyzedTask:
+task.tdd = classifyTDD(task)
+```
+
+**phases.md Output:**
+
+When `tdd_required: true`, phases.md includes:
+
+```markdown
+## Phase N: Backend Implementation
+
+**Agent:** backend
+**TDD Required:** ✅ YES
+**TDD Reason:** Critical pattern matched: auth/login/jwt
+**TDD Workflow:** red-green-refactor
+
+⚠️ **TDD WORKFLOW REQUIRED:**
+1. 🔴 RED: Write tests FIRST (they should fail)
+2. ✅ GREEN: Write minimal implementation to pass tests
+3. 🔧 REFACTOR: Improve code quality while keeping tests green
+```
+
 ---
 
 ### Step 3: Auto-Add Best Practices

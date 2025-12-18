@@ -163,6 +163,42 @@ Design Spec Implementation:
 ---
 `
 
+  // v3.1.0: Add Level 1 Universal Patterns (development-principles.md) for ALL agents
+  // Source: context-loading-protocol.md - Level 1 patterns apply to ALL agents
+  const devPrinciplesPath = '.claude/contexts/patterns/development-principles.md'
+  if (fileExists(devPrinciplesPath)) {
+    prompt += `
+
+---
+
+## 🏛️ Development Principles (Level 1 - ALL Agents)
+
+**REQUIRED READING:** @${devPrinciplesPath}
+
+These principles apply to ALL code written by ALL agents:
+
+**Quick Reference:**
+| Principle | Summary |
+|-----------|---------|
+| **KISS** | Choose simple solutions over complex ones |
+| **YAGNI** | Build only what you need now |
+| **SRP** | One responsibility per module |
+| **DRY** | Single source of truth for all knowledge |
+| **Fail Fast** | Detect and raise errors immediately |
+| **Observability** | Log everything that matters |
+
+**Report format:**
+\`\`\`
+✅ Development Principles Applied
+   - KISS ✓ (simple implementation)
+   - DRY ✓ (no duplication)
+   - Separation of Concerns ✓
+\`\`\`
+
+---
+`
+  }
+
   // Add best-practices reference for ALL agents
   const bpDir = '.claude/contexts/domain/project/best-practices/'
   if (fileExists(bpDir)) {

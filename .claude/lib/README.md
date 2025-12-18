@@ -10,8 +10,8 @@
 **`agent-executor.md`** - Agent retry & escalation logic
 Used by `/cdev` to execute agents with automatic retry, validation, and user escalation
 
-**`tdd-classifier.md`** - TDD classification logic
-Used by `/csetup` to automatically determine which phases require TDD workflow
+**`task-analyzer.md`** - Task analysis with TDD classification (v3.1.0)
+Used by `/csetup` to analyze tasks and determine TDD requirements. Step 2.6 contains TDD classification logic.
 
 **`flags-updater.md`** - Progress tracking protocol
 Ensures Main Claude updates flags.json after EVERY phase completion. Provides helper functions for extracting files, tasks, and calculating duration.
@@ -78,4 +78,4 @@ These are **logic specifications** (not executable code). Main Claude reads thes
 - `.claude/contexts/patterns/validation-framework.md` - Agent validation checklists
 - `.claude/contexts/patterns/agent-discovery.md` - Agent discovery flow
 - `.claude/commands/cdev.md` - How /cdev uses agent-executor.md
-- `.claude/commands/csetup.md` - How /csetup uses tdd-classifier.md
+- `.claude/commands/csetup.md` - How /csetup uses task-analyzer.md

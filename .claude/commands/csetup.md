@@ -318,1531 +318,310 @@ Continue anyway? (yes/no)
 
 ---
 
-### Step 2.6: Adaptive Depth Research (v2.4.0)
+### Step 2.6: Generate Pre-Work Context (v3.2.0 - Consolidated)
 
-> **NEW:** Dynamic research layers based on change complexity - replaces hardcoded feature detection
-> **WHY:** Different changes need different research depth. A typo fix needs 0 layers, a healthcare portal needs 10+.
-> **Output:** `openspec/changes/{changeId}/research-checklist.md`
+> **EXECUTE THESE STEPS** - Not pseudocode, actual instructions for Main Claude
+> **Output:** `openspec/changes/{changeId}/pre-work-context.md`
+> **Purpose:** Single file containing ALL context agents need before implementation
 
-**Key Principles:**
-- Layer 1 is ALWAYS "Best Practice" (คนอื่นทำกันยังไง? / How do others do it?)
-- Layer 2+ determined dynamically based on change context
-- No fixed minimum or maximum - truly adaptive (0 to 10+ layers)
-- Visual design (from /designsetup) is STATIC - this only handles Strategy (WHAT/WHERE)
-- Warns if industry practice conflicts with user's design choices
+**This step consolidates:**
+- Adaptive Depth Research (domain knowledge)
+- Library Best Practices (from Context7)
+- Integration Warnings (cross-library concerns)
+- Critical Checklists (security/compliance requirements)
 
-```typescript
-output(`\n🔬 Adaptive Depth Research Analysis...`)
+---
 
-// 1. Gather change context from all spec files
-const proposalPath = `openspec/changes/${changeId}/proposal.md`
-const tasksPath = `openspec/changes/${changeId}/tasks.md`
-const designPath = `openspec/changes/${changeId}/design.md`
+#### Step 2.6.1: Analyze Change Characteristics
 
-const proposal = fileExists(proposalPath) ? Read(proposalPath) : ''
-const tasks = fileExists(tasksPath) ? Read(tasksPath) : ''
-const design = fileExists(designPath) ? Read(designPath) : ''
-const combined = (proposal + '\n' + tasks + '\n' + design).toLowerCase()
+**Read and analyze these files:**
+- `openspec/changes/{changeId}/proposal.md`
+- `openspec/changes/{changeId}/tasks.md`
+- `openspec/changes/{changeId}/design.md` (if exists)
 
-// 2. Analyze change characteristics using semantic understanding
-const changeAnalysis = analyzeChangeCharacteristics(combined, proposal, tasks)
+**Determine:**
+1. **Primary Type:** marketing | dashboard | api | auth | database | general
+2. **Complexity (1-10):** Based on features, integrations, external APIs
+3. **Risk Level:** LOW | MEDIUM | HIGH
+4. **Domains:** healthcare, fintech, ecommerce, saas (if applicable)
+5. **Features:** payment, auth, multi-tenancy, realtime (if detected)
 
-output(`\n📊 Change Analysis:`)
-output(`   Type: ${changeAnalysis.primaryType}`)
-output(`   Complexity: ${changeAnalysis.complexity}/10`)
-output(`   Risk Level: ${changeAnalysis.riskLevel}`)
-output(`   Target Audience: ${changeAnalysis.audience || 'Internal'}`)
-
-// 3. Determine required research layers based on change characteristics
-const requiredLayers = determineResearchLayers(changeAnalysis)
-
-output(`\n📚 Research Layers Required: ${requiredLayers.length}`)
-
-if (requiredLayers.length === 0) {
-  output(`   ✅ No research needed - trivial change`)
-  output(`   (Typo fix, debug log, simple badge, etc.)`)
-} else {
-  requiredLayers.forEach((layer, idx) => {
-    output(`   L${idx + 1}: ${layer.name}`)
-    output(`       Focus: ${layer.focus}`)
-    output(`       Questions: ${layer.questions.slice(0, 2).join(', ')}...`)
-  })
-}
-
-// 4. Execute research for each layer using Context7 + semantic analysis
-const researchResults = []
-
-for (const layer of requiredLayers) {
-  output(`\n🔍 Researching L${layer.order}: ${layer.name}...`)
-
-  const layerResult = await executeLayerResearch(layer, changeAnalysis)
-  researchResults.push(layerResult)
-
-  output(`   ✅ Found ${layerResult.findings.length} key findings`)
-  if (layerResult.warnings.length > 0) {
-    layerResult.warnings.forEach(w => output(`   ⚠️ ${w}`))
-  }
-}
-
-// 5. Check for conflicts with design system (if exists)
-const tokensPath = 'design-system/data.yaml'
-if (fileExists(tokensPath) && researchResults.length > 0) {
-  const tokens = parseYaml(Read(tokensPath))
-  const conflicts = checkDesignConflicts(tokens, researchResults, changeAnalysis)
-
-  if (conflicts.length > 0) {
-    output(`\n⚠️ Design vs Industry Fit Conflicts:`)
-    conflicts.forEach(c => {
-      output(`   - ${c.aspect}: Your design uses "${c.current}", but ${c.industry}`)
-      output(`     Recommendation: ${c.recommendation}`)
-    })
-    output(`\n   Note: User design choices take precedence. These are informational warnings.`)
-  }
-}
-
-// 6. Generate research-checklist.md
-const checklistPath = `openspec/changes/${changeId}/research-checklist.md`
-const checklistContent = generateResearchChecklist(changeAnalysis, requiredLayers, researchResults)
-
-Write(checklistPath, checklistContent)
-output(`\n✅ Generated: ${checklistPath}`)
-
-// Store for use by agents
-const adaptiveResearch = {
-  layerCount: requiredLayers.length,
-  layers: requiredLayers.map(l => l.name),
-  complexity: changeAnalysis.complexity,
-  checklistPath: checklistPath
-}
+**Output:**
 ```
-
-#### Helper Functions
-
-```typescript
-// Analyze change characteristics using semantic understanding
-function analyzeChangeCharacteristics(combined, proposal, tasks) {
-  const analysis = {
-    primaryType: 'general',
-    complexity: 1,
-    riskLevel: 'LOW',
-    audience: 'internal',
-    domains: [],
-    features: [],
-    hasUI: false,
-    hasAPI: false,
-    hasDatabase: false,
-    hasPayment: false,
-    hasAuth: false,
-    hasCompliance: false,
-    hasSensitiveData: false,
-    isExternalFacing: false,
-    industryContext: null
-  }
-
-  // Detect primary type
-  if (/marketing|landing|hero|cta|conversion|sales/i.test(combined)) {
-    analysis.primaryType = 'marketing'
-    analysis.isExternalFacing = true
-  } else if (/dashboard|admin|management|analytics/i.test(combined)) {
-    analysis.primaryType = 'dashboard'
-  } else if (/api|endpoint|rest|graphql/i.test(combined)) {
-    analysis.primaryType = 'api'
-  } else if (/auth|login|register|password/i.test(combined)) {
-    analysis.primaryType = 'auth'
-    analysis.hasAuth = true
-  } else if (/database|schema|migration|model/i.test(combined)) {
-    analysis.primaryType = 'database'
-    analysis.hasDatabase = true
-  }
-
-  // Detect features and domains
-  if (/payment|stripe|billing|checkout|subscription/i.test(combined)) {
-    analysis.hasPayment = true
-    analysis.features.push('payment')
-    analysis.riskLevel = 'HIGH'
-  }
-  if (/health|medical|patient|hipaa|phi/i.test(combined)) {
-    analysis.hasCompliance = true
-    analysis.hasSensitiveData = true
-    analysis.domains.push('healthcare')
-    analysis.industryContext = 'healthcare'
-    analysis.riskLevel = 'HIGH'
-  }
-  if (/fintech|banking|finance|pci|financial/i.test(combined)) {
-    analysis.hasCompliance = true
-    analysis.domains.push('fintech')
-    analysis.industryContext = 'fintech'
-    analysis.riskLevel = 'HIGH'
-  }
-  if (/saas|multi-tenant|tenant/i.test(combined)) {
-    analysis.domains.push('saas')
-    analysis.features.push('multi-tenancy')
-  }
-  if (/ecommerce|e-commerce|cart|product|shop/i.test(combined)) {
-    analysis.domains.push('ecommerce')
-    analysis.isExternalFacing = true
-  }
-  if (/realtime|real-time|websocket|collaboration/i.test(combined)) {
-    analysis.features.push('realtime')
-  }
-
-  // Detect UI/API/Database
-  analysis.hasUI = /ui|page|component|form|button|modal/i.test(combined)
-  analysis.hasAPI = /api|endpoint|route|controller/i.test(combined)
-  analysis.hasDatabase = analysis.hasDatabase || /table|column|relation|index/i.test(combined)
-
-  // Detect audience
-  if (/b2c|consumer|user|customer/i.test(combined)) {
-    analysis.audience = 'consumer'
-    analysis.isExternalFacing = true
-  } else if (/b2b|enterprise|business/i.test(combined)) {
-    analysis.audience = 'business'
-    analysis.isExternalFacing = true
-  }
-
-  // Calculate complexity (1-10)
-  let complexity = 1
-  if (analysis.features.length > 0) complexity += analysis.features.length
-  if (analysis.domains.length > 0) complexity += analysis.domains.length
-  if (analysis.hasCompliance) complexity += 2
-  if (analysis.hasPayment) complexity += 2
-  if (analysis.hasAuth) complexity += 1
-  if (analysis.isExternalFacing) complexity += 1
-  if (/integration|external api|third-party/i.test(combined)) complexity += 2
-
-  analysis.complexity = Math.min(complexity, 10)
-
-  // Adjust risk level
-  if (analysis.complexity >= 7 || analysis.hasCompliance || analysis.hasPayment) {
-    analysis.riskLevel = 'HIGH'
-  } else if (analysis.complexity >= 4 || analysis.hasAuth) {
-    analysis.riskLevel = 'MEDIUM'
-  }
-
-  return analysis
-}
-
-// Determine research layers dynamically based on change characteristics
-function determineResearchLayers(analysis) {
-  const layers = []
-  let order = 1
-
-  // Check for trivial changes (0 layers)
-  if (analysis.complexity <= 1 &&
-      !analysis.hasUI && !analysis.hasAPI && !analysis.hasDatabase &&
-      analysis.riskLevel === 'LOW') {
-    return [] // No research needed
-  }
-
-  // L1: Best Practice (ALWAYS for non-trivial changes)
-  layers.push({
-    order: order++,
-    name: 'Best Practice / Industry Standard',
-    focus: `How do others implement ${analysis.primaryType}?`,
-    questions: [
-      `What is the industry standard for ${analysis.primaryType}?`,
-      'What are common patterns and anti-patterns?',
-      'What are the key success factors?',
-      'What are common failure modes?'
-    ],
-    searchTopics: [`${analysis.primaryType} best practices`, `${analysis.primaryType} patterns`]
-  })
-
-  // L2+: Dynamic layers based on context
-
-  // Security layer (for auth, payment, sensitive data)
-  if (analysis.hasAuth || analysis.hasPayment || analysis.hasSensitiveData) {
-    layers.push({
-      order: order++,
-      name: 'Security Requirements',
-      focus: 'What security measures are required?',
-      questions: [
-        'What authentication/authorization is needed?',
-        'What data protection is required?',
-        'What are common security vulnerabilities?',
-        'What compliance requirements apply?'
-      ],
-      searchTopics: ['security best practices', `${analysis.primaryType} security`]
-    })
-  }
-
-  // Compliance layer (for regulated industries)
-  if (analysis.hasCompliance || analysis.industryContext) {
-    layers.push({
-      order: order++,
-      name: `${analysis.industryContext || 'Industry'} Compliance`,
-      focus: `What ${analysis.industryContext || 'industry'} regulations apply?`,
-      questions: [
-        'What regulatory requirements must be met?',
-        'What audit trails are needed?',
-        'What data handling rules apply?',
-        'What documentation is required?'
-      ],
-      searchTopics: [`${analysis.industryContext} compliance`, `${analysis.industryContext} regulations`]
-    })
-  }
-
-  // UX layer (for external-facing UI)
-  if (analysis.isExternalFacing && analysis.hasUI) {
-    layers.push({
-      order: order++,
-      name: 'User Experience Patterns',
-      focus: 'What UX patterns work for this audience?',
-      questions: [
-        'What user journey is expected?',
-        'What conversion patterns work?',
-        'What accessibility requirements apply?',
-        'What are user expectations?'
-      ],
-      searchTopics: [`${analysis.primaryType} UX`, `${analysis.audience} UX patterns`]
-    })
-  }
-
-  // Psychology layer (for marketing/sales)
-  if (analysis.primaryType === 'marketing' || /conversion|sales|cta/i.test(analysis.primaryType)) {
-    layers.push({
-      order: order++,
-      name: 'Conversion Psychology',
-      focus: 'What psychological triggers work?',
-      questions: [
-        'What is the buyer awareness level?',
-        'What pain points to address?',
-        'What objections to overcome?',
-        'What social proof is needed?'
-      ],
-      searchTopics: ['conversion psychology', 'landing page psychology']
-    })
-  }
-
-  // Content Strategy layer (for content-heavy pages)
-  if (analysis.primaryType === 'marketing' || /content|blog|documentation/i.test(analysis.primaryType)) {
-    layers.push({
-      order: order++,
-      name: 'Content Strategy',
-      focus: 'What content structure works?',
-      questions: [
-        'What content hierarchy is effective?',
-        'What tone and voice to use?',
-        'What call-to-actions work?',
-        'What content gaps exist?'
-      ],
-      searchTopics: ['content strategy', 'copywriting best practices']
-    })
-  }
-
-  // Data Architecture layer (for database/data-intensive)
-  if (analysis.hasDatabase || /data|analytics|reporting/i.test(analysis.primaryType)) {
-    layers.push({
-      order: order++,
-      name: 'Data Architecture',
-      focus: 'What data patterns are appropriate?',
-      questions: [
-        'What normalization level is appropriate?',
-        'What indexing strategy is needed?',
-        'What scaling considerations apply?',
-        'What data integrity rules?'
-      ],
-      searchTopics: ['database design patterns', 'data architecture']
-    })
-  }
-
-  // API Design layer (for API-focused changes)
-  if (analysis.hasAPI || analysis.primaryType === 'api') {
-    layers.push({
-      order: order++,
-      name: 'API Design',
-      focus: 'What API patterns are appropriate?',
-      questions: [
-        'What API style is appropriate (REST/GraphQL)?',
-        'What versioning strategy?',
-        'What error handling patterns?',
-        'What rate limiting/throttling?'
-      ],
-      searchTopics: ['API design best practices', 'REST API patterns']
-    })
-  }
-
-  // Multi-tenancy layer (for SaaS)
-  if (analysis.features.includes('multi-tenancy')) {
-    layers.push({
-      order: order++,
-      name: 'Multi-tenancy Patterns',
-      focus: 'What isolation and scaling patterns?',
-      questions: [
-        'What data isolation model?',
-        'What authentication per tenant?',
-        'What resource limits?',
-        'What billing model integration?'
-      ],
-      searchTopics: ['multi-tenant architecture', 'SaaS patterns']
-    })
-  }
-
-  // Real-time layer (for collaboration/live features)
-  if (analysis.features.includes('realtime')) {
-    layers.push({
-      order: order++,
-      name: 'Real-time Architecture',
-      focus: 'What real-time patterns are needed?',
-      questions: [
-        'WebSocket vs SSE vs polling?',
-        'What conflict resolution?',
-        'What offline support?',
-        'What scaling for connections?'
-      ],
-      searchTopics: ['real-time architecture', 'WebSocket patterns']
-    })
-  }
-
-  // Performance layer (for high-traffic or data-intensive)
-  if (analysis.isExternalFacing || analysis.complexity >= 6 ||
-      /performance|speed|optimization|cache/i.test(analysis.primaryType)) {
-    layers.push({
-      order: order++,
-      name: 'Performance Optimization',
-      focus: 'What performance patterns are needed?',
-      questions: [
-        'What caching strategy?',
-        'What lazy loading patterns?',
-        'What CDN/edge considerations?',
-        'What database optimization?'
-      ],
-      searchTopics: ['performance optimization', 'caching strategies']
-    })
-  }
-
-  // Integration layer (for external APIs/services)
-  if (/integration|external api|third-party|webhook/i.test(analysis.primaryType) ||
-      analysis.features.some(f => /payment|email|sms|notification/i.test(f))) {
-    layers.push({
-      order: order++,
-      name: 'Integration Patterns',
-      focus: 'What integration patterns are robust?',
-      questions: [
-        'What retry/circuit breaker patterns?',
-        'What error handling for external failures?',
-        'What monitoring/alerting?',
-        'What idempotency requirements?'
-      ],
-      searchTopics: ['integration patterns', 'API integration best practices']
-    })
-  }
-
-  // Testing Strategy layer (for complex/high-risk)
-  if (analysis.riskLevel === 'HIGH' || analysis.complexity >= 7) {
-    layers.push({
-      order: order++,
-      name: 'Testing Strategy',
-      focus: 'What testing coverage is needed?',
-      questions: [
-        'What unit vs integration vs e2e balance?',
-        'What edge cases to cover?',
-        'What load/stress testing?',
-        'What security testing?'
-      ],
-      searchTopics: ['testing strategy', `${analysis.primaryType} testing`]
-    })
-  }
-
-  return layers
-}
-
-// Execute research for a single layer using Claude's knowledge
-// WHY: Domain knowledge (UX, DB design, security patterns) comes from Claude's training
-//      Stack knowledge (Prisma, React) comes from Context7 in Step 2.7
-function executeLayerResearch(layer, changeAnalysis) {
-  const result = {
-    layer: layer.name,
-    findings: [],
-    recommendations: [],
-    warnings: [],
-    requiredItems: [],  // Critical checklist items that MUST be addressed
-    source: 'claude-knowledge'
-  }
-
-  // Claude generates best practices based on:
-  // - Layer context (what domain?)
-  // - Change analysis (what's being built?)
-  // - Questions to answer (what to research?)
-  //
-  // Claude's training includes:
-  // - UX: Nielsen Norman, Baymard Institute, Laws of UX
-  // - Database: Codd's normalization, indexing patterns
-  // - Security: OWASP, auth patterns, encryption
-  // - API: REST dissertation, versioning patterns
-  // - Architecture: distributed systems, caching, scaling
-
-  result.findings = generateDomainKnowledge(layer, changeAnalysis)
-  result.recommendations = generateRecommendations(layer, changeAnalysis)
-  result.warnings = checkForWarnings(layer, changeAnalysis)
-
-  // Inject critical required items based on layer and context
-  // WHY: These are non-negotiable security/compliance requirements
-  result.requiredItems = injectCriticalRequiredItems(layer, changeAnalysis)
-
-  return result
-}
-
-// ============================================================
-// CRITICAL FLOW REQUIREMENTS (v2.8.0)
-// ============================================================
-// These are non-negotiable items that MUST be in the checklist
-// WHY: Security/compliance failures have legal/financial consequences
-
-/**
- * Inject critical required items based on layer type and change context
- * Returns checklist items that agents MUST verify are implemented
- */
-function injectCriticalRequiredItems(layer, changeAnalysis) {
-  const items = []
-
-  // Security Requirements Layer
-  if (layer.name === 'Security Requirements') {
-    // Auth-related critical items
-    if (changeAnalysis.hasAuth) {
-      items.push(...CRITICAL_FLOWS.auth.security)
-    }
-    // Payment-related critical items
-    if (changeAnalysis.hasPayment) {
-      items.push(...CRITICAL_FLOWS.payment.security)
-    }
-    // Sensitive data handling
-    if (changeAnalysis.hasSensitiveData) {
-      items.push(...CRITICAL_FLOWS.sensitiveData.security)
-    }
-  }
-
-  // Compliance Layer
-  if (layer.name.includes('Compliance')) {
-    if (changeAnalysis.industryContext === 'healthcare') {
-      items.push(...CRITICAL_FLOWS.healthcare.compliance)
-    }
-    if (changeAnalysis.industryContext === 'fintech') {
-      items.push(...CRITICAL_FLOWS.fintech.compliance)
-    }
-  }
-
-  // Data Architecture Layer
-  if (layer.name === 'Data Architecture') {
-    if (changeAnalysis.hasSensitiveData) {
-      items.push(...CRITICAL_FLOWS.sensitiveData.dataArchitecture)
-    }
-  }
-
-  return items
-}
-
-/**
- * Critical Flow Definitions
- * Format: { category: { layer: [...items] } }
- * Each item has: id, check, why, severity
- */
-const CRITICAL_FLOWS = {
-  // ============================================================
-  // AUTH CRITICAL FLOWS
-  // ============================================================
-  auth: {
-    security: [
-      {
-        id: 'auth-password-hash',
-        check: '☐ Password hashing with bcrypt/argon2 (cost factor ≥ 10)',
-        why: 'Plain text or weak hashing = immediate breach if DB leaked',
-        severity: 'critical'
-      },
-      {
-        id: 'auth-rate-limit',
-        check: '☐ Rate limiting on login (max 5 attempts per 15 min)',
-        why: 'Prevents brute force attacks',
-        severity: 'critical'
-      },
-      {
-        id: 'auth-session-timeout',
-        check: '☐ Session timeout configured (≤ 24h, ≤ 15min for sensitive)',
-        why: 'Abandoned sessions are attack vectors',
-        severity: 'high'
-      },
-      {
-        id: 'auth-csrf',
-        check: '☐ CSRF protection on all state-changing endpoints',
-        why: 'OWASP Top 10 vulnerability',
-        severity: 'critical'
-      },
-      {
-        id: 'auth-secure-cookies',
-        check: '☐ Cookies: httpOnly, secure, sameSite=strict',
-        why: 'Prevents XSS token theft and CSRF',
-        severity: 'critical'
-      },
-      {
-        id: 'auth-password-policy',
-        check: '☐ Password policy enforced (min 8 chars, complexity optional)',
-        why: 'Weak passwords are #1 breach cause',
-        severity: 'high'
-      },
-      {
-        id: 'auth-account-lockout',
-        check: '☐ Account lockout after repeated failures (with unlock mechanism)',
-        why: 'Prevents brute force, but needs recovery path',
-        severity: 'medium'
-      }
-    ],
-    flow: [
-      {
-        id: 'auth-flow-login',
-        check: '☐ Login flow: input → validate → session → redirect',
-        why: 'Standard secure login pattern',
-        severity: 'high'
-      },
-      {
-        id: 'auth-flow-logout',
-        check: '☐ Logout: invalidate session server-side (not just cookie)',
-        why: 'Client-side only logout leaves session valid',
-        severity: 'high'
-      },
-      {
-        id: 'auth-flow-forgot',
-        check: '☐ Forgot password: email → time-limited token → reset',
-        why: 'Token must expire (≤ 1 hour)',
-        severity: 'high'
-      }
-    ]
-  },
-
-  // ============================================================
-  // PAYMENT CRITICAL FLOWS
-  // ============================================================
-  payment: {
-    security: [
-      {
-        id: 'payment-no-card-storage',
-        check: '☐ NO raw card numbers stored (use Stripe/payment provider tokens)',
-        why: 'PCI-DSS requirement, storing cards = massive liability',
-        severity: 'critical'
-      },
-      {
-        id: 'payment-https',
-        check: '☐ HTTPS enforced on all payment pages',
-        why: 'Payment data in transit must be encrypted',
-        severity: 'critical'
-      },
-      {
-        id: 'payment-webhook-verify',
-        check: '☐ Webhook signature verification (never trust unverified webhooks)',
-        why: 'Attackers can fake payment success webhooks',
-        severity: 'critical'
-      },
-      {
-        id: 'payment-idempotency',
-        check: '☐ Idempotency keys for payment creation',
-        why: 'Prevents double charges on retry',
-        severity: 'high'
-      },
-      {
-        id: 'payment-amount-verify',
-        check: '☐ Server-side price verification (never trust client price)',
-        why: 'Attackers modify client-side prices',
-        severity: 'critical'
-      }
-    ],
-    flow: [
-      {
-        id: 'payment-flow-checkout',
-        check: '☐ Checkout flow: cart → address → payment → confirm → receipt',
-        why: 'Standard e-commerce pattern users expect',
-        severity: 'medium'
-      },
-      {
-        id: 'payment-flow-error',
-        check: '☐ Payment error handling with clear user message',
-        why: 'Failed payments need recovery path',
-        severity: 'high'
-      },
-      {
-        id: 'payment-flow-refund',
-        check: '☐ Refund flow documented (even if manual)',
-        why: 'Legal requirement in most jurisdictions',
-        severity: 'high'
-      }
-    ]
-  },
-
-  // ============================================================
-  // SENSITIVE DATA CRITICAL FLOWS
-  // ============================================================
-  sensitiveData: {
-    security: [
-      {
-        id: 'data-encryption-rest',
-        check: '☐ Encryption at rest for PII/PHI (AES-256 or DB-level)',
-        why: 'Breached DB without encryption = full exposure',
-        severity: 'critical'
-      },
-      {
-        id: 'data-encryption-transit',
-        check: '☐ Encryption in transit (TLS 1.2+)',
-        why: 'Data interception prevention',
-        severity: 'critical'
-      },
-      {
-        id: 'data-access-logging',
-        check: '☐ Audit logging for sensitive data access',
-        why: 'Required for breach investigation and compliance',
-        severity: 'high'
-      },
-      {
-        id: 'data-minimization',
-        check: '☐ Data minimization (only collect what is needed)',
-        why: 'GDPR principle, reduces breach impact',
-        severity: 'medium'
-      }
-    ],
-    dataArchitecture: [
-      {
-        id: 'data-arch-backup',
-        check: '☐ Backup strategy with encryption',
-        why: 'Backups are often unencrypted breach vector',
-        severity: 'high'
-      },
-      {
-        id: 'data-arch-retention',
-        check: '☐ Data retention policy defined',
-        why: 'Legal requirement (GDPR right to deletion)',
-        severity: 'medium'
-      }
-    ]
-  },
-
-  // ============================================================
-  // HEALTHCARE COMPLIANCE (HIPAA)
-  // ============================================================
-  healthcare: {
-    compliance: [
-      {
-        id: 'hipaa-phi-encrypt',
-        check: '☐ All PHI encrypted at rest and in transit',
-        why: 'HIPAA Security Rule requirement',
-        severity: 'critical'
-      },
-      {
-        id: 'hipaa-access-control',
-        check: '☐ Role-based access control for PHI',
-        why: 'Minimum necessary standard',
-        severity: 'critical'
-      },
-      {
-        id: 'hipaa-audit-trail',
-        check: '☐ Audit trail for all PHI access (who, what, when)',
-        why: 'HIPAA requires 6-year audit log retention',
-        severity: 'critical'
-      },
-      {
-        id: 'hipaa-baa',
-        check: '☐ BAA signed with all vendors handling PHI',
-        why: 'Business Associate Agreement legally required',
-        severity: 'critical'
-      },
-      {
-        id: 'hipaa-breach-plan',
-        check: '☐ Breach notification plan documented',
-        why: '60-day notification requirement',
-        severity: 'high'
-      }
-    ]
-  },
-
-  // ============================================================
-  // FINTECH COMPLIANCE (PCI-DSS)
-  // ============================================================
-  fintech: {
-    compliance: [
-      {
-        id: 'pci-no-pan',
-        check: '☐ No PAN (card numbers) stored unless PCI certified',
-        why: 'PCI-DSS Level 1 requirement',
-        severity: 'critical'
-      },
-      {
-        id: 'pci-tokenization',
-        check: '☐ Tokenization for card data (Stripe, Braintree)',
-        why: 'Removes PCI scope from your systems',
-        severity: 'critical'
-      },
-      {
-        id: 'pci-network-segment',
-        check: '☐ Network segmentation for payment systems',
-        why: 'Limits breach blast radius',
-        severity: 'high'
-      },
-      {
-        id: 'fintech-kyc',
-        check: '☐ KYC verification flow for financial accounts',
-        why: 'AML/KYC regulations',
-        severity: 'high'
-      },
-      {
-        id: 'fintech-transaction-limits',
-        check: '☐ Transaction limits and velocity checks',
-        why: 'Fraud prevention, regulatory requirement',
-        severity: 'high'
-      },
-      {
-        id: 'fintech-audit',
-        check: '☐ Transaction audit trail (immutable)',
-        why: 'Regulatory reporting requirement',
-        severity: 'critical'
-      }
-    ]
-  }
-}
-
-// Generate domain knowledge using Claude's reasoning
-// This is where Claude applies its training to the specific change
-function generateDomainKnowledge(layer, changeAnalysis) {
-  const findings = []
-
-  // Based on layer type, Claude will reason about best practices
-  // The actual content comes from Claude's response when /csetup runs
-
-  findings.push({
-    question: layer.questions[0],
-    // Claude fills this based on its knowledge when executing
-    analysis: `[Claude analyzes: ${layer.focus}]`,
-    bestPractices: [],    // Claude lists industry standards
-    antiPatterns: [],     // Claude lists what to avoid
-    tradeoffs: []         // Claude explains trade-offs
-  })
-
-  return findings
-}
-
-// Check for conflicts between design system and industry practices
-function checkDesignConflicts(tokens, researchResults, changeAnalysis) {
-  const conflicts = []
-
-  // Only check for marketing/external-facing changes
-  if (!changeAnalysis.isExternalFacing) return conflicts
-
-  // Check color appropriateness for industry
-  if (tokens.colors && changeAnalysis.industryContext) {
-    const primaryColor = tokens.colors.primary
-
-    if (changeAnalysis.industryContext === 'healthcare') {
-      // Healthcare typically uses blue/green (trust, calm)
-      if (/red|orange|yellow/i.test(primaryColor)) {
-        conflicts.push({
-          aspect: 'Primary Color',
-          current: primaryColor,
-          industry: 'healthcare typically uses blue/green for trust and calm',
-          recommendation: 'Consider if bright colors are appropriate for healthcare context'
-        })
-      }
-    }
-
-    if (changeAnalysis.industryContext === 'fintech') {
-      // Fintech typically uses blue/green (trust, money)
-      if (/pink|purple|orange/i.test(primaryColor)) {
-        conflicts.push({
-          aspect: 'Primary Color',
-          current: primaryColor,
-          industry: 'fintech typically uses blue/green for trust and stability',
-          recommendation: 'Consider if playful colors fit financial services context'
-        })
-      }
-    }
-  }
-
-  // Check animation appropriateness
-  if (tokens.animations && changeAnalysis.hasCompliance) {
-    if (tokens.animations.enableScrollAnimations) {
-      conflicts.push({
-        aspect: 'Scroll Animations',
-        current: 'enabled',
-        industry: 'compliance-heavy sites often minimize animations for accessibility',
-        recommendation: 'Ensure animations have reduced-motion alternatives'
-      })
-    }
-  }
-
-  return conflicts
-}
-
-// Generate research checklist markdown
-function generateResearchChecklist(changeAnalysis, layers, results) {
-  let content = `# Research Checklist: ${changeAnalysis.primaryType}\n\n`
-  content += `> Generated by Adaptive Depth Research (v2.4.0)\n`
-  content += `> Complexity: ${changeAnalysis.complexity}/10 | Risk: ${changeAnalysis.riskLevel}\n\n`
-
-  if (layers.length === 0) {
-    content += `## ✅ No Research Required\n\n`
-    content += `This is a trivial change (complexity ${changeAnalysis.complexity}/10).\n`
-    content += `Proceed directly with implementation.\n`
-    return content
-  }
-
-  content += `## Summary\n\n`
-  content += `| Layer | Focus | Status |\n`
-  content += `|-------|-------|--------|\n`
-  layers.forEach((layer, idx) => {
-    content += `| L${idx + 1}: ${layer.name} | ${layer.focus} | ⏳ Pending |\n`
-  })
-
-  content += `\n---\n\n`
-
-  // Detail each layer
-  results.forEach((result, idx) => {
-    const layer = layers[idx]
-    content += `## L${idx + 1}: ${layer.name}\n\n`
-    content += `**Focus:** ${layer.focus}\n\n`
-
-    content += `### Key Questions\n\n`
-    layer.questions.forEach(q => {
-      content += `- [ ] ${q}\n`
-    })
-
-    if (result.findings.length > 0) {
-      content += `\n### Findings\n\n`
-      result.findings.forEach(f => {
-        content += `#### ${f.topic}\n\n`
-        if (Array.isArray(f.content)) {
-          f.content.forEach(point => content += `- ${point}\n`)
-        } else {
-          content += `${f.content}\n`
-        }
-        content += `\n*Source: ${f.source}*\n\n`
-      })
-    }
-
-    if (result.recommendations.length > 0) {
-      content += `### Recommendations\n\n`
-      result.recommendations.forEach(r => {
-        content += `- ${r}\n`
-      })
-    }
-
-    if (result.warnings.length > 0) {
-      content += `\n### ⚠️ Warnings\n\n`
-      result.warnings.forEach(w => {
-        content += `- ${w}\n`
-      })
-    }
-
-    content += `\n---\n\n`
-  })
-
-  // Add Content Guidelines section for marketing pages
-  if (changeAnalysis.primaryType === 'marketing' || changeAnalysis.isExternalFacing) {
-    content += `## 📝 Content Guidelines\n\n`
-    content += `> Claude generates these guidelines based on the change context.\n`
-    content += `> Use these as a starting point for content creation.\n\n`
-
-    content += `### Hero Section\n\n`
-    content += `**Headline Strategy:**\n`
-    content += `- Lead with primary pain point or aspiration\n`
-    content += `- 8-12 words, emotional trigger\n`
-    content += `- [Claude: Generate specific headline angle based on proposal]\n\n`
-
-    content += `**Subheadline:**\n`
-    content += `- Concrete benefit + emotional payoff\n`
-    content += `- 15-25 words\n`
-    content += `- [Claude: Generate based on value proposition]\n\n`
-
-    content += `**CTA:**\n`
-    content += `- Action verb + outcome\n`
-    content += `- [Claude: Generate based on user journey stage]\n\n`
-
-    content += `### Value Proposition\n\n`
-    content += `For each feature, translate to:\n`
-    content += `| Feature | Benefit | Emotional Payoff |\n`
-    content += `|---------|---------|------------------|\n`
-    content += `| [Technical] | [What user gets] | [How it makes them feel] |\n\n`
-
-    content += `### Social Proof\n\n`
-    content += `- Use specific results (numbers, timeframes)\n`
-    content += `- Match testimonials to target audience\n`
-    content += `- Include trust signals (logos, certifications)\n\n`
-
-    content += `---\n\n`
-  }
-
-  content += `## Agent Instructions\n\n`
-  content += `When implementing this change, agents should:\n\n`
-  content += `1. Review each layer's findings before starting\n`
-  content += `2. Check off questions as they are addressed\n`
-  content += `3. Follow recommendations where applicable\n`
-  content += `4. Address warnings or document exceptions\n`
-
-  if (changeAnalysis.primaryType === 'marketing' || changeAnalysis.isExternalFacing) {
-    content += `5. Use Content Guidelines section for copy direction\n`
-  }
-
-  return content
-}
-
-// Helper: Generate recommendations based on layer and context
-// Claude fills in actual recommendations when executing /csetup
-function generateRecommendations(layer, changeAnalysis) {
-  // These are prompts for Claude to expand with actual knowledge
-  // When /csetup runs, Claude will provide specific recommendations
-
-  return [
-    `[Claude: Based on ${layer.name} best practices for ${changeAnalysis.primaryType}]`,
-    `[Claude: Specific to this change's context and requirements]`
-  ]
-}
-
-// Helper: Check for potential warnings based on layer and context
-function checkForWarnings(layer, changeAnalysis) {
-  const warnings = []
-
-  // Risk-based warnings
-  if (changeAnalysis.riskLevel === 'HIGH') {
-    warnings.push(`HIGH risk change - review ${layer.name} carefully before deployment`)
-  }
-
-  // Compliance warnings
-  if (layer.name.includes('Compliance') && changeAnalysis.hasCompliance) {
-    warnings.push(`Regulatory compliance required - ensure all ${changeAnalysis.industryContext} requirements are met`)
-  }
-
-  // Payment warnings
-  if (changeAnalysis.hasPayment) {
-    warnings.push('Payment integration - ensure PCI compliance requirements are met')
-  }
-
-  // Security warnings
-  if (layer.name.includes('Security') && changeAnalysis.hasSensitiveData) {
-    warnings.push('Sensitive data handling - ensure proper encryption and access controls')
-  }
-
-  return warnings
-}
+📊 Change Analysis:
+   Type: auth
+   Complexity: 6/10
+   Risk Level: HIGH
+   Domains: fintech
+   Features: payment, auth
 ```
 
 ---
 
-### Step 2.7: Auto-Setup Best Practices (v2.3.0 - Dynamic Detection)
+#### Step 2.6.2: Detect Libraries
 
-> **Zero-Maintenance Design:** Automatically detects any library/framework from spec text and resolves via Context7.
-> **WHY:** Hardcoded mappings require constant maintenance and miss new libraries. Dynamic resolution works with any language (Python, Rust, Go, etc.) without code changes.
+**Read these files and identify library/framework names:**
+- `package.json` (dependencies, devDependencies)
+- `requirements.txt` or `pyproject.toml` (Python)
+- `openspec/changes/{changeId}/proposal.md`
+- `openspec/changes/{changeId}/design.md`
 
-```typescript
-// ============================================================
-// STEP 2.7: Dynamic Tech Stack Detection & Best Practices
-// ============================================================
+**Look for:** React, Next.js, Vue, Angular, FastAPI, Express, Django, Prisma, Drizzle, SQLAlchemy, Vitest, Jest, Playwright, Stripe, better-auth, etc.
 
-output(`\n🔍 Detecting Tech Stack (Dynamic Resolution)...`)
-
-// 1. Gather text from ALL relevant sources
-const textSources = {
-  proposal: Read(`openspec/changes/${changeId}/proposal.md`) || '',
-  tasks: Read(`openspec/changes/${changeId}/tasks.md`) || '',
-  design: fileExists(`openspec/changes/${changeId}/design.md`)
-    ? Read(`openspec/changes/${changeId}/design.md`) : '',
-  packageJson: fileExists('package.json') ? Read('package.json') : '',
-  requirementsTxt: fileExists('requirements.txt') ? Read('requirements.txt') : '',
-  pyprojectToml: fileExists('pyproject.toml') ? Read('pyproject.toml') : '',
-  cargoToml: fileExists('Cargo.toml') ? Read('Cargo.toml') : '',
-  goMod: fileExists('go.mod') ? Read('go.mod') : '',
-  composerJson: fileExists('composer.json') ? Read('composer.json') : '',
-  gemfile: fileExists('Gemfile') ? Read('Gemfile') : ''
-}
-
-const allText = Object.values(textSources).join('\n')
-
-// 2. Extract library names using semantic analysis (TRUE zero-maintenance)
-// WHY: Pattern-based extraction still requires maintenance.
-// Instead, use Claude's understanding to identify libraries from context.
-output(`   🧠 Analyzing text semantically...`)
-
-const potentialLibraries = await extractLibrariesSemantically(allText)
-
-output(`   📝 Found ${potentialLibraries.length} potential libraries to verify`)
-
-// 3. Resolve each potential library with Context7 (validate it's a real library)
-const resolvedLibraries = []
-const resolutionCache = new Map()
-
-for (const candidate of potentialLibraries) {
-  if (resolutionCache.has(candidate.toLowerCase())) continue
-
-  try {
-    const result = await mcp__context7__resolve_library_id({
-      libraryName: candidate
-    })
-
-    const bestMatch = parseContext7Response(result, candidate)
-
-    if (bestMatch && bestMatch.score >= 60) {
-      resolvedLibraries.push({
-        name: candidate,
-        context7Id: bestMatch.id,
-        title: bestMatch.title,
-        snippets: bestMatch.snippets,
-        score: bestMatch.score
-      })
-      resolutionCache.set(candidate.toLowerCase(), bestMatch)
-      output(`   ✅ ${candidate} → ${bestMatch.id} (${bestMatch.snippets} snippets)`)
-    }
-  } catch (error) {
-    resolutionCache.set(candidate.toLowerCase(), null)
-  }
-}
-
-output(`\n📊 Verified Libraries: ${resolvedLibraries.length}`)
-resolvedLibraries.forEach(lib => {
-  output(`   - ${lib.title} (${lib.context7Id})`)
-})
-
-// 4. If no libraries detected, ask user for guidance
-if (resolvedLibraries.length === 0) {
-  output(`\n⚠️ No libraries auto-detected from spec files`)
-
-  const answer = await askUserQuestion({
-    questions: [{
-      question: 'Enter the main libraries/frameworks for this project (comma-separated):',
-      header: 'Libraries',
-      options: [
-        { label: 'Skip', description: 'Continue without library-specific best practices' },
-        { label: 'React, Next.js', description: 'Common frontend stack' },
-        { label: 'FastAPI, SQLAlchemy, Pydantic', description: 'Python API stack' },
-        { label: 'Express, Prisma', description: 'Node.js backend stack' }
-      ],
-      multiSelect: false
-    }]
-  })
-
-  if (!answer.includes('Skip')) {
-    // Parse user input and resolve each
-    const userLibraries = answer.split(',').map(s => s.trim()).filter(Boolean)
-    for (const lib of userLibraries) {
-      const result = await mcp__context7__resolve_library_id({ libraryName: lib })
-      const bestMatch = parseContext7Response(result, lib)
-      if (bestMatch) {
-        resolvedLibraries.push({
-          name: lib,
-          context7Id: bestMatch.id,
-          title: bestMatch.title,
-          snippets: bestMatch.snippets,
-          score: bestMatch.score
-        })
-      }
-    }
-  }
-}
-
-// 5. Generate best-practices files for resolved libraries
-// v2.5.0: Smart Topic Query - include other library names for cross-library integration docs
-const bpDir = '.claude/contexts/domain/project/best-practices/'
-const existingBp = fileExists(bpDir) ? listFiles(bpDir) : []
-
-// Filter to libraries that don't have best-practices yet
-const newLibraries = resolvedLibraries.filter(lib => {
-  const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-  return !existingBp.some(f => f.toLowerCase().includes(safeName))
-})
-
-if (newLibraries.length > 0) {
-  output(`\n📚 Generating Best Practices from Context7...`)
-  output(`   💡 Using Smart Topic Query for cross-library integration docs`)
-
-  // Create directory if needed
-  if (!fileExists(bpDir)) {
-    mkdir(bpDir)
-  }
-
-  // Collect all integration risks for summary
-  const integrationRisks = []
-
-  for (const lib of newLibraries) {
-    output(`   📖 Fetching ${lib.title} best practices...`)
-
-    try {
-      // v2.5.0: Smart Topic Query - include other library names in topic
-      // WHY: This captures integration docs (e.g., "drizzle adapter" in auth.js docs)
-      const otherLibNames = resolvedLibraries
-        .filter(l => l.name !== lib.name)
-        .map(l => l.name.toLowerCase())
-        .slice(0, 5) // Limit to 5 to avoid topic overflow
-        .join(', ')
-
-      const smartTopic = [
-        'best practices',
-        'patterns',
-        'anti-patterns',
-        'common mistakes',
-        'adapter',        // Key for ORM + Auth integrations
-        'integration',    // Key for multi-library setups
-        'schema',         // Key for database + auth column naming
-        'configuration',  // Key for setup requirements
-        otherLibNames     // Include other detected libraries
-      ].filter(Boolean).join(', ')
-
-      const docs = await mcp__context7__get_library_docs({
-        context7CompatibleLibraryID: lib.context7Id,
-        topic: smartTopic,
-        mode: 'code'
-      })
-
-      // v2.5.0: Detect integration risks from docs content
-      const risks = detectIntegrationRisks(docs, lib.name, resolvedLibraries)
-      if (risks.length > 0) {
-        integrationRisks.push(...risks)
-        output(`   ⚠️ Found ${risks.length} integration pattern(s) to review`)
-      }
-
-      const bpContent = generateBestPracticesFile(lib.title, docs, lib.context7Id)
-      const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-      Write(`${bpDir}${safeName}.md`, bpContent)
-
-      output(`   ✅ ${safeName}.md generated`)
-    } catch (error) {
-      output(`   ⚠️ ${lib.title} - failed to fetch docs, skipping`)
-    }
-  }
-
-  // v2.5.0: Generate integration risk summary if any found
-  if (integrationRisks.length > 0) {
-    generateIntegrationRiskSummary(integrationRisks, bpDir, resolvedLibraries)
-    output(`\n⚠️ Integration Risk Summary generated (${integrationRisks.length} items)`)
-    output(`   📄 ${bpDir}INTEGRATION_RISKS.md`)
-  }
-
-  // Generate/update index.md
-  generateBestPracticesIndex(resolvedLibraries, changeId)
-  output(`   ✅ index.md updated`)
-
-  output(`\n✅ Best Practices Setup Complete!`)
-  output(`   New files: ${newLibraries.length}`)
-  output(`   Location: ${bpDir}`)
-} else if (resolvedLibraries.length > 0) {
-  output(`\n✅ Best Practices: Already configured for detected libraries`)
-} else {
-  output(`\n✅ Best Practices: Skipped (no libraries to configure)`)
-}
-
-// 6. Store resolved stack for context.md generation
-const stackForContext = {
-  detected: resolvedLibraries.map(l => l.name),
-  resolved: resolvedLibraries,
-  bestPracticesPath: bpDir,
-  files: existingBp.concat(newLibraries.map(l => `${l.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`))
-}
+**Output:**
+```
+🔍 Libraries Detected:
+   - Next.js (from package.json)
+   - Prisma (from design.md)
+   - better-auth (from tasks.md)
 ```
 
 ---
 
-### Helper: extractLibrariesSemantically() - PRIMARY
+#### Step 2.6.3: Fetch Best Practices via Context7
 
-> **TRUE Zero-Maintenance:** Uses Claude's semantic understanding to extract library names from any text.
-> **WHY:** Pattern-based regex always has edge cases. Claude understands context and meaning.
+**For EACH detected library, call these MCP tools:**
 
-```typescript
-async function extractLibrariesSemantically(text: string): Promise<string[]> {
-  // Truncate text if too long (keep first 8000 chars for efficiency)
-  const truncatedText = text.length > 8000 ? text.slice(0, 8000) + '\n...[truncated]' : text
+```
+1. mcp__context7__resolve-library-id
+   Input: { libraryName: "Next.js" }
+   Output: Get the context7CompatibleLibraryID (e.g., "/vercel/next.js")
 
-  // Use Claude to semantically extract library/framework names
-  // This is the MAIN Claude running /csetup, so we just analyze inline
-  const prompt = `
-Analyze this text and extract ALL programming libraries, frameworks, and tools mentioned.
-
-TEXT:
-${truncatedText}
-
-INSTRUCTIONS:
-1. Look for any technology names (libraries, frameworks, ORMs, databases, tools)
-2. Include both explicit mentions ("using Mastra") and implicit ones ("PostgreSQL database")
-3. Return ONLY the library/framework names, one per line
-4. Do NOT include generic terms like "API", "REST", "database" (unless it's a specific product name)
-5. Do NOT include programming languages (Python, JavaScript, etc.) unless they're library names
-6. Include package names from any language (npm, pip, cargo, go, etc.)
-
-OUTPUT FORMAT (one name per line, nothing else):
-`
-
-  // Since this runs within Main Claude context, we analyze inline
-  // The output parsing happens in the calling code
-  // For now, return a simple extraction that Main Claude will process
-
-  // Fallback: Use pattern-based extraction as baseline
-  // Main Claude will enhance this with semantic understanding
-  const patternBased = extractPotentialLibraryNames(text)
-
-  // Main Claude: When you execute this, also semantically analyze the text
-  // and add any libraries you identify from context that patterns missed.
-  // Example: "The system uses Mastra for orchestration" → add "Mastra"
-
-  return patternBased
-}
+2. mcp__context7__get-library-docs
+   Input: {
+     context7CompatibleLibraryID: "/vercel/next.js",
+     topic: "best practices, patterns, common mistakes, [other-lib-names]",
+     mode: "code"
+   }
+   Output: Documentation with best practices
 ```
 
-**Execution Note for Main Claude:**
+**Smart Topic Query:** Include OTHER detected library names in the topic for cross-library integration docs.
+Example: When fetching Prisma docs, include "Next.js, React" in topic.
 
-When running `/csetup`, after calling `extractLibrariesSemantically()`:
-1. Review the spec text yourself (proposal.md, design.md, tasks.md)
-2. Identify any library/framework names the patterns might have missed
-3. Add them to the `potentialLibraries` array before Context7 validation
-
-This hybrid approach ensures:
-- Pattern extraction catches obvious cases quickly
-- Claude's semantic understanding catches edge cases
-- Context7 validates everything (filters out false positives)
+**Skip if:**
+- Library not found in Context7 (note in warnings section instead)
+- Library already has cached best practices from previous run
 
 ---
 
-### Helper: extractPotentialLibraryNames() - FALLBACK
+#### Step 2.6.4: Determine Research Layers
 
-> **Pattern-based fallback:** Provides baseline extraction. Main Claude enhances with semantic analysis.
+**Based on change analysis, select relevant research layers:**
 
-```typescript
-function extractPotentialLibraryNames(text: string): string[] {
-  const candidates = new Set<string>()
+| Trigger | Layer | Focus |
+|---------|-------|-------|
+| Always (complexity > 1) | Best Practices | How do others do this? |
+| hasAuth OR hasPayment | Security | Authentication, data protection |
+| healthcare OR fintech | Compliance | HIPAA, PCI-DSS, regulations |
+| isExternalFacing + hasUI | UX Patterns | User journey, accessibility |
+| marketing type | Conversion Psychology | Triggers, objections, social proof |
+| hasDatabase | Data Architecture | Normalization, indexing, scaling |
+| hasAPI | API Design | REST/GraphQL, versioning, errors |
+| payment feature | Payment Flows | PCI compliance, webhooks, idempotency |
 
-  // === Pattern 1: Package file dependencies ===
-  // package.json: "react": "^18.0.0" → react
-  const npmDeps = text.match(/"([a-z@][a-z0-9._/-]*)"\s*:\s*"[\^~]?\d/gi) || []
-  npmDeps.forEach(m => {
-    const match = m.match(/"([^"]+)"/)
-    if (match) candidates.add(match[1].replace(/^@[^/]+\//, '')) // Strip scope
-  })
+**For each selected layer, generate:**
+- 3-5 key questions to consider
+- 2-3 recommendations from domain knowledge
+- Warnings if applicable
 
-  // requirements.txt: sqlalchemy==2.0.0 → sqlalchemy
-  // Allow optional leading whitespace for indented requirements
-  const pyDeps = text.match(/^\s*([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/gm) || []
-  pyDeps.forEach(m => {
-    const match = m.match(/([a-zA-Z][a-zA-Z0-9_-]*)\s*[=<>~!]/)
-    if (match) candidates.add(match[1])
-  })
+---
 
-  // Cargo.toml: tokio = "1.0" → tokio
-  // Allow optional leading whitespace for indented dependencies
-  const rustDeps = text.match(/^\s*([a-z][a-z0-9_-]*)\s*=/gm) || []
-  rustDeps.forEach(m => {
-    const match = m.match(/([a-z][a-z0-9_-]*)\s*=/)
-    if (match) candidates.add(match[1])
-  })
+#### Step 2.6.5: Detect Integration Warnings
 
-  // go.mod: require github.com/gin-gonic/gin → gin
-  const goDeps = text.match(/(?:require\s+)?github\.com\/[^/\s]+\/([a-z][a-z0-9_-]*)/gi) || []
-  goDeps.forEach(m => {
-    const match = m.match(/\/([a-z][a-z0-9_-]*)$/i)
-    if (match) candidates.add(match[1])
-  })
+**Cross-reference library combinations for known issues:**
 
-  // === Pattern 2: Import statements ===
-  // Python: from sqlalchemy import, import pydantic
-  const pyImports = text.match(/(?:from|import)\s+([a-zA-Z][a-zA-Z0-9_]*)/g) || []
-  pyImports.forEach(m => {
-    const match = m.match(/(?:from|import)\s+([a-zA-Z][a-zA-Z0-9_]*)/)
-    if (match) candidates.add(match[1])
-  })
+| Combination | Warning |
+|-------------|---------|
+| better-auth + custom JWT | better-auth handles JWT internally - don't duplicate |
+| Prisma + serverless | Cold starts can timeout - use connection pooling |
+| Next.js 14+ + pages router | App router is default - check which is intended |
+| React 19 + old state libs | Check compatibility with new React features |
 
-  // JS/TS: import X from 'Y', require('Y')
-  const jsImports = text.match(/(?:from|require\s*\(\s*)['"]([a-zA-Z@][a-zA-Z0-9._/-]*)['"]/g) || []
-  jsImports.forEach(m => {
-    const match = m.match(/['"]([^'"]+)['"]/)
-    if (match) {
-      const pkg = match[1].replace(/^@[^/]+\//, '').split('/')[0]
-      candidates.add(pkg)
-    }
-  })
+**Check Context7 docs for integration warnings:**
+- Look for "migration", "breaking changes", "compatibility" in docs
+- Note version-specific warnings
 
-  // Rust: use tokio::, extern crate serde
-  const rustImports = text.match(/(?:use|extern\s+crate)\s+([a-z][a-z0-9_]*)/g) || []
-  rustImports.forEach(m => {
-    const match = m.match(/(?:use|extern\s+crate)\s+([a-z][a-z0-9_]*)/)
-    if (match) candidates.add(match[1])
-  })
+---
 
-  // === Pattern 3: Tech mentions in prose ===
-  // "using FastAPI", "with Prisma", "powered by Mastra"
-  const techMentions = text.match(/(?:using|with|via|built with|powered by)\s+([A-Z][a-zA-Z0-9.]*)/gi) || []
-  techMentions.forEach(m => {
-    const match = m.match(/\s([A-Z][a-zA-Z0-9.]*)$/i)
-    if (match) candidates.add(match[1])
-  })
+#### Step 2.6.6: Generate Critical Checklist Items
 
-  // CamelCase words (FastAPI, NextAuth)
-  const camelCase = text.match(/\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b/g) || []
-  camelCase.forEach(w => candidates.add(w))
+**Based on change characteristics, inject required items:**
 
-  // Mixed case words (SQLAlchemy, PostgreSQL, GraphQL - uppercase prefix + CamelCase)
-  const mixedCase = text.match(/\b([A-Z]{2,}[a-z]+[A-Za-z]*)\b/g) || []
-  mixedCase.forEach(w => candidates.add(w))
+**If hasAuth:**
+```
+☐ Password hashing with bcrypt/argon2 (cost ≥ 10)
+☐ Rate limiting on login (max 5 per 15 min)
+☐ Session timeout configured
+☐ CSRF protection on state-changing endpoints
+☐ Cookies: httpOnly, secure, sameSite=strict
+```
 
-  // === Pattern 3.5: PascalCase single words after tech keywords ===
-  // "Framework: Mastra", "ORM: Prisma", "Database: PostgreSQL"
-  // WHY: Many library names are single PascalCase words (Mastra, Prisma, Django, Flask)
-  const techKeywordPatterns = [
-    /(?:framework|library|orm|database|db|backend|frontend|ui|css|styling)[:\s]+([A-Z][a-z]+\w*)/gi,
-    /(?:built\s+with|powered\s+by|using|via|with)\s+([A-Z][a-z]+\w*)/gi,
-    /\*\*(?:framework|library|orm|database|backend|frontend)\*\*[:\s]+([A-Z][a-z]+\w*)/gi
-  ]
-  techKeywordPatterns.forEach(pattern => {
-    const matches = text.matchAll(pattern)
-    for (const match of matches) {
-      if (match[1]) candidates.add(match[1])
-    }
-  })
+**If hasPayment:**
+```
+☐ NO raw card storage (use Stripe tokens)
+☐ HTTPS on all payment pages
+☐ Webhook signature verification
+☐ Idempotency keys for payments
+☐ Server-side price verification
+```
 
-  // === Pattern 3.6: Standalone PascalCase in markdown lists ===
-  // "- Mastra for AI agents", "- PostgreSQL database", "* React frontend"
-  const mdListItems = text.match(/^[\s]*[-*]\s+([A-Z][a-z]+\w*)(?:\s|$)/gm) || []
-  mdListItems.forEach(m => {
-    const match = m.match(/[-*]\s+([A-Z][a-z]+\w*)/)
-    if (match) candidates.add(match[1])
-  })
-
-  // === Pattern 3.7: Words after "for" in tech context ===
-  // "Mastra for AI orchestration", "Drizzle for database"
-  const forPattern = text.match(/([A-Z][a-z]+\w*)\s+for\s+(?:ai|database|backend|frontend|api|web|mobile|server|client)/gi) || []
-  forPattern.forEach(m => {
-    const match = m.match(/^([A-Z][a-z]+\w*)/)
-    if (match) candidates.add(match[1])
-  })
-
-  // Known framework patterns: Next.js, Vue.js, Express.js
-  const dotJs = text.match(/\b([A-Z][a-z]+)\.js\b/gi) || []
-  dotJs.forEach(m => {
-    const match = m.match(/([A-Z][a-z]+)/i)
-    if (match) candidates.add(match[1])
-  })
-
-  // === Pattern 4: Explicit tech stack sections ===
-  // "Tech Stack:", "Technologies:", "Built with:"
-  const techSection = text.match(/(?:tech\s*stack|technologies|built\s*with|dependencies)[:\s]+([^\n]+)/gi) || []
-  techSection.forEach(section => {
-    const items = section.split(/[,\s]+/)
-    items.forEach(item => {
-      const cleaned = item.replace(/[^a-zA-Z0-9.-]/g, '')
-      if (cleaned.length > 2) candidates.add(cleaned)
-    })
-  })
-
-  // === Pattern 4.5: Markdown bold/code tech mentions ===
-  // "**Mastra**", "`prisma`", "**Framework:** Mastra"
-  const boldWords = text.match(/\*\*([A-Z][a-z]+\w*)\*\*/g) || []
-  boldWords.forEach(m => {
-    const match = m.match(/\*\*([A-Z][a-z]+\w*)\*\*/)
-    if (match) candidates.add(match[1])
-  })
-
-  const codeWords = text.match(/`([a-zA-Z][a-zA-Z0-9_-]+)`/g) || []
-  codeWords.forEach(m => {
-    const match = m.match(/`([a-zA-Z][a-zA-Z0-9_-]+)`/)
-    if (match && match[1].length > 2) candidates.add(match[1])
-  })
-
-  // === Filter out noise ===
-  // Use lowercase for case-insensitive comparison
-  const stopWords = new Set([
-    // Common English words (all lowercase for comparison)
-    'the', 'this', 'that', 'with', 'from', 'using', 'for', 'and', 'but', 'not',
-    'all', 'any', 'can', 'could', 'should', 'would', 'will', 'may', 'might',
-    'each', 'every', 'some', 'many', 'most', 'other', 'such', 'only', 'just',
-    'also', 'well', 'back', 'even', 'still', 'already', 'always', 'never',
-    // Common programming terms that aren't libraries
-    'api', 'rest', 'http', 'https', 'json', 'xml', 'html', 'css', 'sql',
-    'get', 'post', 'put', 'delete', 'patch', 'url', 'uri', 'uuid', 'id',
-    'true', 'false', 'none', 'null', 'undefined', 'error', 'exception',
-    'class', 'function', 'method', 'object', 'array', 'string', 'number',
-    'boolean', 'int', 'float', 'double', 'char', 'byte', 'long', 'short',
-    'public', 'private', 'protected', 'static', 'final', 'const', 'let', 'var',
-    'import', 'export', 'module', 'package', 'interface', 'type', 'enum',
-    'test', 'tests', 'spec', 'specs', 'mock', 'stub', 'fake', 'spy',
-    'config', 'configuration', 'settings', 'options', 'params', 'args',
-    'user', 'users', 'admin', 'auth', 'login', 'logout', 'session', 'token',
-    'data', 'database', 'table', 'column', 'row', 'index', 'key', 'value',
-    'file', 'files', 'path', 'dir', 'directory', 'folder', 'name', 'size',
-    'create', 'read', 'update', 'delete', 'list', 'get', 'set', 'add', 'remove',
-    'start', 'stop', 'run', 'build', 'deploy', 'install', 'setup', 'init',
-    // Version/date patterns
-    'version', 'release', 'beta', 'alpha', 'stable', 'latest', 'current'
-  ])
-
-  return [...candidates]
-    .filter(w => w.length > 2 && w.length < 30)
-    .filter(w => !stopWords.has(w.toLowerCase())) // Case-insensitive comparison
-    .filter(w => !/^\d+$/.test(w)) // Not pure numbers
-    .filter(w => !/^v?\d+\.\d+/.test(w)) // Not version numbers
-    .slice(0, 50) // Limit to avoid too many API calls
-}
+**If healthcare/fintech:**
+```
+☐ Encryption at rest for PII/PHI
+☐ Audit logging for sensitive data access
+☐ Data minimization applied
+☐ Compliance documentation prepared
 ```
 
 ---
 
-### Helper: parseContext7Response()
+#### Step 2.6.7: Write pre-work-context.md
 
-> **WHY:** Context7 returns multiple matches. Select the best one based on relevance score and snippet count.
+**Create `openspec/changes/{changeId}/pre-work-context.md`:**
 
-```typescript
-function parseContext7Response(response: string, searchTerm: string): {
-  id: string
-  title: string
-  snippets: number
-  score: number
-} | null {
-  // Parse the Context7 response text to extract library info
-  // Response format includes lines like:
-  // - Title: SQLAlchemy
-  // - Context7-compatible library ID: /sqlalchemy/sqlalchemy
-  // - Code Snippets: 2830
-  // - Benchmark Score: 84.4
+```markdown
+# Pre-Work Context: {changeId}
 
-  const libraries = []
-  const blocks = response.split('----------').filter(b => b.trim())
+> **Generated:** {date}
+> **Purpose:** All context agents need before implementation
+> **Read by:** All agents in STEP 0
 
-  for (const block of blocks) {
-    const titleMatch = block.match(/Title:\s*(.+)/i)
-    const idMatch = block.match(/Context7-compatible library ID:\s*(\S+)/i)
-    const snippetsMatch = block.match(/Code Snippets:\s*(\d+)/i)
-    const scoreMatch = block.match(/Benchmark Score:\s*([\d.]+)/i)
+---
 
-    if (titleMatch && idMatch) {
-      libraries.push({
-        title: titleMatch[1].trim(),
-        id: idMatch[1].trim(),
-        snippets: snippetsMatch ? parseInt(snippetsMatch[1]) : 0,
-        score: scoreMatch ? parseFloat(scoreMatch[1]) : 50
-      })
-    }
-  }
+## 1. Change Analysis
 
-  if (libraries.length === 0) return null
+| Aspect | Value |
+|--------|-------|
+| Type | {primaryType} |
+| Complexity | {complexity}/10 |
+| Risk Level | {riskLevel} |
+| Domains | {domains or "General"} |
+| Features | {features or "None detected"} |
 
-  // Prefer exact title match, then highest score with good snippet count
-  const searchLower = searchTerm.toLowerCase()
+---
 
-  // First: exact match
-  const exactMatch = libraries.find(l =>
-    l.title.toLowerCase() === searchLower ||
-    l.id.toLowerCase().includes(searchLower)
-  )
-  if (exactMatch) return exactMatch
+## 2. Library Best Practices
 
-  // Second: partial match with good score
-  const partialMatches = libraries.filter(l =>
-    l.title.toLowerCase().includes(searchLower) ||
-    searchLower.includes(l.title.toLowerCase())
-  )
-  if (partialMatches.length > 0) {
-    return partialMatches.sort((a, b) => b.score - a.score)[0]
-  }
+### {Library 1}
 
-  // Third: best overall score (only if snippets > 100 for quality)
-  const qualityLibs = libraries.filter(l => l.snippets > 100)
-  if (qualityLibs.length > 0) {
-    return qualityLibs.sort((a, b) => b.score - a.score)[0]
-  }
+**Source:** Context7 ({context7Id})
 
-  // Fallback: first result
-  return libraries[0]
-}
+**DO:**
+- {best practice 1}
+- {best practice 2}
+
+**DON'T:**
+- {anti-pattern 1}
+- {anti-pattern 2}
+
+**Code Example:**
+```{lang}
+{example code from Context7}
+```
+
+### {Library 2}
+{repeat structure}
+
+---
+
+## 3. Research Findings
+
+### L1: {Layer Name}
+
+**Key Questions:**
+- {question 1}
+- {question 2}
+
+**Recommendations:**
+- {recommendation based on domain knowledge}
+
+**Warnings:**
+- {warning if applicable}
+
+{repeat for each layer}
+
+---
+
+## 4. Integration Warnings
+
+⚠️ **{Library A} + {Library B}:**
+{warning description}
+
+⚠️ **{Another combination}:**
+{warning description}
+
+---
+
+## 5. Critical Checklist
+
+> **MUST complete before marking phase done**
+
+### Security
+{security items if applicable}
+
+### Compliance
+{compliance items if applicable}
+
+### Data Protection
+{data items if applicable}
+
+---
+
+## 6. Quick Reference
+
+**Package Manager:** {from tech-stack.md or detected}
+**Test Command:** {detected test script}
+**Build Command:** {detected build script}
+
+---
+
+**Agents: Read this file in STEP 0 before implementation.**
 ```
 
 ---
 
-### Step 2.8: Library Capability Validation (v2.2.0)
+#### Step 2.6.8: Output Summary
+
+```
+✅ Pre-Work Context Generated!
+
+   📄 File: openspec/changes/{changeId}/pre-work-context.md
+
+   Contents:
+   - Change Analysis: {type}, {complexity}/10, {risk}
+   - Libraries: {count} ({names})
+   - Research Layers: {count}
+   - Integration Warnings: {count}
+   - Critical Checklist Items: {count}
+
+   📌 Agents will read this in STEP 0
+```
+
+---
+
+#### Step 2.6.9: Skip Conditions
+
+**Skip this step entirely if:**
+- Change is trivial (complexity = 1, risk = LOW, no special features)
+- Output: `✅ Pre-Work Context: Skipped (trivial change)`
+
+**Skip library lookup if:**
+- No new libraries detected
+- All libraries already have Context7 cache
+
+---
+
+**⚠️ IMPORTANT:** This step requires YOU (Main Claude) to:
+1. Actually read the spec files
+2. Actually call Context7 MCP tools
+3. Actually write the pre-work-context.md file
+
+Do NOT treat this as pseudocode. EXECUTE these instructions.
+
+---
+
+### Step 2.7: Library Capability Validation (v2.2.0)
 
 > **NEW:** Verify chosen libraries support ALL spec requirements before proceeding
 > **WHY:** Prevents spec drift - discovering during implementation that library doesn't support requirements
@@ -2079,351 +858,6 @@ const capabilityAnalysis = {
 }
 ```
 
-**Helper: generateBestPracticesFile()**
-
-> **Updated v2.3.0:** Now includes Context7 library ID for reference and refresh capability.
-
-```typescript
-function generateBestPracticesFile(
-  tech: string,
-  context7Docs: string,
-  context7Id: string
-): string {
-  return `# ${tech} Best Practices
-
-> **Source:** Context7 MCP
-> **Library ID:** \`${context7Id}\`
-> **Generated:** ${new Date().toISOString().split('T')[0]}
-> **Refresh:** Query Context7 with the Library ID above to update this file
-
----
-
-## Best Practices
-
-${extractBestPractices(context7Docs)}
-
----
-
-## Anti-Patterns to Avoid
-
-${extractAntiPatterns(context7Docs)}
-
----
-
-## Code Examples
-
-${extractCodeExamples(context7Docs)}
-
----
-
-## Quick Checklist
-
-Before committing ${tech} code:
-${extractChecklist(context7Docs)}
-
----
-
-**Agents read this file in STEP 0 before implementation.**
-`
-}
-
-// Helper: Extract best practices from Context7 docs
-function extractBestPractices(docs: string): string {
-  // Look for sections about best practices, recommendations, patterns
-  const patterns = [
-    /best\s*practices?[:\s]+([^#]+?)(?=##|$)/gi,
-    /recommend(?:ed|ations)?[:\s]+([^#]+?)(?=##|$)/gi,
-    /(?:do|should)[:\s]+([^#]+?)(?=##|$)/gi
-  ]
-
-  let extracted = ''
-  for (const pattern of patterns) {
-    const matches = docs.match(pattern)
-    if (matches) {
-      extracted += matches.join('\n\n')
-    }
-  }
-
-  return extracted || docs.slice(0, 2000) // Fallback to first 2000 chars
-}
-
-// Helper: Extract anti-patterns from Context7 docs
-function extractAntiPatterns(docs: string): string {
-  const patterns = [
-    /anti-?patterns?[:\s]+([^#]+?)(?=##|$)/gi,
-    /avoid[:\s]+([^#]+?)(?=##|$)/gi,
-    /(?:don'?t|should\s*not)[:\s]+([^#]+?)(?=##|$)/gi,
-    /common\s*mistakes?[:\s]+([^#]+?)(?=##|$)/gi
-  ]
-
-  let extracted = ''
-  for (const pattern of patterns) {
-    const matches = docs.match(pattern)
-    if (matches) {
-      extracted += matches.join('\n\n')
-    }
-  }
-
-  return extracted || 'Review Context7 documentation for anti-patterns specific to your use case.'
-}
-
-// Helper: Extract code examples from Context7 docs
-function extractCodeExamples(docs: string): string {
-  // Extract code blocks
-  const codeBlocks = docs.match(/\`\`\`[\s\S]*?\`\`\`/g) || []
-  return codeBlocks.slice(0, 5).join('\n\n') || 'See Context7 documentation for code examples.'
-}
-
-// Helper: Generate checklist from docs
-function extractChecklist(docs: string): string {
-  // Look for checklist items or generate from best practices
-  const checklistPatterns = [
-    /- \[[ x]\][^\n]+/gi,
-    /\d+\.\s+[^\n]+/gi
-  ]
-
-  let items = []
-  for (const pattern of checklistPatterns) {
-    const matches = docs.match(pattern)
-    if (matches) {
-      items = items.concat(matches.slice(0, 10))
-    }
-  }
-
-  if (items.length > 0) {
-    return items.map(item => `- [ ] ${item.replace(/^[\d.-\[\]x\s]+/i, '')}`).join('\n')
-  }
-
-  // Fallback: generic checklist
-  return `- [ ] Follow official documentation patterns
-- [ ] Handle errors appropriately
-- [ ] Add proper typing/validation
-- [ ] Write tests for new code
-- [ ] Review for security concerns`
-}
-```
-
----
-
-### Helper: detectIntegrationRisks() - v2.5.0
-
-> **Smart Risk Detection:** Scans Context7 docs for integration patterns that require attention.
-> **WHY:** Proactively catch integration requirements BEFORE implementation, not at runtime.
-
-```typescript
-function detectIntegrationRisks(
-  docs: string,
-  currentLib: string,
-  allLibs: Array<{ name: string; title: string }>
-): Array<{ library: string; risk: string; pattern: string; recommendation: string }> {
-  const risks = []
-  const docsLower = docs.toLowerCase()
-
-  // Integration risk patterns to detect
-  const riskPatterns = [
-    // Adapter patterns (ORM + Auth)
-    {
-      keywords: ['adapter', 'drizzleadapter', 'prismaadapter'],
-      risk: 'Database adapter configuration required',
-      pattern: 'adapter',
-      recommendation: 'Verify adapter schema matches expected column names'
-    },
-    // Column naming patterns
-    {
-      keywords: ['column', 'columnname', 'snake_case', 'camelcase', 'mapping'],
-      risk: 'Column naming convention mismatch possible',
-      pattern: 'schema',
-      recommendation: 'Check column naming between ORM schema and library expectations'
-    },
-    // Schema patterns
-    {
-      keywords: ['userstable', 'accountstable', 'sessionstable', 'schema'],
-      risk: 'Custom table schema required',
-      pattern: 'schema',
-      recommendation: 'Ensure table schemas match library documentation exactly'
-    },
-    // Sync/Migration patterns
-    {
-      keywords: ['sync', 'migrate', 'migration', 'syncurl', 'embedded replica'],
-      risk: 'Data synchronization setup required',
-      pattern: 'sync',
-      recommendation: 'Configure sync intervals and handle offline scenarios'
-    },
-    // Webhook patterns
-    {
-      keywords: ['webhook', 'webhookendpoint', 'webhooksecret'],
-      risk: 'Webhook endpoint configuration required',
-      pattern: 'webhook',
-      recommendation: 'Set up webhook endpoints and verify signatures'
-    },
-    // API Key patterns
-    {
-      keywords: ['apikey', 'secretkey', 'authtoken', 'bearer'],
-      risk: 'API credentials setup required',
-      pattern: 'credentials',
-      recommendation: 'Store credentials securely in environment variables'
-    },
-    // Lifecycle patterns
-    {
-      keywords: ['beforeall', 'afterall', 'beforeeach', 'aftereach', 'setup', 'teardown'],
-      risk: 'Test lifecycle hooks required',
-      pattern: 'lifecycle',
-      recommendation: 'Implement proper setup/teardown in test configuration'
-    }
-  ]
-
-  for (const rp of riskPatterns) {
-    const found = rp.keywords.some(kw => docsLower.includes(kw.toLowerCase()))
-    if (found) {
-      // Check if this risk involves other detected libraries
-      const involvedLibs = allLibs
-        .filter(l => l.name !== currentLib)
-        .filter(l => docsLower.includes(l.name.toLowerCase()))
-        .map(l => l.name)
-
-      risks.push({
-        library: currentLib,
-        risk: rp.risk,
-        pattern: rp.pattern,
-        recommendation: rp.recommendation,
-        involvedLibraries: involvedLibs
-      })
-    }
-  }
-
-  return risks
-}
-```
-
----
-
-### Helper: generateIntegrationRiskSummary() - v2.5.0
-
-> **Risk Summary Output:** Creates INTEGRATION_RISKS.md with all detected cross-library concerns.
-> **WHY:** Agents can review this BEFORE implementation to avoid common integration mistakes.
-
-```typescript
-function generateIntegrationRiskSummary(
-  risks: Array<{
-    library: string
-    risk: string
-    pattern: string
-    recommendation: string
-    involvedLibraries?: string[]
-  }>,
-  bpDir: string,
-  allLibs: Array<{ name: string; title: string }>
-): void {
-  // Group risks by pattern type
-  const byPattern = {}
-  for (const r of risks) {
-    if (!byPattern[r.pattern]) byPattern[r.pattern] = []
-    byPattern[r.pattern].push(r)
-  }
-
-  const content = `# Integration Risk Summary
-
-> **Generated:** ${new Date().toISOString().split('T')[0]}
-> **Template Version:** 2.5.0 - Smart Topic Query
-> **Detected Libraries:** ${allLibs.map(l => l.name).join(', ')}
-
----
-
-## ⚠️ Review Before Implementation
-
-The following integration patterns were detected from library documentation.
-**Agents should review these items in STEP 0 before writing code.**
-
----
-
-${Object.entries(byPattern).map(([pattern, patternRisks]) => `
-### ${pattern.toUpperCase()} Patterns
-
-| Library | Risk | Recommendation |
-|---------|------|----------------|
-${patternRisks.map(r => `| ${r.library} | ${r.risk} | ${r.recommendation} |`).join('\n')}
-${patternRisks.some(r => r.involvedLibraries?.length > 0) ? `
-**Cross-library concerns:**
-${patternRisks.filter(r => r.involvedLibraries?.length > 0).map(r => `- ${r.library} ↔ ${r.involvedLibraries.join(', ')}: ${r.risk}`).join('\n')}
-` : ''}
-`).join('\n')}
-
----
-
-## Quick Checklist
-
-Before implementing integrations:
-
-${[...new Set(risks.map(r => r.recommendation))].map(rec => `- [ ] ${rec}`).join('\n')}
-
----
-
-**This file is auto-generated by /csetup v2.5.0**
-**Agents read this in STEP 0 alongside best-practices files**
-`
-
-  Write(`${bpDir}INTEGRATION_RISKS.md`, content)
-}
-```
-
----
-
-### Helper: generateBestPracticesIndex() - v2.5.0
-
-> **Index File:** Creates index.md registry of all best practices files.
-> **v2.5.0:** Now includes INTEGRATION_RISKS.md if present.
-
-```typescript
-function generateBestPracticesIndex(
-  resolvedLibraries: Array<{ name: string; title: string; context7Id: string }>,
-  changeId: string
-): void {
-  const bpDir = '.claude/contexts/domain/project/best-practices/'
-  const hasIntegrationRisks = fileExists(`${bpDir}INTEGRATION_RISKS.md`)
-
-  const content = `# Best Practices Index
-
-> **Generated:** ${new Date().toISOString().split('T')[0]}
-> **Template Version:** 2.5.0 - Smart Topic Query
-> **Change:** ${changeId}
-
----
-
-## 📚 Library Best Practices
-
-| Library | File | Context7 ID |
-|---------|------|-------------|
-${resolvedLibraries.map(lib => {
-  const safeName = lib.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-  return `| ${lib.title} | [${safeName}.md](./${safeName}.md) | \`${lib.context7Id}\` |`
-}).join('\n')}
-
----
-
-${hasIntegrationRisks ? `## ⚠️ Integration Risks
-
-Cross-library integration concerns detected. **Review before implementation.**
-
-→ [INTEGRATION_RISKS.md](./INTEGRATION_RISKS.md)
-
----
-
-` : ''}## Usage
-
-Agents read these files in **STEP 0** before implementation:
-
-1. Read \`index.md\` (this file) for overview
-2. Read relevant \`{library}.md\` files for specific best practices
-${hasIntegrationRisks ? '3. Read `INTEGRATION_RISKS.md` for cross-library concerns' : ''}
-
----
-
-**Auto-generated by /csetup v2.5.0**
-`
-
-  Write(`${bpDir}index.md`, content)
-}
-```
 
 ---
 
@@ -2772,15 +1206,27 @@ function generatePhaseSection(phase, phaseTasks) {
   const dominantAgent = getMostCommonAgent(phaseTasks)
   const hasIncremental = phaseTasks.some(t => t.milestones)
   const maxRisk = getMaxRisk(phaseTasks)
-  const needsTDD = phaseTasks.some(t => t.risk === 'HIGH' || t.complexity >= 7)
+
+  // v3.1.0: Use TDD classification from task-analyzer.md (Step 2.6)
+  // Each task now has task.tdd = { tdd_required, workflow, reason, confidence }
+  const tddTasks = phaseTasks.filter(t => t.tdd?.tdd_required === true)
+  const needsTDD = tddTasks.length > 0
+  const tddReasons = [...new Set(tddTasks.map(t => t.tdd?.reason).filter(Boolean))]
 
   let section = `## Phase ${phase.number}: ${phase.name}
 
 **Agent:** ${dominantAgent}
 **Strategy:** ${hasIncremental ? '🔄 INCREMENTAL' : 'Standard'}
 **Risk:** ${maxRisk}
-${needsTDD ? '**TDD Required:** Yes' : ''}
+${needsTDD ? `**TDD Required:** ✅ YES
+**TDD Reason:** ${tddReasons.slice(0, 2).join('; ')}
+**TDD Workflow:** red-green-refactor
 
+⚠️ **TDD WORKFLOW REQUIRED:**
+1. 🔴 RED: Write tests FIRST (they should fail)
+2. ✅ GREEN: Write minimal implementation to pass tests
+3. 🔧 REFACTOR: Improve code quality while keeping tests green
+` : ''}
 `
 
   // Group tasks: incremental tasks get milestone sections, others get simple list
@@ -3167,20 +1613,10 @@ function detectChangeType(tasks: AnalyzedTask[]): string {
 }
 ```
 
-### detectAdditionalTech() - DEPRECATED
+### detectAdditionalTech() - REMOVED (v3.1.0)
 
-> **Note:** This function is deprecated in v2.3.0. Use `extractPotentialLibraryNames()` + Context7 resolution instead.
-> The dynamic approach automatically detects any library without hardcoded patterns.
-
-```typescript
-// DEPRECATED: Kept for backwards compatibility only
-// Use extractPotentialLibraryNames() for new implementations
-function detectAdditionalTech(proposal: string, tasks: string): string[] {
-  // Now delegates to the dynamic detection system
-  const combined = proposal + ' ' + tasks
-  return extractPotentialLibraryNames(combined)
-}
-```
+> **Note:** This function was removed in v3.1.0. Use Step 2.7's direct Context7 instructions instead.
+> Main Claude now directly calls Context7 MCP tools to detect and resolve libraries.
 
 ---
 

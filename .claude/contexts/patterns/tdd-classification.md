@@ -104,7 +104,7 @@ Classify tasks to determine if Test-Driven Development (TDD) is required, regard
 - Transactions, financial operations
 - Audit logging
 
-**Keywords:** auth, authenticate, authorize, JWT, OAuth, encrypt, decrypt, hash, sign, permission, access control, transaction, rollback, commit, audit
+**Keywords:** auth, authenticate, authorize, JWT, OAuth, session, encrypt, decrypt, hash, sign, permission, access control, transaction, rollback, commit, audit
 
 **Examples:**
 ```
