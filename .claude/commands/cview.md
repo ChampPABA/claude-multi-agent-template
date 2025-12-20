@@ -38,11 +38,9 @@ Run: /csetup {change-id}
 
 ### Step 2: Read flags.json
 
-```typescript
-const flags = JSON.parse(
-  Read('openspec/changes/{change-id}/.claude/flags.json')
-)
-```
+1. Read the file `openspec/changes/{change-id}/.claude/flags.json`
+2. Parse the content as JSON
+3. Store the result for use in output generation
 
 ### Step 3: Format Output
 
@@ -153,63 +151,64 @@ Fix issues before continuing.
 
 ### Progress Bar
 
-```typescript
-function generateProgressBar(percentage: number, width: number = 20): string {
-  const filled = Math.floor(percentage * width / 100)
-  const empty = width - filled
-  return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percentage}%`
-}
+To display a progress bar showing completion percentage:
 
-// Example: generateProgressBar(64, 20)
-// Output: [████████████░░░░░░░░] 64%
-```
+1. Calculate filled portion: `Math.floor(percentage * 20 / 100)`
+2. Calculate empty portion: `20 - filled`
+3. Format as: `[████████████░░░░░░░░] 64%`
+   - Use `█` (filled block) for completed portion
+   - Use `░` (light shade) for remaining portion
+   - Append the percentage value
+   - Default width: 20 characters
+
+Example:
+- Input: 64%
+- Output: `[████████████░░░░░░░░] 64%`
 
 ### Time Formatting
 
-```typescript
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (hours > 0) {
-    return `${hours}h ${mins}m`
-  }
-  return `${mins} min`
-}
-```
+To format duration from minutes to human-readable format:
+
+1. Calculate hours: `Math.floor(minutes / 60)`
+2. Calculate remaining minutes: `minutes % 60`
+3. Format based on duration:
+   - If hours > 0: `{hours}h {mins}m` (e.g., "2h 45m")
+   - If hours = 0: `{mins} min` (e.g., "35 min")
+
+Examples:
+- 165 minutes → "2h 45m"
+- 35 minutes → "35 min"
 
 ### Time Ago
 
-```typescript
-function timeAgo(timestamp: string): string {
-  const now = new Date()
-  const then = new Date(timestamp)
-  const diffMinutes = Math.floor((now - then) / 1000 / 60)
+To display how long ago a timestamp occurred:
 
-  if (diffMinutes < 60) return `${diffMinutes} minutes ago`
-  const hours = Math.floor(diffMinutes / 60)
-  if (hours < 24) return `${hours} hours ago`
-  const days = Math.floor(hours / 24)
-  return `${days} days ago`
-}
-```
+1. Calculate difference in minutes between now and the timestamp
+2. Format based on time elapsed:
+   - Less than 60 minutes: `{minutes} minutes ago`
+   - Less than 24 hours: `{hours} hours ago`
+   - 24 hours or more: `{days} days ago`
+
+Examples:
+- 15 minutes ago → "15 minutes ago"
+- 3 hours ago → "3 hours ago"
+- 2 days ago → "2 days ago"
 
 ### Efficiency Calculation
 
-```typescript
-function calculateEfficiency(actual: number, estimated: number): {
-  percentage: number
-  status: 'ahead' | 'on track' | 'behind'
-} {
-  const percentage = Math.round((estimated / actual) * 100)
-  let status: 'ahead' | 'on track' | 'behind'
+To calculate and display schedule efficiency:
 
-  if (percentage > 110) status = 'ahead'
-  else if (percentage >= 90) status = 'on track'
-  else status = 'behind'
+1. Calculate efficiency percentage: `Math.round((estimated / actual) * 100)`
+2. Determine status based on percentage:
+   - Greater than 110%: "ahead" (of schedule)
+   - Between 90-110%: "on track"
+   - Less than 90%: "behind" (schedule)
+3. Display as: `{percentage}% ({status})`
 
-  return { percentage, status }
-}
-```
+Examples:
+- Estimated: 180 min, Actual: 165 min → "109% (on track)"
+- Estimated: 180 min, Actual: 140 min → "129% (ahead)"
+- Estimated: 180 min, Actual: 220 min → "82% (behind)"
 
 ---
 

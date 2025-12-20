@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 3.3.0 - Design Validation System
+> **Template Version:** 3.4.0 - Complete Pseudocode Elimination
 > **Latest:** Single Source of Truth for design compliance (prevention + detection)
 
 ---
@@ -363,6 +363,7 @@ User: "Build login system"
 **Recent versions:**
 | Version | Key Feature |
 |---------|-------------|
+| v3.4.0 | **Complete Pseudocode Elimination** (~3,210 lines → imperative instructions) |
 | v3.3.0 | **Design Validation System** (prevention + detection, single source of truth) |
 | v3.2.0 | Consolidated Pre-Work Context (single `pre-work-context.md` for agents) |
 | v3.1.1 | Direct Best Practices Execution (Step 2.7 rewritten, no pseudocode) |

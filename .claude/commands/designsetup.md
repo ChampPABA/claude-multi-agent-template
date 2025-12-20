@@ -45,47 +45,60 @@ Generate design system files:
 
 ## STEP 0: Discovery & Validation
 
-```javascript
-// 1. Find extracted sites from design-system/extracted/*/data.yaml
-const extractedDirs = glob('design-system/extracted/*/data.yaml');
+### STEP 0.1: Find Extracted Site Data
 
-if (extractedDirs.length === 0) {
-  return error(`
-    ❌ No extracted data found
+1. Search for extracted site data:
+   ```
+   Glob: design-system/extracted/*/data.yaml
+   ```
 
-    Please extract at least 1 site first:
-      /extract https://motherduck.com
-      /extract https://linear.app
-
-    Then run: /designsetup @prd.md @project.md
-  `);
-}
-
-// 2. Load all extracted site data (YAML format with psychology)
-const extractedData = {};
-for (const file of extractedDirs) {
-  const siteName = path.basename(path.dirname(file)); // Get folder name
-  extractedData[siteName] = YAML.parse(Read(file));
-}
-
-// 4. Load context files
-const contextArgs = args.filter(arg => arg.startsWith('@'));
-const contexts = {};
-
-if (contextArgs.length > 0) {
-  for (const arg of contextArgs) {
-    const filePath = arg.substring(1); // Remove @
-
-    if (!exists(filePath)) {
-      warn(`Context file not found: ${filePath} (skipping)`);
-      continue;
-    }
-
-    const fileName = path.basename(filePath);
-    contexts[fileName] = Read(filePath);
-  }
-}
+**If no files found:**
 ```
+❌ No extracted data found
+
+Please extract at least 1 site first:
+  /extract https://motherduck.com
+  /extract https://linear.app
+
+Then run: /designsetup @prd.md @project.md
+```
+→ STOP here, do not continue
+
+**If files found:**
+```
+✅ Found extracted sites: [list site names]
+```
+→ Continue to STEP 0.2
+
+### STEP 0.2: Load Extracted Site Data
+
+For each extracted site found:
+1. Extract the site name from the path (the folder name between `extracted/` and `/data.yaml`)
+2. Read the data.yaml file
+3. Parse the YAML content
+4. Store in memory for later use (map site name to data)
+
+→ Continue to STEP 0.3
+
+### STEP 0.3: Load Context Files (Optional)
+
+1. Check if user provided context files (arguments starting with `@`)
+
+**If no context files provided:**
+- Set contexts as empty
+- Will use interactive mode later
+→ Continue to STEP 0.4
+
+**If context files provided:**
+For each context file argument:
+1. Remove the `@` prefix to get the file path
+2. Check if file exists:
+   - **If not found:** Warn user and skip this file
+   - **If found:** Read the file content and store with filename as key
+
+→ Continue to STEP 0.4
+
+### STEP 0.4: Report Discovery Results
 
 **Report:**
 ```
@@ -110,19 +123,24 @@ ${Object.keys(contexts).length > 0 ? Object.keys(contexts).map(c => `   - ${c}`)
 
 ## STEP 1: Context Analysis
 
-```javascript
-let contextAnalysis;
+### STEP 1.1: Check for Context Files
 
-if (Object.keys(contexts).length > 0) {
-  // AI analyzes context files
-  const analysisPrompt = `
+**If context files were loaded in STEP 0.3:**
+→ Continue to STEP 1.2 (AI Analysis)
+
+**If no context files:**
+→ Skip to STEP 1.3 (Interactive Questions)
+
+### STEP 1.2: AI Analysis of Context Files
+
+1. Ask Claude to analyze the context files and identify project characteristics
+
+**Analysis Prompt:**
+```
 You are analyzing project context to recommend design directions.
 
 Context Files:
-${Object.entries(contexts).map(([name, content]) => `
-## ${name}
-${content.substring(0, 2000)}  // First 2000 chars
-`).join('\n')}
+[Include each context file name and first 2000 characters of content]
 
 Task: Identify project characteristics and return JSON.
 
@@ -146,69 +164,56 @@ Return JSON:
 }
 
 If context is insufficient or unclear, set "has_context": false.
-`;
-
-  contextAnalysis = await LLM({
-    prompt: analysisPrompt,
-    response_format: 'json'
-  });
-
-} else {
-  contextAnalysis = { has_context: false };
-}
-
-// If no context, ask user
-if (!contextAnalysis.has_context) {
-  const userInput = await AskUserQuestion({
-    questions: [
-      {
-        question: "What type of product are you building?",
-        header: "Product Type",
-        multiSelect: false,
-        options: [
-          { label: "SaaS Dashboard", description: "Business software, data tools, analytics" },
-          { label: "E-commerce", description: "Online store, marketplace, shopping" },
-          { label: "Marketing Site", description: "Landing pages, content, blog" },
-          { label: "Internal Tool", description: "Admin panels, workflows, dashboards" }
-        ]
-      },
-      {
-        question: "Who is your target audience?",
-        header: "Audience",
-        multiSelect: false,
-        options: [
-          { label: "Gen Z (18-25)", description: "Young, tech-savvy, bold preferences" },
-          { label: "Millennials (26-40)", description: "Professional, value-driven, modern" },
-          { label: "Enterprise (40+)", description: "Conservative, trust-focused, established" },
-          { label: "Developers", description: "Technical, efficiency-focused, minimal" }
-        ]
-      },
-      {
-        question: "What brand personality do you want?",
-        header: "Brand",
-        multiSelect: true,
-        options: [
-          { label: "Bold", description: "Stand out, memorable, confident, different" },
-          { label: "Professional", description: "Trustworthy, credible, serious, polished" },
-          { label: "Playful", description: "Fun, friendly, approachable, warm" },
-          { label: "Minimal", description: "Clean, simple, understated, elegant" }
-        ]
-      }
-    ]
-  });
-
-  contextAnalysis = {
-    has_context: true,
-    from_user_input: true,
-    product_type: userInput.answers["Product Type"],
-    target_audience: {
-      demographics: userInput.answers["Audience"],
-      tech_savvy: userInput.answers["Audience"].includes("Gen Z") || userInput.answers["Audience"].includes("Developers") ? "high" : "medium"
-    },
-    brand_personality: userInput.answers["Brand"].split(',').map(s => s.trim().toLowerCase())
-  };
-}
 ```
+
+2. Parse the JSON response from Claude
+
+**If has_context is true:**
+→ Skip to STEP 1.4 (Report)
+
+**If has_context is false:**
+→ Continue to STEP 1.3 (Interactive Questions)
+
+### STEP 1.3: Interactive Questions (Fallback)
+
+Ask user to answer these questions:
+
+**Question 1: Product Type**
+- Header: "Product Type"
+- Single selection
+- Options:
+  - "SaaS Dashboard" - Business software, data tools, analytics
+  - "E-commerce" - Online store, marketplace, shopping
+  - "Marketing Site" - Landing pages, content, blog
+  - "Internal Tool" - Admin panels, workflows, dashboards
+
+**Question 2: Target Audience**
+- Header: "Audience"
+- Single selection
+- Options:
+  - "Gen Z (18-25)" - Young, tech-savvy, bold preferences
+  - "Millennials (26-40)" - Professional, value-driven, modern
+  - "Enterprise (40+)" - Conservative, trust-focused, established
+  - "Developers" - Technical, efficiency-focused, minimal
+
+**Question 3: Brand Personality**
+- Header: "Brand"
+- Multiple selection allowed
+- Options:
+  - "Bold" - Stand out, memorable, confident, different
+  - "Professional" - Trustworthy, credible, serious, polished
+  - "Playful" - Fun, friendly, approachable, warm
+  - "Minimal" - Clean, simple, understated, elegant
+
+Build context analysis from user answers:
+- product_type: from Question 1
+- target_audience.demographics: from Question 2
+- target_audience.tech_savvy: "high" if Gen Z or Developers selected, otherwise "medium"
+- brand_personality: list from Question 3 (converted to lowercase)
+
+→ Continue to STEP 1.4
+
+### STEP 1.4: Report Context Analysis
 
 **Report:**
 ```
@@ -229,231 +234,197 @@ if (!contextAnalysis.has_context) {
 
 > **Key Change:** Interactive loop until user accepts 100%
 
-```javascript
-let round = 1;
-let maxRounds = 3;
-let userAccepted = false;
-let selectedStyle = null;
-let selectedAnimations = [];
-let selectedTheme = null;
+**Loop Configuration:**
+- Maximum rounds: 3
+- Current round: starts at 1
+- User must accept to exit loop
 
-while (!userAccepted && round <= maxRounds) {
-  output(`
+### STEP 2.1: Start New Round
+
+Display round header:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 ROUND ${round}/${maxRounds}: Style Selection
+📋 ROUND [current round]/3: Style Selection
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  `);
+```
 
-  // ========== STYLE OPTIONS (VERBOSE) ==========
+→ Continue to STEP 2.2
 
-  const styleOptions = [];
+### STEP 2.2: Build Style Options from Extracted Data
 
-  // Generate options from extracted data
-  for (const [siteName, data] of Object.entries(extractedData)) {
-    styleOptions.push({
-      site: siteName,
-      style: data.style.detected,
-      confidence: data.style.confidence,
-      characteristics: data.style.characteristics,
-      feel: data.style.feel,
-      colors: data.colors.primary,
-      animations: data.animation_libraries,
-      scrollPatterns: data.scroll_animations.patterns,
-      decorativeTypes: data.decorative_elements.types
-    });
-  }
+For each extracted site:
+1. Extract the following information from the site's data:
+   - site: site name
+   - style: data.style.detected
+   - confidence: data.style.confidence
+   - characteristics: data.style.characteristics
+   - feel: data.style.feel
+   - colors: data.colors.primary
+   - animations: data.animation_libraries
+   - scrollPatterns: data.scroll_animations.patterns
+   - decorativeTypes: data.decorative_elements.types
+2. Add to options list
 
-  // Calculate match scores based on context
-  const scoredOptions = styleOptions.map(opt => {
-    let score = opt.confidence;
+→ Continue to STEP 2.3
 
-    // Bonus for matching brand personality
-    if (contextAnalysis.brand_personality) {
-      if (contextAnalysis.brand_personality.includes('bold') &&
-          (opt.style === 'Neo-Brutalism' || opt.style === 'Playful/Creative')) {
-        score += 15;
-      }
-      if (contextAnalysis.brand_personality.includes('professional') &&
-          (opt.style === 'Minimalist' || opt.style === 'Modern SaaS')) {
-        score += 15;
-      }
-      if (contextAnalysis.brand_personality.includes('playful') &&
-          opt.style === 'Playful/Creative') {
-        score += 15;
-      }
-      if (contextAnalysis.brand_personality.includes('minimal') &&
-          opt.style === 'Minimalist') {
-        score += 15;
-      }
-    }
+### STEP 2.3: Calculate Match Scores
 
-    return { ...opt, matchScore: Math.min(score, 100) };
-  }).sort((a, b) => b.matchScore - a.matchScore);
+For each style option:
+1. Start with base score = confidence value
+2. Apply brand personality bonuses:
+   - **If brand includes "bold":**
+     - Add +15 if style is "Neo-Brutalism" or "Playful/Creative"
+   - **If brand includes "professional":**
+     - Add +15 if style is "Minimalist" or "Modern SaaS"
+   - **If brand includes "playful":**
+     - Add +15 if style is "Playful/Creative"
+   - **If brand includes "minimal":**
+     - Add +15 if style is "Minimalist"
+3. Cap final score at 100 (max)
+4. Store as matchScore
 
-  // Display verbose options
-  for (const [index, option] of scoredOptions.entries()) {
-    const letter = String.fromCharCode(65 + index);
-    const isRecommended = index === 0;
+Sort all options by matchScore (highest first)
 
-    output(`
+→ Continue to STEP 2.4
+
+### STEP 2.4: Display Verbose Style Options
+
+For each scored option (in sorted order):
+1. Assign a letter (A, B, C, etc.)
+2. Mark the first option (highest score) as "RECOMMENDED"
+3. Display in this format:
+
+```
 ┌─────────────────────────────────────────────────────────────┐
-│ Option ${letter}: ${option.style} ${isRecommended ? '⭐ RECOMMENDED' : ''}
-│ Source: ${option.site}
-│ Match Score: ${option.matchScore}%
+│ Option [Letter]: [Style Name] [⭐ RECOMMENDED if first]
+│ Source: [site name]
+│ Match Score: [score]%
 ├─────────────────────────────────────────────────────────────┤
 │
 │ 📝 Characteristics:
-│ ${option.characteristics.map(c => `   • ${c}`).join('\n│ ')}
+│    • [characteristic 1]
+│    • [characteristic 2]
+│    ...
 │
-│ 🎭 Feel: ${option.feel}
+│ 🎭 Feel: [feel description]
 │
-│ 🎨 Colors: ${option.colors.join(', ')}
+│ 🎨 Colors: [primary colors list]
 │
 │ 🎬 Animations Available:
-│ ${option.animations.length > 0 ? option.animations.map(a => `   • ${a.name}`).join('\n│ ') : '   (none detected)'}
+│    • [animation 1]
+│    • [animation 2]
+│    (or "(none detected)")
 │
 │ 📜 Scroll Patterns:
-│ ${option.scrollPatterns.length > 0 ? option.scrollPatterns.map(p => `   • ${p}`).join('\n│ ') : '   (none detected)'}
+│    • [pattern 1]
+│    • [pattern 2]
+│    (or "(none detected)")
 │
 │ 🖼️ Decorative Elements:
-│ ${option.decorativeTypes.length > 0 ? option.decorativeTypes.map(d => `   • ${d}`).join('\n│ ') : '   (none detected)'}
+│    • [element 1]
+│    • [element 2]
+│    (or "(none detected)")
 │
 └─────────────────────────────────────────────────────────────┘
-    `);
-  }
+```
 
-  // Ask user to select or provide feedback
-  const styleChoice = await AskUserQuestion({
-    questions: [{
-      question: "เลือก style ที่ชอบ หรือพิมพ์ feedback:",
-      header: "Style",
-      multiSelect: false,
-      options: [
-        ...scoredOptions.map((opt, i) => ({
-          label: `${String.fromCharCode(65 + i)}: ${opt.style}`,
-          description: `${opt.matchScore}% match - ${opt.feel}`
-        })),
-        { label: "Mix/Custom", description: "ผสมหลาย style หรือปรับแต่งเอง" }
-      ]
-    }]
-  });
+→ Continue to STEP 2.5
 
-  if (styleChoice.answers["Style"] === "Mix/Custom") {
-    output(`
-พิมพ์ความต้องการ (ตัวอย่าง: "ชอบ border ของ A แต่อยากได้สี soft กว่านี้"):
-    `);
-    const customInput = await getUserTextInput();
+### STEP 2.5: Ask User to Select Style
 
-    // AI interprets and adjusts
-    output(`
-🤖 กำลังปรับตาม feedback: "${customInput}"...
-    `);
+Ask user to choose:
+- Header: "Style"
+- Single selection
+- Options:
+  - For each scored option: "[Letter]: [Style Name]" - "[Score]% match - [Feel]"
+  - Last option: "Mix/Custom" - "ผสมหลาย style หรือปรับแต่งเอง"
 
-    round++;
-    continue; // Loop again with adjusted options
-  }
+**If user selects "Mix/Custom":**
+1. Display prompt: "พิมพ์ความต้องการ (ตัวอย่าง: 'ชอบ border ของ A แต่อยากได้สี soft กว่านี้'):"
+2. Get text input from user
+3. Display: "🤖 กำลังปรับตาม feedback: '[input]'..."
+4. Increment round counter
+5. **If round <= 3:** → Go back to STEP 2.1 (new round with adjusted options)
+6. **If round > 3:** → Continue to STEP 2.10 (max rounds reached)
 
-  // User selected a style
-  const selectedIndex = styleChoice.answers["Style"].charCodeAt(0) - 65;
-  selectedStyle = scoredOptions[selectedIndex];
+**If user selects a specific style (A, B, C, etc.):**
+1. Extract the letter (A=0, B=1, C=2, etc.)
+2. Get the corresponding option from scored list
+3. Store as selectedStyle
+→ Continue to STEP 2.6
 
-  // ========== ANIMATION SELECTION ==========
+### STEP 2.6: Animation Selection
 
-  output(`
+Display round header:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 ROUND ${round}/${maxRounds}: Animation Selection
+📋 ROUND [current round]/3: Animation Selection
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  `);
+```
 
-  // Collect all available animations from all sites
-  const allAnimations = [];
+**Step 2.6.1: Collect All Available Animations**
 
-  for (const [siteName, data] of Object.entries(extractedData)) {
-    // Animation libraries
-    for (const lib of data.animation_libraries) {
-      allAnimations.push({
-        type: 'library',
-        name: lib.name,
-        source: siteName,
-        description: `${lib.name} library detected`
-      });
-    }
+For each extracted site:
+1. **From animation_libraries:**
+   - For each library: Add entry with type="library", name=lib.name, source=siteName, description="[lib.name] library detected"
 
-    // Scroll patterns
-    for (const pattern of data.scroll_animations.patterns) {
-      allAnimations.push({
-        type: 'scroll',
-        name: pattern,
-        source: siteName,
-        description: `Scroll animation: ${pattern}`
-      });
-    }
+2. **From scroll_animations.patterns:**
+   - For each pattern: Add entry with type="scroll", name=pattern, source=siteName, description="Scroll animation: [pattern]"
 
-    // Component animations
-    if (data.component_animations.button_hover !== 'none') {
-      allAnimations.push({
-        type: 'component',
-        name: `Button: ${data.component_animations.button_hover}`,
-        source: siteName,
-        description: data.component_animations.button_hover
-      });
-    }
-    if (data.component_animations.card_hover !== 'none') {
-      allAnimations.push({
-        type: 'component',
-        name: `Card: ${data.component_animations.card_hover}`,
-        source: siteName,
-        description: data.component_animations.card_hover
-      });
-    }
-  }
+3. **From component_animations:**
+   - **If button_hover is not "none":**
+     - Add entry with type="component", name="Button: [button_hover]", source=siteName, description=button_hover value
+   - **If card_hover is not "none":**
+     - Add entry with type="component", name="Card: [card_hover]", source=siteName, description=card_hover value
 
-  // Display animations
-  output(`
-🎬 Available Animations (จาก references ทั้งหมด):
+**Step 2.6.2: Display Available Animations**
 
-${allAnimations.map((anim, i) => `
-[${i + 1}] ${anim.name}
-    Type: ${anim.type}
-    Source: ${anim.source}
-    Description: ${anim.description}
-`).join('')}
-  `);
+Display header: "🎬 Available Animations (จาก references ทั้งหมด):"
 
-  const animChoice = await AskUserQuestion({
-    questions: [{
-      question: "เลือก animations ที่ต้องการ (เลือกได้หลายอัน):",
-      header: "Animations",
-      multiSelect: true,
-      options: allAnimations.map((anim, i) => ({
-        label: `${anim.name}`,
-        description: `From ${anim.source}: ${anim.description}`
-      }))
-    }]
-  });
+For each animation (numbered 1, 2, 3, etc.):
+```
+[number] [animation name]
+    Type: [type]
+    Source: [source site]
+    Description: [description]
+```
 
-  selectedAnimations = animChoice.answers["Animations"]
-    ? animChoice.answers["Animations"].split(',').map(s => s.trim())
-    : [];
+**Step 2.6.3: Ask User to Select Animations**
 
-  // ========== THEME + DECORATIVE DIRECTION ==========
+Ask user to choose:
+- Header: "Animations"
+- Multiple selection allowed
+- Question: "เลือก animations ที่ต้องการ (เลือกได้หลายอัน):"
+- Options:
+  - For each animation: "[animation name]" - "From [source]: [description]"
 
-  output(`
+Parse user's selections and store as selectedAnimations list
+
+→ Continue to STEP 2.7
+
+### STEP 2.7: Theme & Decorative Direction
+
+Display round header:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 ROUND ${round}/${maxRounds}: Theme & Decorative Direction
+📋 ROUND [current round]/3: Theme & Decorative Direction
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  `);
+```
 
-  // AI recommends themes based on context
-  const themePrompt = `
+**Step 2.7.1: AI Theme Recommendations**
+
+Ask Claude to recommend 3-4 theme options based on project context.
+
+**Recommendation Prompt:**
+```
 Based on project context, recommend 3-4 theme options.
 
 Project Context:
-- Product Type: ${contextAnalysis.product_type}
-- Target Audience: ${contextAnalysis.target_audience?.demographics || 'Unknown'}
-- Brand Personality: ${contextAnalysis.brand_personality?.join(', ') || 'Unknown'}
-${Object.keys(contexts).length > 0 ? `- Context Files: ${Object.keys(contexts).join(', ')}` : ''}
-${Object.keys(contexts).length > 0 ? `- Brief Summary: ${Object.values(contexts)[0]?.substring(0, 500)}` : ''}
+- Product Type: [from context analysis]
+- Target Audience: [from context analysis]
+- Brand Personality: [from context analysis]
+[If context files exist: list context file names]
+[If context files exist: include first 500 chars of first file]
 
 Return JSON array:
 [
@@ -467,147 +438,158 @@ Return JSON array:
     "match_reason": "Why this theme fits the project"
   }
 ]
-`;
+```
 
-  const themeOptions = await LLM({
-    prompt: themePrompt,
-    response_format: 'json'
-  });
+Parse the JSON response to get theme options list.
 
-  output(`
-🎨 Theme Recommendations (based on your project):
-  `);
+**Step 2.7.2: Display Theme Options**
 
-  for (const [index, theme] of themeOptions.entries()) {
-    output(`
+Display header: "🎨 Theme Recommendations (based on your project):"
+
+For each theme option:
+```
 ┌─────────────────────────────────────────────────────────────┐
-│ Theme ${String.fromCharCode(65 + index)}: ${theme.name}
+│ Theme [Letter]: [theme name]
 ├─────────────────────────────────────────────────────────────┤
 │
-│ 📝 Description: ${theme.description}
-│ 🎭 Feeling: ${theme.feeling}
+│ 📝 Description: [description]
+│ 🎭 Feeling: [feeling]
 │
 │ ✅ Decorative Elements (Use):
-│ ${theme.decorative_elements.map(e => `   • ${e}`).join('\n│ ')}
+│    • [element 1]
+│    • [element 2]
+│    ...
 │
 │ ❌ Avoid:
-│ ${theme.avoid_elements.map(e => `   • ${e}`).join('\n│ ')}
+│    • [avoid 1]
+│    • [avoid 2]
+│    ...
 │
-│ 🎯 Icons (Lucide): ${theme.icons_suggestion.join(', ')}
+│ 🎯 Icons (Lucide): [icons list]
 │
-│ 💡 Why: ${theme.match_reason}
+│ 💡 Why: [match_reason]
 │
 └─────────────────────────────────────────────────────────────┘
-    `);
-  }
+```
 
-  const themeChoice = await AskUserQuestion({
-    questions: [{
-      question: "เลือก theme หรือพิมพ์ custom:",
-      header: "Theme",
-      multiSelect: false,
-      options: [
-        ...themeOptions.map((t, i) => ({
-          label: `${String.fromCharCode(65 + i)}: ${t.name}`,
-          description: `${t.feeling} - ${t.decorative_elements.slice(0, 3).join(', ')}`
-        })),
-        { label: "No Theme", description: "ไม่ใช้ theme - geometric/abstract" },
-        { label: "Custom", description: "กำหนด theme เอง" }
-      ]
-    }]
-  });
+**Step 2.7.3: Ask User to Select Theme**
 
-  if (themeChoice.answers["Theme"] === "Custom") {
-    output(`พิมพ์ theme ที่ต้องการ (ตัวอย่าง: "อวกาศ - จรวด, ดาวเทียม, ดาว"):`);
-    const customTheme = await getUserTextInput();
-    selectedTheme = {
-      name: 'Custom',
-      description: customTheme,
-      decorative_elements: customTheme.split(',').map(s => s.trim()),
-      avoid_elements: []
-    };
-  } else if (themeChoice.answers["Theme"] === "No Theme") {
-    selectedTheme = {
-      name: 'Abstract',
-      description: 'No specific theme - geometric and abstract decorations',
-      decorative_elements: ['geometric shapes', 'gradients', 'blobs'],
-      avoid_elements: []
-    };
-  } else {
-    const themeIndex = themeChoice.answers["Theme"].charCodeAt(0) - 65;
-    selectedTheme = themeOptions[themeIndex];
-  }
+Ask user to choose:
+- Header: "Theme"
+- Single selection
+- Question: "เลือก theme หรือพิมพ์ custom:"
+- Options:
+  - For each theme: "[Letter]: [name]" - "[feeling] - [first 3 decorative elements]"
+  - "No Theme" - "ไม่ใช้ theme - geometric/abstract"
+  - "Custom" - "กำหนด theme เอง"
 
-  // ========== CONFIRMATION ==========
+**If user selects "Custom":**
+1. Display prompt: "พิมพ์ theme ที่ต้องการ (ตัวอย่าง: 'อวกาศ - จรวด, ดาวเทียม, ดาว'):"
+2. Get text input from user
+3. Build custom theme:
+   - name: "Custom"
+   - description: [user input]
+   - decorative_elements: [split user input by comma and trim]
+   - avoid_elements: []
+4. Store as selectedTheme
 
-  output(`
+**If user selects "No Theme":**
+1. Build abstract theme:
+   - name: "Abstract"
+   - description: "No specific theme - geometric and abstract decorations"
+   - decorative_elements: ["geometric shapes", "gradients", "blobs"]
+   - avoid_elements: []
+2. Store as selectedTheme
+
+**If user selects a specific theme (A, B, C, etc.):**
+1. Extract the letter (A=0, B=1, C=2, etc.)
+2. Get the corresponding theme from options list
+3. Store as selectedTheme
+
+→ Continue to STEP 2.8
+
+### STEP 2.8: Display Summary and Confirmation
+
+Display summary header:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ SUMMARY - Please Confirm
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎨 Style: ${selectedStyle.style} (from ${selectedStyle.site})
-   Feel: ${selectedStyle.feel}
+🎨 Style: [selectedStyle.style] (from [selectedStyle.site])
+   Feel: [selectedStyle.feel]
 
 🎬 Animations Enabled:
-${selectedAnimations.map(a => `   ✅ ${a}`).join('\n') || '   (none selected)'}
+   ✅ [animation 1]
+   ✅ [animation 2]
+   (or "(none selected)" if empty)
 
-🎭 Theme: ${selectedTheme.name}
-   Decorations: ${selectedTheme.decorative_elements.join(', ')}
-   Avoid: ${selectedTheme.avoid_elements.join(', ') || '(none)'}
+🎭 Theme: [selectedTheme.name]
+   Decorations: [decorative_elements list]
+   Avoid: [avoid_elements list or "(none)"]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  `);
+```
 
-  const confirmation = await AskUserQuestion({
-    questions: [{
-      question: "ยืนยันการตั้งค่านี้?",
-      header: "Confirm",
-      multiSelect: false,
-      options: [
-        { label: "Yes, Generate", description: "สร้าง design system ตามนี้" },
-        { label: "Adjust", description: "ปรับแต่งอีกรอบ" },
-        { label: "Start Over", description: "เริ่มใหม่ตั้งแต่ต้น" }
-      ]
-    }]
-  });
+**Step 2.8.1: Ask User to Confirm**
 
-  if (confirmation.answers["Confirm"] === "Yes, Generate") {
-    userAccepted = true;
-  } else if (confirmation.answers["Confirm"] === "Start Over") {
-    round = 1;
-  } else {
-    round++;
-  }
+Ask user to confirm:
+- Header: "Confirm"
+- Single selection
+- Question: "ยืนยันการตั้งค่านี้?"
+- Options:
+  - "Yes, Generate" - "สร้าง design system ตามนี้"
+  - "Adjust" - "ปรับแต่งอีกรอบ"
+  - "Start Over" - "เริ่มใหม่ตั้งแต่ต้น"
 
-  if (round > maxRounds && !userAccepted) {
-    output(`
-⚠️ ครบ ${maxRounds} รอบแล้ว
+**If user selects "Yes, Generate":**
+- Mark as accepted
+→ Exit loop, continue to STEP 3
+
+**If user selects "Start Over":**
+- Reset round counter to 1
+→ Go back to STEP 2.1 (start fresh)
+
+**If user selects "Adjust":**
+- Increment round counter
+→ Continue to STEP 2.9 (check round limit)
+
+### STEP 2.9: Check Round Limit
+
+**If current round <= 3:**
+→ Go back to STEP 2.1 (new adjustment round)
+
+**If current round > 3 (max rounds reached):**
+→ Continue to STEP 2.10
+
+### STEP 2.10: Max Rounds Reached - Force Decision
+
+Display warning:
+```
+⚠️ ครบ 3 รอบแล้ว
 
 แนะนำ:
 1. รัน /extract กับ reference ใหม่
 2. หรือ accept แล้วค่อย manual edit ไฟล์ที่สร้าง
-    `);
-
-    const forceChoice = await AskUserQuestion({
-      questions: [{
-        question: "ต้องการ generate ตาม settings ปัจจุบันไหม?",
-        header: "Force",
-        multiSelect: false,
-        options: [
-          { label: "Yes", description: "Generate ตาม settings ล่าสุด" },
-          { label: "Cancel", description: "ยกเลิก" }
-        ]
-      }]
-    });
-
-    if (forceChoice.answers["Force"] === "Yes") {
-      userAccepted = true;
-    } else {
-      return output('Design setup cancelled.');
-    }
-  }
-}
 ```
+
+Ask user for final decision:
+- Header: "Force"
+- Single selection
+- Question: "ต้องการ generate ตาม settings ปัจจุบันไหม?"
+- Options:
+  - "Yes" - "Generate ตาม settings ล่าสุด"
+  - "Cancel" - "ยกเลิก"
+
+**If user selects "Yes":**
+- Mark as accepted
+→ Continue to STEP 3
+
+**If user selects "Cancel":**
+- Display: "Design setup cancelled."
+→ STOP (exit command)
+
+---
 
 **Report:**
 ```
@@ -622,706 +604,398 @@ ${selectedAnimations.map(a => `   ✅ ${a}`).join('\n') || '   (none selected)'}
 
 ---
 
-## STEP 3: Generate Preview YAMLs
+## STEP 3: Generate Preview YAMLs (Legacy - Optional)
 
-For each option, create a preview YAML:
+> **Note:** This step is optional and creates preview files for each option. In the new flow, we skip directly to generating the final files.
 
-```javascript
-for (const [index, option] of styleOptions.options.entries()) {
-  const optionLetter = String.fromCharCode(65 + index); // A, B, C
+**If you want to generate preview files:**
 
-  const previewPrompt = `
+For each style option that was presented to the user:
+1. Assign a letter (A, B, C, etc.)
+2. Ask Claude to generate an abbreviated YAML preview
+
+**Preview Generation Prompt:**
+```
 You are generating a preview style guide in YAML format.
 
-Style Direction: ${option.name}
-Fit Score: ${option.fit_score}%
-Rationale: ${option.rationale}
+Style Direction: [option.name]
+Fit Score: [option.fit_score]%
+Rationale: [option.rationale]
 
 Source Mapping:
-${JSON.stringify(option.sources, null, 2)}
+[JSON of option.sources]
 
 Customizations:
-${option.customizations.join('\n')}
+[list of option.customizations]
 
 Extracted Data (for reference):
-${JSON.stringify(extractedData, null, 2).substring(0, 5000)}  // First 5000 chars
+[First 5000 chars of extractedData JSON]
 
 Task: Create abbreviated YAML preview with key values only.
 
 Format:
-\`\`\`yaml
+```yaml
 meta:
-  style_name: "${option.name}"
-  fit_score: ${option.fit_score}
+  style_name: "[option.name]"
+  fit_score: [option.fit_score]
   sources: [list of source sites]
 
 colors:
   primary:
-    hex: "#..."  # From ${option.sources.colors}
+    hex: "#..."  # From [option.sources.colors]
     rationale: "Why this color fits"
   secondary:
     hex: "#..."
   # ... 5-10 key colors
 
 typography:
-  font_family: "..."  # From ${option.sources.typography}
+  font_family: "..."  # From [option.sources.typography]
   h1: { size: "...", weight: "..." }
   # ... key type styles
 
 shadows:
-  brutal: "..."  # From ${option.sources.shadows}
+  brutal: "..."  # From [option.sources.shadows]
   # ... 3-5 key shadows
 
 spacing:
-  grid: "..."  # From ${option.sources.spacing}
+  grid: "..."  # From [option.sources.spacing]
 
 components:
   button:
-    hover_animation: "..."  # From ${option.sources.button_hover}
+    hover_animation: "..."  # From [option.sources.button_hover]
     description: "..."
   card:
-    hover_animation: "..."  # From ${option.sources.card_hover}
+    hover_animation: "..."  # From [option.sources.card_hover]
   # ... key components
 
 border_radius:
-  values: [...]  # From ${option.sources.border_radius}
-\`\`\`
+  values: [...]  # From [option.sources.border_radius]
+```
 
 Return only the YAML content.
-`;
-
-  const previewYAML = await LLM({ prompt: previewPrompt });
-
-  Write(
-    `design-system/synthesis/options/option-${optionLetter.toLowerCase()}-${option.name.toLowerCase().replace(/\s+/g, '-')}.yaml`,
-    previewYAML
-  );
-}
 ```
+
+3. Write the preview to file:
+   - Path: `design-system/synthesis/options/option-[letter]-[name-kebab-case].yaml`
+   - Content: YAML from Claude's response
+
+**Skip this step in most cases** - proceed directly to STEP 3.5
 
 ---
 
-## STEP 3.5: Quick User Input (🆕 v1.4.0)
+## STEP 3.5: Quick User Input (Legacy - v1.4.0)
 
-> **NEW:** Ask user for quick feedback before presenting options
+> **Note:** This step is from an older version and asks for preferences before presenting options. This is now integrated into STEP 2's interactive loop. Can be skipped.
 
-```javascript
-output(`
+**If you want to collect user preferences upfront:**
+
+Display header:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📝 Quick Question
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`)
+```
 
-const userFeedback = await AskUserQuestion({
-  questions: [{
-    question: "มีอะไรอยากปรับหรือเน้นเป็นพิเศษไหม? (optional)",
-    header: "Preferences",
-    multiSelect: false,
-    options: [
-      { label: "ไม่มี ใช้ AI แนะนำ", description: "ให้ AI เลือกสิ่งที่เหมาะสมที่สุด" },
-      { label: "มีสี CI ของตัวเอง", description: "ระบุสีแบรนด์" },
-      { label: "ชอบ component เฉพาะ", description: "ชอบ button/card ของเว็บใดเป็นพิเศษ" },
-      { label: "ปรับอื่นๆ", description: "Typography, shadows, หรืออื่นๆ" }
-    ]
-  }]
-})
+Ask user about special preferences:
+- Header: "Preferences"
+- Single selection
+- Question: "มีอะไรอยากปรับหรือเน้นเป็นพิเศษไหม? (optional)"
+- Options:
+  - "ไม่มี ใช้ AI แนะนำ" - "ให้ AI เลือกสิ่งที่เหมาะสมที่สุด"
+  - "มีสี CI ของตัวเอง" - "ระบุสีแบรนด์"
+  - "ชอบ component เฉพาะ" - "ชอบ button/card ของเว็บใดเป็นพิเศษ"
+  - "ปรับอื่นๆ" - "Typography, shadows, หรืออื่นๆ"
 
-let userPreferences = { type: 'none' }
+Initialize userPreferences with type: 'none'
 
-// Process user feedback
-if (userFeedback.answers["Preferences"] === "มีสี CI ของตัวเอง") {
-  output(`
-กรุณาระบุสี (HEX format, คั่นด้วย comma):
-ตัวอย่าง: #0d7276, #f97316
+**If user selects "มีสี CI ของตัวเอง":**
+1. Display prompt:
+   ```
+   กรุณาระบุสี (HEX format, คั่นด้วย comma):
+   ตัวอย่าง: #0d7276, #f97316
 
-สีของคุณ:
-  `)
+   สีของคุณ:
+   ```
+2. Get text input from user
+3. Parse colors: split by comma, trim, filter only valid HEX format (#RRGGBB)
+4. **If valid colors found:**
+   - Set userPreferences.type = 'custom_colors'
+   - Set userPreferences.colors.primary = first color
+   - Set userPreferences.colors.secondary = second color (or null)
+   - Set userPreferences.colors.accent = third color (or null)
+   - Display: "✅ รับสีแล้ว: [colors list]"
 
-  const colorInput = await getUserTextInput()
-  const colors = colorInput.split(',').map(s => s.trim()).filter(s => s.match(/^#[0-9A-Fa-f]{6}$/))
+**If user selects "ชอบ component เฉพาะ":**
+1. Display prompt: "ระบุความชอบ (ตัวอย่าง: 'ชอบ button ของ motherduck, card ของ gitingest'):"
+2. Get text input from user
+3. Set userPreferences.type = 'component_preference'
+4. Set userPreferences.text = user input
+5. Display: "✅ บันทึกความชอบแล้ว"
 
-  if (colors.length > 0) {
-    userPreferences = {
-      type: 'custom_colors',
-      colors: {
-        primary: colors[0],
-        secondary: colors[1] || null,
-        accent: colors[2] || null
-      }
-    }
-    output(`✅ รับสีแล้ว: ${colors.join(', ')}`)
-  }
+**If user selects "ปรับอื่นๆ":**
+1. Display prompt: "ระบุสิ่งที่อยากปรับ (ตัวอย่าง: 'ใช้ font Inter, shadow แบบ soft'):"
+2. Get text input from user
+3. Set userPreferences.type = 'other_adjustment'
+4. Set userPreferences.text = user input
+5. Display: "✅ บันทึกการปรับแต่งแล้ว"
 
-} else if (userFeedback.answers["Preferences"] === "ชอบ component เฉพาะ") {
-  output(`
-ระบุความชอบ (ตัวอย่าง: "ชอบ button ของ motherduck, card ของ gitingest"):
-  `)
-
-  const preferenceText = await getUserTextInput()
-  userPreferences = {
-    type: 'component_preference',
-    text: preferenceText
-  }
-  output(`✅ บันทึกความชอบแล้ว`)
-
-} else if (userFeedback.answers["Preferences"] === "ปรับอื่นๆ") {
-  output(`
-ระบุสิ่งที่อยากปรับ (ตัวอย่าง: "ใช้ font Inter, shadow แบบ soft"):
-  `)
-
-  const adjustmentText = await getUserTextInput()
-  userPreferences = {
-    type: 'other_adjustment',
-    text: adjustmentText
-  }
-  output(`✅ บันทึกการปรับแต่งแล้ว`)
-}
-
-output(`
+Display final message:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔄 กำลังสร้าง style options (พร้อม preferences ของคุณ)...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`)
 ```
+
+**In most cases, skip this step** - preferences are handled in STEP 2's interactive loop
 
 ---
 
-## STEP 4: Present Options to User
+## STEP 4: Present Options to User (Legacy - Old Flow)
 
-```javascript
-output(`
+> **Note:** This step is from the old flow (v1.x). In the new flow (v2.0+), user selection happens in STEP 2's interactive loop. This step is now DEPRECATED.
+
+**Old flow (for reference only):**
+
+Display analysis summary:
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎨 Design Direction Analysis Complete
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Based on:
-✓ ${Object.keys(extractedData).length} extracted sites (${Object.keys(extractedData).join(', ')})
-✓ Target: ${contextAnalysis.target_audience.demographics}
-✓ Brand: ${contextAnalysis.brand_personality.join(', ')}
-✓ Product: ${contextAnalysis.product_type}
-${userPreferences.type !== 'none' ? `✓ User preferences: ${JSON.stringify(userPreferences)}` : ''}
+✓ [number] extracted sites ([site names])
+✓ Target: [target audience]
+✓ Brand: [brand personality]
+✓ Product: [product type]
+[If preferences: ✓ User preferences: [preferences]]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
+```
 
-for (const [index, option] of styleOptions.options.entries()) {
-  const optionLetter = String.fromCharCode(65 + index);
-  const isRecommended = index === 0;
-
-  output(`
-Option ${optionLetter}: ${option.name} ${isRecommended ? '⭐ (Recommended)' : ''}
-Fit Score: ${option.fit_score}%
+For each style option:
+Display:
+```
+Option [Letter]: [option.name] [⭐ (Recommended) if first]
+Fit Score: [option.fit_score]%
 
 Rationale:
-${option.rationale}
+[option.rationale]
 
 Component Sources:
-- Colors: ${option.sources.colors}
-- Shadows: ${option.sources.shadows}
-- Typography: ${option.sources.typography}
-- Button hover: ${option.sources.button_hover}
-- Card hover: ${option.sources.card_hover}
-- Input focus: ${option.sources.input_focus}
-- Border radius: ${option.sources.border_radius}
-- Overall vibe: ${option.sources.overall_vibe}
+- Colors: [option.sources.colors]
+- Shadows: [option.sources.shadows]
+- Typography: [option.sources.typography]
+- Button hover: [option.sources.button_hover]
+- Card hover: [option.sources.card_hover]
+- Input focus: [option.sources.input_focus]
+- Border radius: [option.sources.border_radius]
+- Overall vibe: [option.sources.overall_vibe]
 
 Customizations Applied:
-${option.customizations.map(c => `  • ${c}`).join('\n')}
+  • [customization 1]
+  • [customization 2]
+  ...
 
 Advantages:
-${option.advantages.map(a => `  ✅ ${a}`).join('\n')}
+  ✅ [advantage 1]
+  ✅ [advantage 2]
+  ...
 
 Disadvantages:
-${option.disadvantages.map(d => `  ⚠️ ${d}`).join('\n')}
+  ⚠️ [disadvantage 1]
+  ⚠️ [disadvantage 2]
+  ...
 
-Preview: design-system/synthesis/options/option-${optionLetter.toLowerCase()}-${option.name.toLowerCase().replace(/\s+/g, '-')}.yaml
+Preview: design-system/synthesis/options/option-[letter]-[name-kebab].yaml
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
-}
-
-// Ask user to select
-const userChoice = await AskUserQuestion({
-  questions: [{
-    question: "Select design direction:",
-    header: "Style",
-    multiSelect: false,
-    options: styleOptions.options.map((opt, i) => ({
-      label: `${String.fromCharCode(65 + i)}: ${opt.name}`,
-      description: `${opt.fit_score}% fit - ${opt.rationale.substring(0, 100)}...`
-    }))
-  }]
-});
-
-const selectedIndex = userChoice.answers["Style"].charCodeAt(0) - 65;
-const selectedOption = styleOptions.options[selectedIndex];
 ```
+
+Ask user to select:
+- Header: "Style"
+- Single selection
+- Question: "Select design direction:"
+- Options:
+  - For each option: "[Letter]: [name]" - "[score]% fit - [first 100 chars of rationale]..."
+
+Extract selected index and get corresponding option.
 
 **Report:**
 ```
-✅ Style Selected: ${selectedOption.name}
+✅ Style Selected: [selectedOption.name]
 
 🔄 Generating comprehensive design system...
 ```
 
----
-
-## STEP 5: Generate Final Design System (Legacy - See STEP 5.7)
-
-```javascript
-const styleGuidePrompt = `
-You are generating the final, comprehensive design system file.
-
-Selected Style: ${selectedOption.name}
-Fit Score: ${selectedOption.fit_score}%
-Rationale: ${selectedOption.rationale}
-
-Source Mapping:
-${JSON.stringify(selectedOption.sources, null, 2)}
-
-Customizations:
-${selectedOption.customizations.join('\n')}
-
-Full Extracted Data:
-${JSON.stringify(extractedData, null, 2)}
-
-Preview YAML:
-${Read(`design-system/synthesis/options/option-${String.fromCharCode(65 + selectedIndex).toLowerCase()}-${selectedOption.name.toLowerCase().replace(/\s+/g, '-')}.yaml`)}
-
-Project Context:
-- Product: ${contextAnalysis.product_type}
-- Audience: ${contextAnalysis.target_audience.demographics}
-- Brand: ${contextAnalysis.brand_personality.join(', ')}
-
-Task: Generate complete design system (1500-2000 lines) with ALL 17 sections.
-
-Follow this format:
-
-# [Project Name] Design System - Style Guide (${selectedOption.name})
-
-> **Source:** Based on ${Object.keys(extractedData).join(', ')}, customized for [Project]
-> **Date:** ${new Date().toISOString().split('T')[0]}
-> **Design Style:** ${selectedOption.name}
-> **Tech Stack:** Universal (Framework-agnostic)
-> **Primary Color:** [from preview YAML]
+**In current version (v2.0+), skip this step** - user selection is handled in STEP 2
 
 ---
 
-## Quick Reference
+## STEP 5: Generate Final Design System (Legacy - Deprecated in v2.0+)
 
-### Most Used Patterns
+> **Note:** This step is from the old flow (v1.x). In the current flow (v2.0+), design system generation happens in STEP 5.5 (data.yaml), STEP 5.6 (patterns/*.md), and STEP 5.7 (README.md). This step is now DEPRECATED.
 
-| Pattern | Code |
-|---------|------|
-[Table with most-used component patterns with exact Tailwind classes]
+**Old flow (for reference only):**
 
-### Design Tokens Summary
+This step would generate a comprehensive 1500-2000 line README.md by:
 
-\`\`\`json
-{
-  "colors": { ... },
-  "spacing": { ... },
-  "typography": { ... },
-  "borderRadius": { ... },
-  "shadows": { ... }
-}
-\`\`\`
+1. Preparing a prompt for Claude with:
+   - Selected option details (name, fit score, rationale)
+   - Source mapping (which site provided which design elements)
+   - Customizations applied
+   - Full extracted data from all sites
+   - Preview YAML content
+   - Project context (product type, audience, brand)
 
----
+2. The prompt would request a complete design system markdown file with:
+   - Header with metadata (source, date, style, tech stack, primary color)
+   - Quick reference section (most-used patterns table, design tokens JSON)
+   - Table of contents (all 17 sections)
+   - Section 1: Overview (summary, characteristics, tech stack, goals)
+   - Section 2: Design Philosophy (core principles, visual identity, differentiators, UX goals)
+   - Section 3: Color Palette (primary/secondary colors with hex, usage, psychology, source, CSS variables, Tailwind classes)
+   - Section 4: Typography (font family, weights, text styles for all headings with exact Tailwind classes and sources)
+   - Section 5: Spacing System (grid base, scale array from source)
+   - Section 6: Component Styles (buttons, cards, etc. with exact classes, animations, sources)
+   - Section 7: Shadows & Elevation (levels and usage from source)
+   - Sections 8-16: [Other design system sections]
+   - Section 17: Additional Sections (implementation best practices, accessibility guidelines, critical DO/DON'T rules)
+   - Footer with project name, date, sources
 
-## Table of Contents
+3. Ask Claude's LLM to generate the content (max 16000 tokens)
 
-1. [Overview](#1-overview)
-2. [Design Philosophy](#2-design-philosophy)
-3. [Color Palette](#3-color-palette)
-... (all 17)
+4. Write the generated content to `design-system/README.md`
 
----
-
-## 1. Overview
-
-**Summary:**
-This design system is based on **${selectedOption.name}** aesthetics...
-
-**Key Characteristics:**
-- [List from extracted data + customizations]
-
-**Tech Stack:**
-- Framework: Universal
-- Styling: Tailwind CSS recommended
-- Font: [from typography source]
-
-**Goals:**
-- [Derived from rationale + advantages]
+**In current version (v2.0+), skip this step** - generation is split into STEP 5.5, 5.6, and 5.7
 
 ---
 
-## 2. Design Philosophy
+## STEP 5.5: Generate tokens.json and data.yaml (Enhanced v2.0.0)
 
-**Core Principles:**
+> **Enhanced v2.0.0:** Now includes style, theme, animations, decorative_direction, and patterns_index
 
-1. **[Principle 1 from rationale]**
-   - [Description]
-
-2. **[Principle 2]**
-   - [Description]
-
-... (derive from ${selectedOption.name} characteristics + rationale)
-
-**Visual Identity:**
-${selectedOption.rationale}
-
-**Key Differentiators:**
-${selectedOption.advantages.slice(0, 3).map(a => `- ${a}`).join('\n')}
-
-**User Experience Goals:**
-- First Impression: [based on style name]
-- During Use: [based on style name]
-- Long-term: [based on style name]
-
----
-
-## 3. Color Palette
-
-[Extract from preview YAML + source data]
-
-### Primary Colors
-
-**Primary ([Color Name])**
-- **Color**: [hex] (rgb(...))
-- **Usage**: [from source data]
-- **Psychology**: [analysis]
-- **Source**: ${selectedOption.sources.colors}
-- **CSS Variable**: \`var(--color-primary)\`
-- **Tailwind**: \`bg-primary\`, \`text-primary\`, \`border-primary\`
-
-... continue all colors from preview YAML ...
-
----
-
-## 4. Typography
-
-[Extract from source data]
-
-**Font Family:**
-\`\`\`css
-font-family: [from ${selectedOption.sources.typography}]
-\`\`\`
-
-**Font Weights:**
-[Table from source data]
-
-**Text Styles:**
-
-### Headings
-
-**H1 - [Usage]**
-\`\`\`html
-<h1 className="[exact Tailwind classes from source]">
-  Example Text
-</h1>
-\`\`\`
-- **Size**: [from source]
-- **Weight**: [from source]
-- **Source**: ${selectedOption.sources.typography}
-
-... continue all typography ...
-
----
-
-## 5. Spacing System
-
-[Extract from ${selectedOption.sources.spacing}]
-
-**Grid Base:** [from source data]
-
-**Scale:** [array from source]
-
----
-
-## 6. Component Styles
-
-### 6.2 Button Component
-
-**Primary Button**
-\`\`\`tsx
-<button className="[exact classes from ${selectedOption.sources.button_hover}]">
-  Click me
-</button>
-\`\`\`
-
-**Animation:**
-- **Type**: [from extracted animations]
-- **Description**: [from animations data]
-- **Source**: ${selectedOption.sources.button_hover}
-- **Duration**: [from source]
-
-... continue all components from all sources ...
-
----
-
-## 7. Shadows & Elevation
-
-[Extract from ${selectedOption.sources.shadows}]
-
-... continue all 17 sections ...
-
----
-
-## 17. Additional Sections
-
-### 17.1 Implementation Best Practices
-
-**Design Token Usage:**
-- ✅ Use [font] for everything
-- ✅ Use [spacing] grid
-- ✅ Use [shadow style]
-- ❌ Never [anti-pattern from disadvantages]
-
-### 17.2 Accessibility Guidelines
-
-[Standard accessibility section]
-
-### 17.3 Critical Rules
-
-**DO:**
-${selectedOption.advantages.map(a => `- ✅ ${a}`).join('\n')}
-
-**DON'T:**
-${selectedOption.disadvantages.map(d => `- ❌ ${d}`).join('\n')}
-
----
-
-*Customized for [Project] from ${selectedOption.name} design principles*
-*Date: ${new Date().toISOString().split('T')[0]}*
-*Sources: ${Object.keys(extractedData).join(', ')}*
-`;
-
-const styleGuideMD = await LLM({
-  prompt: styleGuidePrompt,
-  max_tokens: 16000
-});
-
-Write('design-system/README.md', styleGuideMD);
+Display progress:
 ```
-
----
-
-## STEP 5.5: Generate tokens.json (Enhanced v2.0.0)
-
-> **Enhanced v2.0.0:** tokens.json now includes style, theme, animations, decorative_direction, and patterns_index
-
-```javascript
-output(`
 🔄 Generating enhanced tokens.json...
-`);
-
-// Build tokens.json from user selections + extracted data
-const tokensData = {
-  "$schema": "https://json-schema.org/draft-07/schema",
-  "version": "2.0.0",
-  "meta": {
-    "generated_at": new Date().toISOString(),
-    "generated_by": "/designsetup command v2.0.0",
-    "source_sites": Object.keys(extractedData),
-    "description": "Design tokens for agents (~800 tokens). Human-readable guide: README.md"
-  },
-
-  // ========== NEW: Style & Theme (from user selection) ==========
-  "style": {
-    "name": selectedStyle.style,
-    "confidence": selectedStyle.confidence,
-    "characteristics": selectedStyle.characteristics,
-    "feel": selectedStyle.feel,
-    "source_site": selectedStyle.site
-  },
-
-  "theme": {
-    "name": selectedTheme.name,
-    "description": selectedTheme.description,
-    "feeling": selectedTheme.feeling || selectedTheme.description,
-    "decorative_elements": {
-      "use": selectedTheme.decorative_elements,
-      "avoid": selectedTheme.avoid_elements
-    },
-    "icons_suggestion": selectedTheme.icons_suggestion || ["Lucide icons"]
-  },
-
-  // ========== NEW: Animations (from user selection) ==========
-  "animations": {
-    "enabled": selectedAnimations.length > 0,
-    "libraries": extractedData[selectedStyle.site]?.animation_libraries || [],
-    "selected_patterns": selectedAnimations,
-    "scroll_animations": {
-      "enabled": selectedAnimations.some(a =>
-        a.includes('scroll') || a.includes('parallax') || a.includes('fade') || a.includes('stacking')
-      ),
-      "patterns": extractedData[selectedStyle.site]?.scroll_animations?.patterns || []
-    },
-    "component_animations": {
-      "button_hover": extractedData[selectedStyle.site]?.component_animations?.button_hover || "scale + shadow",
-      "card_hover": extractedData[selectedStyle.site]?.component_animations?.card_hover || "translateY + shadow",
-      "input_focus": extractedData[selectedStyle.site]?.component_animations?.input_focus || "ring"
-    },
-    "duration": {
-      "fast": "150ms",
-      "normal": "200ms",
-      "slow": "300ms"
-    },
-    "easing": {
-      "default": "ease-in-out",
-      "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
-    }
-  },
-
-  // ========== Colors (from selected style's source) ==========
-  "colors": {
-    "primary": {
-      "DEFAULT": selectedStyle.colors[0] || "#0d7276",
-      "foreground": "#ffffff",
-      "hover": darkenColor(selectedStyle.colors[0] || "#0d7276", 10),
-      "tailwind": "bg-primary, text-primary, border-primary"
-    },
-    "secondary": {
-      "DEFAULT": selectedStyle.colors[1] || "#64748b",
-      "foreground": "#ffffff",
-      "hover": darkenColor(selectedStyle.colors[1] || "#64748b", 10)
-    },
-    "accent": {
-      "DEFAULT": selectedStyle.colors[2] || selectedStyle.colors[0] || "#f97316",
-      "foreground": "#ffffff"
-    },
-    "background": {
-      "DEFAULT": "#ffffff",
-      "muted": "#f1f5f9",
-      "subtle": "#f8fafc"
-    },
-    "foreground": {
-      "DEFAULT": "#0a0a0a",
-      "muted": "#64748b",
-      "subtle": "#94a3b8"
-    },
-    "border": {
-      "DEFAULT": "#e2e8f0",
-      "hover": "#cbd5e1",
-      "focus": selectedStyle.colors[0] || "#0d7276"
-    },
-    "semantic": {
-      "success": "#10b981",
-      "warning": "#f59e0b",
-      "error": "#ef4444",
-      "info": "#3b82f6"
-    }
-  },
-
-  // ========== Typography (from extracted data) ==========
-  "typography": {
-    "font_family": {
-      "sans": extractedData[selectedStyle.site]?.typography?.fonts[0] || "'Inter', sans-serif",
-      "mono": "'Fira Code', monospace"
-    },
-    "font_size": {
-      "xs": "12px", "sm": "14px", "base": "16px", "lg": "18px",
-      "xl": "20px", "2xl": "24px", "3xl": "30px", "4xl": "36px", "5xl": "48px"
-    },
-    "font_weight": {
-      "normal": "400", "medium": "500", "semibold": "600", "bold": "700"
-    },
-    "headings": {
-      "h1": "text-5xl font-bold",
-      "h2": "text-4xl font-bold",
-      "h3": "text-3xl font-semibold",
-      "h4": "text-2xl font-semibold",
-      "h5": "text-xl font-medium",
-      "h6": "text-lg font-medium"
-    }
-  },
-
-  // ========== Spacing (from extracted data) ==========
-  "spacing": {
-    "scale": extractedData[selectedStyle.site]?.spacing?.common || [4, 8, 12, 16, 24, 32, 48, 64, 96],
-    "grid_base": extractedData[selectedStyle.site]?.spacing?.grid_base || "8px",
-    "common_patterns": {
-      "component_padding": "p-4 (16px) or p-6 (24px)",
-      "section_gap": "gap-8 (32px) or gap-12 (48px)",
-      "layout_margin": "mt-16 (64px) or mt-24 (96px)"
-    }
-  },
-
-  // ========== Shadows (from extracted data) ==========
-  "shadows": {
-    "values": extractedData[selectedStyle.site]?.shadows || [
-      "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-      "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-      "0 10px 15px -3px rgb(0 0 0 / 0.1)"
-    ],
-    "usage": {
-      "cards": "shadow-md",
-      "dropdowns": "shadow-lg",
-      "modals": "shadow-xl",
-      "buttons_hover": "shadow-sm"
-    }
-  },
-
-  // ========== Borders (from extracted data) ==========
-  "borders": {
-    "radius": extractedData[selectedStyle.site]?.border_radius || ["4px", "8px", "12px", "9999px"],
-    "usage": {
-      "inputs": "rounded-md",
-      "buttons": "rounded-lg",
-      "cards": "rounded-xl",
-      "avatars": "rounded-full"
-    }
-  },
-
-  // ========== NEW: Patterns Index (references to patterns/*.md) ==========
-  "patterns_index": {
-    "buttons": "design-system/patterns/buttons.md",
-    "scroll_animations": "design-system/patterns/scroll-animations.md",
-    "decorations": "design-system/patterns/decorations.md",
-    "cards": "design-system/patterns/cards.md",
-    "forms": "design-system/patterns/forms.md"
-  },
-
-  // ========== Component Library ==========
-  "component_library": {
-    "name": "shadcn/ui",
-    "install_command": "npx shadcn-ui@latest init",
-    "common_components": ["button", "card", "input", "select", "dialog", "dropdown-menu", "badge", "avatar", "tooltip"]
-  },
-
-  // ========== Critical Rules ==========
-  "critical_rules": {
-    "colors": [
-      "❌ NO hardcoded hex values",
-      "✅ USE theme tokens (bg-primary, text-foreground)"
-    ],
-    "spacing": [
-      "❌ NO arbitrary values (p-5, gap-7)",
-      "✅ USE spacing scale (p-4, p-6, gap-8)"
-    ],
-    "consistency": [
-      "❌ NO mixing patterns",
-      "✅ USE consistent patterns from tokens"
-    ]
-  }
-};
-
-// Helper function to darken color
-function darkenColor(hex, percent) {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const amt = Math.round(2.55 * percent);
-  const R = Math.max((num >> 16) - amt, 0);
-  const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
-  const B = Math.max((num & 0x0000FF) - amt, 0);
-  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-}
-
-// Write data.yaml (includes psychology from extracted sites)
-const dataYaml = generateDataYaml(tokensData, extractedData, selectedStyle);
-Write('design-system/data.yaml', dataYaml);
-output(`✅ data.yaml generated (~300 lines)`);
 ```
+
+### Build Tokens Data Structure
+
+Create a data structure with the following sections:
+
+**1. Schema & Meta:**
+- schema: "https://json-schema.org/draft-07/schema"
+- version: "2.0.0"
+- meta.generated_at: current timestamp (ISO format)
+- meta.generated_by: "/designsetup command v2.0.0"
+- meta.source_sites: list of extracted site names
+- meta.description: "Design tokens for agents (~800 tokens). Human-readable guide: README.md"
+
+**2. Style (from user selection in STEP 2):**
+- style.name: selectedStyle.style
+- style.confidence: selectedStyle.confidence
+- style.characteristics: selectedStyle.characteristics
+- style.feel: selectedStyle.feel
+- style.source_site: selectedStyle.site
+
+**3. Theme (from user selection in STEP 2.7):**
+- theme.name: selectedTheme.name
+- theme.description: selectedTheme.description
+- theme.feeling: selectedTheme.feeling (or description if feeling not set)
+- theme.decorative_elements.use: selectedTheme.decorative_elements
+- theme.decorative_elements.avoid: selectedTheme.avoid_elements
+- theme.icons_suggestion: selectedTheme.icons_suggestion (or ["Lucide icons"] as fallback)
+
+**4. Animations (from user selection in STEP 2.6):**
+- animations.enabled: true if selectedAnimations has items, false otherwise
+- animations.libraries: extractedData[selectedStyle.site].animation_libraries (or empty array)
+- animations.selected_patterns: selectedAnimations list
+- animations.scroll_animations.enabled: true if any selected animation includes 'scroll', 'parallax', 'fade', or 'stacking'
+- animations.scroll_animations.patterns: extractedData[selectedStyle.site].scroll_animations.patterns (or empty)
+- animations.component_animations.button_hover: from selected site's data (or "scale + shadow" as fallback)
+- animations.component_animations.card_hover: from selected site's data (or "translateY + shadow" as fallback)
+- animations.component_animations.input_focus: from selected site's data (or "ring" as fallback)
+- animations.duration.fast: "150ms"
+- animations.duration.normal: "200ms"
+- animations.duration.slow: "300ms"
+- animations.easing.default: "ease-in-out"
+- animations.easing.bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+
+**5. Colors (from selectedStyle):**
+- colors.primary.DEFAULT: selectedStyle.colors[0] (or "#0d7276" as fallback)
+- colors.primary.foreground: "#ffffff"
+- colors.primary.hover: darken primary color by 10%
+- colors.primary.tailwind: "bg-primary, text-primary, border-primary"
+- colors.secondary.DEFAULT: selectedStyle.colors[1] (or "#64748b" as fallback)
+- colors.secondary.foreground: "#ffffff"
+- colors.secondary.hover: darken secondary color by 10%
+- colors.accent.DEFAULT: selectedStyle.colors[2] (or primary color, or "#f97316")
+- colors.accent.foreground: "#ffffff"
+- colors.background: { DEFAULT: "#ffffff", muted: "#f1f5f9", subtle: "#f8fafc" }
+- colors.foreground: { DEFAULT: "#0a0a0a", muted: "#64748b", subtle: "#94a3b8" }
+- colors.border: { DEFAULT: "#e2e8f0", hover: "#cbd5e1", focus: primary color }
+- colors.semantic: { success: "#10b981", warning: "#f59e0b", error: "#ef4444", info: "#3b82f6" }
+
+**Color Darkening Logic:**
+To darken a hex color by a percentage:
+1. Remove '#' prefix and convert to integer
+2. Calculate amount: round(2.55 * percent)
+3. Extract RGB: R = (num >> 16), G = (num >> 8 & 0xFF), B = (num & 0xFF)
+4. Subtract amount from each: max(R - amount, 0), max(G - amount, 0), max(B - amount, 0)
+5. Recombine and convert back to hex with '#' prefix
+
+**6. Typography (from selected site):**
+- typography.font_family.sans: extractedData[selectedStyle.site].typography.fonts[0] (or "'Inter', sans-serif")
+- typography.font_family.mono: "'Fira Code', monospace"
+- typography.font_size: { xs: "12px", sm: "14px", base: "16px", lg: "18px", xl: "20px", 2xl: "24px", 3xl: "30px", 4xl: "36px", 5xl: "48px" }
+- typography.font_weight: { normal: "400", medium: "500", semibold: "600", bold: "700" }
+- typography.headings: { h1: "text-5xl font-bold", h2: "text-4xl font-bold", h3: "text-3xl font-semibold", h4: "text-2xl font-semibold", h5: "text-xl font-medium", h6: "text-lg font-medium" }
+
+**7. Spacing (from selected site):**
+- spacing.scale: extractedData[selectedStyle.site].spacing.common (or [4, 8, 12, 16, 24, 32, 48, 64, 96])
+- spacing.grid_base: extractedData[selectedStyle.site].spacing.grid_base (or "8px")
+- spacing.common_patterns: { component_padding: "p-4 (16px) or p-6 (24px)", section_gap: "gap-8 (32px) or gap-12 (48px)", layout_margin: "mt-16 (64px) or mt-24 (96px)" }
+
+**8. Shadows (from selected site):**
+- shadows.values: extractedData[selectedStyle.site].shadows (or default array)
+- shadows.usage: { cards: "shadow-md", dropdowns: "shadow-lg", modals: "shadow-xl", buttons_hover: "shadow-sm" }
+
+**9. Borders (from selected site):**
+- borders.radius: extractedData[selectedStyle.site].border_radius (or ["4px", "8px", "12px", "9999px"])
+- borders.usage: { inputs: "rounded-md", buttons: "rounded-lg", cards: "rounded-xl", avatars: "rounded-full" }
+
+**10. Patterns Index:**
+- patterns_index.buttons: "design-system/patterns/buttons.md"
+- patterns_index.scroll_animations: "design-system/patterns/scroll-animations.md"
+- patterns_index.decorations: "design-system/patterns/decorations.md"
+- patterns_index.cards: "design-system/patterns/cards.md"
+- patterns_index.forms: "design-system/patterns/forms.md"
+
+**11. Component Library:**
+- component_library.name: "shadcn/ui"
+- component_library.install_command: "npx shadcn-ui@latest init"
+- component_library.common_components: ["button", "card", "input", "select", "dialog", "dropdown-menu", "badge", "avatar", "tooltip"]
+
+**12. Critical Rules:**
+- critical_rules.colors: ["❌ NO hardcoded hex values", "✅ USE theme tokens (bg-primary, text-foreground)"]
+- critical_rules.spacing: ["❌ NO arbitrary values (p-5, gap-7)", "✅ USE spacing scale (p-4, p-6, gap-8)"]
+- critical_rules.consistency: ["❌ NO mixing patterns", "✅ USE consistent patterns from tokens"]
+
+### Generate data.yaml
+
+Call the helper function (see Helper section below) to generate YAML format with:
+- Tokens data from above
+- Psychology data from extractedData[selectedStyle.site]
+- All design tokens in YAML format
+
+Write to file: `design-system/data.yaml`
+
+Display confirmation:
+```
+✅ data.yaml generated (~300 lines)
+```
+
+→ Continue to STEP 5.6
 
 ---
 
@@ -1329,543 +1003,130 @@ output(`✅ data.yaml generated (~300 lines)`);
 
 > **Code patterns for agents** - Selective loading based on page type
 
-```javascript
-output(`
+### STEP 5.6.1: Display Progress Message
+
+Display progress message:
+```
 🔄 Generating pattern files...
-`);
+```
 
-// Create patterns directory
-mkdir('design-system/patterns');
+### STEP 5.6.2: Create Patterns Directory
 
-// ========== 1. buttons.md ==========
-const buttonsPattern = `# Button Patterns
+Create the patterns directory:
+- Path: `design-system/patterns`
 
-> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
-> **Load when:** Any UI page
+### STEP 5.6.3: Generate buttons.md
 
-## Primary Button
-\`\`\`tsx
-<button className="
-  bg-primary text-primary-foreground
-  px-4 py-2 rounded-lg
-  font-medium
-  ${tokensData.animations.component_animations.button_hover === 'scale + shadow'
-    ? 'hover:scale-105 hover:shadow-md'
-    : 'hover:bg-primary/90'}
-  transition-all duration-200
-  focus:outline-none focus:ring-2 focus:ring-primary/50
-  disabled:opacity-50 disabled:cursor-not-allowed
-">
-  Button Text
-</button>
-\`\`\`
+Build the buttons pattern content with these sections:
 
-## Secondary Button
-\`\`\`tsx
-<button className="
-  bg-secondary text-secondary-foreground
-  px-4 py-2 rounded-lg
-  font-medium
-  hover:bg-secondary/80
-  transition-all duration-200
-">
-  Secondary
-</button>
-\`\`\`
+1. **Header metadata:**
+   - Source: selectedStyle.site
+   - Style: selectedStyle.style
+   - Load when: "Any UI page"
 
-## Ghost Button
-\`\`\`tsx
-<button className="
-  bg-transparent text-foreground
-  px-4 py-2 rounded-lg
-  font-medium
-  hover:bg-muted
-  transition-all duration-200
-">
-  Ghost
-</button>
-\`\`\`
+2. **Button variants** (each with TSX code example):
+   - Primary Button (with conditional hover based on tokensData.animations.component_animations.button_hover)
+   - Secondary Button
+   - Ghost Button
+   - Outline Button
+   - Icon Button
 
-## Outline Button
-\`\`\`tsx
-<button className="
-  bg-transparent text-primary
-  border border-primary
-  px-4 py-2 rounded-lg
-  font-medium
-  hover:bg-primary hover:text-primary-foreground
-  transition-all duration-200
-">
-  Outline
-</button>
-\`\`\`
+3. **Button sizes:**
+   - Small: px-3 py-1.5 text-sm rounded-md
+   - Medium (default): px-4 py-2 text-base rounded-lg
+   - Large: px-6 py-3 text-lg rounded-lg
 
-## Icon Button
-\`\`\`tsx
-<button className="
-  p-2 rounded-lg
-  hover:bg-muted
-  transition-all duration-200
-">
-  <Icon className="w-5 h-5" />
-</button>
-\`\`\`
+### STEP 5.6.4: Generate scroll-animations.md
 
-## Button Sizes
-\`\`\`tsx
-// Small
-className="px-3 py-1.5 text-sm rounded-md"
+Build the scroll animations pattern content with these sections:
 
-// Medium (default)
-className="px-4 py-2 text-base rounded-lg"
+1. **Header metadata:**
+   - Source: selectedStyle.site
+   - Style: selectedStyle.style
+   - Load when: "Landing pages, marketing pages"
+   - Libraries: List from tokensData.animations.libraries or "CSS/Tailwind"
 
-// Large
-className="px-6 py-3 text-lg rounded-lg"
-\`\`\`
-`;
+2. **Enabled Patterns list:** List from selectedAnimations or "No scroll animations selected"
 
-Write('design-system/patterns/buttons.md', buttonsPattern);
+3. **Code examples** (TSX):
+   - Fade In on Scroll (CSS with IntersectionObserver)
+   - Stacking Cards (GSAP ScrollTrigger)
+   - Parallax Section (CSS with scroll handler)
+   - Slide In from Side (Left and Right animations)
 
-// ========== 2. scroll-animations.md ==========
-const scrollAnimationsPattern = `# Scroll Animation Patterns
+Write the content to `design-system/patterns/scroll-animations.md`
 
-> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
-> **Load when:** Landing pages, marketing pages
-> **Libraries:** ${tokensData.animations.libraries.map(l => l.name).join(', ') || 'CSS/Tailwind'}
+### STEP 5.6.5: Generate decorations.md
 
-## Enabled Patterns
-${selectedAnimations.length > 0 ? selectedAnimations.map(a => `- ${a}`).join('\n') : '- No scroll animations selected'}
+Build the decorations pattern content with these sections:
 
----
+1. **Header metadata:**
+   - Theme: selectedTheme.name
+   - Load when: "Landing pages, marketing pages (NOT dashboards)"
 
-## Fade In on Scroll (CSS)
-\`\`\`tsx
-// Add to component
-const [isVisible, setIsVisible] = useState(false);
-const ref = useRef(null);
+2. **Theme Direction:**
+   - USE These Elements: List from selectedTheme.decorative_elements
+   - AVOID These Elements: List from selectedTheme.avoid_elements or "(none specified)"
+   - Suggested Icons (Lucide): List from selectedTheme.icons_suggestion or "Default Lucide icons"
 
-useEffect(() => {
-  const observer = new IntersectionObserver(
-    ([entry]) => setIsVisible(entry.isIntersecting),
-    { threshold: 0.1 }
-  );
-  if (ref.current) observer.observe(ref.current);
-  return () => observer.disconnect();
-}, []);
+3. **Code examples** (TSX):
+   - Gradient Background (subtle overlay and mesh gradient)
+   - Blob Shapes (animated blob with CSS keyframes)
+   - Grid Pattern (dot grid and line grid backgrounds)
+   - Floating Elements (floating icons with animation)
+   - Dividers & Separators (wave divider SVG and gradient line)
 
-return (
-  <div
-    ref={ref}
-    className={\`
-      transition-all duration-700
-      \${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-    \`}
-  >
-    {children}
-  </div>
-);
-\`\`\`
+Write the content to `design-system/patterns/decorations.md`
 
-## Stacking Cards (GSAP ScrollTrigger)
-\`\`\`tsx
-// Requires: npm install gsap
+### STEP 5.6.6: Generate cards.md
 
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+Build the cards pattern content with these sections:
 
-gsap.registerPlugin(ScrollTrigger);
+1. **Header metadata:**
+   - Source: selectedStyle.site
+   - Style: selectedStyle.style
+   - Load when: "Any UI page"
 
-useEffect(() => {
-  const cards = gsap.utils.toArray('.stacking-card');
+2. **Card variants** (each with TSX code example):
+   - Default Card
+   - Interactive Card (with conditional hover based on tokensData.animations.component_animations.card_hover)
+   - Feature Card (with icon container)
+   - Pricing Card (with popular badge, price, features list, CTA button)
+   - Testimonial Card (with avatar, name, title, quote)
 
-  cards.forEach((card, i) => {
-    gsap.to(card, {
-      scrollTrigger: {
-        trigger: card,
-        start: 'top 80%',
-        end: 'top 20%',
-        scrub: true,
-      },
-      y: -50 * i,
-      scale: 1 - (0.05 * i),
-      opacity: 1 - (0.1 * i),
-    });
-  });
-}, []);
+Write the content to `design-system/patterns/cards.md`
 
-// JSX
-<div className="stacking-card bg-card p-6 rounded-xl shadow-md sticky top-20">
-  Card Content
-</div>
-\`\`\`
+### STEP 5.6.7: Generate forms.md
 
-## Parallax Section
-\`\`\`tsx
-// CSS approach
-<div className="relative overflow-hidden">
-  <div
-    className="absolute inset-0 bg-cover bg-center"
-    style={{
-      backgroundImage: 'url(/hero-bg.jpg)',
-      transform: 'translateY(var(--parallax-offset, 0))',
-    }}
-  />
-  <div className="relative z-10 py-24">
-    Content here
-  </div>
-</div>
+Build the forms pattern content with these sections:
 
-// Update --parallax-offset on scroll
-useEffect(() => {
-  const handleScroll = () => {
-    const offset = window.scrollY * 0.5;
-    document.documentElement.style.setProperty('--parallax-offset', \`\${offset}px\`);
-  };
-  window.addEventListener('scroll', handleScroll);
-  return () => window.removeEventListener('scroll', handleScroll);
-}, []);
-\`\`\`
+1. **Header metadata:**
+   - Source: selectedStyle.site
+   - Style: selectedStyle.style
+   - Load when: "Auth pages, settings, any form UI"
 
-## Slide In from Side
-\`\`\`tsx
-// Left
-className="animate-slide-in-left"
-// CSS: @keyframes slide-in-left { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+2. **Form elements** (each with TSX code example):
+   - Input Field (with label, input, helper text)
+   - Input with Error (error state styling and error message)
+   - Select Field (dropdown)
+   - Checkbox (with label)
+   - Form Layout (complete form with submit button)
 
-// Right
-className="animate-slide-in-right"
-// CSS: @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-\`\`\`
-`;
+Write the content to `design-system/patterns/forms.md`
 
-Write('design-system/patterns/scroll-animations.md', scrollAnimationsPattern);
+### STEP 5.6.8: Display Completion Message
 
-// ========== 3. decorations.md ==========
-const decorationsPattern = `# Decorative Elements
-
-> **Theme:** ${selectedTheme.name}
-> **Load when:** Landing pages, marketing pages (NOT dashboards)
-
-## Theme Direction
-
-### ✅ USE These Elements
-${selectedTheme.decorative_elements.map(e => `- ${e}`).join('\n')}
-
-### ❌ AVOID These Elements
-${selectedTheme.avoid_elements.length > 0 ? selectedTheme.avoid_elements.map(e => `- ${e}`).join('\n') : '- (none specified)'}
-
-### 🎯 Suggested Icons (Lucide)
-${selectedTheme.icons_suggestion?.join(', ') || 'Default Lucide icons'}
-
----
-
-## Gradient Background
-\`\`\`tsx
-// Subtle gradient overlay
-<div className="
-  absolute inset-0 -z-10
-  bg-gradient-to-br from-primary/5 via-transparent to-accent/5
-"/>
-
-// Mesh gradient (hero sections)
-<div className="
-  absolute inset-0 -z-10
-  bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(var(--primary),0.3),transparent)]
-"/>
-\`\`\`
-
-## Blob Shapes
-\`\`\`tsx
-// CSS blob
-<div className="
-  absolute -top-20 -right-20 w-96 h-96
-  bg-primary/10 rounded-full blur-3xl
-  animate-blob
-"/>
-
-// CSS for animation
-// @keyframes blob {
-//   0%, 100% { transform: translate(0, 0) scale(1); }
-//   33% { transform: translate(30px, -50px) scale(1.1); }
-//   66% { transform: translate(-20px, 20px) scale(0.9); }
-// }
-\`\`\`
-
-## Grid Pattern
-\`\`\`tsx
-// Dot grid background
-<div className="
-  absolute inset-0 -z-10
-  bg-[radial-gradient(#e5e7eb_1px,transparent_1px)]
-  [background-size:16px_16px]
-"/>
-
-// Line grid
-<div className="
-  absolute inset-0 -z-10
-  bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)]
-  [background-size:24px_24px]
-"/>
-\`\`\`
-
-## Floating Elements
-\`\`\`tsx
-// Floating icons (for theme: ${selectedTheme.name})
-<div className="absolute top-10 left-10 animate-float opacity-20">
-  <IconFromTheme className="w-12 h-12 text-primary" />
-</div>
-
-// CSS
-// @keyframes float {
-//   0%, 100% { transform: translateY(0); }
-//   50% { transform: translateY(-20px); }
-// }
-\`\`\`
-
-## Dividers & Separators
-\`\`\`tsx
-// Wave divider
-<svg className="w-full h-16" viewBox="0 0 1200 120" preserveAspectRatio="none">
-  <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="currentColor" className="text-muted/30"/>
-</svg>
-
-// Gradient line
-<div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-\`\`\`
-`;
-
-Write('design-system/patterns/decorations.md', decorationsPattern);
-
-// ========== 4. cards.md ==========
-const cardsPattern = `# Card Patterns
-
-> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
-> **Load when:** Any UI page
-
-## Default Card
-\`\`\`tsx
-<div className="
-  bg-card text-card-foreground
-  rounded-xl border shadow-md
-  p-6
-">
-  <h3 className="text-xl font-semibold mb-2">Card Title</h3>
-  <p className="text-muted-foreground">Card content goes here.</p>
-</div>
-\`\`\`
-
-## Interactive Card (with hover)
-\`\`\`tsx
-<div className="
-  bg-card text-card-foreground
-  rounded-xl border shadow-md
-  p-6
-  ${tokensData.animations.component_animations.card_hover === 'translateY + shadow'
-    ? 'hover:-translate-y-1 hover:shadow-lg'
-    : 'hover:border-primary/50'}
-  transition-all duration-200
-  cursor-pointer
-">
-  <h3 className="text-xl font-semibold mb-2">Interactive Card</h3>
-  <p className="text-muted-foreground">Hover me!</p>
-</div>
-\`\`\`
-
-## Feature Card
-\`\`\`tsx
-<div className="
-  bg-card text-card-foreground
-  rounded-xl border shadow-md
-  p-6
-  hover:-translate-y-1 hover:shadow-lg
-  transition-all duration-200
-">
-  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-    <Icon className="w-6 h-6 text-primary" />
-  </div>
-  <h3 className="text-lg font-semibold mb-2">Feature Title</h3>
-  <p className="text-muted-foreground text-sm">
-    Feature description goes here.
-  </p>
-</div>
-\`\`\`
-
-## Pricing Card
-\`\`\`tsx
-<div className="
-  bg-card text-card-foreground
-  rounded-xl border shadow-md
-  p-8
-  relative overflow-hidden
-">
-  {/* Popular badge */}
-  <div className="absolute top-4 right-4">
-    <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium">
-      Popular
-    </span>
-  </div>
-
-  <h3 className="text-xl font-bold mb-2">Pro Plan</h3>
-  <div className="text-4xl font-bold mb-4">
-    $29<span className="text-lg text-muted-foreground">/mo</span>
-  </div>
-
-  <ul className="space-y-3 mb-6">
-    <li className="flex items-center gap-2">
-      <CheckIcon className="w-5 h-5 text-primary" />
-      <span>Feature 1</span>
-    </li>
-    {/* ... more features */}
-  </ul>
-
-  <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg">
-    Get Started
-  </button>
-</div>
-\`\`\`
-
-## Testimonial Card
-\`\`\`tsx
-<div className="
-  bg-card text-card-foreground
-  rounded-xl border shadow-md
-  p-6
-">
-  <div className="flex items-center gap-4 mb-4">
-    <img src="/avatar.jpg" className="w-12 h-12 rounded-full" />
-    <div>
-      <h4 className="font-semibold">John Doe</h4>
-      <p className="text-sm text-muted-foreground">CEO, Company</p>
-    </div>
-  </div>
-  <p className="text-muted-foreground italic">
-    "This product is amazing! It has transformed how we work."
-  </p>
-</div>
-\`\`\`
-`;
-
-Write('design-system/patterns/cards.md', cardsPattern);
-
-// ========== 5. forms.md ==========
-const formsPattern = `# Form Patterns
-
-> **Source:** ${selectedStyle.site} | **Style:** ${selectedStyle.style}
-> **Load when:** Auth pages, settings, any form UI
-
-## Input Field
-\`\`\`tsx
-<div className="space-y-2">
-  <label className="text-sm font-medium text-foreground">
-    Email Address
-  </label>
-  <input
-    type="email"
-    placeholder="you@example.com"
-    className="
-      w-full px-4 py-2
-      bg-background text-foreground
-      border rounded-md
-      focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-      placeholder:text-muted-foreground
-      transition-all duration-200
-    "
-  />
-  <p className="text-sm text-muted-foreground">
-    We'll never share your email.
-  </p>
-</div>
-\`\`\`
-
-## Input with Error
-\`\`\`tsx
-<div className="space-y-2">
-  <label className="text-sm font-medium text-foreground">
-    Password
-  </label>
-  <input
-    type="password"
-    className="
-      w-full px-4 py-2
-      bg-background text-foreground
-      border border-error rounded-md
-      focus:outline-none focus:ring-2 focus:ring-error/50
-    "
-  />
-  <p className="text-sm text-error">
-    Password must be at least 8 characters.
-  </p>
-</div>
-\`\`\`
-
-## Select Field
-\`\`\`tsx
-<div className="space-y-2">
-  <label className="text-sm font-medium text-foreground">
-    Country
-  </label>
-  <select className="
-    w-full px-4 py-2
-    bg-background text-foreground
-    border rounded-md
-    focus:outline-none focus:ring-2 focus:ring-primary/50
-  ">
-    <option value="">Select country</option>
-    <option value="th">Thailand</option>
-    <option value="us">United States</option>
-  </select>
-</div>
-\`\`\`
-
-## Checkbox
-\`\`\`tsx
-<label className="flex items-center gap-2 cursor-pointer">
-  <input
-    type="checkbox"
-    className="
-      w-4 h-4 rounded
-      border border-border
-      text-primary
-      focus:ring-2 focus:ring-primary/50
-    "
-  />
-  <span className="text-sm text-foreground">
-    I agree to the terms and conditions
-  </span>
-</label>
-\`\`\`
-
-## Form Layout
-\`\`\`tsx
-<form className="space-y-6 max-w-md mx-auto">
-  {/* Form fields */}
-
-  <button
-    type="submit"
-    className="
-      w-full bg-primary text-primary-foreground
-      py-2 rounded-lg font-medium
-      hover:bg-primary/90
-      transition-all duration-200
-    "
-  >
-    Submit
-  </button>
-</form>
-\`\`\`
-`;
-
-Write('design-system/patterns/forms.md', formsPattern);
-
-output(`
+Display completion message:
+```
 ✅ Pattern files generated:
    - design-system/patterns/buttons.md
    - design-system/patterns/scroll-animations.md
    - design-system/patterns/decorations.md
    - design-system/patterns/cards.md
    - design-system/patterns/forms.md
-`);
 ```
+
+→ Continue to STEP 5.7
 
 ---
 
@@ -1873,483 +1134,270 @@ output(`
 
 > **Human-readable guide** - No code, just descriptions and visuals
 
-```javascript
-output(`
-🔄 Generating lean README.md (human-readable)...
-`);
+### STEP 5.7.1: Display Progress Message
 
-const styleGuideMD = `# ${selectedStyle.style} Design System
-
-> **Style:** ${selectedStyle.style}
-> **Theme:** ${selectedTheme.name}
-> **Generated:** ${new Date().toISOString().split('T')[0]}
-> **Sources:** ${Object.keys(extractedData).join(', ')}
-
----
-
-## 1. Overview
-
-This design system follows **${selectedStyle.style}** aesthetics with a **${selectedTheme.name}** theme.
-
-### Feel
-${selectedStyle.feel}
-
-### Characteristics
-${selectedStyle.characteristics.map(c => `- ${c}`).join('\n')}
-
----
-
-## 2. Color Palette
-
-### Primary Color
-- **Color:** ${tokensData.colors.primary.DEFAULT}
-- **Use for:** CTAs, links, accents, interactive elements
-- **Feel:** ${selectedStyle.feel}
-
-### Secondary Color
-- **Color:** ${tokensData.colors.secondary.DEFAULT}
-- **Use for:** Secondary actions, less prominent elements
-
-### Background Colors
-- **Main:** ${tokensData.colors.background.DEFAULT} (white)
-- **Muted:** ${tokensData.colors.background.muted} (subtle sections)
-- **Subtle:** ${tokensData.colors.background.subtle} (alternating sections)
-
-### Text Colors
-- **Primary text:** ${tokensData.colors.foreground.DEFAULT}
-- **Muted text:** ${tokensData.colors.foreground.muted}
-- **Subtle text:** ${tokensData.colors.foreground.subtle}
-
-### Semantic Colors
-- **Success:** ${tokensData.colors.semantic.success} (green)
-- **Warning:** ${tokensData.colors.semantic.warning} (amber)
-- **Error:** ${tokensData.colors.semantic.error} (red)
-- **Info:** ${tokensData.colors.semantic.info} (blue)
-
----
-
-## 3. Typography
-
-### Font Family
-- **Primary:** ${tokensData.typography.font_family.sans}
-- **Monospace:** ${tokensData.typography.font_family.mono}
-
-### Heading Sizes
-- **H1:** 48px bold - Hero headlines
-- **H2:** 36px bold - Section titles
-- **H3:** 30px semibold - Subsection titles
-- **H4:** 24px semibold - Card titles
-- **H5:** 20px medium - Feature titles
-- **H6:** 18px medium - Small titles
-
-### Body Text
-- **Large:** 18px - Feature descriptions
-- **Base:** 16px - Body text
-- **Small:** 14px - Captions, labels
-- **Extra small:** 12px - Badges, tags
-
----
-
-## 4. Spacing System
-
-### Base Unit
-${tokensData.spacing.grid_base} grid system
-
-### Scale
-${tokensData.spacing.scale.map(s => `- ${s}px`).join('\n')}
-
-### Common Patterns
-- **Component padding:** 16px or 24px
-- **Section gap:** 32px or 48px
-- **Layout margin:** 64px or 96px
-
----
-
-## 5. Shadows & Elevation
-
-### Elevation Levels
-- **Level 0:** No shadow (flat elements)
-- **Level 1:** Subtle shadow (buttons on hover)
-- **Level 2:** Medium shadow (cards)
-- **Level 3:** Large shadow (dropdowns)
-- **Level 4:** Extra large shadow (modals)
-
-### Usage
-- **Cards:** Medium shadow
-- **Dropdowns:** Large shadow
-- **Modals:** Extra large shadow
-- **Button hover:** Subtle shadow
-
----
-
-## 6. Border Radius
-
-### Values
-${tokensData.borders.radius.map(r => `- ${r}`).join('\n')}
-
-### Usage
-- **Inputs:** Medium radius (8px)
-- **Buttons:** Large radius (12px)
-- **Cards:** Extra large radius (16px)
-- **Avatars:** Full radius (circle)
-
----
-
-## 7. Theme: ${selectedTheme.name}
-
-### Description
-${selectedTheme.description}
-
-### Feeling
-${selectedTheme.feeling || selectedTheme.description}
-
-### Decorative Elements to USE
-${selectedTheme.decorative_elements.map(e => `- ✅ ${e}`).join('\n')}
-
-### Elements to AVOID
-${selectedTheme.avoid_elements.length > 0 ? selectedTheme.avoid_elements.map(e => `- ❌ ${e}`).join('\n') : '- (none specified)'}
-
-### Suggested Icons
-${selectedTheme.icons_suggestion?.join(', ') || 'Lucide icons'}
-
----
-
-## 8. Animations
-
-### Enabled
-${tokensData.animations.enabled ? 'Yes' : 'No'}
-
-### Libraries
-${tokensData.animations.libraries.map(l => `- ${l.name}`).join('\n') || '- CSS/Tailwind only'}
-
-### Selected Patterns
-${selectedAnimations.length > 0 ? selectedAnimations.map(a => `- ${a}`).join('\n') : '- No scroll animations'}
-
-### Component Animations
-- **Button hover:** ${tokensData.animations.component_animations.button_hover}
-- **Card hover:** ${tokensData.animations.component_animations.card_hover}
-- **Input focus:** ${tokensData.animations.component_animations.input_focus}
-
-### Timing
-- **Fast:** 150ms (micro-interactions)
-- **Normal:** 200ms (most transitions)
-- **Slow:** 300ms (modals, page transitions)
-
----
-
-## 9. Component Library
-
-### Recommended
-${tokensData.component_library.name}
-
-### Common Components
-${tokensData.component_library.common_components.map(c => `- ${c}`).join('\n')}
-
----
-
-## 10. Code Patterns
-
-**For code examples, see:**
-- \`design-system/patterns/buttons.md\`
-- \`design-system/patterns/cards.md\`
-- \`design-system/patterns/forms.md\`
-- \`design-system/patterns/scroll-animations.md\`
-- \`design-system/patterns/decorations.md\`
-
----
-
-## 11. Critical Rules
-
-### Colors
-- ❌ NO hardcoded hex values
-- ✅ USE theme tokens (bg-primary, text-foreground)
-
-### Spacing
-- ❌ NO arbitrary values (p-5, gap-7)
-- ✅ USE spacing scale (p-4, p-6, gap-8)
-
-### Consistency
-- ❌ NO mixing patterns
-- ✅ USE consistent patterns from tokens
-
----
-
-*Generated by /designsetup v2.0.0*
-*Sources: ${Object.keys(extractedData).join(', ')}*
-`;
-
-Write('design-system/README.md', styleGuideMD);
-output(`✅ README.md generated (lean, human-readable, ~100 lines)`);
+Display progress message:
 ```
+🔄 Generating lean README.md (human-readable)...
+```
+
+### STEP 5.7.2: Build README Content
+
+Build a markdown document with these 11 sections:
+
+**Header:**
+- Title: "[selectedStyle.style] Design System"
+- Metadata: Style, Theme, Generated date, Sources
+
+**Section 1: Overview**
+- Description of design system (style + theme)
+- Feel: selectedStyle.feel
+- Characteristics: List from selectedStyle.characteristics
+
+**Section 2: Color Palette**
+- Primary Color (value, usage, feel)
+- Secondary Color (value, usage)
+- Background Colors (DEFAULT, muted, subtle)
+- Text Colors (DEFAULT, muted, subtle)
+- Semantic Colors (success, warning, error, info)
+
+**Section 3: Typography**
+- Font Family (sans, monospace)
+- Heading Sizes (H1-H6 with px sizes and weights)
+- Body Text (large, base, small, extra small)
+
+**Section 4: Spacing System**
+- Base Unit: tokensData.spacing.grid_base
+- Scale: List from tokensData.spacing.scale
+- Common Patterns (component padding, section gap, layout margin)
+
+**Section 5: Shadows & Elevation**
+- Elevation Levels (0-4)
+- Usage guide for each level
+
+**Section 6: Border Radius**
+- Values: List from tokensData.borders.radius
+- Usage guide (inputs, buttons, cards, avatars)
+
+**Section 7: Theme**
+- Theme name: selectedTheme.name
+- Description and feeling
+- Decorative Elements to USE (list)
+- Elements to AVOID (list or "none specified")
+- Suggested Icons
+
+**Section 8: Animations**
+- Enabled status (Yes/No)
+- Libraries list or "CSS/Tailwind only"
+- Selected Patterns list or "No scroll animations"
+- Component Animations (button hover, card hover, input focus)
+- Timing (fast, normal, slow)
+
+**Section 9: Component Library**
+- Recommended: tokensData.component_library.name
+- Common Components list
+
+**Section 10: Code Patterns**
+- Reference links to all 5 pattern files
+
+**Section 11: Critical Rules**
+- Colors rules (NO hardcoded hex, USE tokens)
+- Spacing rules (NO arbitrary values, USE scale)
+- Consistency rules (NO mixing, USE consistent patterns)
+
+**Footer:**
+- "Generated by /designsetup v2.0.0"
+- "Sources: [list of extracted sites]"
+
+### STEP 5.7.3: Write README File
+
+Write the markdown content to `design-system/README.md`
+
+### STEP 5.7.4: Display Confirmation
+
+Display confirmation message:
+```
+✅ README.md generated (lean, human-readable, ~100 lines)
+```
+
+→ Continue to STEP 6
 
 ---
 
 ## STEP 6: Final Report
 
-```javascript
-output(`
+Display a comprehensive final report with these sections:
+
+**Header:**
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ Design Setup Complete!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
-📊 Summary:
-   Style: ${selectedStyle.style} (from ${selectedStyle.site})
-   Theme: ${selectedTheme.name}
-   Sources: ${Object.keys(extractedData).join(', ')}
-   Animations: ${selectedAnimations.length} patterns enabled
+**Summary Section:**
+- Style: [selectedStyle.style] (from [selectedStyle.site])
+- Theme: [selectedTheme.name]
+- Sources: [list of extracted sites]
+- Animations: [count] patterns enabled
 
-🎨 Style Characteristics:
-${selectedStyle.characteristics.slice(0, 4).map(c => `   • ${c}`).join('\n')}
+**Style Characteristics:**
+- List first 4 characteristics from selectedStyle.characteristics
 
-🎭 Theme Direction:
-   USE: ${selectedTheme.decorative_elements.slice(0, 3).join(', ')}
-   AVOID: ${selectedTheme.avoid_elements.slice(0, 2).join(', ') || '(none)'}
+**Theme Direction:**
+- USE: First 3 elements from selectedTheme.decorative_elements
+- AVOID: First 2 elements from selectedTheme.avoid_elements or "(none)"
 
+**Files Created:**
+- FOR AGENTS section:
+  - design-system/data.yaml (~300 lines)
+  - design-system/patterns/buttons.md
+  - design-system/patterns/cards.md
+  - design-system/patterns/forms.md
+  - design-system/patterns/scroll-animations.md
+  - design-system/patterns/decorations.md
+
+- FOR HUMANS section:
+  - design-system/README.md (~100 lines)
+
+**Next Steps:**
+1. Review generated files (commands provided)
+2. Plan your pages with /pageplan
+3. Setup & develop with /csetup and /cdev
+
+**How It Works:**
+- Explain /pageplan reads data.yaml and auto-detects page type
+- Explain uxui-frontend agent reads data.yaml and selective patterns
+- Mention content includes Psychology, Target Audience, Why It Works
+
+**Footer:**
+```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 Files Created:
-
-   🤖 FOR AGENTS (merged data + psychology):
-   ✓ design-system/data.yaml (~300 lines)
-   ✓ design-system/patterns/buttons.md
-   ✓ design-system/patterns/cards.md
-   ✓ design-system/patterns/forms.md
-   ✓ design-system/patterns/scroll-animations.md
-   ✓ design-system/patterns/decorations.md
-
-   👤 FOR HUMANS (summary):
-   ✓ design-system/README.md (~100 lines)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🚀 Next Steps:
-
-1. Review generated files:
-   cat design-system/data.yaml | head -50
-   cat design-system/README.md
-
-2. Plan your pages:
-   /pageplan @prd.md @project.md
-
-3. Setup & develop:
-   /csetup feature-landing
-   /cdev feature-landing
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📖 How It Works:
-
-   /pageplan reads:
-   → data.yaml (style, theme, colors, animations, psychology)
-   → Auto-detects page type (landing/dashboard/auth)
-   → Loads patterns/*.md selectively
-
-   uxui-frontend agent reads:
-   → data.yaml (tokens + psychology)
-   → patterns/buttons.md (always)
-   → patterns/cards.md (always)
-   → patterns/scroll-animations.md (landing pages only)
-   → patterns/decorations.md (landing pages only)
-   → patterns/forms.md (forms only)
-
-   Content includes: Psychology, Target Audience, Why It Works ✨
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
 ```
 
 ---
 
 ## Helper: Generate data.yaml
 
-```javascript
-function generateDataYaml(tokensData, extractedData, selectedStyle) {
-  // Get psychology from the selected extracted site
-  const selectedSiteData = extractedData[selectedStyle.site];
-  const psychology = selectedSiteData?.psychology || {};
+This helper function generates the complete data.yaml file by merging psychology data from extracted sites with design tokens.
 
-  return `# Design System Data
-# Generated by: /designsetup
-# Source: ${selectedStyle.site}
-# Style: ${selectedStyle.style}
+**Inputs:**
+- tokensData: Design tokens object built in STEP 5.5
+- extractedData: All extracted site data
+- selectedStyle: Selected style object from user choice
 
-meta:
-  generated_at: ${new Date().toISOString()}
-  source_site: ${selectedStyle.site}
-  style: ${selectedStyle.style}
-  theme: ${tokensData.theme?.name || 'default'}
+**Process:**
 
-# ============================================
-# PSYCHOLOGY & ANALYSIS
-# ============================================
+1. Get psychology data from the selected site:
+   - selectedSiteData = extractedData[selectedStyle.site]
+   - psychology = selectedSiteData.psychology or empty object
 
-psychology:
-  style_classification: ${psychology.style_classification || selectedStyle.style}
+2. Build YAML content with 5 major sections:
 
-  emotions_evoked:
-${(psychology.emotions_evoked || []).map(e => `    - emotion: "${e.emotion}"
-      reason: "${e.reason}"`).join('\n') || '    # Not available'}
+**Section 1: Header Comments**
+- Generated by: /designsetup
+- Source: selectedStyle.site
+- Style: selectedStyle.style
 
-  target_audience:
-    primary:
-      description: "${psychology.target_audience?.primary?.description || 'Not specified'}"
-      age_range: "${psychology.target_audience?.primary?.age_range || 'mixed'}"
-      tech_savvy: ${psychology.target_audience?.primary?.tech_savvy || 'medium'}
-    secondary:
-      description: "${psychology.target_audience?.secondary?.description || 'Not specified'}"
+**Section 2: Meta**
+- generated_at: Current ISO timestamp
+- source_site: selectedStyle.site
+- style: selectedStyle.style
+- theme: tokensData.theme.name or "default"
 
-  visual_principles:
-${(psychology.visual_principles || []).map(v => `    - name: "${v.name}"
-      description: "${v.description}"`).join('\n') || '    # Not available'}
+**Section 3: Psychology & Analysis**
+- style_classification: From psychology or selectedStyle.style
+- emotions_evoked: List of {emotion, reason} or "# Not available"
+- target_audience:
+  - primary: {description, age_range, tech_savvy}
+  - secondary: {description}
+- visual_principles: List of {name, description} or "# Not available"
+- why_it_works: List of strings or "# Not available"
+- design_philosophy: {core_belief, key_principles list} or "Not specified"
 
-  why_it_works:
-${(psychology.why_it_works || []).map(w => `    - "${w}"`).join('\n') || '    # Not available'}
+**Section 4: Design Tokens**
+- style: {detected, characteristics list, feel}
+- colors: {primary, secondary, background, foreground, muted, accent}
+- typography: {font_family, heading_font, weights array, sizes object}
+- spacing: {base, scale array}
+- border_radius: {sm, md, lg, full}
+- shadows: {sm, md, lg}
 
-  design_philosophy:
-    core_belief: "${psychology.design_philosophy?.core_belief || 'Not specified'}"
-    key_principles:
-${(psychology.design_philosophy?.key_principles || []).map(p => `      - "${p}"`).join('\n') || '      # Not available'}
+**Section 5: Animations**
+- durations: {fast, normal, slow}
+- easing: {default, bounce}
+- component_animations: {button_hover, card_hover}
+- scroll_animations: {enabled boolean, patterns array}
 
-# ============================================
-# DESIGN TOKENS
-# ============================================
+**Section 6: Theme Direction**
+- theme: {name, decorative_elements list, avoid_elements list}
 
-style:
-  detected: ${tokensData.style.detected}
-  characteristics:
-${tokensData.style.characteristics.map(c => `    - "${c}"`).join('\n')}
-  feel: "${tokensData.style.feel}"
-
-colors:
-  primary: "${tokensData.colors.primary}"
-  secondary: "${tokensData.colors.secondary}"
-  background: "${tokensData.colors.background}"
-  foreground: "${tokensData.colors.foreground}"
-  muted: "${tokensData.colors.muted}"
-  accent: "${tokensData.colors.accent}"
-
-typography:
-  font_family: "${tokensData.typography.font_family}"
-  heading_font: "${tokensData.typography.heading_font}"
-  weights: [${tokensData.typography.weights.join(', ')}]
-  sizes:
-    h1: "${tokensData.typography.sizes.h1}"
-    h2: "${tokensData.typography.sizes.h2}"
-    h3: "${tokensData.typography.sizes.h3}"
-    body: "${tokensData.typography.sizes.body}"
-    small: "${tokensData.typography.sizes.small}"
-
-spacing:
-  base: ${tokensData.spacing.base}
-  scale: [${tokensData.spacing.scale.join(', ')}]
-
-border_radius:
-  sm: "${tokensData.border_radius.sm}"
-  md: "${tokensData.border_radius.md}"
-  lg: "${tokensData.border_radius.lg}"
-  full: "${tokensData.border_radius.full}"
-
-shadows:
-  sm: "${tokensData.shadows.sm}"
-  md: "${tokensData.shadows.md}"
-  lg: "${tokensData.shadows.lg}"
-
-# ============================================
-# ANIMATIONS
-# ============================================
-
-animations:
-  durations:
-    fast: "${tokensData.animations.durations.fast}"
-    normal: "${tokensData.animations.durations.normal}"
-    slow: "${tokensData.animations.durations.slow}"
-  easing:
-    default: "${tokensData.animations.easing.default}"
-    bounce: "${tokensData.animations.easing.bounce}"
-  component_animations:
-    button_hover: "${tokensData.animations.component_animations.button_hover}"
-    card_hover: "${tokensData.animations.component_animations.card_hover}"
-  scroll_animations:
-    enabled: ${tokensData.animations.scroll_animations.enabled}
-    patterns:
-${(tokensData.animations.scroll_animations.patterns || []).map(p => `      - "${p}"`).join('\n')}
-
-# ============================================
-# THEME DIRECTION
-# ============================================
-
-theme:
-  name: "${tokensData.theme?.name || 'default'}"
-  decorative_elements:
-${(tokensData.theme?.decorative_elements || []).map(d => `    - "${d}"`).join('\n')}
-  avoid_elements:
-${(tokensData.theme?.avoid_elements || []).map(a => `    - "${a}"`).join('\n')}
-`;
-}
-```
+**Output:** Returns the complete YAML content as a string
 
 ---
 
 ## Error Handling
 
-```javascript
-// No extracted data
-if (extractedDirs.length === 0) {
-  return error(`
-    ❌ No extracted data found
+Handle these error scenarios throughout the workflow:
 
-    Please extract at least 1 site:
-      /extract https://airbnb.com
+### Error 1: No Extracted Data (STEP 0.1)
 
-    Then run: /designsetup @prd.md
-  `);
-}
+**When:** No design-system/extracted/*/data.yaml files found
 
-// AI analysis fails
-try {
-  const styleOptions = await LLM({ ... });
-} catch (error) {
-  return error(`
-    ❌ AI analysis failed: ${error.message}
+**Action:** Display error message and stop execution:
+```
+❌ No extracted data found
 
-    This may be due to:
-    - Extracted data too large (try fewer sites)
-    - API rate limit (wait and retry)
-    - Invalid context files
+Please extract at least 1 site:
+  /extract https://airbnb.com
 
-    Retry or use --debug for details
-  `);
-}
+Then run: /designsetup @prd.md
+```
 
-// User cancels
-if (!userChoice) {
-  output(`
-    ⚠️ Design setup cancelled
+### Error 2: AI Analysis Fails (STEP 1.2, 2.3, etc.)
 
-    Your data is preserved:
-    - Extracted: design-system/extracted/
-    - Options: design-system/synthesis/options/
+**When:** LLM call fails during context analysis or style generation
 
-    Run /designsetup again when ready.
-  `);
-  return;
-}
+**Action:** Catch error and display message with debugging guidance:
+```
+❌ AI analysis failed: [error.message]
 
-// Write fails
-try {
-  Write('design-system/README.md', styleGuideMD);
-} catch (error) {
-  // Save backup
-  Write('/tmp/style-guide-backup.md', styleGuideMD);
+This may be due to:
+- Extracted data too large (try fewer sites)
+- API rate limit (wait and retry)
+- Invalid context files
 
-  return error(`
-    ❌ Failed to write README.md
+Retry or use --debug for details
+```
 
-    Check permissions: design-system/
+### Error 3: User Cancels (STEP 2.8)
 
-    Backup saved: /tmp/style-guide-backup.md
-  `);
-}
+**When:** User selects "Cancel" option at max rounds or during confirmation
+
+**Action:** Display cancellation message and preserve data:
+```
+⚠️ Design setup cancelled
+
+Your data is preserved:
+- Extracted: design-system/extracted/
+- Options: design-system/synthesis/options/
+
+Run /designsetup again when ready.
+```
+
+### Error 4: Write Fails (STEP 5.6, 5.7)
+
+**When:** Unable to write to design-system/ directory
+
+**Action:**
+1. Save backup to temporary location: /tmp/style-guide-backup.md
+2. Display error message with backup location:
+```
+❌ Failed to write README.md
+
+Check permissions: design-system/
+
+Backup saved: /tmp/style-guide-backup.md
 ```
 
 ---

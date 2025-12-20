@@ -5,6 +5,73 @@
 
 ---
 
+## v3.4.0: Complete Pseudocode Elimination
+
+**Problem Solved:** Agents read TypeScript/JavaScript pseudocode and interpreted it as "examples" or "reference documentation" rather than executable instructions. This caused agents to not follow the intended workflow.
+
+**Solution:** Converted ~3,210 lines of pseudocode across all 8 command files to imperative step-by-step instructions following the pattern established in `design-validator.md`.
+
+### Key Changes
+
+| File | Lines Converted | Key Sections |
+|------|-----------------|--------------|
+| `cdev.md` | ~300 | Steps 2-5, approval gate, page plan validation |
+| `csetup.md` | ~800 | Steps 7-8, helper functions |
+| `designsetup.md` | ~1,200 | Steps 5-6, data.yaml generation |
+| `extract.md` | ~400 | Steps 0-6, Chrome DevTools extraction |
+| `pageplan.md` | ~200 | Steps 1-5, context loading |
+| `cview.md` | ~100 | Formatting helpers |
+| `cstatus.md` | ~60 | Steps 1-2, infrastructure summary |
+| `pstatus.md` | ~150 | Steps 1-5, YAML updates |
+
+### Conversion Pattern
+
+```markdown
+# ❌ BEFORE (Pseudocode - agents ignore):
+```typescript
+if (fileExists(path)) {
+  const data = JSON.parse(Read(path))
+  return data.value
+}
+```
+
+# ✅ AFTER (Imperative - agents follow):
+**If the file exists:**
+1. Read the file at `{path}`
+2. Parse the content as JSON
+3. Extract and return the `value` field
+```
+
+### Why This Matters
+
+**Before:**
+- TypeScript code blocks treated as documentation
+- Agents skipped procedural logic
+- Inconsistent behavior between runs
+- User had to manually guide agents
+
+**After:**
+- Clear numbered steps agents execute
+- Conditional logic as "If X, then Y" blocks
+- Consistent, reproducible behavior
+- Agents self-navigate through workflows
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/commands/cdev.md` | All pseudocode → imperative |
+| `.claude/commands/csetup.md` | All pseudocode → imperative |
+| `.claude/commands/designsetup.md` | All pseudocode → imperative |
+| `.claude/commands/extract.md` | All pseudocode → imperative |
+| `.claude/commands/pageplan.md` | All pseudocode → imperative |
+| `.claude/commands/cview.md` | All pseudocode → imperative |
+| `.claude/commands/cstatus.md` | All pseudocode → imperative |
+| `.claude/commands/pstatus.md` | All pseudocode → imperative |
+| `tests/` | Removed (tests passed, cleanup) |
+
+---
+
 ## v3.3.0: Design Validation System (No Pseudocode)
 
 **Problem Solved:** Design system compliance was not enforced. uxui-frontend agents didn't read `design-system/data.yaml`, resulting in hardcoded colors, arbitrary spacing, and inconsistent animations. The validation logic was written as TypeScript pseudocode that Claude never executed.

@@ -24,11 +24,12 @@ Interactive update of `PROJECT_STATUS.yml` - the cross-session context file that
 
 ## Step 1: Check File Exists
 
-```typescript
-const statusPath = 'PROJECT_STATUS.yml'
+1. Check if `PROJECT_STATUS.yml` exists in project root
 
-if (!fileExists(statusPath)) {
-  output(`
+**If file does NOT exist:**
+
+2. Display message:
+```
 📊 PROJECT_STATUS.yml not found
 
 This file provides cross-session context for Claude.
@@ -38,61 +39,77 @@ It helps new sessions understand:
 - Completed work & next priorities
 
 Create it now? (yes/no)
-  `)
-
-  const answer = await askUser()
-  if (answer === 'yes') {
-    // Copy from template
-    copy('.claude/templates/PROJECT_STATUS.template.yml', statusPath)
-    output('✅ Created PROJECT_STATUS.yml - please fill in your project details')
-    return
-  } else {
-    return output('Skipped. Run /pstatus again when ready.')
-  }
-}
 ```
+
+3. Ask user to confirm creation
+
+**If user says "yes":**
+- Copy `.claude/templates/PROJECT_STATUS.template.yml` to project root as `PROJECT_STATUS.yml`
+- Display: `✅ Created PROJECT_STATUS.yml - please fill in your project details`
+- Stop execution (user needs to fill template first)
+
+**If user says "no":**
+- Display: `Skipped. Run /pstatus again when ready.`
+- Stop execution
+
+**If file EXISTS:**
+- Continue to Step 2
 
 ---
 
 ## Step 2: Read Current Status
 
-```typescript
-const status = parseYaml(Read(statusPath))
-const lastUpdated = new Date(status.last_updated)
-const daysSinceUpdate = Math.floor((Date.now() - lastUpdated) / (1000 * 60 * 60 * 24))
+1. Read `PROJECT_STATUS.yml` and parse as YAML
 
-output(`
+2. Extract `last_updated` field
+
+3. Calculate days since update:
+   - Parse `last_updated` as date
+   - Calculate difference between today and last_updated in days
+   - Round down to whole number
+
+4. Display status summary:
+```
 📊 PROJECT_STATUS.yml
 
-Last updated: ${status.last_updated} (${daysSinceUpdate} days ago)
-Current focus: ${status.current_focus?.description || 'Not set'}
-Active change: ${status.current_focus?.active_change || 'None'}
-Blockers: ${status.blockers?.length || 0}
-Completed changes: ${status.completed_changes?.length || 0}
-`)
+Last updated: [YYYY-MM-DD] ([N] days ago)
+Current focus: [description or 'Not set']
+Active change: [change-id or 'None']
+Blockers: [count]
+Completed changes: [count]
+```
+
+**Example:**
+```
+📊 PROJECT_STATUS.yml
+
+Last updated: 2025-11-25 (6 days ago)
+Current focus: Building authentication system
+Active change: auth-system
+Blockers: 1
+Completed changes: 3
 ```
 
 ---
 
 ## Step 3: Select Update Mode
 
-```typescript
-// If mode provided via argument, use it
-// Otherwise, ask user
+1. Check if mode was provided as argument:
+   - `/pstatus quick` → mode = "quick"
+   - `/pstatus full` → mode = "full"
+   - `/pstatus blockers` → mode = "blockers" (or any specific section)
+   - `/pstatus` (no args) → ask user
 
-const mode = args[0] || await askUserQuestion({
-  questions: [{
-    question: 'What would you like to update?',
-    header: 'Mode',
-    options: [
-      { label: 'Quick Update', description: 'Only sections that seem outdated' },
-      { label: 'Full Review', description: 'Walk through all sections' },
-      { label: 'Specific Section', description: 'Update one section only' }
-    ],
-    multiSelect: false
-  }]
-})
-```
+**If no mode specified:**
+
+2. Ask user: "What would you like to update?"
+
+Display options:
+- **Quick Update** - Only sections that seem outdated
+- **Full Review** - Walk through all sections
+- **Specific Section** - Update one section only
+
+3. Store selected mode for Step 4
 
 ---
 
@@ -100,258 +117,309 @@ const mode = args[0] || await askUserQuestion({
 
 ### 4.1 Update `last_updated`
 
-```typescript
-// Always update timestamp
-status.last_updated = new Date().toISOString().split('T')[0]
-```
+Always update timestamp to today's date in YYYY-MM-DD format.
+
+**Example:** `2025-12-20`
 
 ### 4.2 Update `current_focus`
 
-```typescript
-output(`
-📍 Current Focus
-   Description: "${status.current_focus?.description || 'Not set'}"
-   Active change: ${status.current_focus?.active_change || 'None'}
-`)
-
-const updateFocus = await askUserQuestion({
-  questions: [{
-    question: 'Update current focus?',
-    header: 'Focus',
-    options: [
-      { label: 'Keep as is', description: 'No changes needed' },
-      { label: 'Update description', description: 'Change what you are working on' },
-      { label: 'Set active change', description: 'Link to OpenSpec change' },
-      { label: 'Clear active change', description: 'Not working on a change' }
-    ],
-    multiSelect: false
-  }]
-})
-
-// Handle user selection...
+1. Display current focus:
 ```
+📍 Current Focus
+   Description: "[description or 'Not set']"
+   Active change: [change-id or 'None']
+```
+
+2. Ask user: "Update current focus?"
+
+Display options:
+- **Keep as is** - No changes needed
+- **Update description** - Change what you are working on
+- **Set active change** - Link to OpenSpec change
+- **Clear active change** - Not working on a change
+
+**If user selects "Update description":**
+- Ask: "What are you working on?"
+- Update `current_focus.description` with user's answer
+
+**If user selects "Set active change":**
+- Ask: "Which change ID?"
+- Update `current_focus.active_change` with change ID
+
+**If user selects "Clear active change":**
+- Set `current_focus.active_change` to null
+
+**If user selects "Keep as is":**
+- Skip to next section
 
 ### 4.3 Update `completed_changes`
 
-```typescript
-output(`
-✅ Completed Changes (${status.completed_changes?.length || 0})
-${status.completed_changes?.map(c => `   - ${c.id} (${c.date}): ${c.summary}`).join('\n') || '   (none)'}
-`)
+1. Display completed changes:
+```
+✅ Completed Changes ([count])
+   - [id] ([date]): [summary]
+   - ...
+   (or "none" if empty)
+```
 
-// Auto-detect archived changes not in list
-const archivedChanges = listFiles('openspec/changes/archive/')
-const missingChanges = archivedChanges.filter(dir => {
-  const id = path.basename(dir)
-  return !status.completed_changes?.some(c => c.id === id)
-})
+2. Auto-detect archived changes not in list:
+   - List all directories in `openspec/changes/archive/`
+   - For each archived change, check if its ID exists in `completed_changes`
+   - Collect missing changes
 
-if (missingChanges.length > 0) {
-  output(`
-📦 Found ${missingChanges.length} archived change(s) not in completed_changes:
-${missingChanges.map(c => `   - ${path.basename(c)}`).join('\n')}
+**If missing changes found:**
+
+3. Display:
+```
+📦 Found [N] archived change(s) not in completed_changes:
+   - [change-id-1]
+   - [change-id-2]
+   ...
 
 Add them? (yes/no)
-  `)
-
-  const addMissing = await askUser()
-  if (addMissing) {
-    for (const changePath of missingChanges) {
-      const id = path.basename(changePath)
-      // Try to read proposal.md for summary
-      const proposalPath = `${changePath}/proposal.md`
-      let summary = 'No summary available'
-      if (fileExists(proposalPath)) {
-        const proposal = Read(proposalPath)
-        // Extract first sentence or title
-        summary = extractSummary(proposal)
-      }
-
-      status.completed_changes = status.completed_changes || []
-      status.completed_changes.push({
-        id,
-        date: new Date().toISOString().split('T')[0],
-        summary
-      })
-      output(`   ✅ Added: ${id}`)
-    }
-  }
-}
 ```
+
+4. Ask user to confirm
+
+**If user says "yes":**
+
+For each missing change:
+- Extract change ID from directory name
+- Try to read `{change-path}/proposal.md`
+- Extract summary from proposal (first H1 title or first sentence)
+- If proposal not found, use "No summary available"
+- Add to `completed_changes`:
+  ```yaml
+  - id: change-id
+    date: YYYY-MM-DD (today)
+    summary: extracted summary
+  ```
+- Display: `✅ Added: {change-id}`
+
+**If user says "no":**
+- Skip to next section
 
 ### 4.4 Update `infrastructure`
 
-```typescript
-output(`
-🏗️ Infrastructure Status
-${Object.entries(status.infrastructure || {}).map(([service, info]) =>
-  `   ${service}: ${info.status}${info.waiting_for ? ` (waiting: ${info.waiting_for})` : ''}${info.notes ? ` - ${info.notes}` : ''}`
-).join('\n') || '   (none configured)'}
-`)
-
-const updateInfra = await askUserQuestion({
-  questions: [{
-    question: 'Update infrastructure status?',
-    header: 'Infra',
-    options: [
-      { label: 'Keep as is', description: 'No changes needed' },
-      { label: 'Update status', description: 'Change service status' },
-      { label: 'Add service', description: 'Track new infrastructure' },
-      { label: 'Remove service', description: 'Stop tracking a service' }
-    ],
-    multiSelect: false
-  }]
-})
-
-// Handle user selection...
-// For status update, walk through each service:
-if (updateInfra === 'Update status') {
-  for (const [service, info] of Object.entries(status.infrastructure || {})) {
-    output(`\n${service}: Currently "${info.status}"`)
-    const newStatus = await askUserQuestion({
-      questions: [{
-        question: `Update ${service} status?`,
-        header: service,
-        options: [
-          { label: 'healthy', description: 'Working normally' },
-          { label: 'degraded', description: 'Working with issues' },
-          { label: 'down', description: 'Not working' },
-          { label: 'waiting', description: 'Pending external action' },
-          { label: 'Keep current', description: `Stay as "${info.status}"` }
-        ],
-        multiSelect: false
-      }]
-    })
-
-    if (newStatus !== 'Keep current') {
-      status.infrastructure[service].status = newStatus
-
-      // If changed to healthy, clear waiting_for
-      if (newStatus === 'healthy') {
-        status.infrastructure[service].waiting_for = null
-      }
-
-      // If changed to waiting, ask what for
-      if (newStatus === 'waiting') {
-        output('What is it waiting for?')
-        status.infrastructure[service].waiting_for = await askUser()
-      }
-    }
-  }
-}
+1. Display infrastructure status:
 ```
+🏗️ Infrastructure Status
+   [service]: [status] (waiting: [reason]) - [notes]
+   ...
+   (or "none configured" if empty)
+```
+
+2. Ask user: "Update infrastructure status?"
+
+Display options:
+- **Keep as is** - No changes needed
+- **Update status** - Change service status
+- **Add service** - Track new infrastructure
+- **Remove service** - Stop tracking a service
+
+**If user selects "Update status":**
+
+For each service in infrastructure:
+
+3. Display current status:
+```
+[service]: Currently "[status]"
+```
+
+4. Ask user to select new status:
+   - **healthy** - Working normally
+   - **degraded** - Working with issues
+   - **down** - Not working
+   - **waiting** - Pending external action
+   - **Keep current** - Stay as "[current status]"
+
+5. Handle status change:
+
+**If new status = "healthy":**
+- Update `infrastructure[service].status` to "healthy"
+- Clear `infrastructure[service].waiting_for` (set to null)
+
+**If new status = "waiting":**
+- Update `infrastructure[service].status` to "waiting"
+- Ask: "What is it waiting for?"
+- Update `infrastructure[service].waiting_for` with user's answer
+
+**If new status = "degraded" or "down":**
+- Update `infrastructure[service].status` to selected value
+
+**If user selects "Keep current":**
+- Skip this service
+
+**If user selects "Add service":**
+- Ask: "Service name?"
+- Ask: "Status?" (healthy/degraded/down/waiting)
+- If waiting, ask: "Waiting for what?"
+- Add new service to `infrastructure`
+
+**If user selects "Remove service":**
+- Ask: "Which service to remove?"
+- Remove service from `infrastructure`
+
+**If user selects "Keep as is":**
+- Skip to next section
 
 ### 4.5 Update `blockers`
 
-```typescript
-output(`
-🚧 Blockers (${status.blockers?.length || 0})
-${status.blockers?.map(b => `   - ${b.id}: ${b.description} (blocks: ${b.blocks?.join(', ') || 'nothing specified'})`).join('\n') || '   (none)'}
-`)
-
-const updateBlockers = await askUserQuestion({
-  questions: [{
-    question: 'Update blockers?',
-    header: 'Blockers',
-    options: [
-      { label: 'Keep as is', description: 'No changes needed' },
-      { label: 'Add blocker', description: 'New external dependency' },
-      { label: 'Remove blocker', description: 'Blocker resolved' },
-      { label: 'Update blocker', description: 'Change existing blocker' }
-    ],
-    multiSelect: false
-  }]
-})
-
-// Handle user selection...
+1. Display blockers:
 ```
+🚧 Blockers ([count])
+   - [id]: [description] (blocks: [what it blocks])
+   ...
+   (or "none" if empty)
+```
+
+2. Ask user: "Update blockers?"
+
+Display options:
+- **Keep as is** - No changes needed
+- **Add blocker** - New external dependency
+- **Remove blocker** - Blocker resolved
+- **Update blocker** - Change existing blocker
+
+**If user selects "Add blocker":**
+- Ask: "Blocker ID?" (e.g., "domain-config")
+- Ask: "What's blocked?" (description)
+- Ask: "What does it block?" (e.g., "production-launch")
+- Add new blocker:
+  ```yaml
+  - id: blocker-id
+    description: user's description
+    blocks: [what-it-blocks]
+  ```
+
+**If user selects "Remove blocker":**
+- Display list of current blockers with numbers
+- Ask: "Which blocker to remove?" (user selects by number or ID)
+- Remove blocker from list
+
+**If user selects "Update blocker":**
+- Display list of current blockers with numbers
+- Ask: "Which blocker to update?" (user selects by number or ID)
+- Ask: "Update description? (yes/no)"
+  - If yes, ask for new description
+- Ask: "Update what it blocks? (yes/no)"
+  - If yes, ask for new value
+
+**If user selects "Keep as is":**
+- Skip to next section
 
 ### 4.6 Update `next_priorities`
 
-```typescript
-output(`
-🎯 Next Priorities
-${status.next_priorities?.map((p, i) => `   ${i + 1}. ${p.id}: ${p.reason}`).join('\n') || '   (none set)'}
-`)
-
-const updatePriorities = await askUserQuestion({
-  questions: [{
-    question: 'Update priorities?',
-    header: 'Priorities',
-    options: [
-      { label: 'Keep as is', description: 'No changes needed' },
-      { label: 'Add priority', description: 'New item to work on' },
-      { label: 'Remove priority', description: 'Completed or deprioritized' },
-      { label: 'Reorder', description: 'Change priority order' }
-    ],
-    multiSelect: false
-  }]
-})
-
-// Handle user selection...
+1. Display priorities (in order):
 ```
+🎯 Next Priorities
+   1. [id]: [reason]
+   2. [id]: [reason]
+   ...
+   (or "none set" if empty)
+```
+
+2. Ask user: "Update priorities?"
+
+Display options:
+- **Keep as is** - No changes needed
+- **Add priority** - New item to work on
+- **Remove priority** - Completed or deprioritized
+- **Reorder** - Change priority order
+
+**If user selects "Add priority":**
+- Ask: "Priority ID?" (e.g., "auth-system")
+- Ask: "Why is this a priority?" (reason)
+- Ask: "Add at position?" (1 = highest priority, or append to end)
+- Insert new priority at specified position:
+  ```yaml
+  - id: priority-id
+    reason: user's reason
+  ```
+
+**If user selects "Remove priority":**
+- Display numbered list of priorities
+- Ask: "Which priority to remove?" (user selects by number)
+- Remove priority from list
+
+**If user selects "Reorder":**
+- Display numbered list of priorities
+- Ask: "Which priority to move?" (user selects by number)
+- Ask: "New position?" (1 = highest)
+- Move priority to new position
+
+**If user selects "Keep as is":**
+- Skip to next section
 
 ### 4.7 Update `notes`
 
-```typescript
-output(`
-📝 Notes
-${status.notes || '   (empty)'}
-`)
-
-const updateNotes = await askUserQuestion({
-  questions: [{
-    question: 'Update notes?',
-    header: 'Notes',
-    options: [
-      { label: 'Keep as is', description: 'No changes needed' },
-      { label: 'Replace', description: 'Replace all notes' },
-      { label: 'Append', description: 'Add to existing notes' },
-      { label: 'Clear', description: 'Remove all notes' }
-    ],
-    multiSelect: false
-  }]
-})
-
-// Handle user selection...
+1. Display notes:
 ```
+📝 Notes
+[notes content or "(empty)"]
+```
+
+2. Ask user: "Update notes?"
+
+Display options:
+- **Keep as is** - No changes needed
+- **Replace** - Replace all notes
+- **Append** - Add to existing notes
+- **Clear** - Remove all notes
+
+**If user selects "Replace":**
+- Ask: "New notes?"
+- Replace entire `notes` field with user's input
+
+**If user selects "Append":**
+- Ask: "What to add?"
+- Append user's input to existing notes (add newline separator)
+
+**If user selects "Clear":**
+- Set `notes` to empty string or null
+
+**If user selects "Keep as is":**
+- Continue to Step 5
 
 ---
 
 ## Step 5: Write Changes
 
-```typescript
-// Show diff
-output(`
+1. Generate diff between original and updated status
+
+2. Display changes summary:
+```
 📝 Changes to be written:
 
-${generateYamlDiff(originalStatus, status)}
-`)
++ completed_changes: [new items]
+~ current_focus: [old] → [new]
+- blockers: [removed items]
+...
+```
 
-const confirm = await askUserQuestion({
-  questions: [{
-    question: 'Save changes?',
-    header: 'Confirm',
-    options: [
-      { label: 'Yes', description: 'Write changes to PROJECT_STATUS.yml' },
-      { label: 'No', description: 'Discard changes' }
-    ],
-    multiSelect: false
-  }]
-})
+3. Ask user: "Save changes?"
 
-if (confirm === 'Yes') {
-  Write(statusPath, toYaml(status))
-  output(`
+Display options:
+- **Yes** - Write changes to PROJECT_STATUS.yml
+- **No** - Discard changes
+
+**If user selects "Yes":**
+
+4. Convert updated status object to YAML format
+
+5. Write to `PROJECT_STATUS.yml` (overwrite entire file)
+
+6. Display confirmation:
+```
 ✅ PROJECT_STATUS.yml updated!
 
-Last updated: ${status.last_updated}
-Changes saved: ${countChanges(originalStatus, status)} section(s)
-  `)
-} else {
-  output('Changes discarded.')
-}
+Last updated: [YYYY-MM-DD]
+Changes saved: [N] section(s)
 ```
+
+**If user selects "No":**
+- Display: `Changes discarded.`
+- Do not modify file
 
 ---
 

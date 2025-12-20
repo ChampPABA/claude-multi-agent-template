@@ -42,30 +42,30 @@ Run: /csetup {change-id}
 
 ---
 
-#### ขั้นตอนที่ 1: อ่าน flags.json
+#### Step 2.1: Read flags.json
 
-อ่านไฟล์ `openspec/changes/{change-id}/.claude/flags.json`
-
-จดข้อมูลต่อไปนี้:
-- `current_phase`: ชื่อ phase ปัจจุบัน
-- `phases[current_phase].status`: สถานะของ phase
-- `phases[current_phase].agent`: agent ที่ต้องใช้
-
----
-
-#### ขั้นตอนที่ 2: ตรวจสอบสถานะ phase
-
-**ถ้า status = "completed":**
-- หา phase ถัดไปจาก phases.md
-- อัพเดต current_phase เป็น phase ถัดไป
-
-**ถ้า status = "pending" หรือ "in_progress":**
-- ใช้ phase ปัจจุบัน
+1. Read the file `openspec/changes/{change-id}/.claude/flags.json`
+2. Extract and note these values:
+   - `current_phase` - The current phase name
+   - `phases[current_phase].status` - The phase status
+   - `phases[current_phase].agent` - The assigned agent
 
 ---
 
-#### ขั้นตอนที่ 3: Report สถานะ
+#### Step 2.2: Check Phase Status
 
+**If status equals "completed":**
+1. Look up the next phase in phases.md
+2. Update current_phase to the next phase name
+
+**If status equals "pending" or "in_progress":**
+1. Keep using the current phase (no change)
+
+---
+
+#### Step 2.3: Report Status
+
+Display this information:
 ```
 📍 Current Phase: {phase_number} - {phase_name}
    Agent: {agent}
@@ -78,31 +78,33 @@ Run: /csetup {change-id}
 
 ---
 
-#### ตรวจสอบว่า phase ต้องการ manual action หรือไม่
+#### Step 3.1: Check for Manual Action
 
-**ถ้า agent = "user":**
-```
-🛑 Phase {phase_number} requires manual action
+**If the agent value equals "user":**
+1. Display this message:
+   ```
+   🛑 Phase {phase_number} requires manual action
 
-Instructions:
-{instructions from phases.md}
+   Instructions:
+   {instructions from phases.md}
 
-When done: /cdev {change-id} --continue
-```
-→ หยุดทำงาน รอ user ทำเสร็จแล้ว run /cdev ใหม่
+   When done: /cdev {change-id} --continue
+   ```
+2. Stop execution and wait for user to complete the task
+3. Wait for user to run /cdev again
 
 ---
 
-#### ตรวจสอบว่ามี agent หลายตัวหรือไม่
+#### Step 3.2: Check for Multiple Agents
 
-**ถ้า agent มีเครื่องหมาย "+" (เช่น "backend + database"):**
-- แยก agents ออกมาเป็น list
-- Invoke agents พร้อมกัน (parallel)
-- รอทุก agent เสร็จก่อนไปต่อ
+**If the agent value contains "+" (example: "backend + database"):**
+1. Split the agent string by "+" into a list of individual agents
+2. Invoke all agents in parallel
+3. Wait for all agents to complete before proceeding
 
-**ถ้ามี agent ตัวเดียว:**
-- Invoke agent ตัวนั้น
-- รอเสร็จแล้วไป Step 4
+**If there is only a single agent:**
+1. Invoke that single agent
+2. Wait for completion then proceed to Step 4
 
 ### Step 4: Invoke Agent with Retry & Validation
 
@@ -124,48 +126,53 @@ See: `.claude/lib/agent-executor.md` for full implementation
 
 → **Full Protocol:** `.claude/lib/design-validator.md` (Part 2)
 
-**เมื่อไหร่ต้องทำ:** ก่อน invoke uxui-frontend หรือ frontend agent ทุกครั้ง
+**When to execute:** Before invoking uxui-frontend or frontend agent
 
 ---
 
-#### ขั้นตอนที่ 1: ตรวจสอบว่าเป็น visual agent หรือไม่
+#### Step 4.0.1: Check if Visual Agent
 
-ดู phase.agent ว่าเป็น `uxui-frontend` หรือ `frontend` หรือไม่
+1. Look at the phase.agent value
+2. Check if it equals `uxui-frontend` or `frontend`
 
-**ถ้าไม่ใช่:** ข้าม Step 4.0 ไปเลย
+**If NOT a visual agent:**
+- Skip Step 4.0 entirely and proceed to Step 4.1
 
-**ถ้าใช่:** ทำขั้นตอนถัดไป
-
----
-
-#### ขั้นตอนที่ 2: ตรวจสอบว่ามี design system หรือไม่
-
-อ่านไฟล์ `design-system/data.yaml`
-
-**ถ้ามีไฟล์:**
-```
-✅ Design system found: design-system/data.yaml
-```
-→ ไปขั้นตอนที่ 3
-
-**ถ้าไม่มีไฟล์:**
-```
-⚠️ WARNING: No design system found!
-   Path: design-system/data.yaml (not found)
-
-   Options:
-   1. Run /designsetup first (recommended)
-   2. Continue with fallback design principles
-
-   Proceeding with fallback...
-```
-→ ไปขั้นตอนที่ 4 โดยไม่ inject instruction
+**If it IS a visual agent:**
+- Proceed to next step
 
 ---
 
-#### ขั้นตอนที่ 3: บอก agent ให้อ่าน design system
+#### Step 4.0.2: Check for Design System
 
-เมื่อ invoke agent ต้องบอกใน prompt ว่า:
+1. Attempt to read the file `design-system/data.yaml`
+
+**If the file exists:**
+1. Display this message:
+   ```
+   ✅ Design system found: design-system/data.yaml
+   ```
+2. Proceed to Step 4.0.3
+
+**If the file does NOT exist:**
+1. Display this warning:
+   ```
+   ⚠️ WARNING: No design system found!
+      Path: design-system/data.yaml (not found)
+
+      Options:
+      1. Run /designsetup first (recommended)
+      2. Continue with fallback design principles
+
+      Proceeding with fallback...
+   ```
+2. Skip to Step 4.1 without injecting design system instructions
+
+---
+
+#### Step 4.0.3: Inject Design System Instructions
+
+When building the agent prompt, include this text:
 
 ```
 MANDATORY: Read design-system/data.yaml before writing any CSS/Tailwind.
@@ -184,9 +191,9 @@ DO NOT use:
 
 ---
 
-#### ขั้นตอนที่ 4: Verify agent compliance หลัง agent ตอบกลับ
+#### Step 4.0.4: Verify Agent Compliance
 
-ตรวจสอบว่า agent output มี report นี้หรือไม่:
+After the agent responds, check the output for this report:
 
 ```
 ✅ Design System Loaded (STEP 0.5)
@@ -196,43 +203,47 @@ DO NOT use:
    - Animation: [list]
 ```
 
-**ถ้ามี report:** ผ่าน ไปต่อได้
+**If the report is present:**
+- Validation passed, proceed
 
-**ถ้าไม่มี report:** ถาม agent ว่าอ่าน design system หรือยัง
+**If the report is missing:**
+- Ask the agent whether they read the design system
 
 ---
 
 ### Step 4.1: Build Agent Prompt
 
-**สร้าง prompt สำหรับ agent โดยประกอบด้วย:**
+Build the agent prompt by assembling these sections:
 
 ---
 
-#### ส่วนที่ 1: Change Context
+#### Section 1: Change Context
 
-ประกอบข้อมูลจาก:
-- `proposal.md` - What we're building and why
-- `tasks.md` - Tasks for this phase
-- `design.md` - Design decisions (if exists)
-- `phases.md` - Phase instructions
+Include information from these files:
+1. Read `proposal.md` - What we're building and why
+2. Read `tasks.md` - Tasks for this phase
+3. Read `design.md` - Design decisions (if the file exists)
+4. Read `phases.md` - Phase instructions
 
----
-
-#### ส่วนที่ 2: Library Requirements (v2.1.2)
-
-เพิ่มคำสั่งให้ agent:
-1. Scan tasks.md หา patterns: "Install X", "Configure X"
-2. Scan design.md หา: "D1: Use X Library", "Decision: Use X"
-3. ใช้ libraries ที่ระบุ ไม่ใช่ custom implementation
-4. Implement ตาม design spec ไม่ใช่ library defaults
+Combine this information into the prompt context.
 
 ---
 
-#### ส่วนที่ 3: Development Principles (v3.1.0 - ALL agents)
+#### Section 2: Library Requirements (v2.1.2)
 
-**ถ้ามีไฟล์** `.claude/contexts/patterns/development-principles.md`:
+Add these instructions to the agent prompt:
+1. Scan tasks.md for patterns like: "Install X", "Configure X"
+2. Scan design.md for: "D1: Use X Library", "Decision: Use X"
+3. Use the specified libraries, not custom implementations
+4. Implement according to design spec, not library defaults
 
-เพิ่มใน prompt:
+---
+
+#### Section 3: Development Principles (v3.1.0 - ALL agents)
+
+**If the file `.claude/contexts/patterns/development-principles.md` exists:**
+
+Add this section to the prompt:
 ```
 ## 🏛️ Development Principles (Level 1 - ALL Agents)
 
@@ -250,56 +261,60 @@ Quick Reference:
 
 ---
 
-#### ส่วนที่ 4: Best Practices (agent-specific)
+#### Section 4: Best Practices (agent-specific)
 
-**ถ้ามี directory** `.claude/contexts/domain/project/best-practices/`:
+**If the directory `.claude/contexts/domain/project/best-practices/` exists:**
 
-หา best-practices files ที่ตรงกับ agent:
+1. Determine which best-practices files match the current agent:
 
-| Agent | Relevant Topics |
-|-------|-----------------|
-| uxui-frontend | react, nextjs, vue, tailwind |
-| frontend | react, nextjs, vue, typescript |
-| backend | express, fastapi, django, prisma, drizzle |
-| database | prisma, drizzle, postgres, mongodb |
-| test-debug | vitest, jest, playwright |
-| integration | typescript |
-| ux-tester | (none) |
+   | Agent | Relevant Topics |
+   |-------|-----------------|
+   | uxui-frontend | react, nextjs, vue, tailwind |
+   | frontend | react, nextjs, vue, typescript |
+   | backend | express, fastapi, django, prisma, drizzle |
+   | database | prisma, drizzle, postgres, mongodb |
+   | test-debug | vitest, jest, playwright |
+   | integration | typescript |
+   | ux-tester | (none) |
 
-เพิ่มใน prompt:
-```
-## 📚 Best Practices (STEP 0)
+2. Add this section to the prompt with the relevant file names:
+   ```
+   ## 📚 Best Practices (STEP 0)
 
-Read these files before implementation:
-- Read: .claude/contexts/domain/project/best-practices/{relevant-file}.md
-```
+   Read these files before implementation:
+   - Read: .claude/contexts/domain/project/best-practices/{relevant-file}.md
+   ```
 
 ---
 
-#### ส่วนที่ 5: Design System (uxui-frontend only)
+#### Section 5: Design System (uxui-frontend only)
 
-**ถ้า agent = uxui-frontend:**
+**If the agent equals uxui-frontend:**
 
-**ถ้ามี** `design-system/data.yaml`:
-```
-## 🎨 Design System (STEP 0.5)
+1. Check if `design-system/data.yaml` exists
 
-Files to read:
-- design-system/data.yaml
+   **If the file exists:**
+   Add this section to the prompt:
+   ```
+   ## 🎨 Design System (STEP 0.5)
 
-Style Guidelines:
-| Instead of | Use |
-|------------|-----|
-| text-gray-500, #64748b | text-foreground, bg-muted |
-| p-5, gap-7 | p-4, p-6, gap-8 |
-| mixing shadow-sm/lg | consistent shadow-md |
-```
+   Files to read:
+   - design-system/data.yaml
 
-**ถ้าไม่มี:**
-```
-⚠️ WARNING: No design system found!
-Using fallback: .claude/contexts/design/*.md
-```
+   Style Guidelines:
+   | Instead of | Use |
+   |------------|-----|
+   | text-gray-500, #64748b | text-foreground, bg-muted |
+   | p-5, gap-7 | p-4, p-6, gap-8 |
+   | mixing shadow-sm/lg | consistent shadow-md |
+   ```
+
+   **If the file does NOT exist:**
+   Add this warning to the prompt:
+   ```
+   ⚠️ WARNING: No design system found!
+   Using fallback: .claude/contexts/design/*.md
+   ```
 
 ---
 
@@ -307,45 +322,49 @@ Using fallback: .claude/contexts/design/*.md
 
 ---
 
-#### การ invoke agent
+#### Step 4.2.1: Invoke the Agent
 
-Report ก่อน invoke:
-```
-🚀 Invoking {agent} agent (model: opus)...
-```
+1. Display this message before invoking:
+   ```
+   🚀 Invoking {agent} agent (model: opus)...
+   ```
 
-Invoke agent ด้วย:
-- Model: opus (fixed)
-- Timeout: 10 นาที
-- Max retries: 2 ครั้ง
+2. Invoke the agent with these settings:
+   - Model: opus (fixed)
+   - Timeout: 10 minutes
+   - Max retries: 2 attempts
 
 ---
 
-#### Handle Result
+#### Step 4.2.2: Handle Result
 
-**ถ้าสำเร็จ:**
-```
-✅ Phase {phase_number} completed successfully!
-⏱️ Execution time: {time}s
-🔄 Retries used: {retries}
-✅ Validation: PASSED
-```
-→ ไป Step 5
+**If execution succeeded:**
+1. Display this success message:
+   ```
+   ✅ Phase {phase_number} completed successfully!
+   ⏱️ Execution time: {time}s
+   🔄 Retries used: {retries}
+   ✅ Validation: PASSED
+   ```
+2. Proceed to Step 5
 
-**ถ้าล้มเหลว:**
-```
-❌ Phase {phase_number} failed
-Error: {error}
-Retries used: {retries}
-```
+**If execution failed:**
+1. Display this error message:
+   ```
+   ❌ Phase {phase_number} failed
+   Error: {error}
+   Retries used: {retries}
+   ```
 
-ถาม user:
-```
-Options:
-[retry] - ลองใหม่
-[skip]  - ข้าม phase นี้
-[abort] - หยุดทำงาน
-```
+2. Ask the user for their choice:
+   ```
+   Options:
+   [retry] - Try again
+   [skip]  - Skip this phase
+   [abort] - Stop execution
+   ```
+
+3. Wait for user response and act accordingly
 
 ---
 
@@ -387,24 +406,28 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ### Step 4.6: Approval Gate Handling (v2.7.0)
 
-**สำหรับ phases ที่มี** `requires_approval: true` (เช่น ux-tester Phase 1.5)
+**For phases with** `requires_approval: true` (example: ux-tester Phase 1.5)
 
 ---
 
-#### ขั้นตอนที่ 1: ตรวจสอบว่า phase ต้องการ approval หรือไม่
+#### Step 4.6.1: Check if Approval Required
 
-ดูใน phases.md ว่า phase ปัจจุบันมี:
-- `requires_approval: true`
-- หรือ metadata มีคำว่า `approval-gate`
+1. Look in phases.md at the current phase
+2. Check if it has:
+   - `requires_approval: true`
+   - OR metadata contains the word `approval-gate`
 
-**ถ้าไม่ต้องการ approval:** ข้าม Step 4.6 ไปเลย
+**If approval is NOT required:**
+- Skip Step 4.6 entirely
 
-**ถ้าต้องการ approval:** ทำขั้นตอนถัดไป
+**If approval IS required:**
+- Proceed to next step
 
 ---
 
-#### ขั้นตอนที่ 2: แสดงผลและรอ user ตัดสินใจ
+#### Step 4.6.2: Display Results and Wait for Decision
 
+Display this message:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧪 {phase_name} Complete - Awaiting Approval
@@ -416,47 +439,48 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-กรุณาตัดสินใจ:
+Please decide:
 
-✅ "approve" → ไป Phase ถัดไป
-❌ "reject [feedback]" → กลับแก้ไข Phase ก่อนหน้า
+✅ "approve" → Continue to next phase
+❌ "reject [feedback]" → Go back and fix previous phase
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-→ หยุดรอ user ตอบ
+Wait for user response.
 
 ---
 
-#### ขั้นตอนที่ 3: Handle user response
+#### Step 4.6.3: Handle User Response
 
-**ถ้า user ตอบ approve:**
-- คำที่ยอมรับ: approve, approved, ok, yes, ใช่, อนุมัติ, ผ่าน, ลุย, ได้, ดี
-- Output: `✅ {phase_name} approved! Continuing to next phase...`
-- อัพเดต flags.json: status = "approved"
-- ไป Step 5
+**If user approves:**
+1. Recognize these words as approval: approve, approved, ok, yes, ใช่, อนุมัติ, ผ่าน, ลุย, ได้, ดี
+2. Display: `✅ {phase_name} approved! Continuing to next phase...`
+3. Update flags.json: set status = "approved"
+4. Proceed to Step 5
 
-**ถ้า user ตอบ reject:**
-- คำที่ยอมรับ: reject, ไม่, แก้, no (ตามด้วย feedback)
-- ดึง feedback จาก message
-- หา phase ที่ต้องกลับไปแก้ (uxui-frontend)
-- Output:
-```
-🔄 {phase_name} rejected
+**If user rejects:**
+1. Recognize these words as rejection: reject, ไม่, แก้, no (followed by feedback)
+2. Extract the feedback text from the user's message
+3. Identify which phase needs to be fixed (uxui-frontend)
+4. Display:
+   ```
+   🔄 {phase_name} rejected
 
-📝 Feedback: {feedback}
-🔙 Looping back to: Phase {X} - {phase_name}
+   📝 Feedback: {feedback}
+   🔙 Looping back to: Phase {X} - {phase_name}
 
-{agent} agent จะได้รับ feedback นี้เพื่อแก้ไข
-```
-- อัพเดต flags.json: status = "rejected"
-- กลับไป run phase ที่ต้องแก้ไข
+   {agent} agent will receive this feedback for fixes
+   ```
+5. Update flags.json: set status = "rejected"
+6. Return to run the phase that needs fixing
 
-**ถ้าไม่เข้าใจคำตอบ:**
-```
-⚠️ ไม่เข้าใจคำตอบ กรุณาตอบ "approve" หรือ "reject [feedback]"
-```
-→ ถาม user อีกครั้ง
+**If response is unclear:**
+1. Display:
+   ```
+   ⚠️ Response unclear. Please answer "approve" or "reject [feedback]"
+   ```
+2. Ask the user again
 
 ---
 
@@ -466,45 +490,47 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 
 ### Step 4.7: Validate Page Plan Compliance (uxui-frontend only)
 
-**เฉพาะ uxui-frontend agent เมื่อมี page-plan.md**
+**Only for uxui-frontend agent when page-plan.md exists**
 
-**Purpose:** ตรวจสอบว่า agent implement ครบทุก section ตาม page-plan.md
-
----
-
-#### ขั้นตอนที่ 1: ตรวจสอบเงื่อนไข
-
-**ถ้า agent ไม่ใช่ uxui-frontend หรือไม่มี page-plan.md:**
-```
-ℹ️ Page plan validation: N/A (agent: {agent}, has plan: {true/false})
-```
-→ ข้าม Step 4.7 ไปเลย
-
-**ถ้า agent = uxui-frontend และมี page-plan.md:**
-→ ทำขั้นตอนถัดไป
+**Purpose:** Verify that agent implemented all sections from page-plan.md
 
 ---
 
-#### ขั้นตอนที่ 2: วิเคราะห์ page-plan.md
+#### Step 4.7.1: Check Prerequisites
 
-อ่าน `openspec/changes/{change-id}/page-plan.md`
+**If agent is NOT uxui-frontend OR page-plan.md does NOT exist:**
+1. Display:
+   ```
+   ℹ️ Page plan validation: N/A (agent: {agent}, has plan: {true/false})
+   ```
+2. Skip Step 4.7 entirely
 
-หา Section 2 (Page Structure) และนับจำนวน components:
-- ดู JSX elements ที่ขึ้นต้นด้วยตัวใหญ่ (เช่น `<HeroSection>`, `<PricingTable>`)
-- ไม่นับ Layout, div (wrapper elements)
-- Remove duplicates
-
-Report:
-```
-📋 Page Plan Analysis:
-   Expected sections: {count}
-   Components: {list}
-```
+**If agent equals uxui-frontend AND page-plan.md exists:**
+- Proceed to next step
 
 ---
 
-#### ขั้นตอนที่ 3: ถาม user ยืนยัน
+#### Step 4.7.2: Analyze page-plan.md
 
+1. Read `openspec/changes/{change-id}/page-plan.md`
+2. Find Section 2 (Page Structure)
+3. Count the components:
+   - Look for JSX elements starting with uppercase (example: `<HeroSection>`, `<PricingTable>`)
+   - Do NOT count Layout, div (wrapper elements)
+   - Remove duplicates
+
+4. Display:
+   ```
+   📋 Page Plan Analysis:
+      Expected sections: {count}
+      Components: {list}
+   ```
+
+---
+
+#### Step 4.7.3: Ask User for Confirmation
+
+Display this prompt:
 ```
 ⚠️ VALIDATION REQUIRED:
 
@@ -521,30 +547,35 @@ Options:
   [skip]  - Skip validation (not recommended)
 ```
 
+Wait for user response.
+
 ---
 
-#### ขั้นตอนที่ 4: Handle user response
+#### Step 4.7.4: Handle User Response
 
-**ถ้า user ตอบ yes:**
-```
-✅ Page plan compliance confirmed
-   All {count} sections implemented
-```
-→ ไป Step 5
+**If user answers yes:**
+1. Display:
+   ```
+   ✅ Page plan compliance confirmed
+      All {count} sections implemented
+   ```
+2. Proceed to Step 5
 
-**ถ้า user ตอบ retry:**
-```
-🔄 Retrying phase with enhanced enforcement...
-Agent will be explicitly instructed to implement all {count} sections
-```
-→ กลับไป run phase อีกครั้งพร้อม enhanced prompt
+**If user answers retry:**
+1. Display:
+   ```
+   🔄 Retrying phase with enhanced enforcement...
+   Agent will be explicitly instructed to implement all {count} sections
+   ```
+2. Return to run the phase again with enhanced prompt
 
-**ถ้า user ตอบ skip:**
-```
-⚠️ Skipping validation - proceed with caution
-   This may result in incomplete implementation
-```
-→ ไป Step 5
+**If user answers skip:**
+1. Display:
+   ```
+   ⚠️ Skipping validation - proceed with caution
+      This may result in incomplete implementation
+   ```
+2. Proceed to Step 5
 
 ---
 
@@ -562,7 +593,7 @@ Agent will be explicitly instructed to implement all {count} sections
 
 ### Step 5: Post-Execution (Flags Update)
 
-**Main Claude อัพเดต flags.json หลังจบแต่ละ phase**
+**Main Claude updates flags.json after each phase**
 
 → See: `.claude/lib/flags-updater.md` for complete protocol
 
@@ -570,23 +601,25 @@ WHY: Immediate updates ensure /cstatus shows accurate progress.
 
 ---
 
-#### ขั้นตอนที่ 1: อัพเดต flags.json
+#### Step 5.1: Update flags.json
 
-```
-🔄 Updating progress tracking...
-```
+1. Display:
+   ```
+   🔄 Updating progress tracking...
+   ```
 
-อัพเดตข้อมูลต่อไปนี้:
-- Mark phase as completed
-- Record actual duration
-- Extract files created/modified
-- Update meta statistics (progress %, time remaining)
-- Move current_phase to next phase
+2. Update these fields in flags.json:
+   - Mark the phase as completed
+   - Record actual duration
+   - Extract files created/modified
+   - Update meta statistics (progress %, time remaining)
+   - Move current_phase to next phase
 
 ---
 
-#### ขั้นตอนที่ 2: Report Progress
+#### Step 5.2: Report Progress
 
+Display this progress summary:
 ```
 📊 Progress Update:
    ✅ {completed}/{total} phases complete
@@ -597,10 +630,11 @@ WHY: Immediate updates ensure /cstatus shows accurate progress.
 
 ---
 
-#### ขั้นตอนที่ 3: Check next phase
+#### Step 5.3: Check Next Phase
 
-**ถ้าทุก phases เสร็จหมดแล้ว (ready_to_archive):**
+**If all phases are complete (ready_to_archive equals true):**
 
+Display this completion report:
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║           ✅ CHANGE COMPLETED SUCCESSFULLY                 ║
@@ -645,21 +679,24 @@ WHY: Immediate updates ensure /cstatus shows accurate progress.
 4. Archive:         openspec archive {change-id}
 ```
 
-**ถ้ายังมี phases ที่ยังไม่เสร็จ:**
+**If there are still incomplete phases:**
 
+Display the next phase information:
 ```
 📍 Next: Phase {X}: {phase_name}
    Agent: {agent}
    Estimated: {X} min
 ```
 
-**ถ้า next phase ต้องการ manual action:**
+**If the next phase requires manual action:**
+Display:
 ```
 🛑 Next phase requires your action
 When done: /cdev {change-id} --continue
 ```
 
-**ถ้า next phase เป็น agent:**
+**If the next phase is an agent:**
+Ask the user:
 ```
 Continue? (yes/no)
 ```

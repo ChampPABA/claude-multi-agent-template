@@ -38,49 +38,33 @@ Extract ALL design data from a website and save to `design-system/extracted/{sit
 
 ## 🔍 STEP 0: Parse Input & Setup
 
-```javascript
-// Parse URL
-const input = args[0];
-if (!input) {
-  return error('URL required. Usage: /extract https://airbnb.com');
-}
+### 0.1: Validate and Normalize URL
 
-// Normalize URL
-let url = input.trim();
-if (!url.startsWith('http://') && !url.startsWith('https://')) {
-  url = 'https://' + url;
-}
+1. Check if URL argument is provided
+   - If missing, return error: "URL required. Usage: /extract https://airbnb.com"
+2. Trim whitespace from URL
+3. Add "https://" prefix if URL doesn't start with "http://" or "https://"
+4. Parse hostname and auto-detect site name:
+   - Remove "www." prefix if present
+   - Remove top-level domain (TLD) to get clean site name
+   - Example: "www.airbnb.com" → "airbnb"
 
-// Auto-detect site name
-const siteName = new URL(url).hostname
-  .replace('www.', '')
-  .replace(/\.[^.]+$/, ''); // Remove TLD
+### 0.2: Check for Existing Extraction
 
-// Check if already extracted
-const extractedPath = `design-system/extracted/${siteName}`;
-if (exists(extractedPath + '/data.yaml')) {
-  const existingData = YAML.parse(Read(extractedPath + '/data.yaml'));
-  const extractedDate = existingData.meta.extracted_at;
+1. Build path: `design-system/extracted/{siteName}/data.yaml`
+2. If file exists:
+   - Read existing YAML file
+   - Extract `meta.extracted_at` field
+   - Ask user via AskUserQuestion:
+     - Question: "Site '{siteName}' was already extracted on {extractedDate}. Re-extract?"
+     - Options: "Yes, re-extract" (overwrite) or "No, cancel" (keep existing)
+   - If user chooses "No, cancel", exit with message: "Extraction cancelled. Existing data preserved."
 
-  const response = await AskUserQuestion({
-    questions: [{
-      question: `Site "${siteName}" was already extracted on ${extractedDate}. Re-extract?`,
-      header: "Re-extract?",
-      multiSelect: false,
-      options: [
-        { label: "Yes, re-extract", description: "Overwrite previous data" },
-        { label: "No, cancel", description: "Keep existing data" }
-      ]
-    }]
-  });
+### 0.3: Create Output Directories
 
-  if (response.answers["Re-extract?"] === "No, cancel") {
-    return output('Extraction cancelled. Existing data preserved.');
-  }
-}
-
-// Create directories
-Bash: mkdir -p design-system/extracted/${siteName}/screenshots
+Use Bash to create directory structure:
+```bash
+mkdir -p design-system/extracted/{siteName}/screenshots
 ```
 
 **Report:**
@@ -98,42 +82,27 @@ Bash: mkdir -p design-system/extracted/${siteName}/screenshots
 
 ## STEP 1: Navigate & Wait
 
-```javascript
-// Navigate
-await mcp__chrome-devtools__navigate_page({ url });
+### 1.1: Navigate to URL
 
-// Smart wait
-try {
-  const snapshot = await mcp__chrome-devtools__take_snapshot({ verbose: false });
+Use Chrome DevTools to navigate to the target URL:
+- Tool: `mcp__chrome-devtools__navigate_page`
+- Parameter: `url` (from Step 0)
 
-  // Find main heading
-  const headings = snapshot.split('\n')
-    .filter(line => line.includes('[heading]'))
-    .slice(0, 3);
+### 1.2: Smart Wait for Page Load
 
-  if (headings.length > 0) {
-    const mainText = headings[0].split('"')[1];
+1. Take DOM snapshot (verbose: false) to analyze page structure
+2. From snapshot, find heading elements (filter lines containing `[heading]`)
+3. If headings found:
+   - Extract text from first heading
+   - Use Chrome DevTools wait_for to wait for that text (timeout: 15000ms)
+   - This ensures the main content is loaded
+4. If no headings found or wait fails:
+   - Fallback to sleep 5000ms
 
-    await mcp__chrome-devtools__wait_for({
-      text: mainText,
-      timeout: 15000
-    });
-  } else {
-    await sleep(5000);
-  }
-} catch {
-  await sleep(5000);
-}
+### 1.3: Verify Document Ready
 
-// Verify loaded
-const readyState = await mcp__chrome-devtools__evaluate_script({
-  function: '() => document.readyState'
-});
-
-if (readyState !== 'complete') {
-  await sleep(3000);
-}
-```
+1. Evaluate script to check document.readyState
+2. If not "complete", sleep additional 3000ms to ensure full page load
 
 **Report:**
 ```
@@ -146,432 +115,230 @@ if (readyState !== 'complete') {
 
 ## STEP 2: Extract CSS Data (17 Sections in Parallel)
 
-Run all extraction scripts in parallel for speed:
+Run all extraction evaluations in parallel for speed. Use Chrome DevTools `evaluate_script` for each extraction function below.
 
-```javascript
-const extractionPromises = [
-  extractColors(),
-  extractTypography(),
-  extractShadows(),
-  extractSpacing(),
-  extractButtons(),
-  extractCards(),
-  extractInputs(),
-  extractAnimations()
-];
+**Parallel Execution Strategy:**
+- Execute all 8 extraction functions concurrently
+- Collect results: colors, typography, shadows, spacing, buttons, cards, inputs, animations
+- Non-critical failures should not block other extractions (use fallback empty arrays)
 
-const [
-  colors,
-  typography,
-  shadows,
-  spacing,
-  buttons,
-  cards,
-  inputs,
-  animations
-] = await Promise.all(extractionPromises);
-```
+### 2.1: Extract Colors
 
-### 2.1: Extract Colors (with usage detection)
+Use Chrome DevTools to evaluate script that:
 
-```javascript
-async function extractColors() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const allElements = document.querySelectorAll('*');
-      const colorMap = {
-        backgrounds: new Map(),
-        texts: new Map(),
-        borders: new Map()
-      };
+1. **Query all elements**: `document.querySelectorAll('*')`
+2. **For each element**, extract using `window.getComputedStyle()`:
+   - Background color (skip transparent: `rgba(0, 0, 0, 0)`)
+   - Text color
+   - Border color (skip transparent)
+3. **Convert RGB to HEX**: Parse RGB values and convert to uppercase hex format
+4. **Detect usage context** based on element tag/class:
+   - Background usage: button-bg, nav-bg, card-bg, hero-bg, page-bg, surface
+   - Text usage: heading, link, button-text, muted-text, body-text
+   - Border usage: input-border, card-border, divider
+5. **Count frequency** of each color (how many times used)
+6. **Sort by count** (most used first) and take top 20 per category
 
-      // Convert RGB to HEX
-      const rgbToHex = (rgb) => {
-        const match = rgb.match(/\\d+/g);
-        if (!match) return rgb;
-        const hex = match.slice(0, 3).map(x => {
-          const h = parseInt(x).toString(16);
-          return h.length === 1 ? '0' + h : h;
-        });
-        return '#' + hex.join('').toUpperCase();
-      };
-
-      // Detect usage based on element context
-      const detectUsage = (el, type) => {
-        const tag = el.tagName.toLowerCase();
-        const classes = el.className || '';
-
-        if (type === 'background') {
-          if (tag === 'button' || classes.includes('btn') || classes.includes('button')) return 'button-bg';
-          if (tag === 'nav' || classes.includes('nav') || classes.includes('header')) return 'nav-bg';
-          if (classes.includes('card') || classes.includes('box')) return 'card-bg';
-          if (classes.includes('hero') || classes.includes('banner')) return 'hero-bg';
-          if (tag === 'body' || classes.includes('main')) return 'page-bg';
-          return 'surface';
-        }
-
-        if (type === 'text') {
-          if (tag.match(/^h[1-6]$/)) return 'heading';
-          if (tag === 'a') return 'link';
-          if (tag === 'button') return 'button-text';
-          if (classes.includes('muted') || classes.includes('secondary')) return 'muted-text';
-          return 'body-text';
-        }
-
-        if (type === 'border') {
-          if (tag === 'input' || tag === 'textarea') return 'input-border';
-          if (classes.includes('card')) return 'card-border';
-          return 'divider';
-        }
-
-        return 'general';
-      };
-
-      allElements.forEach(el => {
-        const s = window.getComputedStyle(el);
-
-        if (s.backgroundColor && s.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-          const hex = rgbToHex(s.backgroundColor);
-          if (!colorMap.backgrounds.has(hex)) {
-            colorMap.backgrounds.set(hex, {
-              rgb: s.backgroundColor,
-              hex: hex,
-              usage: detectUsage(el, 'background'),
-              count: 1
-            });
-          } else {
-            colorMap.backgrounds.get(hex).count++;
-          }
-        }
-
-        if (s.color) {
-          const hex = rgbToHex(s.color);
-          if (!colorMap.texts.has(hex)) {
-            colorMap.texts.set(hex, {
-              rgb: s.color,
-              hex: hex,
-              usage: detectUsage(el, 'text'),
-              count: 1
-            });
-          } else {
-            colorMap.texts.get(hex).count++;
-          }
-        }
-
-        if (s.borderColor && s.borderColor !== 'rgba(0, 0, 0, 0)') {
-          const hex = rgbToHex(s.borderColor);
-          if (!colorMap.borders.has(hex)) {
-            colorMap.borders.set(hex, {
-              rgb: s.borderColor,
-              hex: hex,
-              usage: detectUsage(el, 'border'),
-              count: 1
-            });
-          } else {
-            colorMap.borders.get(hex).count++;
-          }
-        }
-      });
-
-      // Sort by count (most used first)
-      const sortByCount = (map) => Array.from(map.values())
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 20);
-
-      return {
-        backgrounds: sortByCount(colorMap.backgrounds),
-        texts: sortByCount(colorMap.texts),
-        borders: sortByCount(colorMap.borders)
-      };
-    }`
-  });
-}
+**Output format:**
+```yaml
+colors:
+  backgrounds:
+    - hex: "#FFFFFF"
+      rgb: "rgb(255, 255, 255)"
+      usage: "page-bg"
+      count: 45
+  texts:
+    - hex: "#000000"
+      usage: "body-text"
+      count: 32
+  borders:
+    - hex: "#E5E7EB"
+      usage: "divider"
+      count: 12
 ```
 
 ### 2.2: Extract Typography
 
-```javascript
-async function extractTypography() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const fonts = new Set();
-      const weights = new Set();
-      const sizes = new Set();
+Use Chrome DevTools to evaluate script that:
 
-      const typography = {
-        h1: [],
-        h2: [],
-        h3: [],
-        body: []
-      };
+1. **Extract heading styles** (h1, h2, h3):
+   - Query first 3 instances of each heading tag
+   - For each, extract using `window.getComputedStyle()`:
+     - Sample text (first 50 characters)
+     - fontSize, fontWeight, fontFamily
+     - lineHeight, letterSpacing, textTransform
+     - color
+2. **Extract body text styles** (p, div, span):
+   - Query first 20 elements with text content > 20 characters
+   - Extract: fontSize, fontWeight, lineHeight, fontFamily, color
+3. **Collect unique values**:
+   - All font families used
+   - All font weights (sorted numerically)
+   - All font sizes (sorted by value)
 
-      // Headings
-      ['h1', 'h2', 'h3'].forEach(tag => {
-        Array.from(document.querySelectorAll(tag)).slice(0, 3).forEach(el => {
-          const s = window.getComputedStyle(el);
-          typography[tag].push({
-            text: el.textContent.trim().substring(0, 50),
-            fontSize: s.fontSize,
-            fontWeight: s.fontWeight,
-            fontFamily: s.fontFamily,
-            lineHeight: s.lineHeight,
-            letterSpacing: s.letterSpacing,
-            textTransform: s.textTransform,
-            color: s.color
-          });
-          fonts.add(s.fontFamily);
-          weights.add(s.fontWeight);
-          sizes.add(s.fontSize);
-        });
-      });
-
-      // Body text
-      Array.from(document.querySelectorAll('p, div, span')).slice(0, 20).forEach(el => {
-        const s = window.getComputedStyle(el);
-        if (el.textContent.trim().length > 20) {
-          typography.body.push({
-            fontSize: s.fontSize,
-            fontWeight: s.fontWeight,
-            lineHeight: s.lineHeight,
-            fontFamily: s.fontFamily,
-            color: s.color
-          });
-          fonts.add(s.fontFamily);
-          weights.add(s.fontWeight);
-          sizes.add(s.fontSize);
-        }
-      });
-
-      return {
-        ...typography,
-        allFonts: Array.from(fonts),
-        allWeights: Array.from(weights).sort((a, b) => parseInt(a) - parseInt(b)),
-        allSizes: Array.from(sizes).sort((a, b) => parseFloat(a) - parseFloat(b))
-      };
-    }`
-  });
-}
+**Output format:**
+```yaml
+typography:
+  h1:
+    - text: "Welcome to our site"
+      fontSize: "48px"
+      fontWeight: "700"
+      fontFamily: "Inter, sans-serif"
+  h2:
+    - fontSize: "32px"
+      fontWeight: "600"
+  body:
+    - fontSize: "16px"
+      fontWeight: "400"
+      lineHeight: "1.5"
+  allFonts: ["Inter", "Roboto"]
+  allWeights: ["400", "500", "600", "700"]
+  allSizes: ["14px", "16px", "24px", "32px", "48px"]
 ```
 
 ### 2.3: Extract Shadows & Effects
 
-```javascript
-async function extractShadows() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const allElements = document.querySelectorAll('*');
-      const effects = {
-        shadows: new Set(),
-        borderRadii: new Set(),
-        borderWidths: new Set()
-      };
+Use Chrome DevTools to evaluate script that:
 
-      allElements.forEach(el => {
-        const s = window.getComputedStyle(el);
-        if (s.boxShadow && s.boxShadow !== 'none') {
-          effects.shadows.add(s.boxShadow);
-        }
-        if (s.borderRadius && s.borderRadius !== '0px') {
-          effects.borderRadii.add(s.borderRadius);
-        }
-        if (s.borderWidth && s.borderWidth !== '0px') {
-          effects.borderWidths.add(s.borderWidth);
-        }
-      });
+1. **Query all elements**: `document.querySelectorAll('*')`
+2. **For each element**, extract using `window.getComputedStyle()`:
+   - boxShadow (skip "none")
+   - borderRadius (skip "0px")
+   - borderWidth (skip "0px")
+3. **Collect unique values** using Set to avoid duplicates
+4. **Limit results**:
+   - Top 15 unique box shadows
+   - Top 15 unique border radii
+   - Top 10 unique border widths
 
-      return {
-        shadows: Array.from(effects.shadows).slice(0, 15),
-        borderRadii: Array.from(effects.borderRadii).slice(0, 15),
-        borderWidths: Array.from(effects.borderWidths).slice(0, 10)
-      };
-    }`
-  });
-}
+**Output format:**
+```yaml
+shadows:
+  - "0 1px 3px rgba(0, 0, 0, 0.1)"
+  - "0 4px 6px rgba(0, 0, 0, 0.1)"
+borderRadii:
+  - "4px"
+  - "8px"
+  - "12px"
+borderWidths:
+  - "1px"
+  - "2px"
 ```
 
 ### 2.4: Extract Spacing
 
-```javascript
-async function extractSpacing() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const spacing = {
-        paddings: new Set(),
-        margins: new Set(),
-        gaps: new Set()
-      };
+Use Chrome DevTools to evaluate script that:
 
-      Array.from(document.querySelectorAll('*')).slice(0, 100).forEach(el => {
-        const s = window.getComputedStyle(el);
+1. **Query first 100 elements** for spacing analysis
+2. **For each element**, extract using `window.getComputedStyle()`:
+   - Padding (all sides: top, right, bottom, left, shorthand) - skip "0px"
+   - Margin (top, bottom only) - skip "0px" and "auto"
+   - Gap (flexbox/grid) - skip "normal" and "0px"
+3. **Detect spacing grid pattern**:
+   - Parse all spacing values to numbers
+   - Calculate Greatest Common Divisor (GCD) to find base unit
+   - Common pattern: 4px or 8px base grid
+   - Fallback to 8px if pattern unclear
+4. **Limit results**:
+   - Top 20 unique padding values
+   - Top 20 unique margin values
+   - Top 10 unique gap values
+   - Top 15 most common spacing values overall
 
-        if (s.padding && s.padding !== '0px') {
-          [s.padding, s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft]
-            .forEach(v => spacing.paddings.add(v));
-        }
-
-        if (s.margin && s.margin !== '0px') {
-          [s.marginTop, s.marginBottom].forEach(v => {
-            if (v && v !== '0px' && v !== 'auto') spacing.margins.add(v);
-          });
-        }
-
-        if (s.gap && s.gap !== 'normal' && s.gap !== '0px') {
-          spacing.gaps.add(s.gap);
-        }
-      });
-
-      // Detect grid pattern
-      const allValues = [
-        ...spacing.paddings,
-        ...spacing.margins,
-        ...spacing.gaps
-      ]
-        .map(v => parseFloat(v))
-        .filter(v => !isNaN(v) && v > 0)
-        .sort((a, b) => a - b);
-
-      const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-      const gridBase = allValues.length > 1
-        ? allValues.reduce((acc, val) => gcd(acc, val), allValues[0])
-        : 8;
-
-      return {
-        paddings: Array.from(spacing.paddings).slice(0, 20),
-        margins: Array.from(spacing.margins).slice(0, 20),
-        gaps: Array.from(spacing.gaps).slice(0, 10),
-        detectedGrid: Math.round(gridBase) || 8,
-        commonValues: [...new Set(allValues)].slice(0, 15)
-      };
-    }`
-  });
-}
+**Output format:**
+```yaml
+spacing:
+  detectedGrid: 8
+  paddings: ["8px", "16px", "24px", "32px"]
+  margins: ["8px", "16px", "24px"]
+  gaps: ["8px", "16px"]
+  commonValues: [8, 16, 24, 32, 40, 48]
 ```
 
-### 2.5-2.7: Extract Components
+### 2.5: Extract Buttons
 
-```javascript
-async function extractButtons() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      return Array.from(document.querySelectorAll('button, a[role="button"], .btn, [class*="button"], [class*="Button"]'))
-        .slice(0, 10)
-        .map((btn, i) => {
-          btn.setAttribute('data-extract-id', 'button-' + i);
-          const s = window.getComputedStyle(btn);
-          return {
-            id: 'button-' + i,
-            text: btn.textContent.trim().substring(0, 30),
-            backgroundColor: s.backgroundColor,
-            color: s.color,
-            padding: s.padding,
-            border: s.border,
-            borderRadius: s.borderRadius,
-            fontSize: s.fontSize,
-            fontWeight: s.fontWeight,
-            boxShadow: s.boxShadow,
-            transition: s.transition
-          };
-        });
-    }`
-  });
-}
+Use Chrome DevTools to evaluate script that:
 
-async function extractCards() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const selectors = [
-        '[class*="card"]', '[class*="Card"]',
-        'article', 'section',
-        '[class*="box"]', '[class*="Box"]'
-      ];
+1. **Query button elements** with selectors:
+   - `button`, `a[role="button"]`
+   - `.btn`, `[class*="button"]`, `[class*="Button"]`
+2. **Take first 10 buttons** found
+3. **For each button**:
+   - Add `data-extract-id` attribute (e.g., "button-0", "button-1")
+   - Extract using `window.getComputedStyle()`:
+     - Text content (first 30 characters)
+     - backgroundColor, color, padding
+     - border, borderRadius
+     - fontSize, fontWeight
+     - boxShadow, transition
 
-      return Array.from(document.querySelectorAll(selectors.join(', ')))
-        .slice(0, 10)
-        .map((card, i) => {
-          card.setAttribute('data-extract-id', 'card-' + i);
-          const s = window.getComputedStyle(card);
-          return {
-            id: 'card-' + i,
-            className: card.className,
-            backgroundColor: s.backgroundColor,
-            padding: s.padding,
-            border: s.border,
-            borderRadius: s.borderRadius,
-            boxShadow: s.boxShadow,
-            transition: s.transition
-          };
-        });
-    }`
-  });
-}
+**Why add data-extract-id**: Enables later re-querying for hover/focus state extraction.
 
-async function extractInputs() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      return Array.from(document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], textarea'))
-        .slice(0, 5)
-        .map((input, i) => {
-          input.setAttribute('data-extract-id', 'input-' + i);
-          const s = window.getComputedStyle(input);
-          return {
-            id: 'input-' + i,
-            type: input.type || 'textarea',
-            height: s.height,
-            padding: s.padding,
-            border: s.border,
-            borderRadius: s.borderRadius,
-            fontSize: s.fontSize,
-            backgroundColor: s.backgroundColor,
-            transition: s.transition
-          };
-        });
-    }`
-  });
-}
-```
+### 2.6: Extract Cards
+
+Use Chrome DevTools to evaluate script that:
+
+1. **Query card-like elements** with selectors:
+   - `[class*="card"]`, `[class*="Card"]`
+   - `article`, `section`
+   - `[class*="box"]`, `[class*="Box"]`
+2. **Take first 10 cards** found
+3. **For each card**:
+   - Add `data-extract-id` attribute (e.g., "card-0", "card-1")
+   - Extract className for reference
+   - Extract using `window.getComputedStyle()`:
+     - backgroundColor, padding
+     - border, borderRadius
+     - boxShadow, transition
+
+### 2.7: Extract Input Fields
+
+Use Chrome DevTools to evaluate script that:
+
+1. **Query input elements** with selectors:
+   - `input[type="text"]`, `input[type="email"]`, `input[type="password"]`
+   - `textarea`
+2. **Take first 5 inputs** found
+3. **For each input**:
+   - Add `data-extract-id` attribute (e.g., "input-0", "input-1")
+   - Extract type (text/email/password/textarea)
+   - Extract using `window.getComputedStyle()`:
+     - height, padding
+     - border, borderRadius
+     - fontSize, backgroundColor
+     - transition
 
 ### 2.8: Extract Animations
 
-```javascript
-async function extractAnimations() {
-  return await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const keyframes = [];
-      const transitions = [];
+Use Chrome DevTools to evaluate script that:
 
-      // Extract @keyframes
-      Array.from(document.styleSheets).forEach(sheet => {
-        try {
-          Array.from(sheet.cssRules || []).forEach(rule => {
-            if (rule.type === CSSRule.KEYFRAMES_RULE) {
-              keyframes.push({
-                name: rule.name,
-                css: rule.cssText
-              });
-            }
-          });
-        } catch(e) {
-          // CORS - skip
-        }
-      });
+1. **Extract CSS @keyframes animations**:
+   - Loop through all document.styleSheets
+   - For each stylesheet, check cssRules
+   - Find rules with type `CSSRule.KEYFRAMES_RULE`
+   - Extract: animation name and full CSS text
+   - Handle CORS errors gracefully (skip external stylesheets)
 
-      // Extract elements with transitions
-      Array.from(document.querySelectorAll('*')).slice(0, 50).forEach(el => {
-        const s = window.getComputedStyle(el);
-        if (s.transition && s.transition !== 'all 0s ease 0s') {
-          transitions.push({
-            selector: el.className || el.tagName,
-            transition: s.transition,
-            transitionDuration: s.transitionDuration,
-            transitionTimingFunction: s.transitionTimingFunction
-          });
-        }
-      });
+2. **Extract CSS transitions**:
+   - Query first 50 elements
+   - For each, extract using `window.getComputedStyle()`:
+     - transition property
+     - transitionDuration
+     - transitionTimingFunction
+   - Skip default value: "all 0s ease 0s"
+   - Record element className or tagName for reference
 
-      return { keyframes, transitions };
-    }`
-  });
-}
+**Output format:**
+```yaml
+animations:
+  keyframes:
+    - name: "fadeIn"
+      css: "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }"
+  transitions:
+    - selector: "button"
+      transition: "all 0.3s ease"
+      transitionDuration: "0.3s"
+      transitionTimingFunction: "ease"
 ```
 
 **Report:**
@@ -595,318 +362,275 @@ async function extractAnimations() {
 
 ## STEP 3: Extract Component Animations (Interactive States)
 
-For each component, capture before/after states:
+For each component type, capture default and hover states to understand animations.
 
-```javascript
-const componentAnimations = {};
+### 3.1: Button Hover States
 
-// Buttons
-for (let i = 0; i < Math.min(buttons.length, 3); i++) {
-  const btnId = `button-${i}`;
+For the **first 3 buttons** (to limit execution time):
 
-  // Scroll into view
-  await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const el = document.querySelector('[data-extract-id="${btnId}"]');
-      if (el) el.scrollIntoView({ block: 'center' });
-    }`
-  });
-  await sleep(500);
+1. **Find element by data-extract-id** (e.g., "button-0")
+2. **Scroll element into view** (block: center) for visibility
+3. **Wait 500ms** for scroll animation
+4. **Take screenshot** of default state
+   - Save to: `design-system/extracted/{siteName}/screenshots/{btnId}-default.png`
+5. **Capture default computed styles**:
+   - backgroundColor, color, boxShadow, transform
+6. **Trigger hover state**:
+   - Dispatch `MouseEvent('mouseenter', { bubbles: true })` to element
+7. **Wait 500ms** for transition to complete
+8. **Take screenshot** of hover state
+   - Save to: `design-system/extracted/{siteName}/screenshots/{btnId}-hover.png`
+9. **Capture hover computed styles**:
+   - backgroundColor, color, boxShadow, transform
+10. **Remove hover state**:
+    - Dispatch `MouseEvent('mouseleave')` to element
+11. **Compare states** and generate description:
+    - If boxShadow changed → "Shadow changes"
+    - If transform changed → "Transform changes"
+    - If background changed → "Background changes"
+    - Join changes with " + " or return "No visible changes"
 
-  // Screenshot: Default state
-  await mcp__chrome-devtools__take_screenshot({
-    filePath: `design-system/extracted/${siteName}/screenshots/${btnId}-default.png`
-  });
+### 3.2: Card Hover States
 
-  // Get default computed styles
-  const defaultStyle = await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const el = document.querySelector('[data-extract-id="${btnId}"]');
-      if (!el) return null;
-      const s = window.getComputedStyle(el);
-      return {
-        background: s.backgroundColor,
-        color: s.color,
-        boxShadow: s.boxShadow,
-        transform: s.transform
-      };
-    }`
-  });
+Repeat same process for **first 3 cards** with `data-extract-id="card-{i}"`.
 
-  // Trigger hover
-  await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const el = document.querySelector('[data-extract-id="${btnId}"]');
-      if (el) el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-    }`
-  });
-  await sleep(500);
+### 3.3: Input Focus States
 
-  // Screenshot: Hover state
-  await mcp__chrome-devtools__take_screenshot({
-    filePath: `design-system/extracted/${siteName}/screenshots/${btnId}-hover.png`
-  });
+Similar process for **first 3 inputs** but use:
+- Focus event instead of hover: `dispatchEvent(new FocusEvent('focus'))`
+- Blur event to remove: `dispatchEvent(new FocusEvent('blur'))`
+- Screenshot names: `{inputId}-default.png`, `{inputId}-focus.png`
 
-  // Get hover computed styles
-  const hoverStyle = await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const el = document.querySelector('[data-extract-id="${btnId}"]');
-      if (!el) return null;
-      const s = window.getComputedStyle(el);
-      return {
-        background: s.backgroundColor,
-        color: s.color,
-        boxShadow: s.boxShadow,
-        transform: s.transform
-      };
-    }`
-  });
-
-  // Remove hover
-  await mcp__chrome-devtools__evaluate_script({
-    function: `() => {
-      const el = document.querySelector('[data-extract-id="${btnId}"]');
-      if (el) el.dispatchEvent(new MouseEvent('mouseleave'));
-    }`
-  });
-
-  // Generate description
-  const changes = [];
-  if (defaultStyle.boxShadow !== hoverStyle.boxShadow) changes.push('Shadow changes');
-  if (defaultStyle.transform !== hoverStyle.transform) changes.push('Transform changes');
-  if (defaultStyle.background !== hoverStyle.background) changes.push('Background changes');
-
-  componentAnimations[btnId] = {
-    type: 'button',
-    states: { default: defaultStyle, hover: hoverStyle },
-    transition: buttons[i].transition,
-    description: changes.length > 0 ? changes.join(' + ') : 'No visible changes'
-  };
-}
-
-// Repeat for cards and inputs...
+**Store results** in componentAnimations object with structure:
+```yaml
+componentAnimations:
+  button-0:
+    type: "button"
+    description: "Shadow changes + Background changes"
+    transition: "all 0.3s ease"
+    states:
+      default:
+        background: "rgb(59, 130, 246)"
+        boxShadow: "none"
+      hover:
+        background: "rgb(37, 99, 235)"
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
 ```
 
 ---
 
 ## STEP 4: Full-Page Screenshot
 
-```javascript
-await Bash: mkdir -p design-system/extracted/${siteName}/screenshots
+### 4.1: Ensure Screenshot Directory Exists
 
-try {
-  await mcp__chrome-devtools__take_screenshot({
-    fullPage: true,
-    format: 'png',
-    filePath: `design-system/extracted/${siteName}/screenshots/full-page.png`
-  });
-} catch {
-  await mcp__chrome-devtools__take_screenshot({
-    fullPage: false,
-    format: 'png',
-    filePath: `design-system/extracted/${siteName}/screenshots/viewport.png`
-  });
-}
+```bash
+mkdir -p design-system/extracted/{siteName}/screenshots
 ```
+
+### 4.2: Capture Full-Page Screenshot
+
+Use Chrome DevTools to take screenshot:
+
+1. **First attempt**: Full-page screenshot
+   - Tool: `mcp__chrome-devtools__take_screenshot`
+   - Parameters: `fullPage: true`, `format: 'png'`
+   - Save to: `design-system/extracted/{siteName}/screenshots/full-page.png`
+
+2. **If full-page fails**: Fallback to viewport-only
+   - Parameters: `fullPage: false`, `format: 'png'`
+   - Save to: `design-system/extracted/{siteName}/screenshots/viewport.png`
+
+**Why fallback**: Some sites have infinite scroll or very long pages that cause full-page screenshots to fail.
 
 ---
 
 ## STEP 5: AI Psychology Analysis
 
-Read screenshot and analyze:
+### 5.1: Determine Screenshot Path
 
-```javascript
-const screenshotPath = exists(`design-system/extracted/${siteName}/screenshots/full-page.png`)
-  ? `design-system/extracted/${siteName}/screenshots/full-page.png`
-  : `design-system/extracted/${siteName}/screenshots/viewport.png`;
+Check which screenshot exists:
+- Prefer: `design-system/extracted/{siteName}/screenshots/full-page.png`
+- Fallback: `design-system/extracted/{siteName}/screenshots/viewport.png`
 
-const screenshot = Read(screenshotPath);
+### 5.2: Read Screenshot
 
-const analysisPrompt = `
-You are a UX/UI design psychologist.
+Use Read tool to load the screenshot image for visual analysis.
 
-Analyze this website's design and provide insights in YAML format.
+### 5.3: Generate Psychology Analysis Prompt
 
-Visual Screenshot: [attached]
+Create analysis request with:
 
-Extracted CSS Data:
-- Colors: ${JSON.stringify(colors, null, 2)}
-- Typography: ${JSON.stringify(typography.allFonts, null, 2)}
+**Context provided:**
+- The screenshot (visual attachment)
+- Extracted CSS colors data (JSON formatted)
+- Extracted typography fonts (JSON formatted)
 
-Return YAML format:
+**Request UX/UI psychology insights in YAML format covering:**
 
-\`\`\`yaml
-psychology:
-  style_classification: # e.g., Neo-Brutalism, Minimalist, Modern SaaS
+1. **style_classification**: Design style (Neo-Brutalism, Minimalist, Glassmorphism, Modern SaaS, etc.)
 
-  emotions_evoked:
-    - emotion: Trust
-      reason: "Soft rounded corners reduce anxiety"
-    - emotion: Adventure
-      reason: "Vibrant colors suggest excitement"
+2. **emotions_evoked**: List of emotions with reasons
+   - emotion: What feeling the design triggers
+   - reason: Specific design elements causing this emotion
 
-  target_audience:
-    primary:
-      description: "Travelers seeking unique accommodations"
-      age_range: "25-45"
-      tech_savvy: high
-    secondary:
-      description: "Hosts listing their properties"
+3. **target_audience**: Who this design appeals to
+   - primary: Main user demographic (description, age_range, tech_savvy)
+   - secondary: Secondary users (if applicable)
 
-  visual_principles:
-    - name: "Photo-First Design"
-      description: "Large images dominate, UI recedes"
-    - name: "Soft & Approachable"
-      description: "Rounded corners, light grays feel warm"
+4. **visual_principles**: Key design patterns observed
+   - name: Principle name
+   - description: How it's applied
 
-  why_it_works:
-    - "Marketplace requires trust → Clear info, ratings, soft design"
-    - "Travel is emotional → Photo-first, inspirational imagery"
+5. **why_it_works**: Strategic design decisions
+   - List of business/psychological reasons the design is effective
 
-  design_philosophy:
-    core_belief: "Let the content shine"
-    key_principles:
-      - "Photography is hero"
-      - "Consistency builds trust"
-      - "Subtle brand presence"
-\`\`\`
+6. **design_philosophy**: Underlying beliefs
+   - core_belief: Central design philosophy
+   - key_principles: List of guiding principles
 
-Be specific with examples from the visual.
-`;
+**Instruction**: Be specific with examples from the visual.
 
-const psychologyYaml = await LLM({
-  prompt: analysisPrompt,
-  images: [screenshot]
-});
-```
+### 5.4: Extract YAML Response
+
+Parse the LLM response to extract the YAML block (between triple backticks).
 
 ---
 
 ## STEP 6: Generate data.yaml (17 Sections + Psychology)
 
-```javascript
-const yamlContent = `# Design Extraction: ${siteName}
-# Extracted: ${new Date().toISOString()}
-# URL: ${url}
+### 6.1: Calculate Coverage Metrics
 
+Count how many of the 17 standard sections were successfully detected:
+- Overview, Color Palette, Typography, Spacing System, Component Styles
+- Shadows/Elevation, Animations/Transitions, Border Radius, Border Styles
+- Layout Patterns, etc.
+
+Calculate percentage: `(detectedSections / 17) * 100`
+
+### 6.2: Build YAML Structure
+
+Construct comprehensive YAML file with these sections:
+
+**Header Comments:**
+```yaml
+# Design Extraction: {siteName}
+# Extracted: {ISO timestamp}
+# URL: {url}
+```
+
+**Meta Section:**
+```yaml
 meta:
-  site_name: ${siteName}
-  url: ${url}
-  extracted_at: ${new Date().toISOString()}
+  site_name: {siteName}
+  url: {url}
+  extracted_at: {ISO timestamp}
   extractor_version: "2.1.0"
   coverage:
     total_sections: 17
-    detected_sections: ${countDetectedSections()}
-    percentage: ${Math.round((countDetectedSections() / 17) * 100)}
+    detected_sections: {count}
+    percentage: {percentage}
+```
 
-# ============================================
-# PSYCHOLOGY & ANALYSIS
-# ============================================
+**Psychology Section:**
+Insert the psychology YAML from Step 5.4
 
-${psychologyYaml}
-
-# ============================================
-# DESIGN TOKENS
-# ============================================
-
+**Design Tokens Sections:**
+```yaml
 sections:
   overview:
     detected: true
-    style: "${detectStyle()}"
+    style: {from psychology.style_classification}
     tech_stack: Framework-agnostic
 
   color_palette:
     detected: true
     primary:
-${colors.backgrounds.slice(0, 5).map(c => `      - hex: "${c.hex}"
-        rgb: "${c.rgb}"
-        usage: "${c.usage}"`).join('\n')}
-
+      - hex: {top 5 background colors}
+        rgb: {rgb value}
+        usage: {usage context}
     text_colors:
-${colors.texts.slice(0, 5).map(c => `      - hex: "${c.hex}"
-        usage: "${c.usage}"`).join('\n')}
-
+      - hex: {top 5 text colors}
+        usage: {usage context}
     border_colors:
-${colors.borders.slice(0, 3).map(c => `      - hex: "${c.hex}"
-        usage: "${c.usage}"`).join('\n')}
+      - hex: {top 3 border colors}
+        usage: {usage context}
 
   typography:
     detected: true
-    fonts:
-${typography.allFonts.slice(0, 3).map(f => `      - "${f}"`).join('\n')}
-    weights: [${typography.allWeights.join(', ')}]
-    sizes: [${typography.allSizes.join(', ')}]
+    fonts: [{top 3 font families}]
+    weights: [{all weights, sorted}]
+    sizes: [{all sizes, sorted}]
 
   spacing_system:
     detected: true
-    grid_base: ${spacing.detectedGrid}
-    common_values: [${spacing.commonValues.join(', ')}]
+    grid_base: {detectedGrid}
+    common_values: [{spacing values}]
 
   component_styles:
     detected: true
     buttons:
-${buttons.slice(0, 3).map(btn => `      - id: "${btn.id}"
-        text: "${btn.text}"
-        backgroundColor: "${btn.backgroundColor}"
-        color: "${btn.color}"
-        padding: "${btn.padding}"
-        borderRadius: "${btn.borderRadius}"
-        transition: "${btn.transition}"
-        hover_animation: "${componentAnimations[btn.id]?.description || 'none'}"`).join('\n')}
-
+      - id: {button-0}
+        text: {button text}
+        backgroundColor: {color}
+        color: {text color}
+        padding: {padding}
+        borderRadius: {radius}
+        transition: {transition}
+        hover_animation: {description from Step 3}
     cards:
-${cards.slice(0, 3).map(card => `      - id: "${card.id}"
-        backgroundColor: "${card.backgroundColor}"
-        padding: "${card.padding}"
-        borderRadius: "${card.borderRadius}"
-        boxShadow: "${card.boxShadow}"
-        hover_animation: "${componentAnimations[card.id]?.description || 'none'}"`).join('\n')}
+      - {similar structure}
+    inputs:
+      - {similar structure}
 
   shadows_elevation:
     detected: true
-    values:
-${shadows.shadows.slice(0, 5).map(s => `      - "${s}"`).join('\n')}
+    values: [{top 5 shadow values}]
 
   animations_transitions:
     detected: true
     keyframes:
-${animations.keyframes.slice(0, 5).map(k => `      - name: "${k.name}"`).join('\n')}
+      - name: {animation name}
     transitions:
-${animations.transitions.slice(0, 5).map(t => `      - duration: "${t.transitionDuration}"
-        timing: "${t.transitionTimingFunction}"`).join('\n')}
+      - duration: {duration}
+        timing: {timing function}
 
   border_radius:
     detected: true
-    values: [${shadows.borderRadii.slice(0, 8).join(', ')}]
+    values: [{top 8 radius values}]
 
   border_styles:
     detected: true
-    widths: [${shadows.borderWidths.join(', ')}]
+    widths: [{border widths}]
 
   layout_patterns:
     detected: true
     container_width: "1280px"
     grid_columns: 12
+```
 
-# ============================================
-# COMPONENT ANIMATIONS (DETAILED)
-# ============================================
-
+**Component Animations (Detailed):**
+```yaml
 animations:
-${Object.entries(componentAnimations).map(([id, anim]) => `  ${id}:
-    type: "${anim.type}"
-    description: "${anim.description}"
-    transition: "${anim.transition}"
+  button-0:
+    type: "button"
+    description: {from Step 3}
+    transition: {transition value}
     states:
       default:
-        background: "${anim.states.default?.background || 'none'}"
-        boxShadow: "${anim.states.default?.boxShadow || 'none'}"
+        background: {color}
+        boxShadow: {shadow}
       hover:
-        background: "${anim.states.hover?.background || 'none'}"
-        boxShadow: "${anim.states.hover?.boxShadow || 'none'}"`).join('\n')}
-`;
+        background: {color}
+        boxShadow: {shadow}
+  card-0:
+    {similar structure}
+```
 
-Write(`design-system/extracted/${siteName}/data.yaml`, yamlContent);
+### 6.3: Write File
+
+Use Write tool to save the YAML content to:
+```
+design-system/extracted/{siteName}/data.yaml
 ```
 
 ---
@@ -965,29 +689,42 @@ Write(`design-system/extracted/${siteName}/data.yaml`, yamlContent);
 
 ## Error Handling
 
-```javascript
-try {
-  await mcp__chrome-devtools__navigate_page({ url });
-} catch (error) {
-  return error(`
-    ❌ Failed to load URL: ${url}
+### Critical Errors (Stop Execution)
 
-    Error: ${error.message}
+**Navigation failures** - If Chrome DevTools navigation fails:
+1. Catch the error from `mcp__chrome-devtools__navigate_page`
+2. Return error message:
+   ```
+   ❌ Failed to load URL: {url}
 
-    Check:
-    - Is the URL accessible?
-    - Is Chrome DevTools MCP running?
-  `);
-}
+   Error: {error.message}
 
-// Extraction failures are non-critical
-try {
-  const colors = await extractColors();
-} catch (error) {
-  console.warn('Color extraction failed:', error.message);
-  colors = { backgrounds: [], texts: [], borders: [] };
-}
-```
+   Check:
+   - Is the URL accessible?
+   - Is Chrome DevTools MCP running?
+   ```
+3. Stop execution (cannot proceed without page loaded)
+
+### Non-Critical Errors (Continue with Fallbacks)
+
+**Extraction failures** - If individual extraction steps fail:
+1. Log warning message (e.g., "Color extraction failed: {error.message}")
+2. Use fallback empty data:
+   - Colors: `{ backgrounds: [], texts: [], borders: [] }`
+   - Typography: `{ h1: [], h2: [], h3: [], body: [], allFonts: [], allWeights: [], allSizes: [] }`
+   - Shadows: `{ shadows: [], borderRadii: [], borderWidths: [] }`
+   - Components: `[]` (empty array)
+3. Continue with other extractions (parallel execution means one failure doesn't block others)
+4. Final YAML will mark section as `detected: false` if no data extracted
+
+**Screenshot failures**:
+- Full-page screenshot fails → Fallback to viewport screenshot
+- Component screenshot fails → Skip that component, continue with others
+- Psychology analysis screenshot missing → Use viewport screenshot as fallback
+
+**YAML generation**:
+- Missing data sections → Mark `detected: false` in YAML
+- Invalid data → Use empty defaults, note in coverage percentage
 
 ---
 

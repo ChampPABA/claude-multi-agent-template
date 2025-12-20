@@ -43,162 +43,163 @@ Please create the change with OpenSpec first
 
 **WHY:** Cross-session context helps understand blockers and infrastructure state before starting work.
 
-```typescript
-const projectStatusPath = 'PROJECT_STATUS.yml'
+1. Check if `PROJECT_STATUS.yml` exists in project root
 
-if (fileExists(projectStatusPath)) {
-  const projectStatus = parseYaml(Read(projectStatusPath))
+**If file exists:**
 
-  output(`\n📊 Project Context (from PROJECT_STATUS.yml)`)
+2. Read the file `PROJECT_STATUS.yml`
 
-  // Show current focus
-  if (projectStatus.current_focus?.description) {
-    output(`   Focus: ${projectStatus.current_focus.description}`)
-  }
-
-  // Check for blockers that might affect this change
-  if (projectStatus.blockers?.length > 0) {
-    const relevantBlockers = projectStatus.blockers.filter(b =>
-      b.blocks?.some(blocked =>
-        blocked.toLowerCase().includes(changeId.toLowerCase()) ||
-        changeId.toLowerCase().includes(blocked.toLowerCase())
-      )
-    )
-
-    if (relevantBlockers.length > 0) {
-      output(`\n   ⚠️ Potential blockers for this change:`)
-      relevantBlockers.forEach(b => {
-        output(`      - ${b.id}: ${b.description}`)
-      })
-      output(`\n   Consider resolving blockers before starting.`)
-    }
-  }
-
-  // Show infrastructure status summary
-  if (projectStatus.infrastructure) {
-    const downServices = Object.entries(projectStatus.infrastructure)
-      .filter(([_, info]) => info.status === 'down' || info.status === 'degraded')
-
-    if (downServices.length > 0) {
-      output(`\n   ⚠️ Infrastructure issues:`)
-      downServices.forEach(([service, info]) => {
-        output(`      - ${service}: ${info.status}${info.notes ? ` (${info.notes})` : ''}`)
-      })
-    }
-  }
-
-  // Check pending follow-ups that might affect this change (v2.1.6)
-  if (projectStatus.pending_followups?.length > 0) {
-    const proposalPath = `openspec/changes/${changeId}/proposal.md`
-    const proposal = fileExists(proposalPath) ? Read(proposalPath).toLowerCase() : ''
-
-    const relatedPending = projectStatus.pending_followups.filter(p => {
-      const affects = p.affects || []
-      return affects.some(pattern => {
-        const patternLower = pattern.toLowerCase()
-        return changeId.toLowerCase().includes(patternLower) ||
-               proposal.includes(patternLower) ||
-               (patternLower.includes('db') && proposal.includes('table')) ||
-               (patternLower.includes('schema') && proposal.includes('model')) ||
-               (patternLower.includes('migration') && proposal.includes('database'))
-      })
-    })
-
-    if (relatedPending.length > 0) {
-      output(`\n   ⚠️ Found related pending follow-ups:`)
-      relatedPending.forEach(p => {
-        output(`      - "${p.item}" (from ${p.from_change})`)
-        output(`        Reason: ${p.reason}`)
-        if (p.affects) output(`        Affects: ${p.affects.join(', ')}`)
-      })
-
-      output(`\n   This change may be affected by unresolved follow-ups.`)
-      output(`   Options:`)
-      output(`      1. Continue anyway (risk: issues like schema sync)`)
-      output(`      2. Address follow-up first (create separate proposal)`)
-      output(`      3. Include follow-up in this change's scope`)
-
-      const choice = await askUser(`\n   How to proceed? (1/2/3)`)
-
-      if (choice === '2') {
-        output(`\n   ❌ Setup paused. Create proposal for pending follow-up first.`)
-        return
-      } else if (choice === '3') {
-        output(`\n   ℹ️ Remember to include follow-up items in tasks.md`)
-      } else {
-        output(`\n   ⚠️ Continuing with caution. Monitor for related issues.`)
-      }
-    }
-  }
-
-  // Check stale status
-  const lastUpdated = new Date(projectStatus.last_updated)
-  const daysSinceUpdate = Math.floor((Date.now() - lastUpdated) / (1000 * 60 * 60 * 24))
-  const staleThreshold = projectStatus._config?.stale_warning_days || 7
-
-  if (daysSinceUpdate > staleThreshold) {
-    output(`\n   ℹ️ PROJECT_STATUS.yml last updated ${daysSinceUpdate} days ago.`)
-    output(`      Consider running /pstatus to refresh.`)
-  }
-
-  // Update active change
-  if (projectStatus.current_focus?.active_change !== changeId) {
-    output(`\n   📍 Update current_focus.active_change to "${changeId}"? (yes/no)`)
-    const updateFocus = await askUser()
-    if (updateFocus) {
-      projectStatus.current_focus = projectStatus.current_focus || {}
-      projectStatus.current_focus.active_change = changeId
-      projectStatus.last_updated = new Date().toISOString().split('T')[0]
-      Write(projectStatusPath, toYaml(projectStatus))
-      output(`   ✅ Updated active_change to "${changeId}"`)
-    }
-  }
-
-  output(``) // Blank line
-}
+3. Output header:
 ```
+📊 Project Context (from PROJECT_STATUS.yml)
+```
+
+4. **If `current_focus.description` exists:**
+   - Output: `   Focus: {description}`
+
+5. **Check for blockers that might affect this change:**
+   - Look at `blockers` array
+   - For each blocker, check if `blocks` field contains:
+     - The change-id (case-insensitive)
+     - OR any keyword from change-id
+     - OR vice versa
+
+   **If relevant blockers found:**
+   ```
+   ⚠️ Potential blockers for this change:
+      - {blocker.id}: {blocker.description}
+      ... (for each relevant blocker)
+
+   Consider resolving blockers before starting.
+   ```
+
+6. **Check infrastructure status:**
+   - Look at `infrastructure` section
+   - Find services where `status` is 'down' or 'degraded'
+
+   **If degraded services found:**
+   ```
+   ⚠️ Infrastructure issues:
+      - {service}: {status} ({notes if present})
+      ... (for each down/degraded service)
+   ```
+
+7. **Check pending follow-ups (v2.1.6):**
+   - Read `openspec/changes/{changeId}/proposal.md` (if exists)
+   - Look at `pending_followups` array
+   - For each pending item, check if `affects` field matches:
+     - Change-id contains pattern
+     - OR proposal contains pattern
+     - OR special database patterns (db→table, schema→model, migration→database)
+
+   **If related pending items found:**
+   ```
+   ⚠️ Found related pending follow-ups:
+      - "{item}" (from {from_change})
+        Reason: {reason}
+        Affects: {affects list}
+      ... (for each related pending)
+
+   This change may be affected by unresolved follow-ups.
+   Options:
+      1. Continue anyway (risk: issues like schema sync)
+      2. Address follow-up first (create separate proposal)
+      3. Include follow-up in this change's scope
+
+   How to proceed? (1/2/3)
+   ```
+
+   → Wait for user input
+
+   **If user chose 2:**
+   ```
+   ❌ Setup paused. Create proposal for pending follow-up first.
+   ```
+   → STOP execution, exit command
+
+   **If user chose 3:**
+   ```
+   ℹ️ Remember to include follow-up items in tasks.md
+   ```
+   → Continue
+
+   **If user chose 1 or other:**
+   ```
+   ⚠️ Continuing with caution. Monitor for related issues.
+   ```
+   → Continue
+
+8. **Check if status is stale:**
+   - Calculate days since `last_updated`
+   - Compare with `_config.stale_warning_days` (default: 7)
+
+   **If days > threshold:**
+   ```
+   ℹ️ PROJECT_STATUS.yml last updated {days} days ago.
+      Consider running /pstatus to refresh.
+   ```
+
+9. **Update active change if needed:**
+   - Check if `current_focus.active_change` equals current changeId
+
+   **If NOT equal:**
+   - Ask user:
+   ```
+   📍 Update current_focus.active_change to "{changeId}"? (yes/no)
+   ```
+
+   **If user approves:**
+   - Set `current_focus.active_change = changeId`
+   - Set `last_updated = today's date (YYYY-MM-DD)`
+   - Write updated YAML back to `PROJECT_STATUS.yml`
+   - Output: `   ✅ Updated active_change to "{changeId}"`
+
+10. Output blank line
+
+**If file does not exist:**
+- Skip to next step (no output needed)
 
 ### Step 1.6: Memory Context Query (v2.2.0 - claude-mem Integration)
 
 **WHY:** Query past work to leverage decisions, avoid repeating mistakes, and maintain consistency.
 
-```typescript
-// Extract keywords from change-id and proposal title
-const changeKeywords = changeId.split('-').join(' ')
-const proposalPath = `openspec/changes/${changeId}/proposal.md`
-const proposalContent = fileExists(proposalPath) ? Read(proposalPath) : ''
-const proposalTitle = proposalContent.match(/^#\s+(.+)/m)?.[1] || changeId
+1. Extract keywords from change-id:
+   - Replace hyphens with spaces
+   - Example: `add-auth-system` → `add auth system`
 
-output(`\n🧠 Querying claude-mem for related past work...`)
+2. Read `openspec/changes/{changeId}/proposal.md` (if exists)
+   - Extract first heading line (proposal title)
+   - If no file or no heading, use changeId as title
 
-// Use mem-search skill to find related observations
-// The skill auto-invokes when asking about past work
-const queries = [
-  `decisions about ${changeKeywords}`,
-  `bugs related to ${changeKeywords}`,
-  `implementations of ${changeKeywords}`
-]
-
-// Claude will auto-invoke mem-search for these queries
-// Results are stored for inclusion in research-checklist.md
-
-let pastLearnings = []
-
-// Note: In practice, Main Claude asks these questions naturally
-// and mem-search skill returns relevant observations
-
-output(`   Searched for: ${changeKeywords}`)
-output(`   (Results will be included in research-checklist.md if relevant)`)
-output(``)
-
-// Store for later use in research-checklist.md generation
-// pastLearnings will be populated by mem-search results
+3. Output:
+```
+🧠 Querying claude-mem for related past work...
 ```
 
-**Integration with research-checklist.md:**
+4. Query claude-mem using natural language questions:
+   - "decisions about {keywords}"
+   - "bugs related to {keywords}"
+   - "implementations of {keywords}"
 
-When generating `research-checklist.md` (Step 2.6), include a "Past Learnings" section:
+   **Note:** The mem-search skill will auto-invoke when you ask these questions naturally.
 
+5. Store results in memory for later use
+
+6. Output:
+```
+   Searched for: {keywords}
+   (Results will be included in pre-work-context.md if relevant)
+```
+
+7. Output blank line
+
+---
+
+**Integration with pre-work-context.md:**
+
+When generating `pre-work-context.md` (Step 2.6.7), include a "Past Learnings" section:
+
+**If relevant observations found:**
 ```markdown
 ## Past Learnings (from claude-mem)
 
@@ -206,15 +207,15 @@ When generating `research-checklist.md` (Step 2.6), include a "Past Learnings" s
 
 | ID | Type | Summary | Relevance |
 |----|------|---------|-----------|
-| #12345 | decision | Chose Drizzle over Prisma | HIGH |
-| #12340 | bugfix | Fixed N+1 query in user list | MEDIUM |
+| #{id} | {type} | {summary} | {HIGH/MEDIUM/LOW} |
+... (for each observation)
 
 ### Key Takeaways:
-- Use Drizzle patterns established in #12345
-- Watch for N+1 queries (see #12340 for solution)
+- {takeaway 1}
+- {takeaway 2}
 ```
 
-If no relevant observations found:
+**If no relevant observations found:**
 ```markdown
 ## Past Learnings (from claude-mem)
 
@@ -236,85 +237,97 @@ Read in order:
 
 > **Updated v2.0.0:** Validate design files + read page-plan.md if exists
 
-```typescript
-// Detect if change involves UI/frontend work
-const tasksContent = Read('openspec/changes/{change-id}/tasks.md')
-const hasFrontend = tasksContent.toLowerCase().match(/(ui|component|page|frontend|design|responsive)/i)
+1. Read `openspec/changes/{change-id}/tasks.md`
 
-let tokens = null
-let pagePlan = null
-let pageType = 'generic'
+2. **Check if change involves UI/frontend work:**
+   - Search tasks.md (case-insensitive) for keywords:
+     - ui, component, page, frontend, design, responsive
+   - Store result as `hasFrontend`
 
-if (hasFrontend) {
-  output(`\n🎨 UI work detected - validating design system...`)
+**If hasFrontend is TRUE:**
 
-  const tokensPath = 'design-system/data.yaml' // v2.0 tokens
-  const readmePath = 'design-system/README.md'
-  const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
-
-  const hasTokens = fileExists(tokensPath)
-  const hasReadme = fileExists(readmePath)
-  const hasPagePlan = fileExists(pagePlanPath)
-
-  // ========== LOAD data.yaml (v2.0 structure) ==========
-  if (hasTokens) {
-    tokens = parseYaml(Read(tokensPath))
-    output(`✅ data.yaml Loaded:`)
-    output(`   - Style: ${tokens.style.name}`)
-    output(`   - Theme: ${tokens.theme.name}`)
-    output(`   - Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}`)
-  }
-
-  // ========== LOAD page-plan.md (if exists) ==========
-  if (hasPagePlan) {
-    pagePlan = Read(pagePlanPath)
-    output(`✅ page-plan.md Found`)
-
-    // Extract page type from page-plan.md
-    const pageTypeMatch = pagePlan.match(/Page Type:\*\*\s*(.*)/i)
-    if (pageTypeMatch) {
-      pageType = pageTypeMatch[1].trim().toLowerCase()
-      output(`   - Page Type: ${pageType}`)
-    }
-  } else {
-    output(`ℹ️ page-plan.md not found (optional)`)
-    output(`   → Run /pageplan first for better component planning`)
-  }
-
-  if (!hasTokens || !hasReadme) {
-    warn(`
-⚠️ WARNING: UI work detected but design system incomplete!
-
-Found:
-  ${hasReadme ? '✅' : '❌'} README.md (human-readable)
-  ${hasTokens ? '✅' : '❌'} data.yaml
-  ${hasPagePlan ? '✅' : '❌'} page-plan.md
-
-This may result in:
-  - Inconsistent colors (random hex codes)
-  - Arbitrary spacing (p-5, gap-7)
-  - Duplicate components
-
-Recommendation:
-  1. Run: /designsetup
-  2. Run: /pageplan @prd.md (optional but recommended)
-  3. Then: /csetup ${changeId}
-
-Continue anyway? (yes/no)
-    `)
-
-    const answer = await askUser()
-    if (answer === 'no') {
-      return error('Setup cancelled. Run /designsetup first.')
-    }
-  } else {
-    output(`✅ Design System Ready`)
-    output(`   - README.md ✓ (human-readable)`)
-    output(`   - data.yaml ✓`)
-    if (hasPagePlan) output(`   - page-plan.md ✓`)
-  }
-}
+3. Output:
 ```
+🎨 UI work detected - validating design system...
+```
+
+4. Check if these files exist:
+   - `design-system/data.yaml`
+   - `design-system/README.md`
+   - `openspec/changes/{changeId}/page-plan.md`
+
+5. **If `data.yaml` exists:**
+   - Read and parse `design-system/data.yaml`
+   - Output:
+   ```
+   ✅ data.yaml Loaded:
+      - Style: {tokens.style.name}
+      - Theme: {tokens.theme.name}
+      - Animations: {Enabled/Disabled based on tokens.animations.enabled}
+   ```
+   - Store parsed tokens for later use
+
+6. **If `page-plan.md` exists:**
+   - Read `openspec/changes/{changeId}/page-plan.md`
+   - Output:
+   ```
+   ✅ page-plan.md Found
+   ```
+   - Search for line matching pattern: `Page Type:**` or `**Page Type:**`
+   - Extract page type value (trim whitespace, convert to lowercase)
+   - Output: `   - Page Type: {pageType}`
+   - Store page type for later use
+
+   **If `page-plan.md` does NOT exist:**
+   ```
+   ℹ️ page-plan.md not found (optional)
+      → Run /pageplan first for better component planning
+   ```
+
+7. **Check completeness:**
+
+   **If `data.yaml` OR `README.md` is missing:**
+   - Output warning:
+   ```
+   ⚠️ WARNING: UI work detected but design system incomplete!
+
+   Found:
+     {✅/❌} README.md (human-readable)
+     {✅/❌} data.yaml
+     {✅/❌} page-plan.md
+
+   This may result in:
+     - Inconsistent colors (random hex codes)
+     - Arbitrary spacing (p-5, gap-7)
+     - Duplicate components
+
+   Recommendation:
+     1. Run: /designsetup
+     2. Run: /pageplan @prd.md (optional but recommended)
+     3. Then: /csetup {changeId}
+
+   Continue anyway? (yes/no)
+   ```
+
+   → Wait for user input
+
+   **If user answered 'no':**
+   - Output: `Setup cancelled. Run /designsetup first.`
+   - STOP execution, exit command
+
+   **If user answered 'yes' or other:**
+   - Continue to next step
+
+   **If both `data.yaml` AND `README.md` exist:**
+   ```
+   ✅ Design System Ready
+      - README.md ✓ (human-readable)
+      - data.yaml ✓
+      - page-plan.md ✓   (only if exists)
+   ```
+
+**If hasFrontend is FALSE:**
+- Skip all steps above, continue to Step 2.6
 
 ---
 
@@ -626,237 +639,199 @@ Do NOT treat this as pseudocode. EXECUTE these instructions.
 > **NEW:** Verify chosen libraries support ALL spec requirements before proceeding
 > **WHY:** Prevents spec drift - discovering during implementation that library doesn't support requirements
 
-```typescript
-output(`\n🔍 Validating Library Capabilities...`)
-
-// Initialize variables at function scope
-let detectedLibraries = []
-let specRequirements = []
-let capabilityGaps = []
-let customImplementationRequired = []
-
-// 1. Extract spec requirements from design.md
-const designPath = `openspec/changes/${changeId}/design.md`
-if (!fileExists(designPath)) {
-  output(`   ⚠️ No design.md found - skipping library validation`)
-} else {
-  const designContent = Read(designPath)
-
-  // 2. Find library mentions in spec
-  const libraryPatterns = {
-    'better-auth': {
-      patterns: ['better-auth', 'betterauth'],
-      context7Id: null, // No Context7 mapping yet
-      knownLimitations: [
-        { feature: 'refresh token rotation', supported: false },
-        { feature: 'redis session storage', supported: false },
-        { feature: 'jwt plugin', supported: true },
-        { feature: 'bearer plugin', supported: true },
-        { feature: 'session-based auth', supported: true }
-      ]
-    },
-    'nextauth': {
-      patterns: ['next-auth', 'nextauth', 'authjs'],
-      context7Id: '/nextauthjs/next-auth',
-      knownLimitations: []
-    },
-    'lucia': {
-      patterns: ['lucia', 'lucia-auth'],
-      context7Id: '/lucia-auth/lucia',
-      knownLimitations: []
-    },
-    'prisma': {
-      patterns: ['prisma'],
-      context7Id: '/prisma/prisma',
-      knownLimitations: []
-    },
-    'drizzle': {
-      patterns: ['drizzle'],
-      context7Id: '/drizzle-team/drizzle-orm',
-      knownLimitations: []
-    }
-  }
-
-  // 3. Detect which libraries are mentioned
-  for (const [libName, config] of Object.entries(libraryPatterns)) {
-    if (config.patterns.some(p => designContent.toLowerCase().includes(p))) {
-      detectedLibraries.push({ name: libName, ...config })
-    }
-  }
-
-  if (detectedLibraries.length > 0) {
-    output(`\n📚 Libraries in Spec:`)
-    detectedLibraries.forEach(lib => output(`   - ${lib.name}`))
-
-    // 4. Extract requirements from design.md
-    // Look for patterns like: "JWT 15min", "refresh token", "rotation"
-    const requirementPatterns = [
-      { name: 'JWT access token', pattern: /jwt.*(?:access|token).*(\d+\s*min)/i },
-      { name: 'Refresh token', pattern: /refresh\s*token/i },
-      { name: 'Token rotation', pattern: /(?:token\s*)?rotation|rotate/i },
-      { name: 'Redis session', pattern: /redis.*session|session.*redis/i },
-      { name: 'Bearer token', pattern: /bearer\s*(?:token|auth)/i },
-      { name: 'OAuth providers', pattern: /oauth|google|github|social\s*login/i },
-      { name: 'Rate limiting', pattern: /rate\s*limit/i },
-      { name: 'Account lockout', pattern: /lockout|lock\s*account/i }
-    ]
-
-    for (const rp of requirementPatterns) {
-      if (rp.pattern.test(designContent)) {
-        specRequirements.push(rp.name)
-      }
-    }
-
-    if (specRequirements.length > 0) {
-      output(`\n📋 Spec Requirements Found:`)
-      specRequirements.forEach(r => output(`   - ${r}`))
-
-      // 5. Check each library's capability
-      for (const lib of detectedLibraries) {
-        output(`\n🔍 Checking ${lib.name} capabilities...`)
-
-        for (const req of specRequirements) {
-          // Check known limitations first
-          const known = lib.knownLimitations.find(l =>
-            req.toLowerCase().includes(l.feature.toLowerCase()) ||
-            l.feature.toLowerCase().includes(req.toLowerCase())
-          )
-
-          if (known && !known.supported) {
-            output(`   ❌ ${req} - NOT SUPPORTED`)
-            capabilityGaps.push({
-              library: lib.name,
-              requirement: req,
-              supported: false,
-              note: `${lib.name} does not have built-in support for ${req}`
-            })
-          } else if (known && known.supported) {
-            output(`   ✅ ${req} - Supported`)
-          } else {
-            // Unknown - query Context7 if available
-            if (lib.context7Id) {
-              output(`   🔍 ${req} - Checking Context7...`)
-              // Note: In actual implementation, this would call Context7
-              // For now, mark as unknown
-              output(`   ⚠️ ${req} - Verify manually`)
-            } else {
-              output(`   ⚠️ ${req} - Verify manually (no Context7 mapping)`)
-            }
-          }
-        }
-      }
-
-      // 6. Report gaps if any
-      if (capabilityGaps.length > 0) {
-        output(`\n⚠️ Library Capability Gaps Detected!`)
-        output(``)
-        output(`The following spec requirements are NOT supported by chosen libraries:`)
-        output(``)
-
-        // Group by library
-        const byLibrary = {}
-        capabilityGaps.forEach(g => {
-          if (!byLibrary[g.library]) byLibrary[g.library] = []
-          byLibrary[g.library].push(g.requirement)
-        })
-
-        for (const [library, reqs] of Object.entries(byLibrary)) {
-          output(`   ${library}:`)
-          reqs.forEach(r => output(`     - ${r}`))
-        }
-
-        output(``)
-        output(`This will cause spec drift during implementation!`)
-        output(``)
-        output(`Options:`)
-        output(`   A) Change library - Use a library that supports these features`)
-        output(`   B) Downgrade spec - Remove unsupported requirements (must document trade-off)`)
-        output(`   C) Custom implementation - Build missing features on top of library`)
-        output(`   D) Continue anyway - Proceed and let agent handle at implementation time`)
-        output(``)
-
-        const decision = await askUserQuestion({
-          questions: [{
-            question: 'How would you like to handle the capability gaps?',
-            header: 'Lib Gaps',
-            options: [
-              { label: 'A) Change library', description: 'Switch to a library that supports requirements' },
-              { label: 'B) Downgrade spec', description: 'Update design.md to use what library supports' },
-              { label: 'C) Custom implementation', description: 'Build on top of library (more work)' },
-              { label: 'D) Continue anyway', description: 'Let agent handle during implementation' }
-            ],
-            multiSelect: false
-          }]
-        })
-
-        if (decision.includes('A')) {
-          output(`\n📝 Suggested alternative libraries:`)
-          for (const [library, reqs] of Object.entries(byLibrary)) {
-            if (library === 'better-auth') {
-              output(`   Instead of ${library}, consider:`)
-              output(`   - lucia-auth (supports custom session storage)`)
-              output(`   - NextAuth.js (supports refresh token rotation with JWT strategy)`)
-              output(`   - Custom implementation with jose + Redis`)
-            }
-          }
-          output(``)
-          output(`Please update design.md with new library choice and re-run /csetup.`)
-          return
-        } else if (decision.includes('B')) {
-          output(`\n📝 Update design.md to remove unsupported requirements:`)
-          output(``)
-          output(`\`\`\`markdown`)
-          output(`### D{n}: Library Capability Alignment`)
-          output(``)
-          output(`**Changed requirements to match ${Object.keys(byLibrary).join(', ')} capabilities:**`)
-          output(``)
-          for (const gap of capabilityGaps) {
-            output(`- ~~${gap.requirement}~~ → Use ${gap.library}'s default approach instead`)
-          }
-          output(``)
-          output(`**Reason:** Library limitation`)
-          output(`**Trade-off:** ${capabilityGaps.map(g => g.requirement).join(', ')} not available`)
-          output(`**Date:** ${new Date().toISOString().split('T')[0]}`)
-          output(`\`\`\``)
-          output(``)
-          output(`Please update design.md and re-run /csetup.`)
-          return
-        } else if (decision.includes('C')) {
-          output(`\n📝 Custom implementation notes for agents:`)
-          output(``)
-          output(`Add to context.md:`)
-          output(`\`\`\`markdown`)
-          output(`## Custom Implementation Required`)
-          output(``)
-          output(`The following features need custom implementation:`)
-          for (const gap of capabilityGaps) {
-            output(`- ${gap.requirement} (not supported by ${gap.library})`)
-          }
-          output(``)
-          output(`Agents should implement these on top of the base library.`)
-          output(`\`\`\``)
-
-          // Store for context.md generation
-          customImplementationRequired = capabilityGaps
-        }
-        // If D, continue with gaps logged for agent awareness
-      } else {
-        output(`\n✅ All spec requirements supported by chosen libraries`)
-      }
-    }
-  } else {
-    output(`   ℹ️ No specific libraries detected in spec`)
-  }
-}
-
-// Store capability analysis (variables declared at function scope above)
-const capabilityAnalysis = {
-  libraries: detectedLibraries,
-  requirements: specRequirements,
-  gaps: capabilityGaps,
-  customRequired: customImplementationRequired
-}
+1. Output:
 ```
+🔍 Validating Library Capabilities...
+```
+
+2. Check if `openspec/changes/{changeId}/design.md` exists
+
+**If design.md does NOT exist:**
+```
+   ⚠️ No design.md found - skipping library validation
+```
+→ Skip to Step 3
+
+**If design.md exists:**
+
+3. Read `openspec/changes/{changeId}/design.md`
+
+4. **Detect libraries mentioned in design.md:**
+
+   Search for these library patterns (case-insensitive):
+
+   | Library | Search Patterns | Context7 ID | Known Limitations |
+   |---------|----------------|-------------|-------------------|
+   | better-auth | better-auth, betterauth | (none) | ❌ refresh token rotation, ❌ redis session, ✅ jwt plugin, ✅ bearer plugin, ✅ session-based auth |
+   | nextauth | next-auth, nextauth, authjs | /nextauthjs/next-auth | (none) |
+   | lucia | lucia, lucia-auth | /lucia-auth/lucia | (none) |
+   | prisma | prisma | /prisma/prisma | (none) |
+   | drizzle | drizzle | /drizzle-team/drizzle-orm | (none) |
+
+   **If libraries found:**
+   ```
+   📚 Libraries in Spec:
+      - {library1}
+      - {library2}
+      ...
+   ```
+
+5. **Extract requirements from design.md:**
+
+   Search for these requirement patterns:
+
+   | Requirement | Search Pattern |
+   |-------------|----------------|
+   | JWT access token | jwt + (access OR token) + (number + min) |
+   | Refresh token | refresh token |
+   | Token rotation | rotation OR rotate |
+   | Redis session | redis + session (any order) |
+   | Bearer token | bearer + (token OR auth) |
+   | OAuth providers | oauth OR google OR github OR social login |
+   | Rate limiting | rate limit |
+   | Account lockout | lockout OR lock account |
+
+   **If requirements found:**
+   ```
+   📋 Spec Requirements Found:
+      - {requirement1}
+      - {requirement2}
+      ...
+   ```
+
+6. **Check each library's capabilities:**
+
+   For each detected library:
+   ```
+   🔍 Checking {library} capabilities...
+   ```
+
+   For each requirement:
+   - Check known limitations database
+   - Match requirement with limitation feature (partial match OK)
+
+   **If known limitation says NOT supported:**
+   ```
+      ❌ {requirement} - NOT SUPPORTED
+   ```
+   → Add to capability gaps list
+
+   **If known limitation says supported:**
+   ```
+      ✅ {requirement} - Supported
+   ```
+
+   **If unknown (not in limitations database):**
+   - **If library has Context7 ID:**
+     ```
+        🔍 {requirement} - Checking Context7...
+        ⚠️ {requirement} - Verify manually
+     ```
+   - **If NO Context7 ID:**
+     ```
+        ⚠️ {requirement} - Verify manually (no Context7 mapping)
+     ```
+
+7. **Report capability gaps (if any):**
+
+   **If gaps found:**
+   ```
+   ⚠️ Library Capability Gaps Detected!
+
+   The following spec requirements are NOT supported by chosen libraries:
+
+      {library1}:
+        - {requirement1}
+        - {requirement2}
+      {library2}:
+        - {requirement3}
+
+   This will cause spec drift during implementation!
+
+   Options:
+      A) Change library - Use a library that supports these features
+      B) Downgrade spec - Remove unsupported requirements (must document trade-off)
+      C) Custom implementation - Build missing features on top of library
+      D) Continue anyway - Proceed and let agent handle at implementation time
+   ```
+
+   → Ask user: "How would you like to handle the capability gaps?"
+
+   **If user chose A (Change library):**
+   ```
+   📝 Suggested alternative libraries:
+   ```
+   - If better-auth has gaps:
+     ```
+        Instead of better-auth, consider:
+        - lucia-auth (supports custom session storage)
+        - NextAuth.js (supports refresh token rotation with JWT strategy)
+        - Custom implementation with jose + Redis
+
+     Please update design.md with new library choice and re-run /csetup.
+     ```
+   → STOP execution, exit command
+
+   **If user chose B (Downgrade spec):**
+   ```
+   📝 Update design.md to remove unsupported requirements:
+
+   ```markdown
+   ### D{n}: Library Capability Alignment
+
+   **Changed requirements to match {library} capabilities:**
+
+   - ~~{requirement1}~~ → Use {library}'s default approach instead
+   - ~~{requirement2}~~ → Use {library}'s default approach instead
+
+   **Reason:** Library limitation
+   **Trade-off:** {requirement1}, {requirement2} not available
+   **Date:** {today's date YYYY-MM-DD}
+   ```
+
+   Please update design.md and re-run /csetup.
+   ```
+   → STOP execution, exit command
+
+   **If user chose C (Custom implementation):**
+   ```
+   📝 Custom implementation notes for agents:
+
+   Add to context.md:
+   ```markdown
+   ## Custom Implementation Required
+
+   The following features need custom implementation:
+   - {requirement1} (not supported by {library1})
+   - {requirement2} (not supported by {library2})
+
+   Agents should implement these on top of the base library.
+   ```
+   ```
+   → Store gaps for context.md generation (Step 7)
+   → Continue to Step 3
+
+   **If user chose D (Continue anyway):**
+   → Store gaps for agent awareness
+   → Continue to Step 3
+
+   **If NO gaps found:**
+   ```
+   ✅ All spec requirements supported by chosen libraries
+   ```
+
+**If no libraries detected:**
+```
+   ℹ️ No specific libraries detected in spec
+```
+
+8. Store capability analysis for later use:
+   - Detected libraries
+   - Spec requirements
+   - Capability gaps
+   - Custom implementation needs
+
+---
 
 
 ---
@@ -866,161 +841,138 @@ const capabilityAnalysis = {
 > **NEW in v2.0:** No templates, no keyword matching. AI analyzes tasks and makes decisions.
 > **See:** `.claude/lib/task-analyzer.md` for complete analysis logic
 
-```typescript
-const tasksContent = Read(`openspec/changes/${changeId}/tasks.md`)
+1. Read `openspec/changes/${changeId}/tasks.md`
 
-output(`\n📊 Task Analyzer v2.0 (Template-Free)...`)
-
-// ========== 3.1 Parse ALL Tasks ==========
-// Extract EVERY task from tasks.md - nothing is filtered out
-const allTasks = parseAllTasks(tasksContent)
-output(`   Found: ${allTasks.length} tasks from tasks.md`)
-
-// ========== 3.2 AI-Driven Analysis ==========
-// Claude analyzes each task and decides:
-// - complexity (1-10)
-// - risk (LOW/MEDIUM/HIGH)
-// - agent (based on context, NOT keywords)
-// - dependencies (blocked_by, blocks)
-// - needsIncremental (boolean)
-
-const analyzedTasks = []
-
-output(`\n🔍 Analyzing each task...`)
-
-for (const task of allTasks) {
-  // AI reads the task description and context, then decides:
-
-  const analysis = {
-    // Complexity: How many operations? Multiple systems? Business logic?
-    complexity: /* AI determines 1-10 based on task scope */,
-
-    // Risk: What if this fails? Security/money/data involved?
-    risk: /* AI determines LOW/MEDIUM/HIGH */,
-
-    // Agent: Read the full context and decide which agent
-    // DO NOT use keyword matching - understand the task
-    agent: /* AI decides: uxui-frontend, backend, database, frontend, test-debug, integration */,
-    agentReason: /* Brief explanation why this agent */,
-
-    // Dependencies: What must complete first? What's waiting for this?
-    dependencies: {
-      blockedBy: /* AI identifies blocking tasks */,
-      blocks: /* AI identifies tasks this blocks */,
-      canParallelize: /* Tasks with no shared dependencies */
-    },
-
-    // Incremental: Does this need milestone-based execution?
-    // YES if: batch processing, external API, data transformation,
-    //         multiple methods, complex form, HIGH risk, complexity >= 7
-    needsIncremental: /* AI determines based on task nature */
-  }
-
-  analyzedTasks.push({ ...task, ...analysis })
-}
-
-// Report analysis
-output(`\n📊 Analysis Results:`)
-output(`   Complexity: avg ${avgComplexity}/10`)
-output(`   Risk: ${highRiskCount} HIGH, ${mediumRiskCount} MEDIUM, ${lowRiskCount} LOW`)
-output(`   Agents: ${agentBreakdown}`)
-
-// ========== 3.3 Auto-Add Best Practices ==========
-// No warnings - just add what's needed automatically
-
-const additions = []
-
-for (const task of analyzedTasks) {
-  // Rule 1: HIGH Risk → Add checkpoint
-  if (task.risk === 'HIGH') {
-    additions.push({
-      id: `${task.id}.verify`,
-      description: `Checkpoint: Verify ${task.description} before proceeding`,
-      type: 'verification',
-      autoAdded: true,
-      reason: 'HIGH risk task requires verification checkpoint',
-      phase: task.phase
-    })
-  }
-
-  // Rule 2: External API → Add error handling
-  if (task.hasExternalAPI) {
-    if (!hasRelatedTask(allTasks, 'error handling')) {
-      additions.push({
-        id: `${task.id}.errors`,
-        description: `Add error handling for external API`,
-        type: 'implementation',
-        autoAdded: true,
-        reason: 'External APIs require error handling',
-        phase: task.phase
-      })
-    }
-  }
-
-  // Rule 3: Security-Critical → Add security review
-  if (task.isSecurityCritical) {
-    additions.push({
-      id: `${task.id}.security`,
-      description: `Security review: ${task.description}`,
-      type: 'verification',
-      autoAdded: true,
-      reason: 'Security-critical tasks require review',
-      phase: task.phase
-    })
-  }
-
-  // Rule 4: Database Changes → Add migration safety
-  if (task.involvesDatabaseChange) {
-    additions.push({
-      id: `${task.id}.backup`,
-      description: `Backup affected tables before ${task.description}`,
-      type: 'safety',
-      autoAdded: true,
-      reason: 'Database changes require backup',
-      phase: task.phase
-    })
-  }
-}
-
-output(`   Auto-added: ${additions.length} best practice tasks`)
-
-// ========== 3.4 Generate Incremental Milestones ==========
-// For tasks that need milestone-based execution
-
-for (const task of analyzedTasks) {
-  if (task.needsIncremental) {
-    // AI generates appropriate milestones based on task type:
-    // - Repository/Service: method-by-method
-    // - External API: mock → single → errors → scale
-    // - Batch Processing: 1 → 5 → 20 → 100
-    // - Complex Form: architecture → e2e → all fields
-
-    task.milestones = generateMilestones(task)
-  }
-}
-
-const incrementalCount = analyzedTasks.filter(t => t.milestones).length
-const totalMilestones = analyzedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
-output(`   Incremental: ${incrementalCount} tasks with ${totalMilestones} milestones`)
-
-// ========== 3.5 Sort by Priority ==========
-// Respect original phase order, then sort within phases
-
-const sortedTasks = sortTasks([...analyzedTasks, ...additions])
-
-// Sorting rules:
-// 1. Preserve original phase order from tasks.md
-// 2. Within each phase:
-//    a. Dependencies first (no blockers)
-//    b. HIGH risk early (fail fast)
-//    c. Foundation before features
-//    d. Lower complexity first (quick wins)
-
-output(`\n✅ Task Analysis Complete`)
-output(`   Total: ${allTasks.length} original + ${additions.length} auto-added = ${sortedTasks.length} tasks`)
+2. Output:
+```
+📊 Task Analyzer v2.0 (Template-Free)...
 ```
 
-**Output:**
+3. **Parse ALL tasks from tasks.md:**
+   - Extract EVERY checkbox item
+   - Pattern: `- [ ] {id} {description}`
+   - Nothing is filtered out
+   - Output: `   Found: {count} tasks from tasks.md`
+
+4. Output:
+```
+🔍 Analyzing each task...
+```
+
+5. **AI-Driven Analysis - For EACH task, determine:**
+
+   **a) Complexity (1-10):**
+   - Consider: number of operations, systems involved, business logic
+   - 1-3: Simple CRUD
+   - 4-6: Multiple operations, some logic
+   - 7-8: Complex logic, multiple systems
+   - 9-10: High complexity, many dependencies
+
+   **b) Risk (LOW/MEDIUM/HIGH):**
+   - Consider: What happens if this fails?
+   - HIGH: Security, money, data loss
+   - MEDIUM: User experience, performance
+   - LOW: UI tweaks, minor features
+
+   **c) Agent Assignment:**
+   - **DO NOT use keyword matching**
+   - Read full task description and context
+   - Decide which agent: uxui-frontend, backend, database, frontend, test-debug, integration
+   - Write brief reason why this agent
+
+   **d) Dependencies:**
+   - Identify which tasks must complete first (blockedBy)
+   - Identify which tasks depend on this (blocks)
+   - Identify tasks that can run in parallel (no shared dependencies)
+
+   **e) Incremental Testing Needed:**
+   - YES if ANY of these:
+     - Batch processing
+     - External API integration
+     - Data transformation
+     - Multiple methods to implement
+     - Complex form
+     - Risk = HIGH
+     - Complexity >= 7
+
+   Store all analysis results with each task.
+
+6. **Calculate and output analysis summary:**
+   - Calculate average complexity
+   - Count tasks by risk level
+   - Count tasks by agent
+
+   Output:
+   ```
+   📊 Analysis Results:
+      Complexity: avg {average}/10
+      Risk: {HIGH count} HIGH, {MEDIUM count} MEDIUM, {LOW count} LOW
+      Agents: {agent1} ({count1}), {agent2} ({count2}), ...
+   ```
+
+7. **Auto-Add Best Practice Tasks:**
+
+   For each analyzed task, apply these rules:
+
+   **Rule 1: HIGH Risk → Add checkpoint**
+   - If risk = HIGH
+   - Add new task: `{task.id}.verify - Checkpoint: Verify {description} before proceeding`
+   - Mark as autoAdded, type: verification
+
+   **Rule 2: External API → Add error handling**
+   - If task involves external API
+   - Check if error handling task already exists
+   - If not, add: `{task.id}.errors - Add error handling for external API`
+   - Mark as autoAdded, type: implementation
+
+   **Rule 3: Security-Critical → Add security review**
+   - If task is security-critical (auth, payment, data access)
+   - Add: `{task.id}.security - Security review: {description}`
+   - Mark as autoAdded, type: verification
+
+   **Rule 4: Database Changes → Add migration safety**
+   - If task involves database schema changes
+   - Add: `{task.id}.backup - Backup affected tables before {description}`
+   - Mark as autoAdded, type: safety
+
+   Output: `   Auto-added: {count} best practice tasks`
+
+8. **Generate Incremental Milestones:**
+
+   For each task where needsIncremental = true:
+   - Determine task type (Repository/API/Batch/Form)
+   - Generate appropriate milestones:
+     - **Repository/Service:** method-by-method implementation
+     - **External API:** mock → single → errors → scale
+     - **Batch Processing:** 1 record → 5 → 20 → 100
+     - **Complex Form:** architecture → e2e → all fields
+
+   Count totals and output:
+   ```
+      Incremental: {count} tasks with {total milestones} milestones
+   ```
+
+9. **Sort Tasks by Priority:**
+
+   Combine analyzed tasks + auto-added tasks
+
+   Sort using these rules:
+   1. Preserve original phase order from tasks.md
+   2. Within each phase:
+      - Dependencies first (tasks with no blockers)
+      - HIGH risk early (fail fast principle)
+      - Foundation before features
+      - Lower complexity first (quick wins)
+
+10. Output:
+```
+✅ Task Analysis Complete
+   Total: {original count} original + {auto-added count} auto-added = {total count} tasks
+```
+
+---
+
+**Expected Output Example:**
 ```
 📊 Task Analyzer v2.0 (Template-Free)...
    Found: 47 tasks from tasks.md
@@ -1037,79 +989,82 @@ output(`   Total: ${allTasks.length} original + ${additions.length} auto-added =
 
 ✅ Task Analysis Complete
    Total: 47 original + 12 auto-added = 59 tasks
-
-🧪 UX Testing Injection...
-   Injected Phase 1.5 (ux-tester) after Phase 1
-   ✅ 1 UX approval gate(s) added
 ```
 
 ---
 
 ### Step 4: Create .claude Directory
 
-**Create output directory before generating files:**
-```typescript
-// Create .claude directory for change-specific files
-const claudeDir = `openspec/changes/${changeId}/.claude`
+**WHY:** `/cdev` expects files at `openspec/changes/{id}/.claude/` - creating the directory first ensures consistent file paths.
 
-if (!fileExists(claudeDir)) {
-  mkdir(claudeDir)
-  output(`📁 Created: ${claudeDir}`)
-}
-```
+1. Check if directory exists: `openspec/changes/{changeId}/.claude`
 
-WHY: `/cdev` expects files at `openspec/changes/{id}/.claude/` - creating the directory first ensures consistent file paths.
+**If directory does NOT exist:**
+- Create the directory
+- Output: `📁 Created: openspec/changes/{changeId}/.claude`
+
+**If directory exists:**
+- Skip (no output needed)
+
+---
 
 ### Step 4.5: Inject UX Testing Phases (v2.7.0)
 
 > **CRITICAL:** Auto-inject Phase X.5 (ux-tester) after EVERY uxui-frontend phase
 > **Purpose:** User approval gate before proceeding to backend development
 
-```typescript
-// Group tasks by phase first
-let phases = groupTasksByPhase(sortedTasks)
+1. **Group tasks by phase:**
+   - Use sorted tasks from Step 3
+   - Group by phase number
+   - Create phase objects with number, name, tasks list
 
-// Check if any phase has uxui-frontend agent
-const hasUIWork = phases.some(p => {
-  const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
-  return getMostCommonAgent(phaseTasks) === 'uxui-frontend'
-})
+2. **Check if ANY phase has uxui-frontend work:**
+   - For each phase, count tasks by agent
+   - Find most common agent for that phase
+   - Check if most common agent = 'uxui-frontend'
+   - Store result as `hasUIWork`
 
-if (hasUIWork) {
-  output(`\n🧪 UX Testing Injection...`)
+**If hasUIWork is TRUE:**
 
-  // Find all uxui-frontend phases
-  const uiFrontendPhases = phases.filter(p => {
-    const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
-    return getMostCommonAgent(phaseTasks) === 'uxui-frontend'
-  })
-
-  // Inject .5 phase after each uxui-frontend phase
-  uiFrontendPhases.forEach(uiPhase => {
-    const uxTestingPhase = {
-      number: `${uiPhase.number}.5`,
-      name: 'UX Testing (Approval Gate)',
-      agent: 'ux-tester',
-      isApprovalGate: true,
-      strategy: 'approval-required',
-      tasks: [
-        { id: `${uiPhase.number}.5.1`, description: 'Generate personas from product context', autoAdded: true },
-        { id: `${uiPhase.number}.5.2`, description: 'Test UI from each persona perspective', autoAdded: true },
-        { id: `${uiPhase.number}.5.3`, description: 'Generate UX test report with conversion prediction', autoAdded: true },
-        { id: `${uiPhase.number}.5.4`, description: '⏸️ PAUSE: Wait for user approval', autoAdded: true }
-      ]
-    }
-
-    // Insert after the UI phase
-    const insertIndex = phases.findIndex(p => p.number === uiPhase.number) + 1
-    phases.splice(insertIndex, 0, uxTestingPhase)
-
-    output(`   Injected Phase ${uiPhase.number}.5 (ux-tester) after Phase ${uiPhase.number}`)
-  })
-
-  output(`   ✅ ${uiFrontendPhases.length} UX approval gate(s) added`)
-}
+3. Output:
 ```
+🧪 UX Testing Injection...
+```
+
+4. **Find all uxui-frontend phases:**
+   - Filter phases where dominant agent = 'uxui-frontend'
+   - Store as `uiFrontendPhases`
+
+5. **For EACH uxui-frontend phase:**
+
+   a) Create new UX Testing phase object:
+   - Phase number: `{uiPhase.number}.5` (e.g., if UI phase is 1, UX phase is 1.5)
+   - Phase name: `UX Testing (Approval Gate)`
+   - Agent: `ux-tester`
+   - Mark as approval gate: `isApprovalGate: true`
+   - Strategy: `approval-required`
+
+   b) Add these tasks to UX Testing phase:
+   - `{phaseNum}.5.1 - Generate personas from product context` (autoAdded)
+   - `{phaseNum}.5.2 - Test UI from each persona perspective` (autoAdded)
+   - `{phaseNum}.5.3 - Generate UX test report with conversion prediction` (autoAdded)
+   - `{phaseNum}.5.4 - ⏸️ PAUSE: Wait for user approval` (autoAdded)
+
+   c) Insert UX Testing phase into phases array:
+   - Find position of UI phase
+   - Insert UX Testing phase RIGHT AFTER (position + 1)
+
+   d) Output: `   Injected Phase {uiPhase.number}.5 (ux-tester) after Phase {uiPhase.number}`
+
+6. Output:
+```
+   ✅ {count} UX approval gate(s) added
+```
+
+**If hasUIWork is FALSE:**
+- Skip all steps above
+
+---
 
 **Workflow with UX Testing:**
 ```
@@ -1132,486 +1087,454 @@ Phase 1.5: ux-tester (APPROVAL GATE)
 > **v2.0:** No templates loaded. Phases generated directly from analyzed tasks.
 > **v2.7.0:** UX Testing phases already injected in Step 4.5
 
-```typescript
-// Generate phases.md from phases (already includes UX Testing phases)
+**Prepare data:**
 
-const phasesContent = generatePhasesMarkdown(phases, sortedTasks, changeId, proposal)
+1. Extract proposal title from `openspec/changes/{changeId}/proposal.md`
+   - Get first heading line
+   - If not found, use changeId
 
-function generatePhasesMarkdown(phases, tasks, changeId, proposal) {
-  const title = extractTitle(proposal)
-  const timestamp = new Date().toISOString()
+2. Get current timestamp (ISO format)
 
-  // Calculate totals
-  const originalCount = tasks.filter(t => !t.autoAdded).length
-  const autoAddedCount = tasks.filter(t => t.autoAdded).length
-  const incrementalCount = tasks.filter(t => t.milestones).length
-  const totalMilestones = tasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+3. Calculate totals from sorted tasks:
+   - Original tasks count (where autoAdded is false)
+   - Auto-added tasks count (where autoAdded is true)
+   - Incremental tasks count (where milestones exist)
+   - Total milestones (sum of all milestone arrays)
 
-  // Generate overview table
-  const overviewRows = phases.map(phase => {
-    const phaseTasks = tasks.filter(t => t.phase?.number === phase.number)
-    const dominantAgent = getMostCommonAgent(phaseTasks)
-    const hasIncremental = phaseTasks.some(t => t.milestones)
-    const maxRisk = getMaxRisk(phaseTasks)
+**Generate overview table:**
 
-    return `| ${phase.number} | ${phase.name} | ${phaseTasks.length} | ${dominantAgent} | ${hasIncremental ? 'incremental' : 'standard'} | ${maxRisk} |`
-  }).join('\n')
+4. For each phase:
+   - Get tasks for this phase
+   - Find dominant agent (most common agent in phase tasks)
+   - Check if phase has incremental tasks
+   - Get max risk level in phase
+   - Create table row: `| {number} | {name} | {task count} | {agent} | {strategy} | {risk} |`
 
-  // Generate phase sections
-  const phaseSections = phases.map(phase => {
-    return generatePhaseSection(phase, tasks.filter(t => t.phase?.number === phase.number))
-  }).join('\n\n---\n\n')
+**Generate phase sections:**
 
-  // Generate auto-added summary
-  const autoAddedTasks = tasks.filter(t => t.autoAdded)
-  const autoAddedSummary = autoAddedTasks.length > 0 ? `
-## Auto-Added Tasks (Best Practices)
+5. For each phase, generate phase section:
 
-| Task | Reason | Phase |
-|------|--------|-------|
-${autoAddedTasks.map(t => `| ${t.description} | ${t.reason} | ${t.phase?.number || '-'} |`).join('\n')}
-` : ''
+   a) Header:
+   ```markdown
+   ## Phase {number}: {name}
 
-  return `# Phases: ${title}
+   **Agent:** {dominantAgent}
+   **Strategy:** {🔄 INCREMENTAL or Standard}
+   **Risk:** {maxRisk}
+   ```
 
-> **Generated by:** Task Analyzer v2.0 (Template-Free)
-> **Source:** tasks.md (Single Source of Truth)
-> **Strategy:** Incremental development (small → large)
-> **Generated:** ${timestamp}
+   b) **If phase has TDD tasks (v3.1.0):**
+   - Filter tasks where tdd.tdd_required = true
+   - Collect unique TDD reasons
+   - Add:
+   ```markdown
+   **TDD Required:** ✅ YES
+   **TDD Reason:** {reasons, max 2}
+   **TDD Workflow:** red-green-refactor
+
+   ⚠️ **TDD WORKFLOW REQUIRED:**
+   1. 🔴 RED: Write tests FIRST (they should fail)
+   2. ✅ GREEN: Write minimal implementation to pass tests
+   3. 🔧 REFACTOR: Improve code quality while keeping tests green
+   ```
+
+   c) **Standard tasks list:**
+   - Filter tasks without milestones
+   - For each task:
+     ```markdown
+     - [ ] {✨ if autoAdded}{task.id} {task.description}
+     ```
+
+   d) **Incremental tasks with milestones:**
+   - Filter tasks with milestones
+   - For each incremental task:
+     ```markdown
+     ### Task {id}: {description}
+     **Complexity:** {complexity}/10 | **Why Agent:** {agentReason}
+     ```
+
+     For each milestone:
+     ```markdown
+     #### Milestone {milestone.id}/{total milestones}: {milestone.name}
+     **Goal:** {milestone.goal}
+
+     {milestone tasks as checkboxes}
+
+     **Exit Criteria:**
+     {exit criteria as checkboxes}
+
+     **CHECKPOINT:** Report results before {next milestone or next phase}
+
+     ---
+     ```
+
+   e) **Phase exit criteria:**
+   ```markdown
+   ### Phase {number} Exit Criteria
+   - [ ] All tasks completed
+   - [ ] All tests pass
+   - [ ] No regression in existing functionality
+   ```
+
+**Generate auto-added summary:**
+
+6. **If auto-added tasks exist:**
+   ```markdown
+   ## Auto-Added Tasks (Best Practices)
+
+   | Task | Reason | Phase |
+   |------|--------|-------|
+   | {description} | {reason} | {phase number} |
+   ... (for each auto-added task)
+   ```
+
+**Assemble final content:**
+
+7. Combine all sections:
+   ```markdown
+   # Phases: {title}
+
+   > **Generated by:** Task Analyzer v2.0 (Template-Free)
+   > **Source:** tasks.md (Single Source of Truth)
+   > **Strategy:** Incremental development (small → large)
+   > **Generated:** {timestamp}
+
+   ---
+
+   ## Overview
+
+   | Phase | Name | Tasks | Agent | Strategy | Risk |
+   |-------|------|-------|-------|----------|------|
+   {overview rows}
+
+   **Total Tasks:** {original} original + {auto-added} auto-added = {total}
+   **Incremental Tasks:** {incremental count} tasks with {total milestones} milestones
+
+   ---
+
+   {all phase sections separated by ---}
+
+   {auto-added summary if exists}
+
+   ---
+
+   **End of phases.md**
+   ```
+
+8. Write to: `openspec/changes/{changeId}/.claude/phases.md`
 
 ---
-
-## Overview
-
-| Phase | Name | Tasks | Agent | Strategy | Risk |
-|-------|------|-------|-------|----------|------|
-${overviewRows}
-
-**Total Tasks:** ${originalCount} original + ${autoAddedCount} auto-added = ${tasks.length}
-**Incremental Tasks:** ${incrementalCount} tasks with ${totalMilestones} milestones
-
----
-
-${phaseSections}
-
-${autoAddedSummary}
-
----
-
-**End of phases.md**
-`
-}
-
-function generatePhaseSection(phase, phaseTasks) {
-  const dominantAgent = getMostCommonAgent(phaseTasks)
-  const hasIncremental = phaseTasks.some(t => t.milestones)
-  const maxRisk = getMaxRisk(phaseTasks)
-
-  // v3.1.0: Use TDD classification from task-analyzer.md (Step 2.6)
-  // Each task now has task.tdd = { tdd_required, workflow, reason, confidence }
-  const tddTasks = phaseTasks.filter(t => t.tdd?.tdd_required === true)
-  const needsTDD = tddTasks.length > 0
-  const tddReasons = [...new Set(tddTasks.map(t => t.tdd?.reason).filter(Boolean))]
-
-  let section = `## Phase ${phase.number}: ${phase.name}
-
-**Agent:** ${dominantAgent}
-**Strategy:** ${hasIncremental ? '🔄 INCREMENTAL' : 'Standard'}
-**Risk:** ${maxRisk}
-${needsTDD ? `**TDD Required:** ✅ YES
-**TDD Reason:** ${tddReasons.slice(0, 2).join('; ')}
-**TDD Workflow:** red-green-refactor
-
-⚠️ **TDD WORKFLOW REQUIRED:**
-1. 🔴 RED: Write tests FIRST (they should fail)
-2. ✅ GREEN: Write minimal implementation to pass tests
-3. 🔧 REFACTOR: Improve code quality while keeping tests green
-` : ''}
-`
-
-  // Group tasks: incremental tasks get milestone sections, others get simple list
-  const incrementalTasks = phaseTasks.filter(t => t.milestones)
-  const standardTasks = phaseTasks.filter(t => !t.milestones)
-
-  // Standard tasks section
-  if (standardTasks.length > 0) {
-    section += `### Tasks\n\n`
-    standardTasks.forEach(task => {
-      const prefix = task.autoAdded ? '✨ ' : ''
-      section += `- [ ] ${prefix}${task.id} ${task.description}\n`
-    })
-    section += '\n'
-  }
-
-  // Incremental tasks with milestones
-  incrementalTasks.forEach(task => {
-    section += `### Task ${task.id}: ${task.description}
-**Complexity:** ${task.complexity}/10 | **Why Agent:** ${task.agentReason}
-
-`
-    task.milestones.forEach((milestone, idx) => {
-      section += `#### Milestone ${milestone.id}/${task.milestones.length}: ${milestone.name}
-**Goal:** ${milestone.goal}
-
-${milestone.tasks.map(t => `- [ ] ${t}`).join('\n')}
-
-**Exit Criteria:**
-${milestone.exitCriteria.map(c => `- [ ] ${c}`).join('\n')}
-
-**CHECKPOINT:** Report results before ${idx < task.milestones.length - 1 ? `Milestone ${milestone.id + 1}` : 'next phase'}
-
----
-
-`
-    })
-  })
-
-  // Exit criteria for the phase
-  section += `### Phase ${phase.number} Exit Criteria
-- [ ] All tasks completed
-- [ ] All tests pass
-- [ ] No regression in existing functionality
-`
-
-  return section
-}
-```
-
-Write to: `openspec/changes/{change-id}/.claude/phases.md`
 
 ### Step 6: Generate flags.json (Template-Free)
 
 > **v2.0:** Flags generated from analyzed tasks, not templates.
 
-```typescript
-// Generate flags.json from sortedTasks (from Step 3)
+1. **Group tasks by phase** (use phases from Step 4.5 which includes UX Testing phases)
 
-const phases = groupTasksByPhase(sortedTasks)
+2. **Detect change type from tasks:**
+   - Check agents assigned to tasks
+   - Rules:
+     - If has uxui-frontend + backend + database → `full-stack`
+     - If has uxui-frontend but NO backend → `frontend-only`
+     - If has backend but NO uxui-frontend → `backend-only`
+     - If has test-debug and total tasks <= 5 → `bug-fix`
+     - Otherwise → `feature`
 
-const flags = {
-  version: '2.0.0',
-  change_id: changeId,
-  change_type: detectChangeType(sortedTasks), // AI determines from task analysis
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  current_phase: phases[0]?.number || 1,
-  meta: {
-    total_phases: phases.length,
-    pending_phases: phases.length,
-    completed_phases: 0,
-    total_tasks: sortedTasks.length,
-    original_tasks: sortedTasks.filter(t => !t.autoAdded).length,
-    auto_added_tasks: sortedTasks.filter(t => t.autoAdded).length,
-    incremental_tasks: sortedTasks.filter(t => t.milestones).length,
-    total_milestones: sortedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
+3. **Create flags.json structure:**
+
+```json
+{
+  "version": "2.0.0",
+  "change_id": "{changeId}",
+  "change_type": "{detected type}",
+  "created_at": "{current timestamp ISO}",
+  "updated_at": "{current timestamp ISO}",
+  "current_phase": "{first phase number or 1}",
+  "meta": {
+    "total_phases": {total phase count},
+    "pending_phases": {total phase count},
+    "completed_phases": 0,
+    "total_tasks": {total sorted tasks count},
+    "original_tasks": {count where autoAdded = false},
+    "auto_added_tasks": {count where autoAdded = true},
+    "incremental_tasks": {count where milestones exist},
+    "total_milestones": {sum of all milestone counts}
   },
-  phases: {}
-}
-
-// Initialize all phases from analyzed tasks
-phases.forEach((phase, index) => {
-  const phaseTasks = sortedTasks.filter(t => t.phase?.number === phase.number)
-  const dominantAgent = getMostCommonAgent(phaseTasks)
-  const hasIncremental = phaseTasks.some(t => t.milestones)
-
-  flags.phases[phase.number] = {
-    phase_number: index + 1,
-    name: phase.name,
-    status: 'pending',
-    agent: dominantAgent,
-    task_count: phaseTasks.length,
-    strategy: hasIncremental ? 'incremental' : 'standard',
-    milestones: hasIncremental ? phaseTasks.filter(t => t.milestones).reduce((sum, t) => sum + t.milestones.length, 0) : 0
+  "phases": {
+    "{phase.number}": {
+      "phase_number": {sequential index starting from 1},
+      "name": "{phase.name}",
+      "status": "pending",
+      "agent": "{dominant agent in phase}",
+      "task_count": {tasks in this phase},
+      "strategy": "{incremental or standard}",
+      "milestones": {milestone count or 0}
+    }
+    ... (for each phase)
   }
-})
+}
 ```
 
-Write to: `openspec/changes/{change-id}/.claude/flags.json`
+4. **For each phase, add to phases object:**
+   - Get tasks for this phase
+   - Find dominant agent (most common agent)
+   - Check if any task has milestones
+   - Count total milestones in phase
+   - Create phase entry with structure above
+
+5. Write JSON to: `openspec/changes/{changeId}/.claude/flags.json`
+   - Format with proper indentation (2 spaces)
+
+---
 
 ### Step 7: Generate context.md
 
 **Load template and populate:**
-```typescript
-// Load template
-let contextTemplate = Read('.claude/templates/context-template.md')
 
-// Load project tech stack
-const projectTech = Read('.claude/contexts/domain/project/tech-stack.md')
+1. **Read the context template:**
+   - Load: `.claude/templates/context-template.md`
 
-// Detect additional tech from proposal/tasks
-const additionalTech = detectAdditionalTech(proposalContent, tasksContent)
+2. **Load project tech stack:**
+   - Read: `.claude/contexts/domain/project/tech-stack.md`
+   - This contains the core technologies used in the project
 
-// 🆕 Load design info (if UI work) - v2.0.0
-let designInfo = ''
-if (hasFrontend && tokens) {
-  designInfo = `
-## 🎨 Design System (v2.0.0)
+3. **Detect additional technologies:**
+   - Use Step 2.7's library detection results from pre-work-context.md
+   - Extract libraries mentioned in proposal.md and tasks.md
 
-**Design Files:**
-- data.yaml: \`design-system/data.yaml\` (~800 tokens)
-- patterns/: \`design-system/patterns/*.md\` (selective loading)
-- README.md: \`design-system/README.md\` (human-readable, ~100 lines)
-${pagePlan ? `- page-plan.md: \`openspec/changes/${changeId}/page-plan.md\` ✅` : ''}
+4. **Load design information (if UI work detected):**
+   - Check if any task has `agent: uxui-frontend`
+   - If yes and `design-system/data.yaml` exists:
+     - Read design tokens from `design-system/data.yaml`
+     - Check for page-plan.md at `openspec/changes/{changeId}/page-plan.md`
+     - Determine page type from tasks (landing/marketing/auth/dashboard)
+     - Build design system section with:
+       - Design file paths (data.yaml, patterns/, README.md, page-plan.md)
+       - Style direction (style name, theme name, feel)
+       - Design tokens (primary color, component library, spacing scale, animations status)
+       - Theme & decorations (enabled for landing/marketing, disabled for others)
+       - Pattern files to load (selective based on page type)
+       - Agent loading instructions (STEP 0.5 checklist)
+       - Style guidelines table
 
-**Style Direction:**
-- Style: ${tokens.style.name}
-- Theme: ${tokens.theme.name}
-- Feel: ${tokens.style.feel}
+5. **Group tasks by phase:**
+   - Use the groupTasksByPhase helper (see Helper Functions section below)
+   - Count total phases
 
-**Design Tokens:**
-- Primary Color: ${tokens.colors.primary.DEFAULT}
-- Component Library: ${tokens.component_library.name}
-- Spacing Scale: ${tokens.spacing.scale.join(', ')}px
-- Animations: ${tokens.animations.enabled ? 'Enabled' : 'Disabled'}
+6. **Replace template placeholders:**
+   - `{CHANGE_ID}` → changeId parameter
+   - `{CHANGE_TITLE}` → Extract title from proposal.md (first heading)
+   - `{CHANGE_TYPE}` → Use detectChangeType helper (full-stack/frontend-only/backend-only/bug-fix/feature)
+   - `{CURRENT_PHASE_NUMBER}` → "1"
+   - `{TOTAL_PHASES}` → Total phase count
+   - `{CREATED_DATE}` → Current timestamp in ISO format
+   - `{CORE_TECH_LIST}` → Markdown list from tech-stack.md
+   - `{ADDITIONAL_TECH_LIST}` → Markdown list from detected libraries
+   - `{CURRENT_PHASE}` → First phase name or "Phase 1"
+   - `{STATUS}` → "pending"
+   - `{DESIGN_SYSTEM}` → Design info section (from step 4)
 
-**Theme & Decorations:**
-${pageType.includes('landing') || pageType.includes('marketing') ? `
-- Decorations: ✅ Enabled
-- USE: ${tokens.theme.decorative_elements.use.slice(0, 3).join(', ')}
-- AVOID: ${tokens.theme.decorative_elements.avoid.slice(0, 2).join(', ') || '(none)'}
-- Scroll Animations: ✅ Enabled
-` : `
-- Decorations: ❌ Disabled (${pageType} page)
-- Scroll Animations: ❌ Disabled
-`}
-
-**Pattern Files to Load:**
-${pageType.includes('landing') || pageType.includes('marketing') ?
-`- patterns/buttons.md ✅
-- patterns/cards.md ✅
-- patterns/scroll-animations.md ✅
-- patterns/decorations.md ✅` :
-pageType.includes('auth') ?
-`- patterns/buttons.md ✅
-- patterns/forms.md ✅` :
-`- patterns/buttons.md ✅
-- patterns/cards.md ✅
-- patterns/forms.md ✅`}
-
-**Agent Loading (STEP 0.5 for uxui-frontend):**
-1. Read: data.yaml (~800 tokens)
-2. Read: page-plan.md (if exists)
-3. Load patterns selectively based on page type
-4. Report: Design tokens + page type extracted
-
-**Style Guidelines:**
-
-| Instead of | Use | WHY |
-|------------|-----|-----|
-| text-gray-500 | text-foreground/70 | Theme-aware |
-| p-5 | p-4 or p-6 | Spacing scale |
-| ${pageType.includes('landing') ? '✅ Apply decorations from theme' : '❌ Skip decorations for this page type'} | | |
-`
-}
-
-// Replace placeholders (v2.0: use phases from Task Analyzer, not templates)
-const phases = groupTasksByPhase(sortedTasks)
-const totalPhases = phases.length
-
-contextTemplate = contextTemplate
-  .replace('{CHANGE_ID}', changeId)
-  .replace('{CHANGE_TITLE}', extractTitle(proposalContent))
-  .replace('{CHANGE_TYPE}', detectChangeType(sortedTasks))
-  .replace('{CURRENT_PHASE_NUMBER}', '1')
-  .replace('{TOTAL_PHASES}', totalPhases.toString())
-  .replace('{CREATED_DATE}', new Date().toISOString())
-  .replace('{CORE_TECH_LIST}', generateCoreTechList(projectTech))
-  .replace('{ADDITIONAL_TECH_LIST}', generateAdditionalTechList(additionalTech))
-  .replace('{CURRENT_PHASE}', phases[0]?.name || 'Phase 1')
-  .replace('{STATUS}', 'pending')
-  .replace('{DESIGN_SYSTEM}', designInfo) // 🆕 Add design section
-```
-
-Write to: `openspec/changes/{change-id}/.claude/context.md`
+7. **Write to file:**
+   - Write final content to: `openspec/changes/{changeId}/.claude/context.md`
 
 ### Step 8: Output Summary (v2.0.0 - Template-Free)
 
-```typescript
-// Calculate from analyzed tasks (not templates)
-const phases = groupTasksByPhase(sortedTasks)
-const totalPhases = phases.length
-const incrementalCount = sortedTasks.filter(t => t.milestones).length
-const totalMilestones = sortedTasks.reduce((sum, t) => sum + (t.milestones?.length || 0), 0)
-const autoAddedCount = sortedTasks.filter(t => t.autoAdded).length
+**Calculate statistics from analyzed tasks:**
 
-// Check if UI work was detected
-const hasUIWork = sortedTasks.some(t => t.agent === 'uxui-frontend')
+1. **Group tasks and count:**
+   - Use groupTasksByPhase helper to organize tasks
+   - Count total phases
+   - Count tasks with incremental milestones
+   - Sum all milestones across tasks
+   - Count auto-added tasks
 
-// Check for existing page-plan.md
-const pagePlanPath = `openspec/changes/${changeId}/page-plan.md`
-const hasPagePlan = fileExists(pagePlanPath)
+2. **Check for UI work:**
+   - Check if any task has `agent: uxui-frontend`
+   - If yes, check if `openspec/changes/{changeId}/page-plan.md` exists
 
-// Agent breakdown
-const agentCounts = {}
-sortedTasks.forEach(t => {
-  agentCounts[t.agent] = (agentCounts[t.agent] || 0) + 1
-})
-const agentSummary = Object.entries(agentCounts)
-  .map(([agent, count]) => `${agent} (${count})`)
-  .join(', ')
+3. **Calculate agent breakdown:**
+   - Count tasks per agent
+   - Format as: "agent1 (count1), agent2 (count2), ..."
 
-// Build output
-let output = `
-✅ Change setup complete!
+4. **Build output message with these sections:**
 
-📦 Change: ${changeId}
-📊 Architecture: Task Analyzer v2.0 (Template-Free)
-🛠️ Agents: ${agentSummary}
+   **Header:**
+   ```
+   ✅ Change setup complete!
 
-📁 Files created:
-✓ openspec/changes/${changeId}/.claude/phases.md
-✓ openspec/changes/${changeId}/.claude/flags.json
-✓ openspec/changes/${changeId}/.claude/context.md
+   📦 Change: {changeId}
+   📊 Architecture: Task Analyzer v2.0 (Template-Free)
+   🛠️ Agents: {agent summary}
+   ```
 
-📊 Task Analysis:
-   Total: ${sortedTasks.length} tasks (${sortedTasks.filter(t => !t.autoAdded).length} original + ${autoAddedCount} auto-added)
-   Incremental: ${incrementalCount} tasks with ${totalMilestones} milestones
-   Phases: ${totalPhases}
-   UX Approval Gates: ${phases.filter(p => p.agent === 'ux-tester').length}
+   **Files created:**
+   ```
+   📁 Files created:
+   ✓ openspec/changes/{changeId}/.claude/phases.md
+   ✓ openspec/changes/{changeId}/.claude/flags.json
+   ✓ openspec/changes/{changeId}/.claude/context.md
+   ```
 
-📋 Phase Overview:
-${phases.map((p, i) => {
-  const phaseTasks = sortedTasks.filter(t => t.phase?.number === p.number)
-  const agent = getMostCommonAgent(phaseTasks)
-  return `   Phase ${p.number}: ${p.name} (${agent}, ${phaseTasks.length} tasks)`
-}).join('\n')}
-`
+   **Task analysis:**
+   ```
+   📊 Task Analysis:
+      Total: X tasks (Y original + Z auto-added)
+      Incremental: X tasks with Y milestones
+      Phases: X
+      UX Approval Gates: X
+   ```
 
-// 🆕 v2.6.0: Recommend /pageplan if UI work detected
-if (hasUIWork) {
-  if (hasPagePlan) {
-    output += `
-✅ page-plan.md found: ${pagePlanPath}
-   → uxui-frontend will use this for component planning
-`
-  } else {
-    output += `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎨 UI Work Detected!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   **Phase overview:**
+   ```
+   📋 Phase Overview:
+      Phase 1: {name} ({agent}, {count} tasks)
+      Phase 2: {name} ({agent}, {count} tasks)
+      ...
+   ```
 
-Phases with UI work:
-${uiPhases.map(p => \`   • Phase \${p.number}: \${p.name} (\${p.agent})\`).join('\\n')}
+5. **Add UI work recommendation (if applicable):**
+   - If UI work detected AND page-plan.md exists:
+     - Show: "✅ page-plan.md found: {path}"
+     - Note: "uxui-frontend will use this for component planning"
 
-💡 RECOMMENDED: Run /pageplan before /cdev
+   - If UI work detected AND page-plan.md missing:
+     - Show banner: "🎨 UI Work Detected!"
+     - List phases with UI work
+     - Explain benefits: Content variants, component index, asset checklist, approval process
+     - Show recommended steps (4 steps with /pageplan workflow)
 
-   Why?
-   ├── Content variants (3 options per element - user picks A/B/C)
-   ├── Component index (auto-generated, prevents duplicates)
-   ├── Asset checklist (images, icons with specs)
-   └── Approval process (user reviews before implementation)
+6. **Add next steps:**
+   - If UI work without page-plan:
+     ```
+     🚀 Ready to start development!
 
-📝 Recommended Steps:
-   1. /pageplan @prd.md           ← Generate page plan
-   2. Edit page-plan.md           ← Pick A/B/C content, prepare assets
-   3. Mark APPROVED in Section 6  ← Sign-off before implementation
-   4. /cdev ${changeId}           ← Implement with real content
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`
-  }
-}
+     Next steps:
+     1. (Recommended) Run: /pageplan @prd.md
+     2. Edit page-plan.md (content, assets, approval)
+     3. Review workflow: openspec/changes/{changeId}/.claude/phases.md
+     4. Start development: /cdev {changeId}
+     5. View progress: /cview {changeId}
+     ```
 
-output += `
-🚀 Ready to start development!
+   - Otherwise:
+     ```
+     🚀 Ready to start development!
 
-Next steps:`
+     Next steps:
+     1. Review workflow: openspec/changes/{changeId}/.claude/phases.md
+     2. Start development: /cdev {changeId}
+     3. View progress: /cview {changeId}
+     ```
 
-if (hasUIWork && !hasPagePlan) {
-  output += `
-1. (Recommended) Run: /pageplan @prd.md
-2. Edit page-plan.md (content, assets, approval)
-3. Review workflow: openspec/changes/${changeId}/.claude/phases.md
-4. Start development: /cdev ${changeId}
-5. View progress: /cview ${changeId}`
-} else {
-  output += `
-1. Review workflow: openspec/changes/${changeId}/.claude/phases.md
-2. Start development: /cdev ${changeId}
-3. View progress: /cview ${changeId}`
-}
-
-console.log(output)
-```
+7. **Display the complete output message**
 
 ---
 
 ## Helper Functions
 
 ### extractTaskIds()
-```typescript
-// Extract task IDs like "1.1", "1.2", "2.1" from tasks.md
-function extractTaskIds(content: string): string[] {
-  const regex = /-\s*\[\s*\]\s*(\d+\.\d+)/g
-  const matches = [...content.matchAll(regex)]
-  return matches.map(m => m[1])
-}
-```
+
+To extract task IDs from tasks.md content:
+
+1. Search for patterns matching: `- [ ] X.X` (checkbox followed by number.number)
+   - Pattern: `-\s*\[\s*\]\s*(\d+\.\d+)`
+   - Matches: `- [ ] 1.1`, `- [ ] 2.3`, etc.
+
+2. Extract the number portion (e.g., "1.1", "1.2", "2.1")
+
+3. Return all found task IDs as a list
+
+**Example:**
+- Input: `- [ ] 1.1 Setup database\n- [ ] 1.2 Create schema`
+- Output: `["1.1", "1.2"]`
+
+---
 
 ### getMostCommonAgent() (v2.0 - Template-Free)
-```typescript
-// v2.0: Agent determined by AI analysis of tasks, not phase templates
-function getMostCommonAgent(tasks: AnalyzedTask[]): string {
-  if (tasks.length === 0) return 'integration'
 
-  const counts = {}
-  tasks.forEach(t => {
-    counts[t.agent] = (counts[t.agent] || 0) + 1
-  })
+> **v2.0:** Agent determined by AI analysis of tasks, not phase templates
 
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])[0][0]
-}
-```
+To find the most common agent in a list of tasks:
+
+1. **Handle empty list:**
+   - If tasks list is empty, return `'integration'` as default
+
+2. **Count agents:**
+   - Create a count map for each agent
+   - Loop through tasks and increment count for each task's agent
+
+3. **Find the most common:**
+   - Sort agents by count (descending)
+   - Return the agent with highest count
+
+**Example:**
+- Input: `[{agent: 'backend'}, {agent: 'backend'}, {agent: 'test-debug'}]`
+- Output: `'backend'` (appears 2 times)
+
+---
 
 ### groupTasksByPhase()
-```typescript
-function groupTasksByPhase(tasks: AnalyzedTask[]): Phase[] {
-  const phaseMap = new Map()
 
-  tasks.forEach(task => {
-    const phaseNum = task.phase?.number || 1
-    const phaseName = task.phase?.name || `Phase ${phaseNum}`
+To group tasks into phases:
 
-    if (!phaseMap.has(phaseNum)) {
-      phaseMap.set(phaseNum, {
-        number: phaseNum,
-        name: phaseName,
-        tasks: []
-      })
-    }
-    phaseMap.get(phaseNum).tasks.push(task)
-  })
+1. **Create a phase map** (keyed by phase number)
 
-  return Array.from(phaseMap.values()).sort((a, b) => a.number - b.number)
-}
-```
+2. **For each task:**
+   - Get phase number from `task.phase.number` (default to 1 if not set)
+   - Get phase name from `task.phase.name` (default to `"Phase {number}"` if not set)
+
+3. **Add to map:**
+   - If phase number not in map yet:
+     - Create new phase entry with: number, name, empty tasks array
+   - Add task to that phase's tasks array
+
+4. **Convert map to sorted array:**
+   - Convert map values to array
+   - Sort by phase number (ascending)
+   - Return sorted phases
+
+**Example:**
+- Input: `[{phase: {number: 2, name: "Backend"}}, {phase: {number: 1, name: "UI"}}]`
+- Output: `[{number: 1, name: "UI", tasks: [...]}, {number: 2, name: "Backend", tasks: [...]}]`
+
+---
 
 ### getMaxRisk()
-```typescript
-function getMaxRisk(tasks: AnalyzedTask[]): string {
-  if (tasks.some(t => t.risk === 'HIGH')) return 'HIGH'
-  if (tasks.some(t => t.risk === 'MEDIUM')) return 'MEDIUM'
-  return 'LOW'
-}
-```
+
+To find the highest risk level across tasks:
+
+1. Check if any task has `risk: 'HIGH'` → return `'HIGH'`
+2. Otherwise, check if any task has `risk: 'MEDIUM'` → return `'MEDIUM'`
+3. Otherwise, return `'LOW'`
+
+**Example:**
+- Input: `[{risk: 'LOW'}, {risk: 'MEDIUM'}, {risk: 'LOW'}]`
+- Output: `'MEDIUM'`
+
+---
 
 ### detectChangeType() (v2.0 - AI-Driven)
-```typescript
-function detectChangeType(tasks: AnalyzedTask[]): string {
-  // Detect from analyzed tasks, not keywords
-  const hasUI = tasks.some(t => t.agent === 'uxui-frontend')
-  const hasBackend = tasks.some(t => t.agent === 'backend')
-  const hasDatabase = tasks.some(t => t.agent === 'database')
-  const hasTests = tasks.some(t => t.agent === 'test-debug')
 
-  if (hasUI && hasBackend && hasDatabase) return 'full-stack'
-  if (hasUI && !hasBackend) return 'frontend-only'
-  if (hasBackend && !hasUI) return 'backend-only'
-  if (hasTests && tasks.length <= 5) return 'bug-fix'
+> **v2.0:** Detect from analyzed tasks, not keywords
 
-  return 'feature'
-}
-```
+To detect change type from task agents:
+
+1. **Check which agents are present:**
+   - `hasUI`: Any task with `agent: 'uxui-frontend'`
+   - `hasBackend`: Any task with `agent: 'backend'`
+   - `hasDatabase`: Any task with `agent: 'database'`
+   - `hasTests`: Any task with `agent: 'test-debug'`
+
+2. **Determine type based on combination:**
+   - If `hasUI` AND `hasBackend` AND `hasDatabase` → `'full-stack'`
+   - If `hasUI` AND NOT `hasBackend` → `'frontend-only'`
+   - If `hasBackend` AND NOT `hasUI` → `'backend-only'`
+   - If `hasTests` AND total tasks <= 5 → `'bug-fix'`
+   - Otherwise → `'feature'`
+
+**Example:**
+- Input: `[{agent: 'uxui-frontend'}, {agent: 'backend'}, {agent: 'database'}]`
+- Output: `'full-stack'`
 
 ### detectAdditionalTech() - REMOVED (v3.1.0)
 

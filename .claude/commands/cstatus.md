@@ -25,55 +25,84 @@ Shows quick progress summary:
 
 ## Step 1: Show Project Context (v2.1.0)
 
-```typescript
-const projectStatusPath = 'PROJECT_STATUS.yml'
+### 1.1: Read Project Status
 
-if (fileExists(projectStatusPath)) {
-  const projectStatus = parseYaml(Read(projectStatusPath))
+1. Check if `PROJECT_STATUS.yml` exists in project root
+2. If file exists, read and parse YAML content
 
-  output(`
+**Output format:**
+```
 📊 Project Status
-├─ Focus: ${projectStatus.current_focus?.description || 'Not set'}
-├─ Active change: ${projectStatus.current_focus?.active_change || 'None'}
-├─ Blockers: ${projectStatus.blockers?.length || 0}
-├─ Infra: ${summarizeInfraStatus(projectStatus.infrastructure)}
-└─ Updated: ${projectStatus.last_updated}
-`)
+├─ Focus: [current_focus.description or "Not set"]
+├─ Active change: [current_focus.active_change or "None"]
+├─ Blockers: [count of blockers or 0]
+├─ Infra: [infrastructure summary - see Step 1.2]
+└─ Updated: [last_updated date]
+```
 
-  // Show blockers if any
-  if (projectStatus.blockers?.length > 0) {
-    output(`
+### 1.2: Summarize Infrastructure Status
+
+**For each service in `infrastructure` section:**
+
+1. Check `status` field value
+2. Map to icon:
+   - `healthy` → ✅
+   - `degraded` → ⚠️
+   - `down` → ❌
+   - `waiting` → ⏳
+   - Other → ❓
+3. Format as: `{service-name} {icon}`
+4. Join all services with ` | `
+
+**Example output:** `DB ✅ | API ✅ | Tunnel ⏳`
+
+**If no infrastructure configured:** Display `Not configured`
+
+### 1.3: Show Active Blockers
+
+**If `blockers` array exists and has items:**
+
+```
 🚧 Active Blockers:
-${projectStatus.blockers.map(b => `   - ${b.id}: ${b.description}`).join('\n')}
-`)
-  }
-}
+   - [blocker-1-id]: [description]
+   - [blocker-2-id]: [description]
+```
 
-// If no change-id provided, stop here
-if (!changeId) {
-  output(`
+**If no blockers:** Skip this section
+
+### 1.4: Handle No Change ID
+
+**If no change-id provided in command:**
+
+Display:
+```
 Commands:
 → Update project status: /pstatus
 → View change status: /cstatus {change-id}
-`)
-  return
-}
 ```
+
+Then STOP (do not proceed to Step 2)
 
 ---
 
 ## Step 2: Show Change Status
 
-```typescript
-// Read change flags
-const flagsPath = `openspec/changes/${changeId}/.claude/flags.json`
+### 2.1: Validate Change Exists
 
-if (!fileExists(flagsPath)) {
-  return output(`❌ Change ${changeId} not found or not set up. Run /csetup ${changeId} first.`)
-}
+1. Build path: `openspec/changes/{changeId}/.claude/flags.json`
+2. Check if file exists
 
-const flags = JSON.parse(Read(flagsPath))
+**If file does NOT exist:**
 ```
+❌ Change {changeId} not found or not set up. Run /csetup {changeId} first.
+```
+Then STOP.
+
+### 2.2: Read Change Flags
+
+1. Read `flags.json` file
+2. Parse JSON content
+3. Extract progress data for output (see Output Format below)
 
 ## Output Format
 
@@ -122,26 +151,6 @@ Commands:
 → Update project status: /pstatus
 → Detailed view: /cview {change-id}
 → Continue dev: /cdev {change-id}
-```
-
----
-
-## Helper: summarizeInfraStatus()
-
-```typescript
-function summarizeInfraStatus(infrastructure) {
-  if (!infrastructure) return 'Not configured'
-
-  return Object.entries(infrastructure)
-    .map(([service, info]) => {
-      const icon = info.status === 'healthy' ? '✅' :
-                   info.status === 'degraded' ? '⚠️' :
-                   info.status === 'down' ? '❌' :
-                   info.status === 'waiting' ? '⏳' : '❓'
-      return `${service} ${icon}`
-    })
-    .join(' | ')
-}
 ```
 
 ---

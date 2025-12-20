@@ -50,117 +50,117 @@
 
 ### STEP 1: Detect Change Context
 
-```typescript
-// Detect current change ID
-const changesDir = 'openspec/changes/'
-const changeId = detectCurrentChange() // or from command arg
+1. Determine the change ID:
+   - Check if user provided a change ID as command argument
+   - If not provided, search for the active change in `openspec/changes/`
+   - Look for the most recently modified change directory
 
-if (!changeId) {
-  error("No active change found. Run after OpenSpec generates proposal.md")
-  return
-}
-
-const outputPath = `openspec/changes/${changeId}/page-plan.md`
+**If no change ID found:**
 ```
+❌ No active change found. Run after OpenSpec generates proposal.md
+```
+→ STOP
+
+2. Set the output path:
+   - Output file: `openspec/changes/{changeId}/page-plan.md`
+
+→ Continue to STEP 2
 
 ### STEP 2: Read Context Files
 
-```typescript
-// Only read files user specified with @
-const userFiles = extractMentionedFiles(userMessage) // @prd.md, @brief.md
+1. Extract user-mentioned files:
+   - Scan the user message for files mentioned with `@` prefix
+   - Example: `@prd.md`, `@brief.md`, `@project_brief.md`
+   - Store these as user files list
 
-// Always read (if exists)
-const proposalPath = `openspec/changes/${changeId}/proposal.md`
-const tokensPath = `design-system/data.yaml` // Design tokens + psychology
-// data.yaml contains all design information - single source of truth
+2. Define required file paths:
+   - Proposal: `openspec/changes/{changeId}/proposal.md`
+   - Tasks: `openspec/changes/{changeId}/tasks.md`
+   - Phases: `openspec/changes/{changeId}/.claude/phases.md`
+   - Design tokens: `design-system/data.yaml`
 
-const contextFiles = [
-  ...userFiles,
-  proposalPath
-].filter(fileExists)
+3. Build context files list:
+   - Start with user-mentioned files
+   - Add proposal.md path
+   - Filter to only files that exist on disk
 
-// Read all context
-let context = contextFiles.map(readFile).join('\n\n---\n\n')
+4. Read all context files:
+   - Read each file in the context files list
+   - Join content with separator: `\n\n---\n\n`
+   - Store as base context
 
-// 🆕 Extract individual content for buyer avatar analysis (STEP 3.5)
-let proposalContent = ''
-let briefContent = ''
-let tasksContent = ''
+5. Read proposal.md separately (if exists):
+   - Used for individual analysis later
+   - Store as `proposalContent`
 
-// Read proposal separately if exists
-if (fileExists(proposalPath)) {
-  proposalContent = Read(proposalPath)
-}
+6. Read tasks.md (if exists):
+   - Used for page type detection (marketing vs dashboard)
+   - Store as `tasksContent`
 
-// Read tasks.md if exists (for marketing page detection)
-const tasksPath = `openspec/changes/${changeId}/tasks.md`
-if (fileExists(tasksPath)) {
-  tasksContent = Read(tasksPath)
-}
+7. Read phases.md (if exists):
+   - Check path: `openspec/changes/{changeId}/.claude/phases.md`
+   - Store as `phasesContent`
 
-// 🆕 v2.6.0: Read phases.md if exists (for phase info, UI detection)
-const phasesPath = `openspec/changes/${changeId}/.claude/phases.md`
-let phasesContent = ''
-if (fileExists(phasesPath)) {
-  phasesContent = Read(phasesPath)
-  output(`✅ phases.md Found - reading phase information`)
-
-  // Extract UI phases from phases.md
-  const uiPhaseMatch = phasesContent.match(/uxui-frontend|frontend-mockup|Frontend Mockup/gi)
-  if (uiPhaseMatch) {
-    output(`   - UI phases detected: ${uiPhaseMatch.length}`)
-  }
-} else {
-  output(`ℹ️ phases.md not found - run /csetup first if you want phase-aware planning`)
-}
-
-// Extract brief from user files
-const briefFile = userFiles.find(f => f.toLowerCase().includes('brief'))
-if (briefFile && fileExists(briefFile)) {
-  briefContent = Read(briefFile)
-}
-
-// 🆕 Load design tokens (lightweight)
-if (fileExists(tokensPath)) {
-  const tokens = JSON.parse(Read(tokensPath))
-  context += `\n\n---\n\n# Design Tokens (data.yaml)\n\n`
-  context += `Primary Color: ${tokens.tokens.colors.primary.DEFAULT}\n`
-  context += `Spacing Scale: ${tokens.tokens.spacing.scale.join(', ')}px\n`
-  context += `Component Library: ${tokens.component_library.name}\n`
-  context += `Shadows: ${Object.keys(tokens.tokens.shadows).join(', ')}\n`
-}
-
-// Validate data.yaml exists
-if (!fileExists(tokensPath)) {
-  warn(`⚠️ No data.yaml found - run /designsetup first`)
-}
-
-// Total context: ~1.5K tokens (data.yaml is lightweight)
+**If phases.md found:**
 ```
+✅ phases.md Found - reading phase information
+```
+- Search for UI phase keywords: `uxui-frontend`, `frontend-mockup`, `Frontend Mockup`
+- Count matches and report: `- UI phases detected: {count}`
+
+**If phases.md NOT found:**
+```
+ℹ️ phases.md not found - run /csetup first if you want phase-aware planning
+```
+
+8. Extract brief content:
+   - Search user files for filename containing "brief"
+   - If found and exists, read it
+   - Store as `briefContent`
+
+9. Load design tokens from data.yaml (if exists):
+   - Read `design-system/data.yaml`
+   - Parse as YAML
+   - Extract key design information:
+     - Primary color: `tokens.colors.primary.DEFAULT`
+     - Spacing scale: `tokens.spacing.scale` (array)
+     - Component library: `component_library.name`
+     - Shadows: Object keys from `tokens.shadows`
+   - Append to context with header: `# Design Tokens (data.yaml)`
+   - Include extracted values in readable format
+
+**If data.yaml NOT found:**
+```
+⚠️ No data.yaml found - run /designsetup first
+```
+
+**Context size estimate:** ~1.5K tokens (data.yaml is lightweight)
+
+→ Continue to STEP 3
 
 ### STEP 3: Search Existing Components
 
-```typescript
-// Search for common shared components
-const searchPatterns = [
-  '**/{Navbar,Navigation}*.{tsx,jsx,vue}',
-  '**/{Footer}*.{tsx,jsx,vue}',
-  '**/{Sidebar,Drawer}*.{tsx,jsx,vue}',
-  '**/{Header}*.{tsx,jsx,vue}',
-]
+1. Define search patterns for common shared components:
+   - Navbar/Navigation: `**/{Navbar,Navigation}*.{tsx,jsx,vue}`
+   - Footer: `**/{Footer}*.{tsx,jsx,vue}`
+   - Sidebar/Drawer: `**/{Sidebar,Drawer}*.{tsx,jsx,vue}`
+   - Header: `**/{Header}*.{tsx,jsx,vue}`
 
-const foundComponents = []
-for (const pattern of searchPatterns) {
-  const matches = glob(pattern)
-  if (matches.length > 0) {
-    foundComponents.push({
-      name: extractComponentName(matches[0]),
-      path: matches[0],
-      exports: grepExports(matches[0])
-    })
-  }
-}
-```
+2. For each search pattern:
+   - Run glob search to find matching files
+   - If matches found (length > 0):
+     - Extract component name from the first match file path
+     - Store component information:
+       - `name`: Component name (e.g., "Navbar")
+       - `path`: Full file path
+       - `exports`: Use grep to find exported functions/components
+   - Add to found components list
+
+3. Build the found components list:
+   - Each entry contains: name, path, exports
+   - This list will be used to generate the "Reuse Components" section
+
+→ Continue to STEP 4
 
 ### STEP 4: Analyze & Generate Plan
 
@@ -343,15 +343,13 @@ Based on context + found components, generate:
 - Code: `disabled:opacity-70` + spinner component
 
 **Full Example:**
-```tsx
-<button className="px-6 py-3 bg-primary text-primary-foreground rounded-md
-  transition-all duration-150
-  hover:scale-105 hover:shadow-lg
-  active:scale-95
-  disabled:opacity-70">
-  Get Started
-</button>
-```
+Primary CTA button should include these Tailwind classes:
+- Base styles: `px-6 py-3 bg-primary text-primary-foreground rounded-md`
+- Transition: `transition-all duration-150`
+- Hover effects: `hover:scale-105 hover:shadow-lg`
+- Active state: `active:scale-95`
+- Disabled state: `disabled:opacity-70`
+- Button text: "Get Started" (or context-appropriate CTA)
 
 #### Secondary Button
 **Hover State:**
@@ -376,13 +374,11 @@ Based on context + found components, generate:
 - Code: `hover:border-primary/50`
 
 **Full Example:**
-```tsx
-<div className="p-6 bg-card border border-border rounded-lg
-  transition-shadow duration-300
-  hover:shadow-xl hover:border-primary/50">
-  {/* Card content */}
-</div>
-```
+Feature/product card container should include:
+- Base styles: `p-6 bg-card border border-border rounded-lg`
+- Transition: `transition-shadow duration-300`
+- Hover effects: `hover:shadow-xl hover:border-primary/50`
+- Content: Card content elements go inside container
 
 #### Interactive Card (Clickable)
 **Hover State:**
@@ -411,12 +407,11 @@ Based on context + found components, generate:
 - Code: `border-destructive` (static) or `animate-shake` (if shake defined)
 
 **Full Example:**
-```tsx
-<input className="w-full px-3 py-2 border border-input rounded-md
-  transition-all duration-200
-  focus:ring-2 focus:ring-primary focus:border-primary
-  placeholder:text-muted-foreground" />
-```
+Text input field should include:
+- Base styles: `w-full px-3 py-2 border border-input rounded-md`
+- Transition: `transition-all duration-200`
+- Focus effects: `focus:ring-2 focus:ring-primary focus:border-primary`
+- Placeholder styling: `placeholder:text-muted-foreground`
 
 ---
 
@@ -436,15 +431,13 @@ Based on context + found components, generate:
 - Library: Framer Motion or Tailwind transition
 
 **Example (Framer Motion):**
-```tsx
-<motion.div
-  initial={{ x: "-100%" }}
-  animate={{ x: 0 }}
-  exit={{ x: "-100%" }}
-  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}>
-  {/* Sidebar content */}
-</motion.div>
-```
+Mobile sidebar with slide-in animation:
+- Component: motion.div wrapper
+- Initial state: `x: "-100%"` (off-screen left)
+- Animate state: `x: 0` (slide to visible position)
+- Exit state: `x: "-100%"` (slide back off-screen)
+- Transition settings: `duration: 0.3`, `ease: [0.4, 0, 0.2, 1]`
+- Content: Sidebar navigation elements inside wrapper
 
 ---
 
@@ -494,13 +487,13 @@ Based on context + found components, generate:
 - `font-size` (causes text reflow)
 
 **Example:**
-```tsx
-// ❌ WRONG (causes reflow)
-className="hover:w-full hover:h-auto"
+Wrong approach (causes reflow):
+- Using `className="hover:w-full hover:h-auto"` triggers layout recalculation
+- CPU-intensive, janky on mobile
 
-// ✅ CORRECT (GPU-accelerated)
-className="hover:scale-105 transform"
-```
+Correct approach (GPU-accelerated):
+- Use `className="hover:scale-105 transform"` instead
+- Smooth 60fps animations on all devices
 
 ---
 
@@ -740,30 +733,39 @@ Disabled (offline mode):
 
 ### STEP 5: Write Output & Report
 
-```typescript
-// Write page-plan.md
-writeFile(outputPath, pagePlanContent)
+1. Write the page plan file:
+   - Path: `openspec/changes/{changeId}/page-plan.md`
+   - Content: The generated page plan from STEP 4
 
-// Report to user
-console.log(`
+2. Count summary metrics:
+   - Found components: Count of reusable components found
+   - New shared components: Count of new shared components to create
+   - New specific components: Count of page-specific components to create
+   - Assets needed: Count of images/icons in checklist
+   - Content sections: Count of content sections generated
+
+3. Report to user:
+
+```
 ✅ Page plan generated!
 
-📄 Output: ${outputPath}
+📄 Output: openspec/changes/{changeId}/page-plan.md
 
 📊 Summary:
-- Found components: ${foundComponents.length} (reuse)
-- New shared: ${newSharedComponents.length}
-- New specific: ${newSpecificComponents.length}
-- Assets needed: ${assetsCount}
-- Content sections: ${contentSections.length}
+- Found components: {count} (reuse)
+- New shared: {count}
+- New specific: {count}
+- Assets needed: {count}
+- Content sections: {count}
 
 📝 Next Steps:
-1. Review content in ${outputPath}
+1. Review content in page-plan.md
 2. Edit as needed (tone, messaging)
 3. Prepare assets per checklist
-4. Run: /csetup ${changeId}
-`)
+4. Run: /csetup {changeId}
 ```
+
+→ Done
 
 ---
 
