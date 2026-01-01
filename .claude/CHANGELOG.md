@@ -5,6 +5,42 @@
 
 ---
 
+## v3.5.0: UX Tester v2.0 - Token Optimized + Human Testing Guide
+
+**Problem Solved:** UX Tester agent generated verbose reports (~200 lines) with repetitive persona details, consuming excessive tokens (~3,500). Users couldn't easily test the UI themselves because the report was technical and long.
+
+**Solution:** Rewrote `07-ux-tester.md` from 607 lines to 162 lines (-74% tokens). Added Human Testing Guide with step-by-step instructions for manual testing.
+
+### Key Changes
+
+| Metric | Before | After | Reduction |
+|--------|--------|-------|-----------|
+| Agent prompt lines | 607 | 162 | -73% |
+| Estimated tokens | ~3,500 | ~900 | -74% |
+| Report lines | ~200 | ~50 | -75% |
+
+### New Features
+
+**1. Compact Report Format** - Summary table instead of verbose persona sections
+
+**2. Human Testing Guide** - Step-by-step instructions (1, 2, 3...) for manual testing
+
+**3. Approval Checklist** - 6 items to check before approve/reject
+
+### What Was Removed
+
+- Verbose persona examples (TOEIC course)
+- Repetitive step-by-step sub-instructions
+- Duplicate report format templates
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/agents/07-ux-tester.md` | Complete rewrite v2.0 |
+
+---
+
 ## v3.4.0: Complete Pseudocode Elimination
 
 **Problem Solved:** Agents read TypeScript/JavaScript pseudocode and interpreted it as "examples" or "reference documentation" rather than executable instructions. This caused agents to not follow the intended workflow.
