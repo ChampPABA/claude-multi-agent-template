@@ -318,6 +318,36 @@ Quick Reference:
 
 ---
 
+#### Section 6: Report Format Enforcement (ux-tester only)
+
+**If agent equals ux-tester:**
+
+Add this section to the prompt:
+
+```
+⚠️ MANDATORY REPORT FORMAT ENFORCEMENT
+
+You MUST follow the EXACT report format from your agent definition file.
+
+HARD LIMITS:
+- MAX 150 lines total (count before submitting)
+- Use TABLES ONLY (no paragraphs for personas/issues)
+- 1 row per persona, 1 row per issue
+- MAX 10 steps in Human Testing Guide
+
+VIOLATIONS THAT WILL BE REJECTED:
+- Verbose persona backgrounds/stories
+- Paragraph descriptions instead of tables
+- Report exceeding 150 lines
+- Duplicate information across sections
+
+Reference: .claude/agents/07-ux-tester.md → "Report Format" section
+
+Before generating report, count lines. If > 150, cut non-essential details.
+```
+
+---
+
 ### Step 4.2: Execute Agent with Retry
 
 ---

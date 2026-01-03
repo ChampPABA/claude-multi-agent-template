@@ -5,6 +5,36 @@
 
 ---
 
+## v3.5.1: UX Tester Report Format Enforcement
+
+**Problem Solved:** UX Tester agent ignored the compact report format from v3.5.0 and still generated verbose reports (~200+ lines). Root cause: format template was "passive" - no enforcement mechanism.
+
+**Solution:** Added CRITICAL format rules to agent file + format enforcement injection in cdev.md.
+
+### Key Changes
+
+| Change | Location | Purpose |
+|--------|----------|---------|
+| CRITICAL format rules | `07-ux-tester.md` | Hard limits: MAX 150 lines, tables only |
+| Section 6 enforcement | `cdev.md` Step 4.1 | Inject format rules when invoking ux-tester |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/agents/07-ux-tester.md` | Added "⚠️ CRITICAL: Report Format Rules" section, version 2.0→2.1 |
+| `.claude/commands/cdev.md` | Added Section 6: Report Format Enforcement (ux-tester only) |
+
+### Format Rules Enforced
+
+- MAX 150 lines total
+- Tables ONLY (no paragraphs for personas/issues)
+- 1 row per persona, 1 row per issue
+- MAX 10 steps in Human Testing Guide
+- No verbose persona backgrounds/stories
+
+---
+
 ## v3.5.0: UX Tester v2.0 - Token Optimized + Human Testing Guide
 
 **Problem Solved:** UX Tester agent generated verbose reports (~200 lines) with repetitive persona details, consuming excessive tokens (~3,500). Users couldn't easily test the UI themselves because the report was technical and long.

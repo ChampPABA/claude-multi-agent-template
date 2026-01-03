@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 3.5.0 - UX Tester v2.0 (Token Optimized)
+> **Template Version:** 3.5.1 - UX Tester v2.1 (Format Enforced)
 > **Latest:** Single Source of Truth for design compliance (prevention + detection)
 
 ---
@@ -363,7 +363,8 @@ User: "Build login system"
 **Recent versions:**
 | Version | Key Feature |
 |---------|-------------|
-| v3.5.0 | **UX Tester v2.0** (Token Optimized + Human Testing Guide) |
+| v3.5.1 | **UX Tester v2.1** (Format Enforcement - MAX 150 lines, tables only) |
+| v3.5.0 | UX Tester v2.0 (Token Optimized + Human Testing Guide) |
 | v3.4.0 | Complete Pseudocode Elimination (~3,210 lines → imperative instructions) |
 | v3.3.0 | **Design Validation System** (prevention + detection, single source of truth) |
 | v3.2.0 | Consolidated Pre-Work Context (single `pre-work-context.md` for agents) |
