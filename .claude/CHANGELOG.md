@@ -5,6 +5,36 @@
 
 ---
 
+## v3.5.2: UX Tester v3.0 - Inline Output (No File Creation)
+
+**Problem Solved:** User ไม่ต้องการให้ ux-tester สร้างไฟล์ .md แยก - ต้องการ verbose output ใน response แทน
+
+**Solution:** Rewrote ux-tester to v3.0 - output inline verbose ใน response โดยไม่สร้างไฟล์
+
+### Key Changes
+
+| Before | After |
+|--------|-------|
+| สร้าง `ux-test-report.md` | ❌ ไม่สร้างไฟล์ |
+| Compact format (MAX 150 lines) | ✅ Verbose ได้เลย |
+| Table-only output | ✅ Detailed descriptions OK |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `.claude/agents/07-ux-tester.md` | v2.1→v3.0, inline output, no file creation |
+| `.claude/commands/cdev.md` | Section 6: No File Output enforcement |
+| `.claude/templates/phases-sections/ux-testing.md` | Remove file references |
+
+### What Changed
+
+- **Agent v3.0**: ห้ามสร้างไฟล์ .md, output ใน response เท่านั้น
+- **Verbose OK**: ละเอียดได้เลย ไม่มี line limit
+- **cdev.md**: Inject "NO FILE CREATION" rule เมื่อ invoke ux-tester
+
+---
+
 ## v3.5.1: UX Tester Report Format Enforcement
 
 **Problem Solved:** UX Tester agent ignored the compact report format from v3.5.0 and still generated verbose reports (~200+ lines). Root cause: format template was "passive" - no enforcement mechanism.

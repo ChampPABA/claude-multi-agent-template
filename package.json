@@ -1,6 +1,6 @@
 {
   "name": "@champpaba/claude-agent-kit",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "Universal multi-agent template for Claude Code - AI-assisted development with specialized agents",
   "main": "bin/cli.js",
   "bin": {

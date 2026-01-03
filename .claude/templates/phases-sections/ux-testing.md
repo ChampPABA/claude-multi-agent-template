@@ -52,8 +52,8 @@ For each persona:
 - Calculate total conversion prediction
 - Calculate potential after fixes
 
-### Step 6: Generate Report
-Output: `openspec/changes/{change-id}/ux-test-report.md`
+### Step 6: Output Report (Inline)
+Output ทุกอย่างใน response โดยตรง (ไม่สร้างไฟล์)
 
 ## ✅ Success Criteria
 
@@ -66,8 +66,7 @@ Output: `openspec/changes/{change-id}/ux-test-report.md`
 
 ## 📤 Output
 
-**Files created:**
-- `openspec/changes/{change-id}/ux-test-report.md`
+**Output:** Inline response (ไม่สร้างไฟล์)
 
 **Update flags.json:**
 ```json
@@ -79,8 +78,7 @@ Output: `openspec/changes/{change-id}/ux-test-report.md`
       "actual_minutes": {duration},
       "personas_tested": {count},
       "conversion_prediction": "{percentage}",
-      "critical_issues": {count},
-      "report_path": "ux-test-report.md"
+      "critical_issues": {count}
     }
   }
 }
@@ -100,8 +98,6 @@ Output: `openspec/changes/{change-id}/ux-test-report.md`
 - Conversion prediction: {percentage}%
 - Critical issues: {count}
 - Potential after fixes: {percentage}%
-
-📄 Full report: openspec/changes/{change-id}/ux-test-report.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
