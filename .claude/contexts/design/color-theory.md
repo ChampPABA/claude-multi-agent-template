@@ -379,7 +379,7 @@ Primary: Blue (H: 220)
 **Tools:**
 - **WebAIM Contrast Checker**: https://webaim.org/resources/contrastchecker/
 - **Contrast Ratio**: https://contrast-ratio.com/
-- **Chrome DevTools**: Lighthouse audit
+- **agent-browser**: Lighthouse audit
 
 **Example:**
 ```css
@@ -414,7 +414,7 @@ color: white;      /* #FFFFFF */
 **Testing Tools:**
 - **Color Oracle**: Free color blindness simulator
 - **Stark Plugin**: Figma/Sketch plugin
-- **Chrome DevTools**: Vision deficiency emulation
+- **agent-browser**: Screenshot for vision testing
 
 ---
 

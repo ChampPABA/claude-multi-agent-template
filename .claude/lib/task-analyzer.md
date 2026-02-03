@@ -602,7 +602,7 @@ function injectUXTestingPhases(phases: Phase[], tasks: AnalyzedTask[]): Phase[] 
       description: `
         Test UI from user perspectives before proceeding.
         - Auto-generate personas based on product context
-        - Test each persona via Chrome DevTools
+        - Test each persona via agent-browser
         - Calculate weighted conversion prediction
         - PAUSE for user approval before next phase
       `,
@@ -630,7 +630,7 @@ Phase N: uxui-frontend (build UI)
     ↓
 Phase N.5: ux-tester (APPROVAL GATE)
     → Auto-generate personas (3-5 based on product)
-    → Test each persona via Chrome DevTools
+    → Test each persona via agent-browser
     → Calculate weighted conversion prediction
     → Generate UX test report
     → ⏸️ PAUSE: Wait for user decision

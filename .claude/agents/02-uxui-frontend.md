@@ -395,7 +395,7 @@ OR
 Next Step: {next task or agent}
 ```
 
-**IMPORTANT:** Include token usage report in final output. ux-tester will validate these against data.yaml using Chrome DevTools.
+**IMPORTANT:** Include token usage report in final output. ux-tester will validate these against data.yaml using agent-browser.
 
 ---
 

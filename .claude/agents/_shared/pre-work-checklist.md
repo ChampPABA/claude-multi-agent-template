@@ -1,6 +1,6 @@
 # Pre-Work Checklist (Shared by All Agents)
 
-> **Version:** 3.0.0 (Pre-Work Context Integration)
+> **Version:** 3.6.0 (Tiered Context Loading)
 > **Purpose:** Single source of truth for pre-work validation
 
 ---
@@ -210,10 +210,53 @@ Result: #12345 - "Chose rotating refresh tokens with Redis storage"
 
 ---
 
+### Step 0.4: Tiered Context Loading (v3.6.0 - NEW)
+
+**Load contexts based on tier system for token efficiency:**
+
+WHY: Loading all 13,000+ lines of contexts wastes tokens. Load only what's relevant for your role.
+
+#### Tier 1: Core (ALL agents load these)
+
+```
+@/.claude/contexts/_core/development-principles.md  (SOLID, DRY, KISS)
+@/.claude/contexts/_core/code-standards.md          (naming, formatting)
+```
+
+#### Tier 2: Agent-Specific (load based on your role)
+
+| Agent | Contexts to Load |
+|-------|-----------------|
+| **uxui-frontend** | `design/*.md`, `patterns/ui-component-consistency.md`, `patterns/animation-patterns.md` |
+| **frontend** | `design/color-theory.md`, `patterns/error-handling.md`, `patterns/frontend-component-strategy.md` |
+| **backend** | `patterns/error-handling.md`, `patterns/logging.md`, `patterns/validation-framework.md` |
+| **database** | `patterns/error-handling.md`, `patterns/logging.md` |
+| **test-debug** | `patterns/tdd-classification.md`, `patterns/testing.md`, `patterns/error-recovery.md` |
+| **integration** | `patterns/error-handling.md`, `patterns/validation-framework.md` |
+| **ux-tester** | `design/accessibility.md`, `design/color-theory.md` |
+
+#### Tier 3: On-Demand (query when specific topic arises)
+
+Don't pre-load these. Read only when the task specifically requires:
+- `patterns/performance-optimization.md` - When optimizing
+- `patterns/animation-patterns.md` - When adding animations (non-uxui agents)
+- `patterns/git-workflow.md` - When handling git operations
+- `patterns/change-workflow.md` - When managing change lifecycle
+
+**Report in validation:**
+```markdown
+Contexts Loaded: (Step 0.4)
+- Tier 1 (Core): development-principles.md, code-standards.md
+- Tier 2 (Agent): {list based on agent type}
+- Tier 3 (On-Demand): {only if task requires specific topic}
+```
+
+---
+
 ### Step 1-4: Standard Checks
 
 1. **Context Discovery** - Load project context via agent-discovery.md
-2. **Pattern Loading** - Load relevant patterns for your agent type
+2. **Pattern Loading** - (Now covered by Step 0.4 Tiered Loading)
 3. **Validation Report** - Provide pre-implementation validation report
 4. **Wait for Approval** - Proceed only after orchestrator validation
 

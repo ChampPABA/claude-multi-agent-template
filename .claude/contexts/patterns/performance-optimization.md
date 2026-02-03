@@ -406,7 +406,7 @@ done
 - [Next.js: Image Optimization](https://nextjs.org/docs/basic-features/image-optimization)
 
 **Tools:**
-- **Lighthouse:** Chrome DevTools > Lighthouse tab
+- **Lighthouse:** `agent-browser` or `npx lighthouse <url>`
 - **WebPageTest:** https://www.webpagetest.org/
 - **Squoosh:** https://squoosh.app/ (image compression)
 - **TinyPNG:** https://tinypng.com/ (batch compression)

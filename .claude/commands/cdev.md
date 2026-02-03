@@ -418,7 +418,7 @@ See `.claude/contexts/patterns/validation-framework.md` for complete checklist p
 - frontend: API Contract Verification, State Management, Error Handling
 - test-debug: Test Infrastructure, Coverage Targets, Test Plan
 - integration: Contract Collection, Schema Validation, Data Flow Analysis
-- ux-tester: Personas Generated, Dev Server Found, Chrome DevTools Connected
+- ux-tester: Personas Generated, Dev Server Found, agent-browser Connected
 
 ---
 
@@ -761,7 +761,7 @@ Continue? (yes/no)
 [Continues...]
 
 🛑 Phase 3 requires manual testing.
-Test visual consistency using Chrome DevTools MCP.
+Test visual consistency using agent-browser.
 When done: /cdev CHANGE-003 --continue
 
 $ [User tests]

@@ -69,7 +69,7 @@
 **Browser Extensions:**
 - **WAVE** (WebAIM) - Visual feedback overlay
 - **axe DevTools** - Comprehensive accessibility scanner
-- **Lighthouse** (Chrome DevTools) - Automated audit
+- **Lighthouse** (agent-browser / CLI) - Automated audit
 
 **Online Tools:**
 - **WebAIM Contrast Checker**: https://webaim.org/resources/contrastchecker/
@@ -554,7 +554,7 @@ function closeModal(modalId) {
 
 ### Automated Testing
 
-- [ ] Run Lighthouse audit (Chrome DevTools)
+- [ ] Run Lighthouse audit (agent-browser)
 - [ ] Run axe DevTools extension
 - [ ] Run WAVE extension
 - [ ] Check HTML validation (W3C Validator)

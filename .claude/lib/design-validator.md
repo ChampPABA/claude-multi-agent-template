@@ -16,7 +16,7 @@ PREVENTION (Before Implementation)
 └── uxui-frontend: STEP 0.5 - Read data.yaml, report tokens
 
 DETECTION (After Implementation)
-└── ux-tester: Step 5.5 - Chrome DevTools style comparison
+└── ux-tester: Step 5.5 - agent-browser style comparison
 ```
 
 ---
@@ -200,18 +200,18 @@ Report the tokens you loaded before starting implementation.
 - Animation durations: 150ms, 300ms, 500ms
 - Spacing scale
 
-### 4.3 ใช้ Chrome DevTools ตรวจสอบ
+### 4.3 ใช้ agent-browser ตรวจสอบ
 
 **ขั้นตอน:**
 
 1. Navigate ไปหน้าที่ต้องการตรวจ:
-   ```
-   mcp__chrome-devtools__navigate_page({ url: "http://localhost:xxxx" })
+   ```bash
+   agent-browser open http://localhost:xxxx
    ```
 
-2. Take snapshot เพื่อดู DOM และ styles:
-   ```
-   mcp__chrome-devtools__take_snapshot()
+2. Take snapshot เพื่อดู DOM และ elements:
+   ```bash
+   agent-browser snapshot -i
    ```
 
 3. ดู elements หลักๆ:
@@ -304,7 +304,7 @@ After persona testing:
 
 - [ ] Check if `design-system/data.yaml` exists
 - [ ] If exists: Load expected tokens
-- [ ] Use Chrome DevTools to check computed styles
+- [ ] Use agent-browser to check computed styles
 - [ ] Compare actual vs expected
 - [ ] Add compliance section to ux-test-report.md
 

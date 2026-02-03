@@ -112,7 +112,7 @@ Continue? (yes/no)
 [Continues...]
 
 🛑 Phase 3 requires manual testing.
-Test visual consistency using Chrome DevTools MCP.
+Test visual consistency using agent-browser.
 When done: /cdev CHANGE-003 --continue
 
 $ [User tests]

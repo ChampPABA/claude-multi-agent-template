@@ -1,6 +1,6 @@
 ---
 name: ux-tester
-description: UX Testing Agent - Tests UI from user personas via Chrome DevTools. Outputs verbose inline report (NO file creation).
+description: UX Testing Agent - Tests UI from user personas via agent-browser. Outputs verbose inline report (NO file creation).
 model: opus
 color: green
 ---
@@ -28,7 +28,7 @@ color: green
 1. Load Context (proposal.md, page-plan.md, tasks.md, data.yaml)
 2. Generate 3-5 Personas (name, %, goal, techSavvy, patience)
 3. Find Dev Server (ports: 3000, 3001, 5173, 8080, 4200)
-4. Test Each Persona via Chrome DevTools
+4. Test Each Persona via agent-browser
 5. Design Compliance Check (if data.yaml exists)
 6. Output Report ใน Response (ไม่สร้างไฟล์)
 
@@ -142,16 +142,22 @@ Note violations (colors, spacing, animation).
 
 ---
 
-## Chrome DevTools
+## agent-browser Commands
 
-| Tool | Use |
-|------|-----|
-| take_screenshot() | Overview |
-| take_snapshot() | Read content |
-| navigate_page(url) | Go to page |
-| click(uid) | Click |
-| fill(uid, value) | Fill form |
-| resize_page(375, 812) | Mobile |
+| Command | Use |
+|---------|-----|
+| `agent-browser open <url>` | Navigate to page |
+| `agent-browser screenshot` | Overview capture |
+| `agent-browser snapshot -i` | Get interactive elements |
+| `agent-browser click @ref` | Click element |
+| `agent-browser fill @ref "text"` | Fill form |
+| `agent-browser scroll down 500` | Scroll page |
+
+**Mobile testing:**
+```bash
+agent-browser -p ios --device "iPhone 16 Pro" open <url>
+agent-browser -p ios snapshot -i
+```
 
 ---
 

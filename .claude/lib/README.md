@@ -23,7 +23,7 @@ Defines agent boundaries. Main Claude delegates implementation work to specializ
 Single Source of Truth for design compliance. Contains:
 - Part 1: Design token loading protocol
 - Part 2: Pre-work validation (uxui-frontend)
-- Part 3: Post-work validation (ux-tester with Chrome DevTools)
+- Part 3: Post-work validation (ux-tester with agent-browser)
 - Part 4: Main Claude pre-flight checklist
 Used by: Main Claude (/cdev), uxui-frontend agent, ux-tester agent
 

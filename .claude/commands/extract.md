@@ -84,9 +84,10 @@ mkdir -p design-system/extracted/{siteName}/screenshots
 
 ### 1.1: Navigate to URL
 
-Use Chrome DevTools to navigate to the target URL:
-- Tool: `mcp__chrome-devtools__navigate_page`
-- Parameter: `url` (from Step 0)
+Use agent-browser to navigate to the target URL:
+```bash
+agent-browser open {url}
+```
 
 ### 1.2: Smart Wait for Page Load
 
@@ -94,7 +95,7 @@ Use Chrome DevTools to navigate to the target URL:
 2. From snapshot, find heading elements (filter lines containing `[heading]`)
 3. If headings found:
    - Extract text from first heading
-   - Use Chrome DevTools wait_for to wait for that text (timeout: 15000ms)
+   - Use agent-browser wait_for to wait for that text (timeout: 15000ms)
    - This ensures the main content is loaded
 4. If no headings found or wait fails:
    - Fallback to sleep 5000ms
@@ -115,7 +116,7 @@ Use Chrome DevTools to navigate to the target URL:
 
 ## STEP 2: Extract CSS Data (17 Sections in Parallel)
 
-Run all extraction evaluations in parallel for speed. Use Chrome DevTools `evaluate_script` for each extraction function below.
+Run all extraction evaluations in parallel for speed. Use agent-browser `evaluate_script` for each extraction function below.
 
 **Parallel Execution Strategy:**
 - Execute all 8 extraction functions concurrently
@@ -124,7 +125,7 @@ Run all extraction evaluations in parallel for speed. Use Chrome DevTools `evalu
 
 ### 2.1: Extract Colors
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query all elements**: `document.querySelectorAll('*')`
 2. **For each element**, extract using `window.getComputedStyle()`:
@@ -159,7 +160,7 @@ colors:
 
 ### 2.2: Extract Typography
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Extract heading styles** (h1, h2, h3):
    - Query first 3 instances of each heading tag
@@ -198,7 +199,7 @@ typography:
 
 ### 2.3: Extract Shadows & Effects
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query all elements**: `document.querySelectorAll('*')`
 2. **For each element**, extract using `window.getComputedStyle()`:
@@ -227,7 +228,7 @@ borderWidths:
 
 ### 2.4: Extract Spacing
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query first 100 elements** for spacing analysis
 2. **For each element**, extract using `window.getComputedStyle()`:
@@ -257,7 +258,7 @@ spacing:
 
 ### 2.5: Extract Buttons
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query button elements** with selectors:
    - `button`, `a[role="button"]`
@@ -276,7 +277,7 @@ Use Chrome DevTools to evaluate script that:
 
 ### 2.6: Extract Cards
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query card-like elements** with selectors:
    - `[class*="card"]`, `[class*="Card"]`
@@ -293,7 +294,7 @@ Use Chrome DevTools to evaluate script that:
 
 ### 2.7: Extract Input Fields
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Query input elements** with selectors:
    - `input[type="text"]`, `input[type="email"]`, `input[type="password"]`
@@ -310,7 +311,7 @@ Use Chrome DevTools to evaluate script that:
 
 ### 2.8: Extract Animations
 
-Use Chrome DevTools to evaluate script that:
+Use agent-browser to evaluate script that:
 
 1. **Extract CSS @keyframes animations**:
    - Loop through all document.styleSheets
@@ -429,12 +430,12 @@ mkdir -p design-system/extracted/{siteName}/screenshots
 
 ### 4.2: Capture Full-Page Screenshot
 
-Use Chrome DevTools to take screenshot:
+Use agent-browser to take screenshot:
 
 1. **First attempt**: Full-page screenshot
-   - Tool: `mcp__chrome-devtools__take_screenshot`
-   - Parameters: `fullPage: true`, `format: 'png'`
-   - Save to: `design-system/extracted/{siteName}/screenshots/full-page.png`
+   ```bash
+   agent-browser screenshot --full design-system/extracted/{siteName}/screenshots/full-page.png
+   ```
 
 2. **If full-page fails**: Fallback to viewport-only
    - Parameters: `fullPage: false`, `format: 'png'`
@@ -691,8 +692,8 @@ design-system/extracted/{siteName}/data.yaml
 
 ### Critical Errors (Stop Execution)
 
-**Navigation failures** - If Chrome DevTools navigation fails:
-1. Catch the error from `mcp__chrome-devtools__navigate_page`
+**Navigation failures** - If agent-browser navigation fails:
+1. Catch the error from `agent-browser open`
 2. Return error message:
    ```
    ❌ Failed to load URL: {url}
@@ -701,7 +702,8 @@ design-system/extracted/{siteName}/data.yaml
 
    Check:
    - Is the URL accessible?
-   - Is Chrome DevTools MCP running?
+   - Is agent-browser installed? (npm install -g agent-browser)
+   - Did you run `agent-browser install` to get Chromium?
    ```
 3. Stop execution (cannot proceed without page loaded)
 

@@ -24,3 +24,8 @@ Thumbs.db
 # Reference materials (user-specific)
 # Users capture their own reference websites for design extraction
 reference/
+
+# claude-mem auto-generated context files
+# These are created in various folders by claude-mem plugin
+**/CLAUDE.md
+!.claude/CLAUDE.md

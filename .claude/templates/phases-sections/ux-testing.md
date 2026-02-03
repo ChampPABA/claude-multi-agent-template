@@ -9,7 +9,7 @@
 
 ทดสอบ UI จากมุมมอง User จริง ก่อนที่จะไป Phase ถัดไป (Backend)
 - Auto-generate personas จาก product context
-- Test แต่ละ persona ผ่าน Chrome DevTools
+- Test แต่ละ persona ผ่าน agent-browser
 - คำนวณ weighted conversion prediction
 - รอ User approve หรือ reject
 
@@ -17,7 +17,7 @@
 
 - ✅ Phase 1 (Frontend Mockup) completed
 - ✅ Dev server running (localhost:3000 or similar)
-- ✅ Chrome DevTools MCP connected
+- ✅ agent-browser installed (`npx skills add vercel-labs/agent-browser`)
 
 ## 🔄 Process
 

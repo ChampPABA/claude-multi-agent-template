@@ -154,7 +154,7 @@ WHY: Pre-work validation ensures agents loaded context before implementing. This
 | backend | Patterns Loaded ✓, Existing Endpoints Search ✓, TDD Workflow (if required) |
 | database | Schema Analysis ✓ |
 | test-debug | Test Infrastructure ✓ |
-| ux-tester | Personas Generated ✓, Dev Server Found ✓, Chrome DevTools Connected ✓ |
+| ux-tester | Personas Generated ✓, Dev Server Found ✓, agent-browser Connected ✓ |
 
 **Validation Logic:**
 ```typescript

@@ -1,47 +1,19 @@
 # CLAUDE.md
 
 > **Navigation Hub for AI Agents**
-> **Template Version:** 3.5.2 - UX Tester v3.0 (Inline Output)
-> **Latest:** Single Source of Truth for design compliance (prevention + detection)
+> **Template Version:** 3.7.0 - Skills-Based Architecture
+> **Latest:** Token-optimized with skill-based commands (45-65% savings)
 
 ---
 
-## 📁 File Naming Conventions (OpenSpec + Template)
+## 📁 File Naming Conventions
 
-> **IMPORTANT:** Avoid confusion between OpenSpec files and Template files
+| Source | Files | Purpose |
+|--------|-------|---------|
+| **OpenSpec** | `proposal.md`, `tasks.md`, `design.md`, `specs/` | WHY, WHAT, Architecture |
+| **Template** | `data.yaml`, `page-plan.md`, `pre-work-context.md`, `phases.md` | Visual design, Agent context |
 
-### OpenSpec Files (from [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec))
-
-| File | Purpose | When to Read |
-|------|---------|--------------|
-| `proposal.md` | WHY - Goals, scope, rationale | Phase planning |
-| `tasks.md` | WHAT - Implementation checklist | Task tracking |
-| `design.md` | **Technical/Architecture decisions** (optional) | Backend/Database phases |
-| `specs/` | Delta specs (ADDED/MODIFIED/REMOVED) | Requirement validation |
-
-### Template Files (from claude-multi-agent-template)
-
-| File | Purpose | When to Read |
-|------|---------|--------------|
-| `README.md` | **Visual design summary** (human-readable) | UI/Frontend phases |
-| `data.yaml` | Design tokens + psychology (~300 lines) | Quick UI reference |
-| `page-plan.md` | UI component layout + content strategy | uxui-frontend agent |
-| `pre-work-context.md` | **v3.2.0!** All agent context (best practices, warnings, checklist) | All agents - STEP 0 ✨ |
-| `phases.md` | Execution plan with agent assignments | All phases |
-| `flags.json` | Progress tracking | All phases |
-
-### Key Distinction
-
-```
-OpenSpec design.md    = Technical Architecture (data flow, API structure, system design)
-Template data.yaml    = Visual Design (colors, fonts, spacing, component styles)
-```
-
-**Agents should read BOTH when relevant:**
-- `uxui-frontend` → data.yaml (visual tokens) + design.md (if has UI architecture)
-- `backend` → design.md (API/data architecture)
-- `database` → design.md (data models, relationships)
-- `frontend` → data.yaml (visual tokens) + design.md (API contracts)
+**Key Distinction:** `design.md` = Technical Architecture, `data.yaml` = Visual Design
 
 ---
 
@@ -75,16 +47,28 @@ Universal, framework-agnostic template for AI-assisted development.
 - `@/.claude/lib/document-loader.md` - Token-efficient loading patterns
 - `@/.claude/contexts/design/index.md` (General design principles - fallback)
 
-**Development:**
-- `@/.claude/contexts/patterns/development-principles.md` - **v3.1.0!** SOLID, DRY, KISS, Fail Fast (Level 1 - ALL agents) ✨
-- `@/.claude/contexts/patterns/tdd-classification.md` - TDD workflow classification patterns
+**Development (Tiered Loading v3.6.0):**
+
+*Tier 1 - Core (ALL agents):*
+- `@/.claude/contexts/_core/development-principles.md` - SOLID, DRY, KISS, Fail Fast ✨
+- `@/.claude/contexts/_core/code-standards.md` - Naming, formatting, structure ✨
+
+*Tier 2 - Agent-Specific (load by role):*
+- `@/.claude/contexts/patterns/tdd-classification.md` - test-debug agent
+- `@/.claude/contexts/patterns/error-handling.md` - backend, database, frontend
+- `@/.claude/contexts/patterns/logging.md` - backend, database
+- `@/.claude/contexts/patterns/testing.md` - test-debug agent
+- `@/.claude/contexts/patterns/ui-component-consistency.md` - uxui-frontend agent
+- `@/.claude/contexts/patterns/frontend-component-strategy.md` - frontend agent
+
+*Tier 3 - On-Demand:*
 - `@/.claude/contexts/patterns/task-classification.md` (Agent selection guide)
 - `@/.claude/contexts/patterns/agent-coordination.md` (When to run agents parallel/sequential)
 - `@/.claude/contexts/patterns/error-recovery.md` (How agents handle errors & escalate)
-- `@/.claude/contexts/patterns/logging.md`
-- `@/.claude/contexts/patterns/testing.md`
 - `@/.claude/contexts/patterns/task-breakdown.md`
-- `@/.claude/contexts/patterns/frontend-component-strategy.md`
+- `@/.claude/contexts/patterns/performance-optimization.md`
+
+→ Full mapping: `.claude/agents/_shared/pre-work-checklist.md` (Step 0.4)
 
 **Project Setup:**
 - `/extract https://site.com` - Extract design from reference sites
@@ -179,6 +163,57 @@ Universal, framework-agnostic template for AI-assisted development.
 
 ---
 
+## ⚡ Tiered Context Loading (v3.6.0 - NEW!)
+
+**→ See:** `@/.claude/agents/_shared/pre-work-checklist.md` (Step 0.4)
+
+**Problem Solved:**
+- Loading all 13,000+ lines of contexts wastes tokens
+- Agents load knowledge they don't need (UI agent loads backend patterns)
+- No clear guidance on which contexts are relevant per agent
+
+**Solution: 3-Tier Loading System**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Tier 1: Core (_core/)           ~900 lines    ALWAYS LOAD  │
+├─────────────────────────────────────────────────────────────┤
+│  development-principles.md  (SOLID, DRY, KISS)              │
+│  code-standards.md          (naming, formatting)            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Tier 2: Agent-Specific     ~1,500 lines    LOAD BY ROLE    │
+├─────────────────────────────────────────────────────────────┤
+│  uxui-frontend  → design/*.md, ui-component-consistency.md  │
+│  backend        → error-handling.md, logging.md             │
+│  test-debug     → tdd-classification.md, testing.md         │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Tier 3: On-Demand          ~300 lines      QUERY WHEN NEED │
+├─────────────────────────────────────────────────────────────┤
+│  performance-optimization.md, animation-patterns.md         │
+│  git-workflow.md, change-workflow.md                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Token Savings:**
+
+| Agent | Before (all) | After (tiered) | Savings |
+|-------|-------------|----------------|---------|
+| uxui-frontend | 13,000 | 3,500 | **73%** |
+| backend | 13,000 | 2,500 | **81%** |
+| test-debug | 13,000 | 2,000 | **85%** |
+| database | 13,000 | 1,800 | **86%** |
+
+**File Locations:**
+- Tier 1: `.claude/contexts/_core/`
+- Tier 2: `.claude/contexts/patterns/`, `.claude/contexts/design/`
+- Tier 3: Same folders, loaded on-demand
+
+---
+
 ## 🎨 Design System v2.1.0 (YAML-based)
 
 **→ See:** `@/.claude/lib/detailed-guides/design-system.md` for complete guide
@@ -235,7 +270,7 @@ Universal, framework-agnostic template for AI-assisted development.
 ┌─────────────────────────────────────────────────────────────┐
 │                    DETECTION (Post-Work)                     │
 ├─────────────────────────────────────────────────────────────┤
-│  ux-tester → Chrome DevTools Style Comparison                │
+│  ux-tester → agent-browser Style Comparison                  │
 │              Compare computed styles vs data.yaml tokens     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -255,7 +290,7 @@ Universal, framework-agnostic template for AI-assisted development.
 |-------|------------|
 | Main Claude | Pre-flight check before invoking uxui-frontend |
 | uxui-frontend | STEP 0.5: Read data.yaml, report loaded tokens |
-| ux-tester | Step 5.5: Chrome DevTools validation |
+| ux-tester | Step 5.5: agent-browser validation |
 
 **Files Updated:**
 - `.claude/lib/design-validator.md` (NEW - Single Source of Truth)
@@ -363,7 +398,8 @@ User: "Build login system"
 **Recent versions:**
 | Version | Key Feature |
 |---------|-------------|
-| v3.5.2 | **UX Tester v3.0** (Inline Output - ไม่สร้างไฟล์, verbose ได้) |
+| v3.6.0 | **Tiered Context Loading** (50-80% token savings per agent) |
+| v3.5.2 | UX Tester v3.0 (Inline Output - ไม่สร้างไฟล์, verbose ได้) |
 | v3.5.1 | UX Tester v2.1 (Format Enforcement - MAX 150 lines) |
 | v3.5.0 | UX Tester v2.0 (Token Optimized + Human Testing Guide) |
 | v3.4.0 | Complete Pseudocode Elimination (~3,210 lines → imperative instructions) |
@@ -544,3 +580,24 @@ Agents query claude-mem in STEP 0 before implementation:
 ---
 
 **💡 Remember:** This template is universal. Use Context7 for framework-specific docs!
+
+
+<claude-mem-context>
+# Recent Activity
+
+<!-- This section is auto-generated by claude-mem. Edit content outside the tags. -->
+
+### Feb 3, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #235 | 11:24 PM | ✅ | Updated CLAUDE.md design validation table to reference agent-browser | ~330 |
+| #234 | 11:23 PM | 🔵 | Design validation system uses Chrome DevTools for post-work style comparison by ux-tester | ~689 |
+| #232 | 11:22 PM | 🔵 | Found two more Chrome DevTools references in CLAUDE.md design validation section | ~488 |
+| #190 | 11:14 PM | ✅ | Updated CLAUDE.md to version 3.7.0 with skills-based architecture | ~405 |
+| #189 | 11:13 PM | 🔵 | CLAUDE.md navigation hub reveals template v3.7.0 with skills-based architecture and tiered loading | ~953 |
+| #188 | 11:12 PM | 🔄 | Simplified CLAUDE.md header with condensed file naming conventions table | ~577 |
+| #187 | " | 🔵 | CLAUDE.md navigation hub reveals comprehensive template architecture v3.6.0 | ~1396 |
+| #186 | 11:11 PM | 🔵 | Reviewed CLAUDE.md navigation hub revealing complete template architecture and versioning | ~1048 |
+| #185 | 11:10 PM | 🔵 | CLAUDE.md serves as comprehensive navigation hub for multi-agent system | ~1019 |
+</claude-mem-context>
