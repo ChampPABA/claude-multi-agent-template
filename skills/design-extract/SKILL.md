@@ -1,3 +1,9 @@
+---
+name: design-extract
+description: Extract comprehensive design system data from any website using agent-browser
+allowed-tools: Bash(agent-browser:*), Read, Write, Glob
+---
+
 # Design Extract Skill
 
 Extract comprehensive design system data from any website.

@@ -1,3 +1,9 @@
+---
+name: design-setup
+description: Interactive design system setup with theme selection and AI recommendations
+allowed-tools: Read, Write, Glob, AskUserQuestion
+---
+
 # Design Setup Skill
 
 Interactive design system setup with theme selection and AI recommendations.

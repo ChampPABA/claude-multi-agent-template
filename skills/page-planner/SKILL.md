@@ -1,3 +1,9 @@
+---
+name: page-planner
+description: Generate visual page plans for UI - component strategy, wireframes, animation blueprints
+allowed-tools: Read, Write, Glob, Grep
+---
+
 # Page Planner Skill
 
 Generate visual page plans for UI implementation - component strategy, layout wireframes, animation blueprints.
