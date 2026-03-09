@@ -1,5 +1,5 @@
 ---
-name: page-planner
+name: pageplan
 description: Generate visual page plans for UI - component strategy, wireframes, animation blueprints
 allowed-tools: Read, Write, Glob, Grep
 ---

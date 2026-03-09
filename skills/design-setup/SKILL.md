@@ -1,5 +1,5 @@
 ---
-name: design-setup
+name: designsetup
 description: Interactive design system setup with theme selection and AI recommendations
 allowed-tools: Read, Write, Glob, AskUserQuestion
 ---
