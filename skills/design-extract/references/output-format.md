@@ -223,28 +223,126 @@ animations:
         transform: "translateY(-2px)"
 ```
 
----
+### icons_imagery (Section 11 — actively detect)
 
-## 17 Standard Sections
+```yaml
+  icons_imagery:
+    detected: true
+    system: "inline-svg"  # inline-svg | icon-font | img-based | sprite
+    count: 24
+    common_sizes: ["16px", "20px", "24px"]
+    style: "outline"  # outline | filled | duotone | mixed
+```
 
-| # | Section | Description |
-|---|---------|-------------|
-| 1 | overview | Style classification, tech stack |
-| 2 | color_palette | Primary, text, border colors |
-| 3 | typography | Fonts, weights, sizes |
-| 4 | spacing_system | Grid base, common values |
-| 5 | component_styles | Buttons, cards, inputs |
-| 6 | shadows_elevation | Box shadow values |
-| 7 | animations_transitions | Keyframes, transitions |
-| 8 | border_radius | Radius values |
-| 9 | border_styles | Widths, colors |
-| 10 | layout_patterns | Container, grid, breakpoints |
-| 11 | icons_imagery | Icon style (if detected) |
-| 12 | navigation_patterns | Nav structure (if detected) |
-| 13 | form_patterns | Form layouts (if detected) |
-| 14 | feedback_states | Error, success states |
-| 15 | loading_states | Spinners, skeletons |
-| 16 | motion_design | Complex animations |
-| 17 | accessibility | Focus states, contrast |
+### loading_states (Section 15 — detect from stylesheets)
 
-Coverage percentage = detected / 17 * 100
+```yaml
+  loading_states:
+    detected: true
+    patterns:
+      - type: "spinner"
+        keyframe: "spin"
+        css: "@keyframes spin { to { transform: rotate(360deg) } }"
+      - type: "skeleton"
+        class_pattern: ".skeleton"
+        properties: "background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)"
+      - type: "pulse"
+        keyframe: "pulse"
+```
+
+### accessibility (Section 17 — actively detect)
+
+```yaml
+  accessibility:
+    detected: true
+    focus_styles:
+      - element: "button"
+        style: "outline: 2px solid #0070F3; outline-offset: 2px"
+      - element: "a"
+        style: "box-shadow: 0 0 0 2px #0070F3"
+    aria_usage:
+      aria_label: 12
+      aria_hidden: 8
+      role: 15
+    semantic_html: ["nav", "main", "footer", "header", "section"]
+    contrast_ratios:
+      - pair: "primary-text on background"
+        ratio: 15.3
+        wcag_aa: true
+```
+
+### form_patterns (Section 13 — actively detect from DOM)
+
+```yaml
+  form_patterns:
+    detected: true
+    forms:
+      - type: "newsletter"  # newsletter | login | signup | contact | search
+        fields: ["email"]
+        layout: "inline"  # inline | stacked | grid
+        submit_text: "Subscribe"
+        validation: ["required", "type=email"]
+      - type: "search"
+        fields: ["query"]
+        layout: "inline"
+```
+
+### feedback_states (Section 14 — detect from stylesheets + DOM)
+
+```yaml
+  feedback_states:
+    detected: true
+    error:
+      color: "#ef4444"
+      classes: [".error", ".is-invalid", "[aria-invalid='true']"]
+      border_style: "1px solid #ef4444"
+    success:
+      color: "#22c55e"
+      classes: [".success", ".is-valid"]
+    warning:
+      color: "#f59e0b"
+      classes: [".warning", ".alert-warning"]
+    toast_pattern:
+      detected: true
+      classes: [".toast", ".notification"]
+      position: "top-right"
+    alert_elements:
+      - role: "alert"
+        aria_live: "polite"
+```
+
+### animation_libraries (bonus section — include in animations_transitions)
+
+```yaml
+  animations_transitions:
+    detected: true
+    keyframes: [...]
+    transitions: [...]
+    libraries:
+      - name: "gsap"
+        detected: true
+        modules: ["ScrollTrigger"]
+      - name: "framer-motion"
+        detected: false
+      - name: "lottie"
+        detected: true
+        players: 2
+      - name: "anime"
+        detected: false
+      - name: "three"
+        detected: false
+    scroll_animations:
+      system: "data-aos"  # data-aos | data-scroll | custom | none
+      patterns: ["fade-up", "slide-in"]
+      count: 12
+    background_media:
+      videos: 1
+      animated_gifs: 0
+      lottie_players: 2
+```
+
+All 17 sections should be actively detected. Mark `detected: false` only when genuinely not found after searching DOM + stylesheets.
+
+**Required field:** `coverage.missing` must always list undetected section names.
+
+Coverage = detected_sections / 17 * 100

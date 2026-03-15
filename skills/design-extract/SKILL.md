@@ -35,7 +35,12 @@ Extract comprehensive design system data from any website.
 | Spacing | Grid base detection, padding/margin values |
 | Components | Buttons, cards, inputs with animations |
 | Shadows | Box shadows, elevation levels |
-| Animations | @keyframes, transitions, hover/focus states |
+| Animations | @keyframes, transitions, libraries (GSAP/Framer/Lottie), scroll animations |
+| Icons | SVG system, icon fonts, sizing patterns |
+| Loading | Spinners, skeletons, shimmer from stylesheets |
+| Accessibility | Focus states, ARIA, contrast ratios, semantic HTML |
+| Forms | Newsletter, search, login form patterns |
+| Feedback | Error/success/warning states, toast systems |
 | Psychology | Style classification, emotions, target audience |
 
 ## Output
@@ -45,29 +50,33 @@ design-system/extracted/{site-name}/
 ├── data.yaml           # Complete 17-section design data
 └── screenshots/
     ├── full-page.png   # Full page capture
-    ├── button-0-default.png
-    ├── button-0-hover.png
-    └── ...
+    └── component.png   # Key component state (optional)
 ```
 
 ## Workflow
 
 ```
-1. Navigate → Open URL in browser
-2. Extract  → CSS data (colors, typography, spacing, components)
-3. Capture  → Interactive states (hover, focus screenshots)
-4. Analyze  → AI psychology analysis
-5. Generate → data.yaml with 17 sections
+1. Open       → agent-browser open URL + scroll (trigger lazy CSS)
+2. Extract    → 3 focused JS calls:
+                 Call 1: Visual styles (getComputedStyle)
+                 Call 2: Stylesheet analysis (document.styleSheets)
+                 Call 3: DOM structure (querySelectorAll)
+3. Interact   → 1 JS call (toast trigger + hover + focus + contrast)
+4. Screenshot → 1 full-page capture
+5. Analyze    → AI psychology analysis
+6. Generate   → data.yaml with 17 sections
 ```
 
-## Detailed Documentation
+**Performance:** 3 focused extract calls give better coverage than 1 mega call because Claude gives full attention to each scope. ~8 tool calls total. Claude writes JS dynamically per site — no hardcoded scripts.
 
-| Reference | Use When |
-|-----------|----------|
-| [references/extraction-steps.md](references/extraction-steps.md) | Full step-by-step extraction process |
-| [references/output-format.md](references/output-format.md) | data.yaml schema and sections |
-| [references/style-detection.md](references/style-detection.md) | Design style classification |
-| [references/error-handling.md](references/error-handling.md) | Handling failures gracefully |
+## References
+
+| File | Content |
+|------|---------|
+| [extraction-steps.md](references/extraction-steps.md) | Step-by-step process |
+| [output-format.md](references/output-format.md) | data.yaml schema |
+| [style-detection.md](references/style-detection.md) | Design style classification |
+| [error-handling.md](references/error-handling.md) | Error handling & fallbacks |
 
 ## Next Steps After Extraction
 
