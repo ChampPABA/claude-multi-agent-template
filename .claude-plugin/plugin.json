@@ -1,6 +1,6 @@
 {
   "name": "claude-agent-kit",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "Multi-agent development toolkit with design extraction, setup, and page planning skills",
   "author": {
     "name": "ChampPABA",

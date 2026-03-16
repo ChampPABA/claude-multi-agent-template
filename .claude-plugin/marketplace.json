@@ -13,7 +13,7 @@
   "plugins": [
     {
       "name": "claude-agent-kit",
-      "version": "3.6.0",
+      "version": "3.7.0",
       "description": "Design extraction, setup, and page planning for AI-assisted development",
       "source": "./",
       "skills": [

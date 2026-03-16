@@ -102,7 +102,5 @@ All other errors (write fails, invalid YAML, missing context files) → handle w
 ## Next Steps After Setup
 
 ```bash
-/pageplan @prd.md        # Plan pages (reads data.yaml)
-/csetup {change-id}      # Setup dev workflow
-/cdev {change-id}         # Start development
+/pageplan landing-page    # Plan pages (reads data.yaml automatically)
 ```
