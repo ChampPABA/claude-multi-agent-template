@@ -137,6 +137,7 @@ Analyze screenshot + extracted data for:
 | Field | What to Analyze |
 |-------|-----------------|
 | style_classification | Neo-Brutalism, Minimalist, Glassmorphism, etc. → see [style-detection.md](style-detection.md) |
+| brand_personality | Tag 2-4 from: bold, professional, playful, minimal, technical, elegant, creative, warm. Infer from style + emotions + visual principles. Used by /designsetup for match scoring. |
 | emotions_evoked | Feelings the design triggers and why |
 | target_audience | Primary/secondary audience with demographics |
 | visual_principles | Key design patterns observed |

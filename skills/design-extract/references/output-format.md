@@ -32,6 +32,10 @@ meta:
 psychology:
   style_classification: "Modern SaaS"
 
+  brand_personality: ["professional", "minimal"]
+  # Tags for design-setup match scoring. Pick from:
+  # bold, professional, playful, minimal, technical, elegant, creative, warm
+
   emotions_evoked:
     - emotion: "Trust"
       reason: "Clean typography and ample whitespace"
@@ -340,6 +344,27 @@ animations:
       animated_gifs: 0
       lottie_players: 2
 ```
+
+### css_custom_properties (from Call 2 #15 — include when detected)
+
+```yaml
+css_custom_properties:
+  colors:
+    --color-primary: "#FF5A5F"
+    --color-background: "#ffffff"
+  spacing:
+    --space-1: "4px"
+    --space-2: "8px"
+  fonts:
+    --font-sans: "'Inter', sans-serif"
+  other:
+    --radius-md: "8px"
+    --shadow-sm: "0 1px 2px rgba(0,0,0,0.05)"
+```
+
+Group by category prefix. Include all `--*` properties found on `:root`, `html`, `body`, `[data-theme]`. If none found, omit this section entirely (don't write `detected: false`).
+
+---
 
 All 17 sections should be actively detected. Mark `detected: false` only when genuinely not found after searching DOM + stylesheets.
 

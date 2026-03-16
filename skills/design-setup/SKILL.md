@@ -1,12 +1,12 @@
 ---
 name: designsetup
-description: Interactive design system setup with theme selection and AI recommendations
+description: Interactive design system setup with theme selection and AI recommendations. Use when user wants to create a design system, set up design tokens, generate data.yaml from extracted sites, or says /designsetup. Requires extracted site data from /extract first. Also triggers on "setup design system", "create design system", "สร้าง design system", or any request to merge extracted designs into a unified system.
 allowed-tools: Read, Write, Glob, AskUserQuestion
 ---
 
 # Design Setup Skill
 
-Interactive design system setup with theme selection and AI recommendations.
+Create a unified design system from extracted site data via 3-round interactive loop.
 
 ## Triggers
 
@@ -17,94 +17,92 @@ Interactive design system setup with theme selection and AI recommendations.
 
 ## Prerequisites
 
-Must have extracted at least 1 site first:
-```bash
-/extract https://airbnb.com
-```
+At least 1 extracted site: `design-system/extracted/*/data.yaml`
+If none found → stop, instruct user to run `/extract https://site.com` first.
 
 ## Quick Usage
 
 ```bash
-# With context files
-/designsetup @prd.md @project.md
-
-# Without context (interactive mode)
-/designsetup
+/designsetup @prd.md @project.md    # With context
+/designsetup                         # Interactive mode
 ```
 
-## Output Files
+## Input
 
-| File | Purpose | Audience |
-|------|---------|----------|
-| `design-system/data.yaml` | Design tokens (~300 lines) | Agents |
-| `design-system/README.md` | Human-readable guide (~100 lines) | Humans |
-| `design-system/patterns/*.md` | Code patterns | Agents |
+| Source | Path | Required |
+|--------|------|----------|
+| Extracted sites | `design-system/extracted/*/data.yaml` | Yes (1+) |
+| Context files | `@prd.md`, `@project.md`, etc. | No |
+| User decisions | 3 rounds via AskUserQuestion | Yes |
 
-## 3-Round Interactive Process
+## Output
+
+All files write to `design-system/` at project root (create if not exists):
 
 ```
-Round 1: Style Selection
-├── Present extracted styles with Match Scores
-├── User selects (or "Mix/Custom" for adjustments)
-└── AI calculates fit based on brand personality
-
-Round 2: Animation Selection
-├── Show all available animations from references
-├── User multi-selects desired patterns
-└── Include scroll animations, hover effects
-
-Round 3: Theme & Decorative Direction
-├── AI recommends 3-4 themes based on project
-├── Each theme has USE and AVOID elements
-└── User selects or creates custom theme
-
-Confirmation → Generate Files
+design-system/
+├── data.yaml              # ~250 lines, curated design tokens (15 sections)
+├── README.md              # ~100 lines, human-readable guide
+└── patterns/
+    ├── buttons.md         # 80-120 lines, variants + sizes + states
+    ├── cards.md           # 80-120 lines, variants + hover effects
+    ├── forms.md           # 80-120 lines, inputs + validation states
+    ├── decorations.md     # 80-120 lines, theme decorative elements
+    └── scroll-animations.md  # ONLY if scroll animations detected
 ```
 
-## What Gets Generated
+Do NOT create files inside `design-system/extracted/` — that directory belongs to `/extract`.
 
-### data.yaml (For Agents)
-- Style classification + feel
-- Colors (primary, secondary, semantic)
-- Typography (fonts, weights, sizes)
-- Spacing (grid base, scale)
-- Animations (durations, easing, patterns)
-- Theme direction (use/avoid elements)
-- Psychology (emotions, target audience)
+## Workflow
 
-### README.md (For Humans)
-- Overview and characteristics
-- Color palette guide
-- Typography guide
-- Spacing system
-- Theme direction
-- Critical rules
+```
+STEP 0: Discovery
+  → Glob extracted sites, load YAML, load context files
+  → Report: found N sites, M context files
 
-### patterns/*.md (For Agents)
-- `buttons.md` - Button variants and sizes
-- `cards.md` - Card variants
-- `forms.md` - Form elements
-- `scroll-animations.md` - Scroll patterns
-- `decorations.md` - Decorative elements
+STEP 1: Context Analysis
+  → With context files: AI infers target audience + desired brand personality
+  → Without context: AskUserQuestion (product type, audience, personality)
 
-## Detailed Documentation
+STEP 2: Interactive Loop (max 3 rounds)
+  → Round 1: Style Selection (match score using brand_personality)
+  → Round 2: Animation Selection (merged from all sites)
+  → Round 3: Theme & Decorative Direction (AI recommends)
+  → Confirm → Generate | Adjust → loop | Cancel → exit
+  → See references/interactive-workflow.md
 
-| Reference | Use When |
-|-----------|----------|
-| [references/interactive-workflow.md](references/interactive-workflow.md) | Understanding the 3-round loop |
-| [references/generation-steps.md](references/generation-steps.md) | File generation process |
-| [references/data-yaml-schema.md](references/data-yaml-schema.md) | data.yaml structure |
-| [references/error-handling.md](references/error-handling.md) | Handling failures |
+STEP 3: Generate Files
+  → Map extract fields → curated tokens (see references/extract-mapping.md)
+  → Merge multi-site data using primary site strategy
+  → Write data.yaml, README.md, patterns/*.md
+  → See references/output-schema.md
+
+STEP 4: Final Report
+  → Display: files created, style, theme, next steps
+```
+
+## Error Handling
+
+| Error | Action |
+|-------|--------|
+| No extracted data found | Stop. Tell user: run `/extract https://site.com` first |
+| User cancels at any point | Stop. Preserve existing extracted data |
+| 3 rounds reached without confirm | Force decision: Generate or Cancel |
+
+All other errors (write fails, invalid YAML, missing context files) → handle with standard error recovery. Skip invalid sites, warn, continue with valid ones.
+
+## References
+
+| File | Read When |
+|------|-----------|
+| [interactive-workflow.md](references/interactive-workflow.md) | Entering STEP 2 (3-round selection loop) |
+| [extract-mapping.md](references/extract-mapping.md) | Entering STEP 3 (mapping extract → output) |
+| [output-schema.md](references/output-schema.md) | Entering STEP 3 (writing data.yaml) |
 
 ## Next Steps After Setup
 
 ```bash
-# Plan pages (reads data.yaml)
-/pageplan @prd.md
-
-# Setup development workflow
-/csetup {change-id}
-
-# Start development (agents read data.yaml)
-/cdev {change-id}
+/pageplan @prd.md        # Plan pages (reads data.yaml)
+/csetup {change-id}      # Setup dev workflow
+/cdev {change-id}         # Start development
 ```

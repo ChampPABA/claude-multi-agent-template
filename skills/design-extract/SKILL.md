@@ -41,7 +41,8 @@ Extract comprehensive design system data from any website.
 | Accessibility | Focus states, ARIA, contrast ratios, semantic HTML |
 | Forms | Newsletter, search, login form patterns |
 | Feedback | Error/success/warning states, toast systems |
-| Psychology | Style classification, emotions, target audience |
+| Psychology | Style classification, brand personality tags, emotions, target audience |
+| CSS Variables | Custom properties from :root/html/body (design tokens) |
 
 ## Output
 

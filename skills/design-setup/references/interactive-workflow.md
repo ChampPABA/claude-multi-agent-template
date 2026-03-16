@@ -1,57 +1,36 @@
 # Interactive Workflow (3-Round Loop)
 
-## Overview
+## STEP 0: Discovery
 
-The design setup uses a 3-round interactive loop where users can adjust and refine until satisfied (or max 3 rounds reached).
+1. Glob `design-system/extracted/*/data.yaml`
+   - If empty → stop: "No extracted data. Run `/extract https://site.com` first."
+2. Parse each YAML → store as map: `site_name → data`
+3. If user provided `@context-files` → read each, store content
 
----
-
-## STEP 0: Discovery & Validation
-
-### 0.1: Find Extracted Data
-
-Search for: `design-system/extracted/*/data.yaml`
-
-**If no files found:** Stop with error, instruct to run `/extract` first.
-
-### 0.2: Load Extracted Data
-
-For each extracted site:
-1. Extract site name from path
-2. Parse YAML content
-3. Store in memory (map site name → data)
-
-### 0.3: Load Context Files (Optional)
-
-If user provided `@context-files`:
-1. Remove `@` prefix
-2. Read file content
-3. Store with filename as key
-
-### 0.4: Report Discovery
-
-Display found sites, context files, and start analysis message.
+Report to user: "Found N extracted sites: [names]. Starting analysis..."
 
 ---
 
 ## STEP 1: Context Analysis
 
-### 1.1: AI Analysis (if context files provided)
+### With context files
 
-Analyze context files to identify:
-- `target_audience`: age_range, demographics, tech_savvy
-- `brand_personality`: bold, professional, playful, minimal, technical
-- `product_type`: SaaS, E-commerce, Marketing, Internal Tool
-- `market_position`: differentiation strategy
-- `design_preferences`: any mentioned preferences
+AI analyzes context to identify:
 
-### 1.2: Interactive Questions (fallback)
+| Field | What to Extract |
+|-------|-----------------|
+| target_audience | Age range, demographics, tech level |
+| desired_brand_personality | Pick 2-4 from: bold, professional, playful, minimal, technical, elegant, creative, warm |
+| product_type | SaaS, E-commerce, Marketing, Internal Tool, Portfolio |
+| market_position | How product differentiates |
 
-If no context or analysis insufficient, ask:
+### Without context (fallback)
 
-1. **Product Type**: SaaS Dashboard / E-commerce / Marketing Site / Internal Tool
-2. **Target Audience**: Gen Z / Millennials / Enterprise / Developers
-3. **Brand Personality** (multi-select): Bold / Professional / Playful / Minimal
+Ask user via AskUserQuestion:
+
+1. **Product Type**: SaaS / E-commerce / Marketing / Internal Tool / Portfolio
+2. **Target Audience**: Developers / Enterprise / Consumers / Gen Z / Mixed
+3. **Brand Personality** (pick 2-4): bold / professional / playful / minimal / technical / elegant / creative / warm
 
 ---
 
@@ -59,93 +38,81 @@ If no context or analysis insufficient, ask:
 
 ### 2.1: Style Selection
 
-For each extracted site, display:
-```
-Option [Letter]: [Style Name] [⭐ RECOMMENDED if highest score]
-Source: [site name]
-Match Score: [score]%
+For each extracted site, calculate Match Score and present:
 
-📝 Characteristics: [list]
-🎭 Feel: [description]
-🎨 Colors: [primary colors]
-🎬 Animations: [available animations]
-📜 Scroll Patterns: [patterns]
-🖼️ Decorative Elements: [elements]
+```
+Option [A]: [style_classification] ⭐ RECOMMENDED
+Source: [site_name]
+Match Score: [score]%
+Feel: [design_philosophy.core_belief]
+Colors: [top 3 primary hex swatches]
+Animations: [library names or "CSS only"]
 ```
 
 **Match Score Calculation:**
-- Base = confidence from extraction
-- +15 if brand includes "bold" and style is Neo-Brutalism/Playful
-- +15 if brand includes "professional" and style is Minimalist/Modern SaaS
-- +15 if brand includes "playful" and style is Playful/Creative
-- +15 if brand includes "minimal" and style is Minimalist
-- Cap at 100
 
-**User Options:**
-- Select A, B, C... → Store as selectedStyle
-- Select "Mix/Custom" → Get feedback, increment round, loop back
+```
+base = meta.coverage.percentage (from extract)
+
+For each tag in extract's psychology.brand_personality:
+  if tag appears in user's desired_brand_personality → base += 15
+
+Cap at 100
+```
+
+Highest score gets ⭐ RECOMMENDED.
+
+**User options:**
+- Select A/B/C → store as **primary site**
+- "Mix" or "Custom" → get feedback on what to adjust, increment round, loop back
 
 ### 2.2: Animation Selection (Multi-select)
 
-Collect all available animations from extracted sites:
-- Animation libraries (GSAP, Framer Motion, etc.)
-- Scroll patterns (parallax, fade-in, stacking-cards)
-- Component animations (button hover, card hover)
+Merge animations from ALL extracted sites into one list. Group by category:
 
-Display numbered list, user selects multiple.
+| Category | Source |
+|----------|--------|
+| Libraries | `animations_transitions.libraries[]` from all sites |
+| Scroll patterns | `scroll_animations.patterns[]` from all sites |
+| Component hovers | `animations.{component}.description` from all sites |
+| Keyframes | `animations_transitions.keyframes[].name` from all sites |
 
-### 2.3: Theme Selection
+Display numbered list with source site noted. User multi-selects.
 
-AI recommends 3-4 themes based on project context:
+If no animations found across any site → tell user, skip this round.
+
+### 2.3: Theme & Decorative Direction
+
+AI recommends 3-4 themes based on selected style + context:
+
 ```
-Theme [Letter]: [Name]
-📝 Description: [description]
-🎭 Feeling: [feeling]
-✅ USE: [decorative elements]
-❌ AVOID: [elements to avoid]
-🎯 Icons: [Lucide suggestions]
-💡 Why: [match reason]
+Theme [A]: [Name]
+Description: [what it evokes]
+✅ USE: [decorative elements to include]
+❌ AVOID: [elements that clash]
+Icons: [Lucide icon suggestions]
+Why: [why this matches the project]
 ```
 
-**User Options:**
-- Select A, B, C... → Store theme
-- Select "No Theme" → Use abstract/geometric
-- Select "Custom" → Input custom theme description
+**User options:**
+- Select A/B/C → store theme
+- "No Theme" → use abstract/geometric defaults
+- "Custom" → user describes their own theme direction
 
 ### 2.4: Confirmation
 
-Display summary and ask:
-- "Yes, Generate" → Exit loop, proceed to generation
-- "Adjust" → Increment round, loop back
-- "Start Over" → Reset round to 1, loop back
+Display summary of all selections:
+- Style: [name] from [site]
+- Animations: [N patterns selected]
+- Theme: [name] with USE/AVOID
+
+Ask user:
+- **"Generate"** → exit loop, proceed to STEP 3
+- **"Adjust"** → increment round, loop back to 2.1
+- **"Start Over"** → reset round to 1, loop back
 
 ### 2.5: Max Rounds
 
-After 3 rounds, force decision:
-- "Yes" → Generate with current settings
-- "Cancel" → Exit without generating
-
----
-
-## Loop Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     START (Round 1)                          │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Style Selection → Animation Selection → Theme Selection     │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│                       Confirmation                           │
-│  ┌─────────┐  ┌─────────┐  ┌─────────────┐                  │
-│  │   Yes   │  │ Adjust  │  │ Start Over  │                  │
-│  └────┬────┘  └────┬────┘  └──────┬──────┘                  │
-│       │            │              │                          │
-│       ↓            ↓              ↓                          │
-│   Generate     Round++        Round=1                        │
-│    Files      (max 3)        (restart)                       │
-└─────────────────────────────────────────────────────────────┘
-```
+After 3 rounds without confirming → force decision:
+- "Generate" with current selections
+- "Cancel" → exit without generating
