@@ -1,0 +1,23 @@
+{
+  "skill_name": "drawio-swimlane",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a leave-request approval process: employee submits, their manager reviews, HR records it, payroll adjusts. Draw it as a draw.io swimlane flowchart with a lane per role, top-to-bottom, with a decision for manager approve/reject. Save it as leave-approval.drawio.",
+      "expected_output": "A native .drawio file with vertical swimlanes (Employee, Manager, HR, Payroll), top-down flow, a decision diamond connected at its vertices, 90-degree sharp connectors, no crossing/overlapping lines, and a reject loop routed cleanly. Author should export a PNG and visually verify.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Here's my onboarding flow .drawio (attached). The arrows are a mess - some are curved, a couple cut straight through boxes, and two lines pile onto the left side of the 'IT provisions laptop' box. Can you clean it up so it looks professional?",
+      "expected_output": "Edited .drawio with rounded=0 sharp corners everywhere, no line passing through any box, connectors distributed/aligned so the trunk is straight, conflicts resolved by the priority order (straightness over one-per-side), verified by exporting PNG and inspecting.",
+      "files": ["onboarding.drawio"]
+    },
+    {
+      "id": 3,
+      "prompt": "Make a process map in draw.io for how a support ticket flows from customer to L1 to L2 to resolution, with an escalation decision. Keep it clean and top-down.",
+      "expected_output": "A .drawio swimlane/cross-functional flowchart, lanes per actor, decision at vertices, happy path straight down, escalation branch to the side, back-loops via gutter or connector node, PNG-verified.",
+      "files": []
+    }
+  ]
+}
