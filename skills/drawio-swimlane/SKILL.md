@@ -50,6 +50,27 @@ Full rationale + citations: `references/priority-rules.md`.
 Only when spreading connectors costs nothing higher up: the connector whose
 **source sits higher** moves to the **top**; the lower source keeps the side.
 
+## Place nodes to avoid back-edges (descending staircase)
+
+A forward edge should never run *upward* - an upward line reads as a loop and
+confuses. Most back-edges are accidental: the hand-off's target was placed higher
+than its source, so the connector has to climb back up. Fix this at layout time
+(node placement), not by clever rerouting:
+
+- Lay out y by the flow **sequence across all lanes**, not per-lane from the top.
+  A later step sits lower than the step that triggers it - even in a different
+  lane - so the whole thing becomes a **descending staircase**.
+- For a cross-lane hand-off, where you put the target decides the connector:
+  - **Target at the same y as the source** -> straight horizontal side-entry,
+    **0 bends**. Preferred - the cleanest (P3).
+  - **Target lower than the source** -> 1 bend, enter the target's **top** (the
+    arrow drops in from above). Use when the same-y slot is taken or the sequence
+    genuinely lands later/lower.
+  - **Target higher than the source** -> forbidden; that's an accidental back-edge.
+- The *only* upward lines allowed are genuine loops/returns (redo, reject-back,
+  retry) - route those through a gutter with a label so they read as "go back",
+  not as forward flow.
+
 ## draw.io authoring specifics
 
 - **Vertical swimlanes** = lanes side by side as columns, flow top->bottom. Each
