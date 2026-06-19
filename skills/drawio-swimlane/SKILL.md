@@ -12,6 +12,29 @@ skill gives a **priority-ordered rule set** so conflicts resolve by evidence, no
 guesswork, and a **verify loop** (export PNG, look at it) because the XML alone
 can't tell you if lines overlap.
 
+## How to work — Plan, Build, Verify, Fix
+
+Reliable diagrams come from doing these **in order**, not from drawing and hoping.
+Each phase has a detailed home below; this is the spine that ties them together:
+
+1. **Plan on paper first.** Before writing any XML, fix the flow **sequence across
+   all lanes** (the descending staircase) and write the **per-box port plan** —
+   which of the 4 faces each edge uses. Routing conflicts are per-box, not per-edge,
+   so deciding ports up front is what prevents the mess. → "Place nodes…" + "Plan
+   each box's 4 ports".
+2. **Build** the `.drawio` from that plan: lanes, then nodes, then edges with fixed
+   connection points. → "draw.io authoring specifics".
+3. **Verify** — never trust the XML. Run `scripts/check_layout.py` (a hard gate that
+   catches the over-the-top back-edge the eye keeps missing), **then** export the PNG
+   and look at it against P1–P8. → "Verify loop".
+4. **Fix** by the priority order (lowest P-number wins) and re-verify. A hand edit is
+   **not done** until `check_layout.py` exits 0 **and** the re-exported PNG looks
+   clean — never declare a diagram finished off an unverified edit.
+
+Why the script+PNG gate: "it looks right in the XML" is the trap. You cannot see an
+overlap, a header-crossing, or a 5px misalignment by reading tags. Measure, don't
+assume.
+
 ## Triggers
 
 - "create a swimlane / cross-functional flowchart"
@@ -26,89 +49,181 @@ When two layout rules conflict, the higher-priority rule wins.
 1. **P1 - No crossings / no overlapping lines.** Reroute (extra bends, outer
    gutter, or a connector node) rather than let lines cross or overlap. *Strongest
    readability factor (Purchase 1997, Ware 2002).*
-2. **P2 - Top-down flow.** Enter boxes from the top, exit from the bottom; the
-   happy path runs straight down. Back-loops route through an outer gutter, never
-   through the main column.
+2. **P2 - Top-down within a lane.** Same-lane flow exits the bottom and enters the
+   next box's top, running straight down. But the happy path often **hands off
+   sideways to the next lane** - a cross-lane hand-off (including a decision's
+   continuing branch) exits the **side facing the target lane**, not the bottom.
+   The only upward lines are labeled loops/returns.
 3. **P3 - Straight main trunk.** Minimize bends on the happy path; keep it a
    straight line.
 4. **P4 - Align node centers** so trunk edges are dead straight (same center-X
    down a lane; same center-Y for a horizontal hand-off).
 5. **P5 - Decision diamond connects at its 4 vertices** (top/bottom/left/right
-   points), not the flat sides.
+   points), not the flat sides. The **continuing (happy) branch exits toward where
+   flow goes next** - the side toward the next lane, or the bottom if it stays in
+   lane; each other branch/loop takes a different free vertex by the shortest
+   non-crossing route.
 6. **P6 - Minimize bends on branch/secondary connectors.**
 7. **P7 - Compact.** No big empty gaps; loops use the gutter or a connector node.
    Split a cluster to its own page if it would otherwise need a long stray loop.
 8. **P8 - Prefer <=1 connector per side** of a box. *Taste only, not research-
-   backed - the weakest rule. Apply only when it costs nothing at P1-P7.*
+   backed - the weakest rule. Apply only when free at P1-P7; then the
+   higher-source connector takes the top, the lower keeps the side.*
 
 Key consequence: **do NOT bend a straight happy-path line just to avoid two
 connectors on one side.** Two lines may share a side if they don't cross (P3 > P8).
 Full rationale + citations: `references/priority-rules.md`.
 
-## When 1-per-side (P8) actually applies
-
-Only when spreading connectors costs nothing higher up: the connector whose
-**source sits higher** moves to the **top**; the lower source keeps the side.
-
 ## Place nodes to avoid back-edges (descending staircase)
 
 A forward edge should never run *upward* - an upward line reads as a loop and
-confuses. Most back-edges are accidental: the hand-off's target was placed higher
-than its source, so the connector has to climb back up. Fix this at layout time
-(node placement), not by clever rerouting:
+confuses. Fix this at layout time (node placement), not by rerouting:
 
 - Lay out y by the flow **sequence across all lanes**, not per-lane from the top.
-  A later step sits lower than the step that triggers it - even in a different
-  lane - so the whole thing becomes a **descending staircase**.
-- For a cross-lane hand-off, where you put the target decides the connector:
-  - **Target at the same y as the source** -> straight horizontal side-entry,
-    **0 bends**. Preferred - the cleanest (P3).
-  - **Target lower than the source** -> 1 bend, enter the target's **top** (the
-    arrow drops in from above). Use when the same-y slot is taken or the sequence
-    genuinely lands later/lower.
-  - **Target higher than the source** -> forbidden; that's an accidental back-edge.
-- The *only* upward lines allowed are genuine loops/returns (redo, reject-back,
-  retry) - route those through a gutter with a label so they read as "go back",
-  not as forward flow.
+  A later step sits lower than the step that triggers it - even in a different lane -
+  so the whole thing becomes a **descending staircase**. A hand-off target placed
+  *higher* than its source is forbidden (it forces an accidental back-edge).
+- The *only* upward lines allowed are genuine labeled loops/returns (redo,
+  reject-back, retry). How each edge actually enters/leaves a box is the **port plan**
+  under "draw.io authoring specifics" below.
 
 ## draw.io authoring specifics
 
 - **Vertical swimlanes** = lanes side by side as columns, flow top->bottom. Each
-  lane: `style="swimlane;html=1;startSize=30;"`. **Lanes must abut - NO gap between
-  them:** lane(N+1).x = lane(N).x + lane(N).width, so borders touch like a real
-  pool (a visible gap between lanes reads as broken). Give all lanes the same
-  height. Nodes are children of their lane (geometry is lane-relative); edges use
-  `parent="1"` (root) so waypoints are in absolute page coords.
+  lane: `style="swimlane;html=1;startSize=30;horizontal=1;fillColor=none;"`.
+  `horizontal=1` keeps each lane's title a **horizontal bar across the top of its
+  column** - the clean, readable header. Do NOT build the pool with
+  `childLayout=stackLayout` / `horizontalStack=1`, and do NOT put `horizontal=0` on
+  a lane: that rotates the title into vertical text clinging to the lane's left edge
+  instead of a top header, and reads as broken. Lanes are **flat siblings**, not a
+  managed stack-layout pool. A **diagram title** goes as a horizontal `text` element
+  **above the lanes** (smaller negative/lower y than the lane tops), or, if you wrap the
+  lanes in a pool, the pool itself uses `horizontal=1` so its title is a top bar too. A
+  title **below the pool** or as a vertical strip clinging to the left edge reads as
+  broken - `check_layout.py` hard-fails a title placed below the lanes. **Lanes must abut - NO gap between them:** lane(N+1).x =
+  lane(N).x + lane(N).width, so borders touch like a real pool (a visible gap
+  between lanes reads as broken). Give all lanes the same height. Nodes are children
+  of their lane (geometry is lane-relative); edges use `parent="1"` (root) so
+  waypoints are in absolute page coords.
 - **No decoration unless asked:** omit fillColor (white) / strokeColor (black).
-- **Shapes:** terminator `ellipse`; process `rounded=0`; decision `rhombus`;
-  document `shape=document`; data store `shape=cylinder`; sub-process (overview
-  drill-down box) `shape=process`.
+  **Terminators are unfilled too** - a Start/End is a plain open `ellipse`
+  (`ellipse;whiteSpace=wrap;html=1;`), NOT a solid black BPMN-style dot. Filling it
+  black (or any color) you weren't asked for is the same unwanted decoration as
+  coloring a process box.
+- **Pick the shape from what the step MEANS, not by habit** - a review/approval
+  drawn as a plain rectangle hides that a decision is being made. Choose by what the
+  step *does*:
+
+  | The step means... | Shape | draw.io style |
+  |---|---|---|
+  | Start / End of the flow | terminator | `ellipse;whiteSpace=wrap;html=1;` (unfilled) |
+  | An action someone performs (submit, create, send, provision) | process | `rounded=0` |
+  | A **question that branches** - "approve?", "ready?", pass/fail, or any "evaluates / reviews / checks then forks" | decision | `rhombus` |
+  | Generic data input or output (neither a document nor a stored set) | I/O | `shape=parallelogram` |
+  | A document / report / form / record produced or consumed | document | `shape=document` |
+  | A persistent store read or written (database, queue, registry) | data store | `shape=cylinder` |
+  | A whole sub-process expanded on its own page | sub-process | `shape=process` (rectangle with vertical side bars - not a plain box) |
+
+  Rule of thumb: if the flow **forks** at a step (2+ outcomes), it is a decision
+  diamond - even if the source word was "evaluates" or "reviews".
+- **Flow structure (by the book):** every flow begins at exactly one Start
+  terminator and ends at one or more End terminators - nothing enters or leaves a
+  flow except through a terminator. **Only a decision diamond may fork** (have more
+  than one outgoing edge); every other shape has exactly one outgoing edge on the
+  happy path - use a decision to make any branch explicit. Every connector carries
+  exactly **one arrowhead at its target end** - no bidirectional or headless lines.
 - **Edges - one consistent style, sharp corners:**
   `edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;`
-  plus **fixed connection points** so routing is predictable:
-  - forward (down, same lane): `exitX=0.5;exitY=1; entryX=0.5;entryY=0;`
-  - cross-lane hand-off: `exitX=1;exitY=0.5; entryX=0;entryY=0.5;` (same center-Y => straight horizontal)
-  - decision vertices: top `0.5,0` / bottom `0.5,1` / left `0,0.5` / right `1,0.5` (never fractional on a rhombus - fractional points land on the bounding box, not the diamond, so the line touches the frame)
-- **Arrowhead must stab straight into the target.** Choose the entry side so the
-  edge's LAST segment runs perpendicular into the target's face and the arrowhead
-  clearly points into the box - not a glancing/parallel approach that grazes a
-  corner. (E.g. a line coming from below should enter the box's bottom face, not
-  curl into its side.)
-- **Stay inside the frame.** Every line - including gutters and back-loops - must
-  stay INSIDE the pool/outer-lane border. Never route a waypoint outside the
-  leftmost/rightmost lane edge (it reads as a line escaping the diagram).
-- **Back-loop / return:** route through a gutter that sits **inside the frame** -
-  in the slack between boxes and the lane border, or along the bottom inside the
-  pool - with explicit `<Array as="points">` waypoints (sharp 90deg, clear of all
-  boxes). If there isn't room inside, replace the long loop with a small terminal
-  "connector node" (e.g. an ellipse "back to X") instead of escaping the frame.
+  with **fixed connection points** (decision vertices: top `0.5,0` / bottom `0.5,1` /
+  left `0,0.5` / right `1,0.5` - never fractional on a rhombus, or the line lands on the
+  bounding box instead of the diamond).
+- **Routing invariant - one law for every connector.** **Both end segments are straight
+  perpendicular stabs into the CENTRE of the face they touch.** The **first** leg leaves
+  the source face straight out before any bend - exit a **right** face → go right first,
+  a **bottom** → go down first, a **left** → left first, a **top** → up first. The
+  **last** leg enters the target face straight in, arrowhead along its travel - **down**
+  into a top, **up** into a bottom, **left** into a right face, **right** into a left.
+  Never a sideways nub at either end. So a 1-bend L has its single corner at the
+  **source centre on the exit axis AND the target centre on the entry axis** - both, not
+  one. Then choose faces for the **fewest bends**: **0** when the two centres share an
+  axis, **1** when offset on one axis, **2** only when offset on both *and* a 1-bend L
+  would cross something (P1 no-crossing always beats saving a bend). General geometry,
+  any boxes anywhere. `check_layout.py` hard-fails an off-centre stab at **either** end
+  and flags bend-heavy edges as advisory.
+- **Routing table - by the position of target T relative to source S (box centres):**
+
+  | T is... | S exits | enters T at | bends | last leg (arrow) |
+  |---|---|---|---|---|
+  | directly below, same column | bottom | **top-centre** | 0 | straight down |
+  | directly above (a loop), column clear | top | **bottom-centre** | 0 | straight up |
+  | level, to one side | side toward T | T's near side | 0 | horizontal |
+  | lower **and** to one side (forward hand-off) | side toward T | **top-centre** | 1 | run across to T's centre-X, then **down** into the top |
+  | higher **and** to one side (back-loop) | side toward T | **bottom-centre** or near side | 1 | run across, then **up** into the bottom |
+  | lower, but T must be entered on a *side* face | bottom | **the side facing S** | 2 | down to T's centre-Y, then **horizontal** into that side |
+
+  **Reserve a box's vertical ports first** for a straight same-column neighbour or loop
+  (0 bends); a diagonal edge then takes a remaining face. If two edges still want one
+  face, the straight same-column edge keeps it and the other moves to the face toward
+  its own neighbour. *(A box that is both a hand-off target and a loop-end - e.g. a
+  a loop-back edge arrives straight up into its bottom while a forward branch enters its
+  side - is just two table rows applied to one box.)*
+- **Decision ports:** the descending flow enters the **top vertex**; the continuing
+  (happy) branch exits toward where flow goes next (the side toward the next lane, or
+  the bottom if it stays in lane). Each other branch exits a **remaining free vertex** —
+  for a reject/back branch, **never the top** (the top belongs to the incoming flow;
+  exiting upward sends the line over everything - the classic over-the-top reject).
+  Prefer the **vertex facing the loop target**: if the target box is off to one side,
+  exit that **side** so the return is a short horizontal hop into it; use the **bottom**
+  only when the target sits below. Keep the loop **tight** - take the shortest in-body
+  route to the target's own row; don't drop to the far bottom of the pool just to climb
+  all the way back up.
+- **The stab in XML (both ends):** the **first waypoint shares the exit port's *other*
+  coordinate** and the **last waypoint shares the entry port's *other* coordinate**, so
+  each end leg is one clean perpendicular run (lead-in `>=~20px`). For any port:
+  top/bottom port -> the waypoint's **X = that box's centre-X**; left/right port -> the
+  waypoint's **Y = that box's centre-Y**. A 1-bend L's lone corner must satisfy **both**
+  (e.g. side exit + top entry -> corner X = target centre-X *and* corner Y = source
+  centre-Y). Off by even ~20px and the router jogs - the exact miscalc `check_layout.py`
+  flags at both ends (watch lane-relative vs absolute coords when you compute a centre).
+- **Loops/returns** stay **inside the pool body** and route **down or sideways through
+  empty lane space** — never up over the top. A return edge must not pass **above the
+  topmost node** or through the **lane-header/title band**: that empty strip "crosses
+  nothing", which is exactly why it tempts you, but a line up there reads as broken
+  (`check_layout.py` hard-fails it). A genuine back-loop to a *higher* box goes
+  straight **up a clear column or an inner gutter** to the target's own row, then
+  enters its side — it does not shoot up out of the source and across the top. Take the
+  shortest path that crosses no *box* between the ports the plan assigned; detour
+  through a gutter inside the pool border only when a direct route would cross a box; if
+  even that crosses, use a small connector node (ellipse "back to X"). Explicit
+  `<Array as="points">` waypoints, sharp 90deg, **never overlap or cross** another line
+  (P1 wins).
 - **Crossings that are unavoidable:** add `jumpStyle=arc` to one edge.
-- Multi-page set for big flows: an overview page (sub-process boxes) + one page per
-  sub-process; numbering like `TC-0` overview, `TC-1..n` details.
+- **Multi-page for big flows** (roughly >~12 nodes, or clearly separable phases):
+  an **overview page** whose boxes are the sub-processes (`shape=process`) wired
+  together as one flow, then **one detail page per sub-process**. Link a sub-process
+  box to its page with an **off-page connector** (`shape=offPageConnector`, outward
+  pentagon) or a matching page name (`TC-0` overview, `TC-1..n` details) so a reader
+  can jump across. The *specific* decomposition - which sub-processes exist, what
+  lives on each page - comes from the task, not this skill.
 
 ## Verify loop (REQUIRED - never trust the XML)
 
-Export each page to PNG via the draw.io desktop CLI and look at it; iterate.
+Two gates, **in order**. Gate 1 is a script so the failure the eye keeps missing
+can't slip through; Gate 2 is your eyes on the rendered PNG. Iterate both until the
+script exits 0 and the PNG looks clean.
+
+**Gate 1 - `scripts/check_layout.py` (hard gate).** Resolves lane-relative child
+geometry to absolute coords and hard-fails (exit 1) any connector that routes
+**above the topmost node** or through the **lane-header band** - the over-the-top
+back-edge you cannot reliably catch by eye. It also prints advisory P8 (same-side)
+notes; fix those only if free per the priority order (don't "fix" a P8 case if it
+breaks P1-P4).
+
+```bash
+python3 scripts/check_layout.py flow.drawio        # exit 1 = fix before going on
+```
+
+**Gate 2 - export PNG and look.**
 
 ```bash
 # WSL2 path to the CLI (adjust per OS: macOS /Applications/draw.io.app/...; Linux: drawio)
@@ -118,9 +233,9 @@ WININ=$(wslpath -w flow.drawio)
 "$DRAWIO" -x -f png -e -b 10 -p 2 -s 1.5 -o "$(wslpath -w page2.png)" "$WININ"
 ```
 
-Then Read the PNG and check against P1-P8. A quick same-side (P8) audit can be
-scripted by parsing exitX/exitY & entryX/entryY per node, but P8 is advisory - do
-not "fix" a P8 case if the fix breaks P1-P4.
+Read the PNG and check against P1-P8. Then fix by priority order, **re-run both
+gates**, and repeat. The diagram is done only when Gate 1 exits 0 and the PNG is
+clean - not when the XML "looks right".
 
 Optional human-viewable output: wrap the `.drawio` XML in a `data-mxgraph` div that
 loads `https://viewer.diagrams.net/js/viewer-static.min.js` -> open the HTML in a
@@ -129,10 +244,10 @@ browser (multi-page nav included), no install needed.
 ## Workflow
 
 ```
-1. Lanes = entities (<=7). Order by who acts first. Vertical columns.
+1. **Lanes = actors who *act*** (a person/team/system that performs a step), not passive receivers. A thing that only *receives* a hand-off - a store that gets written to, an automated notification that gets sent - does NOT earn its own lane; fold it into the lane of whoever triggers or owns it. Cap ~7 (Miller's Law; beyond it, split into sub-process pages). Order by who acts first. Vertical columns.
 2. Place nodes; align center-X down each lane (P4).
-3. Draw edges with fixed connection points; happy path straight down (P2/P3).
-4. Decisions: connect at vertices; main exit bottom, branches to sides (P5).
-5. Loops/returns: gutter waypoints or connector node (P1/P7).
-6. Export PNG -> inspect -> fix by priority order -> repeat until clean.
+3. Draw edges: same-lane happy path straight down; cross-lane hand-off exits the side toward the next lane (P2/P3).
+4. Decisions: connect at vertices; happy branch exits toward where flow continues, other branches/loops to free vertices (P5).
+5. Loops/returns: shortest non-crossing route; gutter or connector node only if a direct route would cross (P1/P7).
+6. Verify: run `scripts/check_layout.py` (Gate 1, hard) -> export PNG and inspect (Gate 2) -> fix by priority order -> re-run both gates until the script exits 0 and the PNG is clean.
 ```

@@ -2,21 +2,21 @@
   "skill_name": "drawio-swimlane",
   "evals": [
     {
-      "id": 1,
-      "prompt": "I have a leave-request approval process: employee submits, their manager reviews, HR records it, payroll adjusts. Draw it as a draw.io swimlane flowchart with a lane per role, top-to-bottom, with a decision for manager approve/reject. Save it as leave-approval.drawio.",
-      "expected_output": "A native .drawio file with vertical swimlanes (Employee, Manager, HR, Payroll), top-down flow, a decision diamond connected at its vertices, 90-degree sharp connectors, no crossing/overlapping lines, and a reject loop routed cleanly. Author should export a PNG and visually verify.",
+      "id": "leave-approval-blind",
+      "prompt": "Hey, can you make me a swimlane flowchart as a .drawio file for our team's leave request process? Here's how it works: an employee submits a leave request, then their manager reviews it and decides whether to approve it. If it's not approved it goes back to the employee to fix and resubmit. If it's approved, HR logs the leave and then payroll adjusts their pay. Vertical lanes please, and keep the lines clean.",
+      "expected_output": "Vertical swimlane .drawio. Lanes Employee/Manager/HR/Payroll abut with no gap. Manager's approve step is a decision diamond (rhombus) connected at vertices. Reject path is an upward loop routed through an in-frame gutter with a label, NOT crossing the Start terminator or unrelated boxes. Happy path is a descending staircase, cross-lane hand-offs straight (0-bend) or 1-bend top-entry, never an accidental back-edge. Start/End are terminator ellipses.",
       "files": []
     },
     {
-      "id": 2,
-      "prompt": "Here's my onboarding flow .drawio (attached). The arrows are a mess - some are curved, a couple cut straight through boxes, and two lines pile onto the left side of the 'IT provisions laptop' box. Can you clean it up so it looks professional?",
-      "expected_output": "Edited .drawio with rounded=0 sharp corners everywhere, no line passing through any box, connectors distributed/aligned so the trunk is straight, conflicts resolved by the priority order (straightness over one-per-side), verified by exporting PNG and inspecting.",
-      "files": ["onboarding.drawio"]
+      "id": "disguised-decision",
+      "prompt": "I need a draw.io vertical swimlane for our blog publishing workflow. A writer drafts the article. Then the editor goes through it - if it's good it goes to the SEO person to optimize, if it's not good enough it bounces back to the writer with feedback. Once SEO is done the CMS publishes it automatically. Four lanes: Writer, Editor, SEO, Publishing.",
+      "expected_output": "The editor's 'goes through it' step FORKS into two outcomes (to SEO / back to writer), so it must be drawn as a decision diamond even though the prompt words it as 'reviews/goes through', not 'decides'. Reject/bounce-back is an in-frame gutter loop with a label, not crossing unrelated nodes. Vertical lanes abut, descending staircase, terminators for start/end.",
+      "files": []
     },
     {
-      "id": 3,
-      "prompt": "Make a process map in draw.io for how a support ticket flows from customer to L1 to L2 to resolution, with an escalation decision. Keep it clean and top-down.",
-      "expected_output": "A .drawio swimlane/cross-functional flowchart, lanes per actor, decision at vertices, happy path straight down, escalation branch to the side, back-loops via gutter or connector node, PNG-verified.",
+      "id": "lane-actor-backoffice",
+      "prompt": "Can you draw our employee onboarding process as a swimlane in draw.io? The hiring manager fills out a new-hire form and sends it to HR. HR checks the paperwork and enters the person into the HR system. After that the payroll system sets up their salary and an email gets sent to the new hire welcoming them. Make it top-down and tidy.",
+      "expected_output": "Lanes should represent ACTORS that take steps (Hiring Manager, HR, and arguably Payroll). A passive back-office receiver like 'HR system' or a 'notification/email service' should NOT get its own lane just for receiving a hand-off; it belongs in its owning actor's lane. Clean descending staircase, abutting lanes, terminators, no accidental back-edges.",
       "files": []
     }
   ]
