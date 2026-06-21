@@ -1,31 +1,43 @@
 #!/usr/bin/env python3
 """Deterministic layout gate for draw.io swimlane flowcharts.
 
-The eyeball verify-loop keeps intermittently missing ONE failure mode: a
-return/loop connector that routes *above the topmost node* or through the
-lane-header band - the "over-the-top" back-edge. It looks like it "crosses
-nothing" (no box is in the empty header strip), so the model talks itself into
-it. This script turns that judgement call into a hard gate.
+The eyeball verify-loop keeps intermittently missing a whole CLASS of failure:
+the XML looks right because ONE coordinate lines up, so the model talks itself
+into it, but the rendered connector is broken. This script turns those
+judgement calls into hard gates. The recurring members of that class:
+
+  - a return/loop routed *above the topmost node* or through the lane-header band
+    (the "over-the-top" back-edge);
+  - an end-stab whose perpendicular axis is centered but whose APPROACH axis is on
+    the wrong side of the face, so the arrow stabs in from inside/beyond the box;
+  - a waypoint dropped INSIDE the very box it routes to/past, so the line cuts the
+    body even though the entry point itself is centered;
+  - a segment driven straight THROUGH an unrelated box (P1, the no-crossing rule).
 
 It resolves lane-relative child geometry to absolute page coords (a node that is
 a child of a lane has its y measured from the lane's top, NOT the page), then
-flags any edge waypoint that sits in the header band or above every node.
+applies the checks below.
 
 Usage:
     python check_layout.py flow.drawio            # all pages
     python check_layout.py flow.drawio --page 2   # 1-based page
 
-Exit code 1 if any HARD violation (over-the-top / header-band) is found, else 0.
-P8 same-side and decision-vertex notes are ADVISORY (never fail the build).
+Exit code 1 if any HARD violation is found, else 0. Same-side (P8), bend-heavy,
+edge-crossing, and unaligned-portless-edge notes are ADVISORY (never fail).
 """
+from __future__ import annotations
+
 import sys
 import argparse
 import xml.etree.ElementTree as ET
 
 TOL = 2.0  # px slack for floating-point / grid noise
 
+Point = tuple[float, float]
+Box = tuple[float, float, float, float]  # (x0, y0, x1, y1) absolute
 
-def parse_style(style):
+
+def parse_style(style: str | None) -> dict[str, str | bool]:
     d = {}
     for part in (style or "").split(";"):
         if not part:
@@ -38,7 +50,7 @@ def parse_style(style):
     return d
 
 
-def fnum(x):
+def fnum(x: str | None) -> float | None:
     try:
         return float(x)
     except (TypeError, ValueError):
@@ -46,7 +58,7 @@ def fnum(x):
 
 
 class Cell:
-    def __init__(self, el):
+    def __init__(self, el: ET.Element) -> None:
         self.id = el.get("id")
         self.value = el.get("value") or ""
         self.style = parse_style(el.get("style"))
@@ -68,14 +80,17 @@ class Cell:
                     if px is not None and py is not None:
                         self.points.append((px, py))
 
-    def is_lane(self):
+    def is_lane(self) -> bool:
         return "swimlane" in self.style or "pool" in self.style
 
-    def is_text(self):
+    def is_text(self) -> bool:
         return self.style.get("text") is True or "text" in self.style
 
+    def is_rhombus(self) -> bool:
+        return "rhombus" in self.style
 
-def abs_origin(cell, cells):
+
+def abs_origin(cell: Cell, cells: dict[str, Cell]) -> Point:
     """Sum x/y of every vertex ancestor (lane/pool/group) -> page-absolute origin."""
     ox = oy = 0.0
     seen = set()
@@ -88,8 +103,90 @@ def abs_origin(cell, cells):
     return ox, oy
 
 
-def check_page(root, page_name):
-    cells = {}
+def node_box(cell: Cell, cells: dict[str, Cell]) -> Box:
+    """Absolute (x0, y0, x1, y1) bounding box of a node."""
+    ox, oy = abs_origin(cell, cells)
+    x0 = ox + cell.x
+    y0 = oy + cell.y
+    return x0, y0, x0 + cell.w, y0 + cell.h
+
+
+def pt_in_node(px: float, py: float, box: Box, is_rhombus: bool, inset: float) -> bool:
+    """Is point strictly inside the node body (with inset)? Rhombus uses the
+    diamond region so a waypoint near a bbox CORNER (outside the rhombus) is not
+    a false positive."""
+    x0, y0, x1, y1 = box
+    if px <= x0 + inset or px >= x1 - inset or py <= y0 + inset or py >= y1 - inset:
+        return False
+    if is_rhombus:
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        hw, hh = (x1 - x0) / 2, (y1 - y0) / 2
+        if hw <= 0 or hh <= 0:
+            return False
+        return abs(px - cx) / hw + abs(py - cy) / hh < 1.0
+    return True
+
+
+def seg_hits_rect(ax: float, ay: float, bx: float, by: float, box: Box, inset: float) -> bool:
+    """Axis-aligned segment vs rect interior (inset to ignore grazing the edge).
+    A diagonal segment is ignored - the perpendicular-stab checks own those."""
+    x0, y0, x1, y1 = box
+    x0 += inset; y0 += inset; x1 -= inset; y1 -= inset
+    if x1 <= x0 or y1 <= y0:
+        return False
+    if abs(ax - bx) <= TOL:                       # vertical segment at x=ax
+        if not (x0 < ax < x1):
+            return False
+        lo, hi = sorted((ay, by))
+        return lo < y1 and hi > y0
+    if abs(ay - by) <= TOL:                       # horizontal segment at y=ay
+        if not (y0 < ay < y1):
+            return False
+        lo, hi = sorted((ax, bx))
+        return lo < x1 and hi > x0
+    return False
+
+
+def edge_polyline(e: Cell, cells: dict[str, Cell]) -> list[Point]:
+    """Full point list: source port (if a fixed exit port is set) + waypoints +
+    target port (if a fixed entry port is set). Endpoints are absolute."""
+    pts = []
+    ex0, ey0 = fnum(e.style.get("exitX")), fnum(e.style.get("exitY"))
+    ix0, iy0 = fnum(e.style.get("entryX")), fnum(e.style.get("entryY"))
+    src, tgt = cells.get(e.source), cells.get(e.target)
+    if src and src.x is not None and ex0 is not None and ey0 is not None:
+        sox, soy = abs_origin(src, cells)
+        pts.append((sox + src.x + ex0 * src.w, soy + src.y + ey0 * src.h))
+    pts.extend(e.points)
+    if tgt and tgt.x is not None and ix0 is not None and iy0 is not None:
+        tox, toy = abs_origin(tgt, cells)
+        pts.append((tox + tgt.x + ix0 * tgt.w, toy + tgt.y + iy0 * tgt.h))
+    return pts
+
+
+def _seg_cross(a1: Point, b1: Point, a2: Point, b2: Point) -> bool:
+    """True if an axis-aligned segment a1-b1 crosses an axis-aligned segment a2-b2
+    at an interior point (shared endpoints / collinear touches don't count)."""
+    def orient(a: Point, b: Point) -> str | None:
+        if abs(a[0] - b[0]) <= TOL:
+            return "v"
+        if abs(a[1] - b[1]) <= TOL:
+            return "h"
+        return None
+    o1, o2 = orient(a1, b1), orient(a2, b2)
+    if o1 is None or o2 is None or o1 == o2:
+        return False  # only check the clean horizontal-vs-vertical case
+    h = (a1, b1) if o1 == "h" else (a2, b2)
+    v = (a1, b1) if o1 == "v" else (a2, b2)
+    hy = h[0][1]
+    vx = v[0][0]
+    hx_lo, hx_hi = sorted((h[0][0], h[1][0]))
+    vy_lo, vy_hi = sorted((v[0][1], v[1][1]))
+    return (hx_lo + TOL < vx < hx_hi - TOL) and (vy_lo + TOL < hy < vy_hi - TOL)
+
+
+def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
+    cells: dict[str, Cell] = {}
     for el in root.iter("mxCell"):
         c = Cell(el)
         if c.id is not None:
@@ -105,6 +202,10 @@ def check_page(root, page_name):
     hard, advisory = [], []
     if not nodes:
         return hard, advisory  # nothing to check (e.g. overview-only page)
+
+    # absolute boxes for every flow node, used by the waypoint/segment checks
+    node_boxes = [(n, node_box(n, cells), n.is_rhombus())
+                  for n in nodes if n.x is not None and n.w is not None]
 
     # absolute top-Y of every flow node, and the topmost one
     node_tops = []
@@ -137,10 +238,51 @@ def check_page(root, page_name):
                     f"(body starts y={body_top:g}). A connector must never cross the header/title."
                 )
 
-    # HARD: the final segment must be a perpendicular stab into the entered face,
-    # landing on that face's connection point. One check enforces center-stab +
-    # perpendicular last segment + correct arrow direction at once (the recurring
-    # "arrow grazes in sideways / off-center" complaint).
+    # HARD: no edge waypoint may sit INSIDE a box (any box, source/target included).
+    # A turn dropped inside the box it is about to enter makes the connector stab in
+    # from the wrong side / cut through the body - and the perpendicular-stab check
+    # below passes it because the entry coordinate itself is centered. This is the
+    # exact failure mode that keeps slipping the eye (one coord "looks right").
+    for e in edges:
+        label = e.value or e.id or "<edge>"
+        for (px, py) in e.points:
+            for (n, nb, is_rh) in node_boxes:
+                if pt_in_node(px, py, nb, is_rh, TOL):
+                    hard.append(
+                        f"edge '{label}': waypoint ({px:g},{py:g}) sits INSIDE box "
+                        f"'{n.value or n.id}'. A turn must stay in clear space (a gutter "
+                        f"or the gap between boxes), never inside the box it routes to/past. "
+                        f"For a top entry the corner's y must be ABOVE the box top.")
+                    break
+
+    # HARD: an edge segment must not pass THROUGH a box that is neither its source nor
+    # its target. This is P1 (the top-priority no-crossing rule) and was previously
+    # unguarded - a straight leg can clip a box with NO waypoint inside it.
+    for e in edges:
+        poly = edge_polyline(e, cells)
+        if len(poly) < 2:
+            continue
+        label = e.value or e.id or "<edge>"
+        hit = None
+        for (ax, ay), (bx, by) in zip(poly, poly[1:]):
+            for (n, nb, is_rh) in node_boxes:
+                if is_rh or n.id in (e.source, e.target):
+                    continue
+                if seg_hits_rect(ax, ay, bx, by, nb, TOL):
+                    hit = n
+                    break
+            if hit:
+                break
+        if hit:
+            hard.append(
+                f"edge '{label}': a segment passes THROUGH box '{hit.value or hit.id}' "
+                f"(not its source/target). Reroute through a gutter or a connector node (P1).")
+
+    # HARD: the final segment must be a perpendicular stab into the entered face -
+    # centered on that face (perpendicular axis) AND approaching from the OUTSIDE
+    # (approach axis). The center check alone passed e_dconf_auto: x was centered
+    # but the last waypoint sat below the top edge, so the arrow stabbed UP from
+    # inside the box. Both halves are needed.
     for e in edges:
         if not e.points or e.target is None:
             continue
@@ -154,27 +296,43 @@ def check_page(root, page_name):
         lx, ly = e.points[-1]
         label = e.value or e.id or "<edge>"
         tname = tgt.value or e.target
+        btop, bbot = toy + tgt.y, toy + tgt.y + tgt.h
+        bleft, bright = tox + tgt.x, tox + tgt.x + tgt.w
         if ey in (0.0, 1.0):            # top/bottom face -> last leg must be vertical
             cx = tox + tgt.x + ex * tgt.w
+            face = "top" if ey == 0.0 else "bottom"
             if abs(lx - cx) > TOL + 1:
-                face = "top" if ey == 0.0 else "bottom"
                 hard.append(
                     f"edge '{label}' -> {tname} {face}: off-center entry (last waypoint "
                     f"x={lx:g}, face center x={cx:g}) - final leg isn't a straight vertical "
                     f"stab; the arrow grazes in sideways. Set last waypoint x={cx:g}.")
+            side_ok = (ly <= btop + TOL) if ey == 0.0 else (ly >= bbot - TOL)
+            if not side_ok:
+                where = "above" if ey == 0.0 else "below"
+                hard.append(
+                    f"edge '{label}' -> {tname} {face}: last waypoint y={ly:g} is on the WRONG "
+                    f"side of the {face} face (box top={btop:g}, bottom={bbot:g}) - the arrow "
+                    f"stabs in from inside/beyond, reading as a back-edge. The corner must sit "
+                    f"{where} the box.")
         elif ex in (0.0, 1.0):          # left/right face -> last leg must be horizontal
             cy = toy + tgt.y + ey * tgt.h
+            face = "left" if ex == 0.0 else "right"
             if abs(ly - cy) > TOL + 1:
-                face = "left" if ex == 0.0 else "right"
                 hard.append(
                     f"edge '{label}' -> {tname} {face}: off-center entry (last waypoint "
                     f"y={ly:g}, face center y={cy:g}) - final leg isn't a straight horizontal "
                     f"stab. Set last waypoint y={cy:g}.")
+            side_ok = (lx <= bleft + TOL) if ex == 0.0 else (lx >= bright - TOL)
+            if not side_ok:
+                where = "left of" if ex == 0.0 else "right of"
+                hard.append(
+                    f"edge '{label}' -> {tname} {face}: last waypoint x={lx:g} is on the WRONG "
+                    f"side of the {face} face (box left={bleft:g}, right={bright:g}) - the arrow "
+                    f"stabs in from inside/beyond. The corner must sit {where} the box.")
 
     # HARD: the FIRST segment must be a perpendicular stab OUT of the source face
-    # (mirror of the entry rule): exit-right -> leave horizontally first, exit-bottom ->
-    # leave straight down first, THEN bend. A 1-bend L's single corner must therefore
-    # sit at the source centre on the exit axis AND the target centre on the entry axis.
+    # (mirror of the entry rule): centered on the face AND leaving to the OUTSIDE
+    # before any bend.
     for e in edges:
         if not e.points or e.source is None:
             continue
@@ -188,22 +346,38 @@ def check_page(root, page_name):
         fx, fy = e.points[0]
         label = e.value or e.id or "<edge>"
         sname = src.value or e.source
+        btop, bbot = soy + src.y, soy + src.y + src.h
+        bleft, bright = sox + src.x, sox + src.x + src.w
         if xy in (0.0, 1.0):           # top/bottom exit -> first leg must be vertical
             cx = sox + src.x + xx * src.w
+            face = "top" if xy == 0.0 else "bottom"
             if abs(fx - cx) > TOL + 1:
-                face = "top" if xy == 0.0 else "bottom"
                 hard.append(
                     f"edge '{label}' <- {sname} {face}: off-centre EXIT (first waypoint "
                     f"x={fx:g}, face centre x={cx:g}) - it doesn't leave straight out the "
                     f"face before bending. Set first waypoint x={cx:g}.")
+            side_ok = (fy <= btop + TOL) if xy == 0.0 else (fy >= bbot - TOL)
+            if not side_ok:
+                where = "above" if xy == 0.0 else "below"
+                hard.append(
+                    f"edge '{label}' <- {sname} {face}: first waypoint y={fy:g} is on the WRONG "
+                    f"side of the {face} face (box top={btop:g}, bottom={bbot:g}) - it doesn't "
+                    f"leave the box before bending. The corner must sit {where} the box.")
         elif xx in (0.0, 1.0):         # left/right exit -> first leg must be horizontal
             cy = soy + src.y + xy * src.h
+            face = "left" if xx == 0.0 else "right"
             if abs(fy - cy) > TOL + 1:
-                face = "left" if xx == 0.0 else "right"
                 hard.append(
                     f"edge '{label}' <- {sname} {face}: off-centre EXIT (first waypoint "
                     f"y={fy:g}, face centre y={cy:g}) - it doesn't leave straight out the "
                     f"face before bending. Set first waypoint y={cy:g}.")
+            side_ok = (fx <= bleft + TOL) if xx == 0.0 else (fx >= bright - TOL)
+            if not side_ok:
+                where = "left of" if xx == 0.0 else "right of"
+                hard.append(
+                    f"edge '{label}' <- {sname} {face}: first waypoint x={fx:g} is on the WRONG "
+                    f"side of the {face} face (box left={bleft:g}, right={bright:g}) - it doesn't "
+                    f"leave the box before bending. The corner must sit {where} the box.")
 
     # HARD: a diagram title must sit ABOVE the lanes, never below the pool.
     lane_top = min((abs_origin(ln, cells)[1] + ln.y for ln in lanes), default=None)
@@ -218,6 +392,62 @@ def check_page(root, page_name):
                     hard.append(
                         f"title text '{c.value[:30]}' is below the pool (y={ty:g}) - a "
                         f"diagram title must be a horizontal bar ABOVE the lanes (y<{lane_top:g}).")
+
+    # ADVISORY: an edge with NO explicit waypoints whose fixed ports don't line up
+    # will be auto-routed with a jog. Usually harmless; flag so a real misalignment
+    # gets a look (kept advisory - draw.io's auto-route is often a clean orthogonal).
+    for e in edges:
+        if e.points or e.source is None or e.target is None:
+            continue
+        ex0, ey0 = fnum(e.style.get("exitX")), fnum(e.style.get("exitY"))
+        ix0, iy0 = fnum(e.style.get("entryX")), fnum(e.style.get("entryY"))
+        if None in (ex0, ey0, ix0, iy0):
+            continue
+        src, tgt = cells.get(e.source), cells.get(e.target)
+        if not src or not tgt or src.x is None or tgt.x is None:
+            continue
+        sox, soy = abs_origin(src, cells)
+        tox, toy = abs_origin(tgt, cells)
+        sx, sy = sox + src.x + ex0 * src.w, soy + src.y + ey0 * src.h
+        txp, typ = tox + tgt.x + ix0 * tgt.w, toy + tgt.y + iy0 * tgt.h
+        if ey0 in (0.0, 1.0) and iy0 in (0.0, 1.0) and abs(sx - txp) > TOL + 1:
+            advisory.append(
+                f"edge '{e.value or e.id}': no waypoints, source/target centre-x differ "
+                f"({sx:g} vs {txp:g}) - draw.io will jog it. Align centres or add a waypoint.")
+        elif ex0 in (0.0, 1.0) and ix0 in (0.0, 1.0) and abs(sy - typ) > TOL + 1:
+            advisory.append(
+                f"edge '{e.value or e.id}': no waypoints, source/target centre-y differ "
+                f"({sy:g} vs {typ:g}) - draw.io will jog it. Align centres or add a waypoint.")
+
+    # ADVISORY: two connectors cross (a horizontal leg of one meets a vertical leg
+    # of another in open space). P1 says avoid crossings, but a crossing can be made
+    # legible with jumpStyle=arc, so this is advisory, not a hard fail.
+    polys = [(e, edge_polyline(e, cells)) for e in edges]
+    reported = set()
+    for i in range(len(polys)):
+        e1, p1 = polys[i]
+        if len(p1) < 2:
+            continue
+        for j in range(i + 1, len(polys)):
+            e2, p2 = polys[j]
+            if len(p2) < 2:
+                continue
+            pair = frozenset((e1.id, e2.id))
+            if pair in reported:
+                continue
+            crossed = False
+            for (a1, b1) in zip(p1, p1[1:]):
+                for (a2, b2) in zip(p2, p2[1:]):
+                    if _seg_cross(a1, b1, a2, b2):
+                        crossed = True
+                        break
+                if crossed:
+                    break
+            if crossed:
+                reported.add(pair)
+                advisory.append(
+                    f"edges '{e1.value or e1.id}' and '{e2.value or e2.id}' cross - reroute "
+                    f"to avoid it (P1), or add jumpStyle=arc to one if unavoidable.")
 
     # ADVISORY: >1 connector on the same side of a box (P8 - taste only)
     side_count = {}  # (node_id, side) -> n
@@ -253,7 +483,7 @@ def check_page(root, page_name):
     return hard, advisory
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("file")
     ap.add_argument("--page", type=int, default=None, help="1-based page index")

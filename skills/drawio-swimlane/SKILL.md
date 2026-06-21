@@ -25,8 +25,9 @@ Each phase has a detailed home below; this is the spine that ties them together:
 2. **Build** the `.drawio` from that plan: lanes, then nodes, then edges with fixed
    connection points. → "draw.io authoring specifics".
 3. **Verify** — never trust the XML. Run `scripts/check_layout.py` (a hard gate that
-   catches the over-the-top back-edge the eye keeps missing), **then** export the PNG
-   and look at it against P1–P8. → "Verify loop".
+   catches the "looks-right-in-XML but renders broken" faults the eye keeps missing —
+   over-the-top back-edges, waypoints inside a box, wrong-side stabs, lines through a
+   box), **then** export the PNG and look at it against P1–P8. → "Verify loop".
 4. **Fix** by the priority order (lowest P-number wins) and re-verify. A hand edit is
    **not done** until `check_layout.py` exits 0 **and** the re-exported PNG looks
    clean — never declare a diagram finished off an unverified edit.
@@ -105,6 +106,23 @@ confuses. Fix this at layout time (node placement), not by rerouting:
   between lanes reads as broken). Give all lanes the same height. Nodes are children
   of their lane (geometry is lane-relative); edges use `parent="1"` (root) so
   waypoints are in absolute page coords.
+- **Page setup - infinite canvas, grid on.** Set the `mxGraphModel` to
+  `page="0" grid="1" gridSize="10"` (keep `pageWidth`/`pageHeight` as harmless A4
+  stubs, e.g. 1169×827). Why `page="0"`: swimlane heights are unpredictable, and a
+  fixed page (`page="1"`) draws page-break dashes slicing the flow the moment content
+  exceeds the page height - the diagram looks broken in the editor and you'd have to
+  recompute `pageHeight` every time. The **swimlane pool is already the visible
+  frame**, so you lose nothing. And it doesn't affect output: PNG/SVG export **crops
+  to the content bounding box + border regardless** of page settings, and the grid
+  never appears in exports. Use the **same header on every page** of a multi-page file
+  so tabs look consistent. (Only switch to `page="1"` with a content-fitted
+  `pageWidth`/`pageHeight` if the deliverable is a paginated PDF for print.)
+
+  ```xml
+  <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tooltips="1"
+    connect="1" arrows="1" fold="1" page="0" pageScale="1"
+    pageWidth="1169" pageHeight="827" math="0" shadow="0">
+  ```
 - **No decoration unless asked:** omit fillColor (white) / strokeColor (black).
   **Terminators are unfilled too** - a Start/End is a plain open `ellipse`
   (`ellipse;whiteSpace=wrap;html=1;`), NOT a solid black BPMN-style dot. Filling it
@@ -158,6 +176,7 @@ confuses. Fix this at layout time (node placement), not by rerouting:
   | directly above (a loop), column clear | top | **bottom-centre** | 0 | straight up |
   | level, to one side | side toward T | T's near side | 0 | horizontal |
   | lower **and** to one side (forward hand-off) | side toward T | **top-centre** | 1 | run across to T's centre-X, then **down** into the top |
+  | lower & to one side, but S's side port is **taken** (e.g. a decision's 2nd branch) | bottom | **top-centre** | 2 | down into the **gap above T** (corner y between the box above T and T.top), across to T's centre-X, then **down** into the top — the across-leg must sit in clear space, never at/below T.top |
   | higher **and** to one side (back-loop) | side toward T | **bottom-centre** or near side | 1 | run across, then **up** into the bottom |
   | lower, but T must be entered on a *side* face | bottom | **the side facing S** | 2 | down to T's centre-Y, then **horizontal** into that side |
 
@@ -185,6 +204,14 @@ confuses. Fix this at layout time (node placement), not by rerouting:
   (e.g. side exit + top entry -> corner X = target centre-X *and* corner Y = source
   centre-Y). Off by even ~20px and the router jogs - the exact miscalc `check_layout.py`
   flags at both ends (watch lane-relative vs absolute coords when you compute a centre).
+  **Every waypoint must sit in clear space** - a gutter or the gap between boxes -
+  **never inside the box it routes to/past, and never on the far side of the face it
+  enters.** For a top entry the corner's y must be **above** the box top (so the arrow
+  comes *down* into it); for a bottom entry, below; left, to the left; right, to the
+  right. A corner that lands centred on the face but *inside* the body still passes a
+  naive centre-check yet renders as an arrow stabbing in from the wrong side - so
+  `check_layout.py` hard-fails a waypoint inside any box and a last/first waypoint on
+  the wrong side of its face.
 - **Loops/returns** stay **inside the pool body** and route **down or sideways through
   empty lane space** — never up over the top. A return edge must not pass **above the
   topmost node** or through the **lane-header/title band**: that empty strip "crosses
@@ -213,10 +240,20 @@ can't slip through; Gate 2 is your eyes on the rendered PNG. Iterate both until 
 script exits 0 and the PNG looks clean.
 
 **Gate 1 - `scripts/check_layout.py` (hard gate).** Resolves lane-relative child
-geometry to absolute coords and hard-fails (exit 1) any connector that routes
-**above the topmost node** or through the **lane-header band** - the over-the-top
-back-edge you cannot reliably catch by eye. It also prints advisory P8 (same-side)
-notes; fix those only if free per the priority order (don't "fix" a P8 case if it
+geometry to absolute coords and hard-fails (exit 1) the whole class of "looks-right-
+in-XML but renders broken" connector faults:
+- a waypoint **above the topmost node** or in the **lane-header band** (over-the-top
+  back-edge);
+- a waypoint sitting **inside any box**, or a first/last waypoint on the **wrong side**
+  of the face it leaves/enters (arrow stabs in from inside/beyond - the failure a
+  naive centre-check misses);
+- an off-centre first/last stab (arrow grazes in sideways);
+- an edge segment driven **through a box** that isn't its source/target (P1);
+- a **title below the pool**.
+
+It also prints **advisory** notes (never fail the build): edge–edge crossings,
+same-side pile-ups (P8), bend-heavy edges, and port-less edges whose ends don't line
+up. Fix advisories only if free per the priority order (don't "fix" a P8 case if it
 breaks P1-P4).
 
 ```bash
