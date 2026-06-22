@@ -29,7 +29,7 @@ All failed extractions default to empty structures. Log `⚠️` warning and con
 ## Retry & Coverage
 
 - On timeout: wait 2s, retry once. If still fails, use fallback. Never retry indefinitely.
-- Track coverage: `detected_sections / 17 * 100` — list missing sections in `coverage.missing`
+- Track coverage: `detected_sections / 20 * 100` — list missing sections in `coverage.missing`
 
 ---
 
