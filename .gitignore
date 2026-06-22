@@ -34,3 +34,6 @@ reference/
 **/CLAUDE.md
 !.claude/CLAUDE.md
 skills/*-workspace/
+
+# Generated extraction output (regenerate via /extract)
+design-system/extracted/
