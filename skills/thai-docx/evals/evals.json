@@ -1,0 +1,26 @@
+{
+  "skill_name": "thai-docx",
+  "evals": [
+    {
+      "id": 0,
+      "name": "witness-statement-uniform-16pt",
+      "prompt": "ช่วยสร้างไฟล์ Word (.docx) ด้วย python-docx เป็นคำให้การพยานภาษาไทย มีหัวข้อ \"คำให้การพยาน\" ตัวหนากลางหน้า ตามด้วย 3 ย่อหน้าขึ้นต้น \"ข้อ ๑.\" \"ข้อ ๒.\" \"ข้อ ๓.\" โดยมีวลี \"ข้าพเจ้าขอเบิกความว่า\" เป็นตัวหนาในย่อหน้าแรก ใช้ TH Sarabun New 16pt ทุกอย่างรวมหัวข้อ บันทึกเป็น witness.docx",
+      "expected_output": "Every Thai run carries w:cs=TH Sarabun New and explicit szCs=32 (16pt); bold runs carry w:bCs; settings has themeFontLang bidi. verify_thai_docx.py exits 0.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "thai-distributed-body",
+      "prompt": "สร้างไฟล์ Word (.docx) ภาษาไทยเป็นบันทึกข้อความราชการ มีหัวข้อกลางหน้า เนื้อความยาวหลายย่อหน้า และบล็อกลายเซ็นกลางหน้า จัดเนื้อความแบบกระจายแบบไทย (Thai Distributed) ฟอนต์ TH Sarabun New 16pt ทุกอย่าง บันทึกเป็น memo.docx",
+      "expected_output": "Body paragraphs carry w:jc=thaiDistribute with ZWSP word breaks; heading and centred signature keep their alignment; settings has doNotExpandShiftReturn; all runs w:cs=TH Sarabun New 16pt. verify_thai_docx.py exits 0.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "multilevel-headings-table",
+      "prompt": "สร้างไฟล์ Word (.docx) ภาษาไทยเป็นระเบียบบริษัท มีหัวข้อใหญ่ Heading 1, หัวข้อย่อย Heading 2 ตัวหนา, เนื้อความ 16pt, และตาราง 2 คอลัมน์อย่างน้อย 3 แถว ฟอนต์ TH Sarabun New บันทึกเป็น policy.docx",
+      "expected_output": "Every Thai run (including table cells) carries w:cs; runs with explicit sz have matching szCs; headings keep their own size unless uniform mode is used. verify_thai_docx.py exits 0.",
+      "files": []
+    }
+  ]
+}
