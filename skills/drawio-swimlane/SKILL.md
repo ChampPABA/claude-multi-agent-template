@@ -251,9 +251,20 @@ in-XML but renders broken" connector faults:
 - an edge segment driven **through a box** that isn't its source/target (P1);
 - a **title below the pool**.
 
-It also prints **advisory** notes (never fail the build): edge–edge crossings,
-same-side pile-ups (P8), bend-heavy edges, and port-less edges whose ends don't line
-up. Fix advisories only if free per the priority order (don't "fix" a P8 case if it
+It also prints **advisory** notes (never fail the build, because the fix can lower a
+lower-priority rule): edge–edge crossings, same-side pile-ups (P8), bend-heavy edges,
+and port-less edges whose ends don't line up.
+
+**An edge–edge crossing advisory is NOT optional - it is P1, the strongest rule.** The
+script leaves it advisory only because the legible-crossing escape hatch
+(`jumpStyle=arc`) exists, not because a crossing is acceptable. When the script prints a
+crossing, treat it as a defect and clear it before moving on: **first reorder/replace
+nodes** so the sequence no longer forces the crossing (a crossing usually means two
+steps are out of flow order - same staircase fix as a back-edge), **then reroute**
+(extra bend, outer gutter, connector node). Only if a crossing genuinely cannot be
+removed by either, add `jumpStyle=arc` to one edge. Re-run the gate and repeat until
+**zero** crossing advisories remain. The P8/bend/port-less advisories, by contrast, are
+taste-only: fix them only if free per the priority order (don't "fix" a P8 case if it
 breaks P1-P4).
 
 ```bash
