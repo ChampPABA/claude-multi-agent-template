@@ -55,9 +55,13 @@ whose **source sits higher** moves to the **top**; the lower source keeps the si
 
 ## How we verify
 
-Export each page to PNG via the draw.io CLI and inspect visually (we cannot trust
-the XML alone). A script audit can flag P8 (same-side count) but P8 is advisory —
-do not "fix" a P8 case if the fix violates P1–P4.
+`scripts/check_layout.py` is the primary gate: it hard-fails the render-breaking
+faults (over-the-top back-edges, wrong-side stabs, lines through a box, and crossings —
+P1) that the XML hides. Crossings are hard unless one edge carries `jumpStyle=arc` to
+declare the crossing legible. P8 (same-side count), bend-heavy, and auto-route notes are
+advisory — do not "fix" a P8 case if the fix violates P1–P4. Export a PNG and inspect
+visually only as a final glance, and only when the gate reports an auto-route edge it
+could not trace (or the flow is large enough that spacing/labels need an eye).
 
 ## Sources
 

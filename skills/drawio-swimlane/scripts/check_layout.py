@@ -12,7 +12,9 @@ judgement calls into hard gates. The recurring members of that class:
     the wrong side of the face, so the arrow stabs in from inside/beyond the box;
   - a waypoint dropped INSIDE the very box it routes to/past, so the line cuts the
     body even though the entry point itself is centered;
-  - a segment driven straight THROUGH an unrelated box (P1, the no-crossing rule).
+  - a segment driven straight THROUGH an unrelated box (P1, the no-crossing rule);
+  - two connectors CROSSING (also P1) - hard unless one is marked jumpStyle=arc to
+    declare the crossing legible/unavoidable.
 
 It resolves lane-relative child geometry to absolute page coords (a node that is
 a child of a lane has its y measured from the lane's top, NOT the page), then
@@ -22,8 +24,10 @@ Usage:
     python check_layout.py flow.drawio            # all pages
     python check_layout.py flow.drawio --page 2   # 1-based page
 
-Exit code 1 if any HARD violation is found, else 0. Same-side (P8), bend-heavy,
-edge-crossing, and unaligned-portless-edge notes are ADVISORY (never fail).
+Exit code 1 if any HARD violation is found, else 0. Same-side (P8), bend-heavy, and
+auto-route (portless) notes are ADVISORY (never fail). An auto-route advisory means
+the gate could NOT fully trace that edge, so a clean Gate-1 run with zero auto-route
+advisories is the signal the diagram is verified without a PNG render.
 """
 from __future__ import annotations
 
@@ -396,6 +400,11 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
     # ADVISORY: an edge with NO explicit waypoints whose fixed ports don't line up
     # will be auto-routed with a jog. Usually harmless; flag so a real misalignment
     # gets a look (kept advisory - draw.io's auto-route is often a clean orthogonal).
+    # These advisories are also the PNG-skip tripwire: an auto-routed edge is the one
+    # case the crossing/through-box HARD checks above cannot fully see (they only trace
+    # axis-aligned legs), so as long as ANY of these fire, the diagram still needs the
+    # one final visual glance. Zero auto-route advisories + Gate 1 exit 0 = the script
+    # saw every edge's real geometry, and the PNG can be skipped.
     for e in edges:
         if e.points or e.source is None or e.target is None:
             continue
@@ -418,10 +427,22 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
             advisory.append(
                 f"edge '{e.value or e.id}': no waypoints, source/target centre-y differ "
                 f"({sy:g} vs {typ:g}) - draw.io will jog it. Align centres or add a waypoint.")
+        elif (ey0 in (0.0, 1.0)) != (iy0 in (0.0, 1.0)):
+            advisory.append(
+                f"edge '{e.value or e.id}': no waypoints, exit and entry are on "
+                f"perpendicular faces - draw.io auto-routes an L the gate cannot trace. "
+                f"Add the corner waypoint so its geometry is checkable (or render to confirm).")
 
-    # ADVISORY: two connectors cross (a horizontal leg of one meets a vertical leg
-    # of another in open space). P1 says avoid crossings, but a crossing can be made
-    # legible with jumpStyle=arc, so this is advisory, not a hard fail.
+    # HARD: two connectors cross (a horizontal leg of one meets a vertical leg of
+    # another in open space). Crossings are P1, the strongest readability rule, so an
+    # un-acknowledged crossing is a hard fail - this is what lets the script stand in
+    # for the eye instead of every diagram paying for a PNG render. The one legitimate
+    # crossing is the legible kind: when it genuinely cannot be routed away, the author
+    # marks ONE of the two edges with jumpStyle=arc (or =gap/=sharp). A crossing where
+    # either edge carries jumpStyle is therefore treated as acknowledged -> advisory,
+    # not a fail. (Caveat the skill must respect: this only sees axis-aligned legs;
+    # an auto-routed edge with no explicit waypoints can render a crossing the script
+    # never evaluates - hence the auto-route advisory above is the PNG-skip tripwire.)
     polys = [(e, edge_polyline(e, cells)) for e in edges]
     reported = set()
     for i in range(len(polys)):
@@ -445,9 +466,17 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
                     break
             if crossed:
                 reported.add(pair)
-                advisory.append(
-                    f"edges '{e1.value or e1.id}' and '{e2.value or e2.id}' cross - reroute "
-                    f"to avoid it (P1), or add jumpStyle=arc to one if unavoidable.")
+                n1, n2 = e1.value or e1.id, e2.value or e2.id
+                if e1.style.get("jumpStyle") or e2.style.get("jumpStyle"):
+                    advisory.append(
+                        f"edges '{n1}' and '{n2}' cross but one has jumpStyle "
+                        f"(acknowledged/legible) - allowed.")
+                else:
+                    hard.append(
+                        f"edges '{n1}' and '{n2}' cross (P1). Reorder nodes so the "
+                        f"sequence no longer forces it, or reroute (extra bend / outer "
+                        f"gutter / connector node). Only if truly unavoidable, add "
+                        f"jumpStyle=arc to one edge to mark it legible.")
 
     # ADVISORY: >1 connector on the same side of a box (P8 - taste only)
     side_count = {}  # (node_id, side) -> n
