@@ -1,0 +1,78 @@
+{
+ "title": "Employee onboarding",
+ "lanes": [
+  "Hiring Manager",
+  "HR",
+  "Payroll"
+ ],
+ "nodes": [
+  {
+   "id": "n1",
+   "lane": 0,
+   "kind": "start",
+   "text": "Start"
+  },
+  {
+   "id": "n2",
+   "lane": 0,
+   "kind": "process",
+   "text": "Fill new-hire form"
+  },
+  {
+   "id": "n3",
+   "lane": 1,
+   "kind": "process",
+   "text": "Check paperwork"
+  },
+  {
+   "id": "n4",
+   "lane": 1,
+   "kind": "process",
+   "text": "Enter into HR system"
+  },
+  {
+   "id": "n5",
+   "lane": 2,
+   "kind": "process",
+   "text": "Set up salary"
+  },
+  {
+   "id": "n6",
+   "lane": 2,
+   "kind": "output",
+   "text": "Welcome email to new hire"
+  },
+  {
+   "id": "n7",
+   "lane": 2,
+   "kind": "end",
+   "text": "End"
+  }
+ ],
+ "edges": [
+  {
+   "src": "n1",
+   "dst": "n2"
+  },
+  {
+   "src": "n2",
+   "dst": "n3"
+  },
+  {
+   "src": "n3",
+   "dst": "n4"
+  },
+  {
+   "src": "n4",
+   "dst": "n5"
+  },
+  {
+   "src": "n5",
+   "dst": "n6"
+  },
+  {
+   "src": "n6",
+   "dst": "n7"
+  }
+ ]
+}

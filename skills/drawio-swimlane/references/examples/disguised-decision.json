@@ -1,0 +1,12 @@
+{"title":"Blog publishing workflow","lanes":["Writer","Editor","SEO","Publishing"],
+ "nodes":[
+  {"id":"n1","lane":0,"kind":"start","text":"Start"},
+  {"id":"n2","lane":0,"kind":"process","text":"Draft the article"},
+  {"id":"n3","lane":1,"kind":"decision","text":"Editor review: good enough?"},
+  {"id":"n4","lane":2,"kind":"process","text":"Optimize for SEO"},
+  {"id":"n5","lane":3,"kind":"process","text":"CMS publishes automatically"},
+  {"id":"n6","lane":3,"kind":"end","text":"Published"}],
+ "edges":[
+  {"src":"n1","dst":"n2"},{"src":"n2","dst":"n3"},
+  {"src":"n3","dst":"n4","label":"Good"},{"src":"n3","dst":"n2","label":"Needs work"},
+  {"src":"n4","dst":"n5"},{"src":"n5","dst":"n6"}]}

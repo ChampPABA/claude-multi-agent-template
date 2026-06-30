@@ -1,0 +1,126 @@
+{
+ "title": "F5 - Make & approve offer",
+ "lanes": [
+  "Candidate",
+  "Recruiter",
+  "Approver",
+  "System"
+ ],
+ "nodes": [
+  {
+   "id": "n1",
+   "lane": 1,
+   "kind": "start",
+   "text": "Start",
+   "row": 0
+  },
+  {
+   "id": "n2",
+   "lane": 1,
+   "kind": "process",
+   "text": "Create job offer (salary, start date, terms)",
+   "row": 1
+  },
+  {
+   "id": "n3",
+   "lane": 1,
+   "kind": "decision",
+   "text": "Approval required?",
+   "row": 2
+  },
+  {
+   "id": "n4",
+   "lane": 2,
+   "kind": "decision",
+   "text": "Approvers review",
+   "row": 2
+  },
+  {
+   "id": "n5",
+   "lane": 3,
+   "kind": "process",
+   "text": "Generate offer doc; send for e-signature",
+   "row": 3
+  },
+  {
+   "id": "n6",
+   "lane": 0,
+   "kind": "decision",
+   "text": "Candidate accepts?",
+   "row": 4
+  },
+  {
+   "id": "n7",
+   "lane": 3,
+   "kind": "process",
+   "text": "Record acceptance",
+   "row": 5
+  },
+  {
+   "id": "n8",
+   "lane": 1,
+   "kind": "process",
+   "text": "Move to Hired; start onboarding",
+   "row": 6
+  },
+  {
+   "id": "n9",
+   "lane": 3,
+   "kind": "end",
+   "text": "End",
+   "row": 7
+  }
+ ],
+ "edges": [
+  {
+   "src": "n1",
+   "dst": "n2"
+  },
+  {
+   "src": "n2",
+   "dst": "n3"
+  },
+  {
+   "src": "n3",
+   "dst": "n4",
+   "label": "Yes"
+  },
+  {
+   "src": "n3",
+   "dst": "n5",
+   "label": "No"
+  },
+  {
+   "src": "n4",
+   "dst": "n5",
+   "label": "Approve"
+  },
+  {
+   "src": "n4",
+   "dst": "n2",
+   "label": "Reject - revise"
+  },
+  {
+   "src": "n5",
+   "dst": "n6"
+  },
+  {
+   "src": "n6",
+   "dst": "n7",
+   "label": "Yes"
+  },
+  {
+   "src": "n6",
+   "dst": "n9",
+   "label": "No"
+  },
+  {
+   "src": "n7",
+   "dst": "n8"
+  },
+  {
+   "src": "n8",
+   "dst": "n9"
+  }
+ ]
+}
