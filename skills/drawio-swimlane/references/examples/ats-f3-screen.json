@@ -1,0 +1,17 @@
+{"title":"F3 - Screen & move through pipeline","lanes":["Candidate","Recruiter","Hiring Team","System"],
+ "nodes":[
+  {"id":"n1","lane":1,"kind":"start","text":"Start"},
+  {"id":"n2","lane":1,"kind":"process","text":"Open application card on board"},
+  {"id":"n3","lane":3,"kind":"process","text":"Show resume summary, AI criteria, match score"},
+  {"id":"n4","lane":1,"kind":"process","text":"Review & star-rate"},
+  {"id":"n5","lane":1,"kind":"decision","text":"Advance candidate?"},
+  {"id":"n6","lane":1,"kind":"process","text":"Drag card to next stage"},
+  {"id":"n7","lane":3,"kind":"process","text":"Update stage, append movement, fire triggers"},
+  {"id":"n8","lane":2,"kind":"process","text":"Hiring team notified"},
+  {"id":"n9","lane":1,"kind":"decision","text":"Reached Hired stage?"},
+  {"id":"n10","lane":3,"kind":"end","text":"End"}],
+ "edges":[
+  {"src":"n1","dst":"n2"},{"src":"n2","dst":"n3"},{"src":"n3","dst":"n4"},{"src":"n4","dst":"n5"},
+  {"src":"n5","dst":"n6","label":"Yes"},{"src":"n6","dst":"n7"},{"src":"n7","dst":"n8"},
+  {"src":"n8","dst":"n9"},{"src":"n9","dst":"n4","label":"No - next stage"},
+  {"src":"n9","dst":"n10","label":"Hired"},{"src":"n5","dst":"n2","label":"No - re-review"}]}

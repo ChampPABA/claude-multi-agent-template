@@ -1,0 +1,12 @@
+{"title":"Leave request approval","lanes":["Employee","Manager","HR","Payroll"],
+ "nodes":[
+  {"id":"n1","lane":0,"kind":"start","text":"Start"},
+  {"id":"n2","lane":0,"kind":"process","text":"Submit leave request"},
+  {"id":"n3","lane":1,"kind":"decision","text":"Manager: approve?"},
+  {"id":"n4","lane":2,"kind":"process","text":"HR logs the leave"},
+  {"id":"n5","lane":3,"kind":"process","text":"Payroll adjusts pay"},
+  {"id":"n6","lane":3,"kind":"end","text":"Done"}],
+ "edges":[
+  {"src":"n1","dst":"n2"},{"src":"n2","dst":"n3"},
+  {"src":"n3","dst":"n4","label":"Yes"},{"src":"n3","dst":"n2","label":"No - revise"},
+  {"src":"n4","dst":"n5"},{"src":"n5","dst":"n6"}]}

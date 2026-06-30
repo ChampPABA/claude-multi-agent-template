@@ -189,6 +189,33 @@ def _seg_cross(a1: Point, b1: Point, a2: Point, b2: Point) -> bool:
     return (hx_lo + TOL < vx < hx_hi - TOL) and (vy_lo + TOL < hy < vy_hi - TOL)
 
 
+def _seg_overlap(a1: Point, b1: Point, a2: Point, b2: Point) -> bool:
+    """True if two axis-aligned segments are COLLINEAR and overlap along a shared run
+    (not just touch at a point). The crossing test above only sees perpendicular meetings,
+    so two edges drawn on top of each other - one line where the reader expects two -
+    slip past it. This catches that."""
+    def orient(a: Point, b: Point) -> str | None:
+        if abs(a[0] - b[0]) <= TOL:
+            return "v"
+        if abs(a[1] - b[1]) <= TOL:
+            return "h"
+        return None
+    o1, o2 = orient(a1, b1), orient(a2, b2)
+    if o1 is None or o2 is None or o1 != o2:
+        return False
+    if o1 == "v":
+        if abs(a1[0] - a2[0]) > TOL:
+            return False
+        lo = max(min(a1[1], b1[1]), min(a2[1], b2[1]))
+        hi = min(max(a1[1], b1[1]), max(a2[1], b2[1]))
+    else:
+        if abs(a1[1] - a2[1]) > TOL:
+            return False
+        lo = max(min(a1[0], b1[0]), min(a2[0], b2[0]))
+        hi = min(max(a1[0], b1[0]), max(a2[0], b2[0]))
+    return hi - lo > TOL
+
+
 def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
     cells: dict[str, Cell] = {}
     for el in root.iter("mxCell"):
@@ -508,6 +535,73 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
             advisory.append(
                 f"edge '{e.value or e.id}': {len(e.points)} waypoints (bend-heavy) - "
                 f"check for a shorter route, but keep it crossing-free (P1 wins).")
+
+    # HARD: two edges run COLLINEAR and overlap (drawn on top of each other - reads as one
+    # line where there are two). Common where decision branches or a merge share a face/column.
+    reported_ov = set()
+    for i in range(len(polys)):
+        e1, p1 = polys[i]
+        for j in range(i + 1, len(polys)):
+            e2, p2 = polys[j]
+            pair = frozenset((e1.id, e2.id))
+            if pair in reported_ov:
+                continue
+            hit = any(_seg_overlap(a1, b1, a2, b2)
+                      for a1, b1 in zip(p1, p1[1:]) for a2, b2 in zip(p2, p2[1:]))
+            if hit:
+                reported_ov.add(pair)
+                n1, n2 = e1.value or e1.id, e2.value or e2.id
+                hard.append(
+                    f"edges '{n1}' and '{n2}' overlap (run collinear on top of each other). "
+                    f"Give them distinct faces/columns: a decision's branches must leave "
+                    f"different vertices, and a merge's inbound edges must enter different faces.")
+
+    # HARD: two edges share the SAME exit or entry face-point (their perpendicular stabs
+    # land on one spot - the arrowheads/tails pile up). Each face-point takes one connector.
+    face_pt = {}
+    for e, p in polys:
+        if len(p) >= 2:
+            face_pt.setdefault(("source", round(p[0][0]), round(p[0][1])), []).append(e.value or e.id)
+            face_pt.setdefault(("target", round(p[-1][0]), round(p[-1][1])), []).append(e.value or e.id)
+    for (end, _x, _y), names in sorted(face_pt.items()):
+        if len(names) > 1:
+            hard.append(
+                f"{end} face-point ({_x},{_y}) is shared by edges {names} - their stabs "
+                f"overlap. Route each through a distinct face (a decision forks at separate "
+                f"vertices; a merge enters at separate faces).")
+
+    # ADVISORY: a connector runs ALONGSIDE a box it is not attached to, within a few px -
+    # the eye reads it as touching/overlapping the box even though it never enters it. This
+    # is the "looks crowded near a hub" fault that exact crossing/overlap tests don't see;
+    # it flags a congested cluster the deterministic layout can't place cleanly (-> free-form
+    # path or a hand nudge). Only a parallel run alongside the face counts, not a stab into it.
+    NEAR, MINLEN = 8.0, 18.0
+    flow_boxes = [(c, node_box(c, cells)) for c in cells.values()
+                  if c.is_vertex and not c.is_lane() and not c.is_text()
+                  and c.x is not None and c.w]
+    reported_nm = set()
+    for e, p in polys:
+        for a, b in zip(p, p[1:]):
+            vert, horiz = abs(a[0] - b[0]) <= TOL, abs(a[1] - b[1]) <= TOL
+            if not vert and not horiz:
+                continue
+            for c, (x0, y0, x1, y1) in flow_boxes:
+                if c.id in (e.source, e.target) or (e.id, c.id) in reported_nm:
+                    continue
+                if vert:
+                    sx = a[0]; lo, hi = sorted((a[1], b[1]))
+                    close = abs(sx - x0) < NEAR or abs(sx - x1) < NEAR   # band straddling either face
+                    span = min(hi, y1) - max(lo, y0)
+                else:
+                    sy = a[1]; lo, hi = sorted((a[0], b[0]))
+                    close = abs(sy - y0) < NEAR or abs(sy - y1) < NEAR
+                    span = min(hi, x1) - max(lo, x0)
+                if close and span > MINLEN:
+                    reported_nm.add((e.id, c.id))
+                    advisory.append(
+                        f"edge '{e.value or e.id}' runs alongside box '{c.value or c.id}' "
+                        f"(within {NEAR:.0f}px) - reads as touching it. Give the connector more "
+                        f"clearance, or route this congested cluster via the free-form path.")
 
     return hard, advisory
 

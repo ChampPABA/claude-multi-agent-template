@@ -13,6 +13,21 @@ guesswork, and a **script gate** (`check_layout.py`) that turns the render-break
 faults the eye keeps missing into hard failures — so the layout converges in the XML
 instead of in an expensive look-at-the-PNG loop.
 
+## Two ways to build — pick by the task
+
+- **Authoring a new swimlane from a process description → use the deterministic backend**
+  (`scripts/gen_swimlane.py`). Write a tiny JSON flow spec (lanes + nodes + edges as pure
+  topology); the script computes all geometry and emits a gate-clean `.drawio`. The model
+  spends **zero tokens on XML** and never re-emits full XML, so there is no Build→Verify→Fix
+  loop and no 32k-output crash. This is the common case and the default. **→ read
+  `references/generator.md` for the spec schema and how to run it.** Run `check_layout.py`
+  after — if it flags a HARD fault, a `runs alongside` near-miss, or the generator prints
+  `WARN over-envelope`, that diagram is a congested hub past the engine's envelope: fall back
+  to the hand-authoring path below (or nudge the few bad connectors in draw.io desktop).
+- **Cleaning up an existing messy `.drawio`, or a congested hub the generator can't route**
+  → hand-author with the Plan / Build / Verify / Fix process below. The generator builds
+  from a spec; it cannot ingest and reroute an existing diagram.
+
 ## How to work — Plan, Build, Verify, Fix
 
 Reliable diagrams come from doing these **in order**, not from drawing and hoping:
