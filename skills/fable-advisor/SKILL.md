@@ -62,6 +62,9 @@ Axis-2 model.)
 I've already framed. `advisor` sees your full conversation automatically, is backed
 by a strong reviewer, needs **zero brief**, and does **not** touch Fable quota.
 Reach for it liberally — the cheap second opinion. (Built-in tool, no arguments.)
+If this environment has no `advisor` tool (it's harness-specific, not stock Claude
+Code), get the same value by spawning a fresh review subagent on Opus/Sonnet,
+primed to poke holes, handed the diff and the decision you're unsure about.
 
 **3. NotebookLM** — the task is really *research*: read/synthesize a body of
 external material. Reading it all into context burns tokens for grunt work; offload
@@ -205,6 +208,12 @@ Just call the `advisor` tool (no arguments — it forwards your full context). N
 brief, no spawn, no Fable quota. Use it freely to check an approach before
 committing, after a substantial change, or when you're unsure and it's your own
 in-context work being judged.
+
+**Portable fallback:** the `advisor` tool is harness-specific and may be absent on
+another machine. When it is, spawn a fresh review subagent (`model: "opus"` or
+`"sonnet"`) with a short "poke holes in this approach; what breaks?" prompt plus the
+diff / the decision in question. Same job (a second opinion, no Fable quota); it
+just costs a brief instead of being free, so still prefer the real tool when present.
 
 ## NotebookLM path
 
