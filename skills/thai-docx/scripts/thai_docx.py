@@ -141,7 +141,7 @@ def _iter_run_parts(doc):
 
 def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  size_pt=DEFAULT_SIZE_PT, thai_size_pt=None, latin_size_pt=None,
-                 uniform_size_pt=None, distribute=False, lang="th-TH", add_zwsp=False):
+                 uniform_size_pt=None, distribute=True, lang="th-TH", add_zwsp=False):
     """Make `doc` render Thai correctly in Microsoft Word. Call once before save().
 
     thai_font:   Complex-script font (Thai). Default "TH Sarabun New".
@@ -156,7 +156,12 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  (TH Sarabun New 16pt everywhere; headings differ only by weight,
                  not size). When None (default) heading sizes are preserved.
     distribute:  Set Thai Distributed (กระจายแบบไทย, w:jc='thaiDistribute') on body
-                 content paragraphs -- the Thai government norm for เนื้อความ. Only
+                 content paragraphs -- the Thai government norm for เนื้อความ, and the
+                 DEFAULT (True). Renders beautifully in real Microsoft Word (verified
+                 by eye); note it shows as plain left-aligned in LibreOffice / Google
+                 Docs / previews, which do not support thaiDistribute -- that is a
+                 viewer limitation, not a defect. Pass distribute=False for a plainly
+                 left-aligned (ชิดซ้าย) document. Only
                  plain body paragraphs are distributed; headings and centred/right
                  paragraphs (titles, signatures, ที่/เรื่อง/เรียน lines) are left as
                  they are, because distributing a short meta line looks wrong.

@@ -48,9 +48,19 @@ from thai_docx import enforce_thai
 
 doc = Document()
 # ... build the document normally with python-docx ...
-enforce_thai(doc)          # fills every Thai (cs) slot across the whole document
+enforce_thai(doc)          # fills every Thai (cs) slot + Thai-Distributed body (default)
 doc.save('out.docx')
 ```
+
+**Default alignment = Thai Distributed (กระจายแบบไทย).** A bare `enforce_thai(doc)`
+distributes body paragraphs (`w:jc='thaiDistribute'` + word-boundary breaks), which is
+the ราชการ norm and renders beautifully in **real Microsoft Word**. For a plainly
+left-aligned document pass `enforce_thai(doc, distribute=False)`. Headings, centred
+titles and signatures keep their own alignment either way.
+
+> ⚠️ **thaiDistribute is a Word-only feature.** LibreOffice, Google Docs and previews
+> render it as plain **left-aligned** (ชิดซ้าย) — that is the viewer's limitation, not
+> a bug in the file. Judge alignment only in real Microsoft Word.
 
 `enforce_thai(doc)` walks every run (body, tables, nested tables, text boxes,
 headers, footers, footnotes), every style, the document defaults, `settings.xml`
@@ -78,11 +88,14 @@ trying to fix:
 # (headings differ only by weight, not size). This is the common case for ราชการ docs:
 enforce_thai(doc, uniform_size_pt=16)             # all TH Sarabun New 16pt, headings too
 
-# Thai Distributed (กระจายแบบไทย) on body content — the standard for เนื้อความ.
-# Distributes only plain body paragraphs (headings, centred titles and signatures
-# keep their alignment), auto-inserts word-boundary breaks so lines don't stretch,
-# and sets w:doNotExpandShiftReturn. Typical ราชการ call:
-enforce_thai(doc, uniform_size_pt=16, distribute=True)
+# Thai Distributed (กระจายแบบไทย) is the DEFAULT — distributes plain body paragraphs
+# (headings, centred titles and signatures keep their alignment), auto-inserts
+# word-boundary breaks so lines don't stretch, and sets w:doNotExpandShiftReturn.
+# Typical ราชการ call (distribute is already on):
+enforce_thai(doc, uniform_size_pt=16)
+
+# Plain left-aligned (ชิดซ้าย) instead — turn distribute off:
+enforce_thai(doc, uniform_size_pt=16, distribute=False)
 
 # Split Latin vs Thai font inside the same run (no need to split text into runs):
 enforce_thai(doc, latin_font="Times New Roman")   # English Times, Thai TH Sarabun
