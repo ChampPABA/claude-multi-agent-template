@@ -64,13 +64,21 @@ titles and signatures keep their own alignment either way.
 
 `enforce_thai(doc)` walks every run (body, tables, nested tables, text boxes,
 headers, footers, footnotes), every style, the document defaults, `settings.xml`
-and the theme, and sets the complex-script properties. Defaults give the user's
-standard: **TH Sarabun New, 16pt**.
+and the theme, and sets the complex-script properties.
 
-### The one invariant that keeps headings intact
+**Defaults = the ราชการ standard, so a bare `enforce_thai(doc)` is normally all you need:**
 
-`enforce_thai` follows a deliberate rule so it never damages a document it is
-trying to fix:
+| | default | opt out with |
+|---|---|---|
+| Font | TH Sarabun New (Thai + Latin) | `thai_font=`, `latin_font=` |
+| Size | **16pt on everything, headings included** (they differ by weight, not size) | `uniform=False` → each heading keeps its own size |
+| Page | **A4, margins ซ้าย 3 / ขวา 2 / บน 2.5 / ล่าง 2 ซม.** (python-docx would emit US Letter) | `page=False` |
+| Alignment | Thai Distributed on body paragraphs | `distribute=False` → ชิดซ้าย |
+| Word breaks | ZWSP at every Thai word boundary + inside long URLs | — (see below; not optional) |
+
+### The invariant behind `uniform=False`
+
+With `uniform=False`, `enforce_thai` never resizes text it did not size itself:
 
 - **Font (`w:cs`) and language (`w:lang/@w:bidi`): set everywhere.** Always safe.
 - **Size (`w:szCs`): only mirror where an explicit `w:sz` already exists.** A run
@@ -84,18 +92,14 @@ trying to fix:
 ### Common options
 
 ```python
-# Thai government-document norm — EVERYTHING one font, one size, headings included
-# (headings differ only by weight, not size). This is the common case for ราชการ docs:
-enforce_thai(doc, uniform_size_pt=16)             # all TH Sarabun New 16pt, headings too
+# Plain left-aligned (ชิดซ้าย) instead of Thai Distributed:
+enforce_thai(doc, distribute=False)
 
-# Thai Distributed (กระจายแบบไทย) is the DEFAULT — distributes plain body paragraphs
-# (headings, centred titles and signatures keep their alignment), auto-inserts
-# word-boundary breaks so lines don't stretch, and sets w:doNotExpandShiftReturn.
-# Typical ราชการ call (distribute is already on):
-enforce_thai(doc, uniform_size_pt=16)
+# Keep each heading's own size instead of flattening everything to 16pt:
+enforce_thai(doc, uniform=False)
 
-# Plain left-aligned (ชิดซ้าย) instead — turn distribute off:
-enforce_thai(doc, uniform_size_pt=16, distribute=False)
+# Leave the document's existing page size/margins alone:
+enforce_thai(doc, page=False)
 
 # Split Latin vs Thai font inside the same run (no need to split text into runs):
 enforce_thai(doc, latin_font="Times New Roman")   # English Times, Thai TH Sarabun
@@ -107,10 +111,33 @@ enforce_thai(doc, latin_font="Angsana New", thai_size_pt=16, latin_size_pt=14)
 enforce_thai(doc, add_zwsp=True)   # inserts U+200B at word boundaries (pythainlp)
 ```
 
-`add_zwsp` gives Word legal break points at word boundaries (Thai has no spaces),
-so it breaks *between* words instead of stretching the glyphs of one word across
-the line. It needs `pythainlp`; without it the step is skipped with a warning and
-nothing else breaks. Because it edits run text, it runs last.
+### Word breaks (ZWSP) — why they are mandatory, not optional
+
+Word only applies its Thai word-breaking dictionary if the *reader* has Thai
+enabled as an editing/proofing language. On a machine where it is not, Word breaks
+a Thai line **only at a real space (U+0020)** — and Thai barely has any. Lines then
+end at ~60% of the column, and Thai Distributed stretches those few characters
+across the full width: the "some lines are spread far too wide" symptom.
+
+So `enforce_thai` inserts U+200B at every Thai word boundary (pythainlp), which is
+a legal break opportunity in Word and is *not* expanded as whitespace during
+justification. It also adds break points inside long non-Thai tokens (URLs, paths,
+e-mails > 15 chars) — a 43-char URL is one unbreakable token to Word, so the line
+before it would otherwise end at ~60%.
+
+Measured line fill (TH Sarabun New 16pt, 6.5" column, before Word stretches):
+
+| break points available | long Thai paragraph | paragraph with a URL |
+|---|---|---|
+| real spaces only (no pythainlp) | **63%** | **58%** |
+| + Thai word boundaries | 91% | 63% |
+| + long-URL/Latin breaks (current) | 91% | **99%** |
+
+Because it edits run text, this step runs last. With `distribute=True` (the
+default) a missing `pythainlp` **raises** — silently emitting a document Word
+cannot break is the exact defect above. Install it, or pass `distribute=False`.
+Do *not* break Thai at syllable level to pack lines tighter: it splits หน้า into
+ห / น้า across two lines, which is wrong Thai typography.
 
 ## QA scanner: trust this, not the preview
 
@@ -128,7 +155,9 @@ hand — it is the source of truth, because the preview hides these defects.
 ## Dependencies
 
 - `python-docx` — required.
-- `pythainlp` — optional; only needed for `add_zwsp`. Everything else works without it.
+- `pythainlp` — required whenever `distribute=True` (the default) or `add_zwsp=True`;
+  `enforce_thai` raises without it. `pip install pythainlp`. Only a
+  `distribute=False` document works without it.
 
 ## Scope
 

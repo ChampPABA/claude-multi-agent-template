@@ -141,20 +141,25 @@ def _iter_run_parts(doc):
 
 def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  size_pt=DEFAULT_SIZE_PT, thai_size_pt=None, latin_size_pt=None,
-                 uniform_size_pt=None, distribute=True, lang="th-TH", add_zwsp=False):
+                 uniform=True, distribute=True, page=True, lang="th-TH",
+                 add_zwsp=False):
     """Make `doc` render Thai correctly in Microsoft Word. Call once before save().
 
     thai_font:   Complex-script font (Thai). Default "TH Sarabun New".
     latin_font:  Latin font. Default None -> same as thai_font (whole doc one font,
                  the usual Thai-gov-doc case). Pass a different value, e.g.
                  "Times New Roman", to split Latin vs Thai fonts within one run.
-    size_pt:     Base size for text that specifies none of its own. Default 16pt.
-    thai_size_pt/latin_size_pt: override the base size per script (Thai often looks
+    size_pt:     Body size. Default 16pt (TH Sarabun New 16pt = the ราชการ norm).
+    thai_size_pt/latin_size_pt: override the size per script (Thai often looks
                  smaller than a Latin font at the same point size).
-    uniform_size_pt: FORCE one size onto EVERYTHING, headings included, overriding
-                 each heading's own size. This is the Thai government-document norm
-                 (TH Sarabun New 16pt everywhere; headings differ only by weight,
-                 not size). When None (default) heading sizes are preserved.
+    uniform:     FORCE size_pt onto EVERYTHING, headings included, overriding each
+                 heading's own size. DEFAULT (True), because that is the Thai
+                 government-document norm: one font, one size, headings differ only
+                 by weight. Pass uniform=False to preserve each heading's own size.
+    page:        Set A4 with ราชการ margins (left 3cm, right 2cm, top 2.5cm,
+                 bottom 2cm) on every section. DEFAULT (True) -- python-docx
+                 otherwise emits US Letter, which is wrong for a Thai document.
+                 Pass page=False to keep the document's existing page setup.
     distribute:  Set Thai Distributed (กระจายแบบไทย, w:jc='thaiDistribute') on body
                  content paragraphs -- the Thai government norm for เนื้อความ, and the
                  DEFAULT (True). Renders beautifully in real Microsoft Word (verified
@@ -167,17 +172,16 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  they are, because distributing a short meta line looks wrong.
                  thaiDistribute is a justify type, so the last line of a paragraph
                  stays naturally left-aligned (not stretched). Distribute REQUIRES
-                 word-boundary breaks to look right, so it auto-enables add_zwsp,
-                 and sets w:doNotExpandShiftReturn to stop Shift+Enter lines
-                 stretching. Needs pythainlp for the word breaks.
-    add_zwsp:    Insert zero-width spaces at Thai word boundaries so justified /
-                 Thai-distributed paragraphs break between words instead of
-                 stretching glyphs apart. Needs pythainlp; skipped with a warning
-                 if absent. Mutates run text, so do it last.
+                 word-boundary breaks to look right, so it auto-enables add_zwsp
+                 (and RAISES if pythainlp is missing -- see _insert_zwsp), and sets
+                 w:doNotExpandShiftReturn to stop Shift+Enter lines stretching.
+    add_zwsp:    Insert zero-width spaces at Thai word boundaries (and inside long
+                 URLs/Latin tokens) so justified / Thai-distributed paragraphs break
+                 between words instead of leaving a half-empty line for Word to
+                 stretch. Needs pythainlp; on its own (distribute=False) a missing
+                 pythainlp only warns. Mutates run text, so do it last.
     """
-    if uniform_size_pt is not None:
-        size_pt = thai_size_pt = latin_size_pt = uniform_size_pt
-    force_all = uniform_size_pt is not None      # override heading sizes too
+    force_all = uniform                          # override heading sizes too
     latin_font = latin_font or thai_font
     thai_hp = round((thai_size_pt or size_pt) * 2)
     latin_hp = round((latin_size_pt or size_pt) * 2)
@@ -192,7 +196,7 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
             plain = _is_plain_body_para(p)
             # Stamp the base size on plain body paragraphs; a paragraph with a named
             # style (Heading/Title/...) keeps that style's size -- UNLESS force_all
-            # (uniform_size_pt) is set, which flattens everything to one size.
+            # (uniform) is set, which flattens everything to one size.
             stamp = base if (force_all or plain) else None
             for r in p.iter(qn('w:r')):
                 _apply_rpr(r.get_or_add_rPr(), thai_hp=thai_hp, latin_hp=latin_hp,
@@ -200,10 +204,12 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                            **common)
             if distribute and plain:
                 _set_thai_distribute(p)
+    if page:
+        _enforce_page(doc)
     _enforce_settings(doc, lang=lang, no_expand_shift_return=distribute)
     _enforce_theme(doc, thai_font=thai_font)
     if add_zwsp or distribute:      # distribute needs word breaks to look right
-        _insert_zwsp(doc)
+        _insert_zwsp(doc, required=distribute)
     return doc
 
 
@@ -240,6 +246,16 @@ def _enforce_styles(doc, *, thai_font, latin_font, thai_hp, latin_hp=None, lang,
         _apply_rpr(rPr, thai_font=thai_font, latin_font=latin_font,
                    thai_hp=thai_hp, latin_hp=latin_hp, lang=lang,
                    force_size=force_size, mirror_toggles=True)
+
+
+def _enforce_page(doc):
+    """A4 with the ระเบียบงานสารบรรณ margins, on every section. python-docx defaults
+    to US Letter with 1"/1.25" margins, which no Thai document wants."""
+    from docx.shared import Cm
+    for s in doc.sections:
+        s.page_width, s.page_height = Cm(21), Cm(29.7)
+        s.left_margin, s.right_margin = Cm(3), Cm(2)
+        s.top_margin, s.bottom_margin = Cm(2.5), Cm(2)
 
 
 def _enforce_settings(doc, *, lang, no_expand_shift_return=False):
@@ -289,17 +305,67 @@ def _enforce_theme(doc, *, thai_font):
                                           encoding='UTF-8', standalone=True)
 
 
-def _insert_zwsp(doc):
+_LONG_LATIN = 15        # chars; longer non-Thai tokens (URLs, paths) get break points
+_URL_BREAK_AFTER = '/-_.:=?&,'
+
+
+def _split_long_latin(tok):
+    """Give a long non-Thai token (URL, file path, e-mail) places to break.
+
+    A 43-char URL is one unbreakable token to Word, so the line before it can end
+    at ~60% of the column -- and Thai Distributed then stretches those few
+    characters across the full width. Ordinary words stay whole: only tokens
+    longer than _LONG_LATIN are split, after URL punctuation first and by hard
+    chunking only if a piece is still overlong."""
+    if len(tok) <= _LONG_LATIN or _has_thai(tok):
+        return [tok]
+    pieces, cur = [], ''
+    for c in tok:
+        cur += c
+        if c in _URL_BREAK_AFTER:
+            pieces.append(cur)
+            cur = ''
+    if cur:
+        pieces.append(cur)
+    out = []
+    for p in pieces:
+        while len(p) > _LONG_LATIN:
+            out.append(p[:_LONG_LATIN])
+            p = p[_LONG_LATIN:]
+        if p:
+            out.append(p)
+    return out
+
+
+def _has_thai(s):
+    return any('฀' <= c <= '๿' for c in s)
+
+
+def _insert_zwsp(doc, required=False):
     try:
         from pythainlp.tokenize import word_tokenize
     except ImportError:
+        msg = ("pythainlp not installed, so Thai word-break hints (ZWSP) cannot be "
+               "inserted. Word can then only break a Thai line at a real space, "
+               "leaving lines ~60% full that Thai Distributed stretches wide apart.")
+        if required:
+            raise ImportError(msg + " Install pythainlp, or pass distribute=False.")
         import warnings
-        warnings.warn("pythainlp not installed; skipping ZWSP word-break insertion. "
-                      "Justified Thai paragraphs may stretch glyphs apart.")
+        warnings.warn(msg)
         return
+    import re
     zwsp = '​'
-    has_thai = lambda s: any('฀' <= c <= '๿' for c in s)
     for root in _iter_run_parts(doc):
         for t in root.iter(qn('w:t')):
-            if t.text and has_thai(t.text):
-                t.text = zwsp.join(word_tokenize(t.text))
+            if not t.text:
+                continue
+            if _has_thai(t.text):
+                toks = word_tokenize(t.text)
+            elif any(len(w) > _LONG_LATIN for w in t.text.split()):
+                # No Thai, but a long unbreakable token (a URL in a hyperlink run
+                # of its own): it still needs break points, or the line before it
+                # ends half-empty and gets stretched.
+                toks = re.findall(r'\S+|\s+', t.text)
+            else:
+                continue
+            t.text = zwsp.join(p for tok in toks for p in _split_long_latin(tok))
