@@ -1,0 +1,112 @@
+{
+  "skill_name": "offload",
+  "note": "Router-decision evals. What matters is WHERE the task gets routed, whether the file-sizing branch is handled correctly, and whether the run actually delivers an answer — not the depth of the research itself. Runs stop at the routing decision (plus the dialog spec) rather than executing long research jobs. Eval names describe the INPUT, never the expected route: an earlier round leaked the expected answer through directory names and a baseline read it off the path. Baselines must also be told not to read the offload skill; one previously did and its score was void.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "thai-rag-broad",
+      "prompt": "อยากรู้ว่าตอนนี้คนทำ RAG กับเอกสารภาษาไทยกันยังไง ใช้ tokenizer อะไร chunk ยังไง มีใครเทียบไว้บ้าง สรุปมาให้หน่อย ไม่รีบ",
+      "expected_output": "Broad, wants synthesis, explicitly not urgent — NotebookLM deep research with a haiku waiter, synthesis only.",
+      "files": [],
+      "assertions": [
+        "Routes to NotebookLM deep research",
+        "Specifies that the waiting subagent runs on haiku",
+        "States that only the synthesis is brought back, not the raw sources"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "cf-workers-deadline",
+      "prompt": "กำลังจะ deploy ใน 10 นาที ช่วยเช็คเร็วๆ ว่า Cloudflare Workers ยัง limit CPU time ที่ 30 วินาทีอยู่ไหม หรือเปลี่ยนไปแล้ว",
+      "expected_output": "Hard deadline, narrow factual question — a WebSearch subagent, and it must actually come back with the limit.",
+      "files": [],
+      "assertions": [
+        "Routes to a WebSearch subagent rather than NotebookLM",
+        "Names the stated 10-minute deadline as the reason a slower route is wrong",
+        "Delivers the actual answer about the current CPU time limit rather than only a routing decision"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "vectordb-pairwise",
+      "prompt": "เดี๋ยวจะเลือก vector db ให้โปรเจกต์นี้ pgvector กับ Qdrant ต่างกันตรงไหนบ้างในปี 2026 ขอแบบเจาะๆ ไม่ต้องยาว รอได้สักสองสามนาที",
+      "expected_output": "Targeted pairwise question with an explicit 2-3 minute tolerance — NotebookLM fast research.",
+      "files": [],
+      "assertions": [
+        "Routes to NotebookLM fast research rather than deep research or a plain WebSearch",
+        "Names the user's stated 2-3 minute tolerance as the deciding factor"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "rubric-3page",
+      "prompt": "ช่วยดู @/home/ari/project/AT206/docs/เกณฑ์คะแนนโครงงาน AT206_2_2568.pdf ให้หน่อยว่าเกณฑ์ให้คะแนนมีกี่ข้อ แล้วข้อไหนถ่วงน้ำหนักมากสุด",
+      "expected_output": "3 pages, well under 50k — probe cheaply, read directly, no exact measurement, no dialog, and answer the question.",
+      "files": [
+        "/home/ari/project/AT206/docs/เกณฑ์คะแนนโครงงาน AT206_2_2568.pdf"
+      ],
+      "assertions": [
+        "Probes the file cheaply (page count and/or extracted character count) before deciding",
+        "Reads the file directly rather than routing it to NotebookLM",
+        "Does not run an exact token measurement, because the estimate already settles the decision",
+        "Delivers the actual answer: 6 scored rows totalling 20 points, with บทที่ 3 weighted highest at 10"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "example-93page",
+      "prompt": "@/home/ari/project/AT206/docs/AT206_Project_Example.pdf อันนี้เป็นตัวอย่างโครงงาน อยากรู้ว่าเขาวางโครงรายงานยังไง แล้วเทียบกับที่คนอื่นทำข้างนอกด้วยว่าต่างกันไหม",
+      "expected_output": "Lands in the 50k-300k band, so it measures exactly (~172k) and produces one dialog spec. Should also notice the report skeleton lives in a small slice rather than treating the file as all-or-nothing.",
+      "files": [
+        "/home/ari/project/AT206/docs/AT206_Project_Example.pdf"
+      ],
+      "assertions": [
+        "Probes the file before deciding rather than judging by page count alone",
+        "Runs an exact token measurement with `ant messages count-tokens`",
+        "Reports a measured token figure close to 172,000",
+        "Considers reading only the relevant slice rather than treating the file as all-or-nothing",
+        "Produces exactly one dialog specification, not two",
+        "The dialog specification states the token total, its share of the context window, and whether the figure was measured or estimated",
+        "The dialog specification lists the recommended option first"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "onereport-375page",
+      "prompt": "โยน @/home/ari/project/DPU/.docs/SKY-ICT-ONE-REPORT-2024-รวมไฟล์.pdf ให้ดู อยากได้สรุปว่าเขาทำธุรกิจอะไร รายได้มาจากไหนเป็นหลัก",
+      "expected_output": "375 pages, but the question is narrow and the answer sits in one revenue table. The cheap win is local extraction plus a targeted read; offloading the whole file is acceptable but weaker. Assertions deliberately do NOT prescribe a route — an earlier version demanded NotebookLM and rewarded the false claim that the file cannot be read directly.",
+      "files": [
+        "/home/ari/project/DPU/.docs/SKY-ICT-ONE-REPORT-2024-รวมไฟล์.pdf"
+      ],
+      "assertions": [
+        "Sizes or probes the document before deciding, rather than assuming from its page count",
+        "Keeps the bulk of the document out of the main context",
+        "Does not claim the document is impossible to read directly",
+        "If Thai extraction looks corrupted, verifies (for example by retrying with `-layout`) before concluding the text layer is unusable",
+        "Delivers revenue figures traceable to a specific page or table"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "pg-vs-mysql",
+      "prompt": "PostgreSQL กับ MySQL ต่างกันหลักๆ ตรงไหน",
+      "expected_output": "Stable general knowledge — answer directly, and the answer itself must be present.",
+      "files": [],
+      "assertions": [
+        "Answers directly without routing to NotebookLM or a WebSearch subagent",
+        "Actually delivers the PostgreSQL/MySQL comparison rather than only describing a routing decision"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "tcas-schema-choice",
+      "prompt": "I'm designing the ingest pipeline for the TCAS data and I keep going back and forth on whether to normalize the program requirements into separate tables or keep them as JSONB. Which way should I go?",
+      "expected_output": "Entry point 2. The answer hinges on a fact about the TCAS data that is not in training data. What counts is noticing the gap and closing it with evidence; where the evidence comes from (the user's own repo, research, or asking) is not prescribed.",
+      "files": [],
+      "assertions": [
+        "Identifies the specific missing fact (the shape and variability of TCAS requirement data) that decides the answer",
+        "Resolves that gap with evidence — a local probe, research, or asking the user — rather than settling it from training data alone"
+      ]
+    }
+  ]
+}
