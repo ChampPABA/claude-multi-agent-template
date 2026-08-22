@@ -1,0 +1,59 @@
+{
+  "skill_name": "fullstack-cicd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "จะเปิด project ใหม่ org ชื่อ nova มีหน้าบ้าน Vite + หลังบ้าน Elysia/Postgres รันบน VPS เดียวที่มีทั้ง dev กับ prod ใช้ GitHub Free plan กับ Cloudflare ช่วยวางแผน setup CI/CD ให้ครบตั้งแต่ deploy หน้าบ้านหลังบ้านจน backup ขึ้น R2 พร้อมลำดับทำและคำสั่งที่ต้องรัน",
+      "expected_output": "An ordered greenfield plan matching the standard: phases in the right order, no-build-on-host immutable image deploys, gate inside deploy.yml, migrate-before-up, health+version verify, one nova-backup bucket with prefixes + lifecycle via `lifecycle add`, two dashboard-only tokens (nova-backup-rw, nova-pages), R2_KEY_PREFIX, fail-loud size-verified backups, backup-health, inventory rule, timeout-minutes on jobs.",
+      "files": [],
+      "assertions": [
+        "Backend deploys as a pre-built immutable image (GHCR) pulled by the VPS; no build step runs on the server",
+        "Database migration runs between image pull and `up -d`, never after",
+        "Deploy verification polls /health and compares /version sha to the commit, and notes the api must expose these endpoints",
+        "Frontend deploys via wrangler to Cloudflare Pages with distinct prod/dev targets and verifies the deployment via `wrangler pages deployment list`",
+        "R2 uses exactly one bucket (nova-backup) with environments as key prefixes, lifecycle rules added via `wrangler r2 bucket lifecycle add` (not a raw ruleset PUT/set)",
+        "Exactly two tokens: nova-backup-rw (Object R&W, bucket-only) and nova-pages (Pages:Edit), both flagged as creatable only in the dashboard",
+        "R2_KEY_PREFIX is required whenever R2 is configured (fail loud at boot)",
+        "Backups are fail-loud with a minimum-size check and a size-verified offsite upload (HEAD content-length), plus a scheduled backup-health check",
+        "A gate job (typecheck/lint/test) gates deploy branches not just PRs, and every CI job sets timeout-minutes",
+        "Plan is phased with a verify step per phase and records artifacts in an inventory (no inventory row, no token)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Repo นี้คือ project acme ที่รัน production อยู่จริง ช่วย audit ให้หน่อยว่า CI/CD กับ backup ตรงมาตรฐานที่ควรจะเป็นไหม มีอะไรขาดหรือเพี้ยน ออกรายงานพร้อมสิ่งที่ต้องแก้",
+      "expected_output": "A compliance audit report that finds the planted gaps in the fixture: builds on the VPS (not immutable images), migrate after up -d, no post-deploy /health + /version verification, no timeout-minutes, no gate job, bucket-per-env (acme-prod-backup + acme-dev-backup), account-wide token instead of bucket-scoped, orphan bucket acme-old-backup, silent offsite (`|| true`, no size floor/verify, always exits 0), no backup-health workflow, no GHCR prune. Report uses expected/found/verdict/fix rows; read-only, proposes fixes without executing mutations.",
+      "files": ["evals/fixtures/acme-legacy"],
+      "assertions": [
+        "Finds the api builds on the VPS (git pull + docker compose build) instead of pulling a pre-built image",
+        "Finds db:migrate runs AFTER up -d (must run between pull and up)",
+        "Finds no post-deploy verification (no /health poll, no /version sha check)",
+        "Finds no timeout-minutes on any job",
+        "Finds no gate job gating direct pushes to deploy branches",
+        "Finds bucket-per-env (acme-prod-backup + acme-dev-backup) violates the one-bucket-per-org rule",
+        "Finds the token acme-full-rw is account-wide instead of bucket-scoped, and no dedicated Pages token exists",
+        "Finds the orphan bucket acme-old-backup needs investigation/deletion",
+        "Finds the backup script swallows offsite failures (`|| true`), has no minimum-size check, no upload verification, and always exits 0",
+        "Finds no backup-health workflow and no GHCR prune/retention workflow",
+        "Report is structured as per-finding rows with expected/found/verdict/fix and orders fixes by risk",
+        "Audit stays read-only: no files modified, no mutations presented as already executed"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "ตอนนี้เรามี R2 bucket แยกต่อ environment อยู่สองลูกคือ nova-prod-backup กับ nova-dev-backup และใช้ token เดียวครอบทั้ง account อยากปรับเป็น bucket เดียวตามมาตรฐานพร้อม token ใหม่ โดยที่ backup ห้ามขาดและห้ามพัง ช่วยวางแผน migration ให้หน่อย",
+      "expected_output": "A migration runbook with load-bearing ordering: temp nova-backup-migration token (dashboard) scoped to both buckets, rclone copy to new bucket root + size-verified, deploy new backup script BEFORE flipping .r2-backup.env, pre-flip app .env before promote (crash-loop avoidance), switch + restart dev first then prod, re-copy stragglers, wait for a scheduled backup cycle to land in the new bucket, only then delete old buckets/tokens + migration token, update inventory; CORS before cutover if browser uploads exist; note tokens are dashboard-only.",
+      "files": [],
+      "assertions": [
+        "Creates a temp migration token scoped to BOTH old and new buckets (dashboard-only), deleted when done",
+        "Copies old bucket roots into the new bucket ROOT (keys carry prefixes) with size verification before any switch",
+        "Orders: new backup script deployed BEFORE flipping the backup env file",
+        "Orders: app .env pre-flipped before promote (crash-loop window avoidance)",
+        "Switches with dev first, verify, then prod; re-runs the copy once more to catch stragglers",
+        "Deletes old buckets/tokens only after a scheduled backup cycle lands in the new bucket",
+        "New bucket gets lifecycle rules via `lifecycle add` and CORS before cutover (if browser uploads exist)",
+        "Ends with inventory updated and exactly one bucket + one S3 token + one Pages token as the target state"
+      ]
+    }
+  ]
+}
