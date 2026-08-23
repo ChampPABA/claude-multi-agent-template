@@ -56,7 +56,10 @@ doc.save('out.docx')
 distributes body paragraphs (`w:jc='thaiDistribute'` + word-boundary breaks), which is
 the ราชการ norm and renders beautifully in **real Microsoft Word**. For a plainly
 left-aligned document pass `enforce_thai(doc, distribute=False)`. Headings, centred
-titles and signatures keep their own alignment either way.
+titles and signatures keep their own alignment either way, and **table cells are never
+distributed**: a narrow cell holds only a few words a line, so distribution would push
+them far apart (the ห่าง look); cells stay ชิดซ้าย or whatever alignment you set on
+them yourself.
 
 > ⚠️ **thaiDistribute is a Word-only feature.** LibreOffice, Google Docs and previews
 > render it as plain **left-aligned** (ชิดซ้าย) — that is the viewer's limitation, not
@@ -73,7 +76,7 @@ and the theme, and sets the complex-script properties.
 | Font | TH Sarabun New (Thai + Latin) | `thai_font=`, `latin_font=` |
 | Size | **16pt on everything, headings included** (they differ by weight, not size) | `uniform=False` → each heading keeps its own size |
 | Page | **A4, margins ซ้าย 3 / ขวา 2 / บน 2.5 / ล่าง 2 ซม.** (python-docx would emit US Letter) | `page=False` |
-| Alignment | Thai Distributed on body paragraphs | `distribute=False` → ชิดซ้าย |
+| Alignment | Thai Distributed on body paragraphs (table cells stay ชิดซ้าย) | `distribute=False` → ชิดซ้าย |
 | Word breaks | ZWSP at every Thai word boundary + inside long URLs | — (see below; not optional) |
 
 ### The invariant behind `uniform=False`

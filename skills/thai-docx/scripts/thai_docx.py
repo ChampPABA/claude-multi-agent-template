@@ -109,6 +109,11 @@ def _is_plain_body_para(p):
     return pStyle is None or pStyle.get(qn('w:val')) == 'Normal'
 
 
+def _in_table(p):
+    """True if the paragraph sits inside a table cell (nested tables included)."""
+    return next(p.iterancestors(qn('w:tc')), None) is not None
+
+
 def _set_thai_distribute(p):
     """Set Thai Distributed alignment on a body paragraph, unless it is already
     centred/right (a title or signature line that should keep its alignment).
@@ -166,10 +171,14 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  by eye); note it shows as plain left-aligned in LibreOffice / Google
                  Docs / previews, which do not support thaiDistribute -- that is a
                  viewer limitation, not a defect. Pass distribute=False for a plainly
-                 left-aligned (ชิดซ้าย) document. Only
-                 plain body paragraphs are distributed; headings and centred/right
+                 left-aligned (ชิดซ้าย) document. Only plain body paragraphs
+                 OUTSIDE tables are distributed; headings and centred/right
                  paragraphs (titles, signatures, ที่/เรื่อง/เรียน lines) are left as
                  they are, because distributing a short meta line looks wrong.
+                 Table cells are never distributed either: a narrow cell holds
+                 only a few words a line, and distribution would push them far
+                 apart (the "ตารางห่าง" look). Cells keep whatever alignment the
+                 builder gave them, defaulting to ชิดซ้าย.
                  thaiDistribute is a justify type, so the last line of a paragraph
                  stays naturally left-aligned (not stretched). Distribute REQUIRES
                  word-boundary breaks to look right, so it auto-enables add_zwsp
@@ -202,7 +211,12 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                 _apply_rpr(r.get_or_add_rPr(), thai_hp=thai_hp, latin_hp=latin_hp,
                            force_size=force_all, mirror_toggles=True, base_size=stamp,
                            **common)
-            if distribute and plain:
+            # Never distribute inside a table: a narrow cell holds only 2-4
+            # words a line, and thaiDistribute pushes them edge-to-edge across
+            # the cell width -- the "ตารางห่าง" look. Thai tables are ชิดซ้าย by
+            # convention; cell alignment the builder set (e.g. a centred header
+            # row) is kept untouched.
+            if distribute and plain and not _in_table(p):
                 _set_thai_distribute(p)
     if page:
         _enforce_page(doc)

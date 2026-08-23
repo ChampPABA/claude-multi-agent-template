@@ -19,7 +19,7 @@
       "id": 2,
       "name": "multilevel-headings-table",
       "prompt": "สร้างไฟล์ Word (.docx) ภาษาไทยเป็นระเบียบบริษัท มีหัวข้อใหญ่ Heading 1, หัวข้อย่อย Heading 2 ตัวหนา, เนื้อความ 16pt, และตาราง 2 คอลัมน์อย่างน้อย 3 แถว ฟอนต์ TH Sarabun New บันทึกเป็น policy.docx",
-      "expected_output": "Every Thai run (including table cells) carries w:cs; runs with explicit sz have matching szCs; A4 page with ราชการ margins; headings are 16pt too unless uniform=False is passed. verify_thai_docx.py exits 0.",
+      "expected_output": "Every Thai run (including table cells) carries w:cs; runs with explicit sz have matching szCs; table-cell paragraphs do NOT carry w:jc=thaiDistribute (cells stay left-aligned / keep a builder-set alignment) while body paragraphs do; A4 page with ราชการ margins; headings are 16pt too unless uniform=False is passed. verify_thai_docx.py exits 0.",
       "files": []
     }
   ]

@@ -54,6 +54,30 @@ def scan_runs(root, part):
     return defects
 
 
+def scan_distributed_cells(root, part):
+    """thaiDistribute inside a table cell is a defect, not a style choice: a
+    narrow cell holds only 2-4 words a line, and Word pushes them edge-to-edge
+    across the cell width -- the "table text spread far apart" look that
+    previews (LibreOffice renders thaiDistribute as left) do not show. Table
+    text should be ชิดซ้าย, or an explicit centre for header rows."""
+    defects = []
+    for p in root.iter(w('p')):
+        pPr = p.find(w('pPr'))
+        jc = pPr.find(w('jc')) if pPr is not None else None
+        if jc is None or jc.get(w('val')) != 'thaiDistribute':
+            continue
+        if next(p.iterancestors(w('tc')), None) is None:
+            continue
+        text = ''.join(t.text or '' for t in p.iter(w('t')))
+        if not text:
+            continue
+        snippet = (text[:24] + '…') if len(text) > 24 else text
+        defects.append((part, snippet, 'w:jc=thaiDistribute inside a table cell',
+                        'narrow cell: Word stretches the few words edge-to-edge '
+                        '(ห่าง); table text should be ชิดซ้าย or explicitly centred'))
+    return defects
+
+
 def scan(path):
     defects = []
     with zipfile.ZipFile(path) as z:
@@ -62,7 +86,9 @@ def scan(path):
             r'word/(document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$', n)]
         for n in run_parts:
             root = etree.fromstring(z.read(n))
-            defects += scan_runs(root, n.split('/')[-1])
+            part = n.split('/')[-1]
+            defects += scan_runs(root, part)
+            defects += scan_distributed_cells(root, part)
 
         # settings.xml must tag the complex-script language so Word uses the Thai
         # dictionary for line breaking instead of cutting mid-word.
