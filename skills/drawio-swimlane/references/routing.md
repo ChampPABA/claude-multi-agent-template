@@ -115,9 +115,24 @@ hard fail to an allowed advisory. Use this only as the last resort — first reo
 
 ## 7. Multi-page for big flows (roughly >~12 nodes, or clearly separable phases)
 
-An **overview page** whose boxes are the sub-processes (`shape=process`) wired together as
-one flow, then **one detail page per sub-process**. Link a sub-process box to its page with
-an **off-page connector** (`shape=offPageConnector`, outward pentagon) or a matching page
-name (`TC-0` overview, `TC-1..n` details) so a reader can jump across. The *specific*
-decomposition — which sub-processes exist, what lives on each page — comes from the task,
-not this skill.
+Ask before splitting when it's borderline — a short flow belongs on ONE page. When it is
+big: an **overview page** whose boxes are sub-process **bands** wired together as one flow,
+then **one detail page per sub-process**. Generate both from ONE spec (`pages` array —
+schema and band rules in `references/generator.md`): the engine spans each band across
+exactly the lanes its sub-process involves (a pool child, uniform height, below the lane
+headers) and orders the overview lanes by **participant clustering** — lanes that share a
+band sit adjacent, hub participants central — so every band's span is minimal. Detail pages
+keep per-lane BPMN distribution; mirror the overview's lane order there when the flow
+allows, so the whole document shares one column map.
+
+**Overview ↔ detail binding (linted at generate time — broken binding is a FAIL):**
+
+1. A band's text EQUALS its detail page name — the reader navigates by exact name match.
+2. One sub-process band : one detail page (folding several bands into one page is the
+   allowed exception, not the default).
+3. The detail page's Start is the band's entry; its (single) End is the band's exit.
+4. The detail page's lanes are exactly the lanes the band spans — everyone the
+   sub-process involves appears on the band, and no one else gets a lane on its page.
+
+The *specific* decomposition — which sub-processes exist, what lives on each page — comes
+from the task, not this skill.

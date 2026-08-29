@@ -8,5 +8,5 @@
   {"id":"n6","lane":3,"kind":"end","text":"Done"}],
  "edges":[
   {"src":"n1","dst":"n2"},{"src":"n2","dst":"n3"},
-  {"src":"n3","dst":"n4","label":"Yes"},{"src":"n3","dst":"n2","label":"No - revise"},
+  {"src":"n3","dst":"n4","label":"Yes"},{"src":"n3","dst":"n2","label":"No"},
   {"src":"n4","dst":"n5"},{"src":"n5","dst":"n6"}]}

@@ -13,5 +13,5 @@
  "edges":[
   {"src":"n1","dst":"n2"},{"src":"n2","dst":"n3"},{"src":"n3","dst":"n4"},{"src":"n4","dst":"n5"},
   {"src":"n5","dst":"n6","label":"Yes"},{"src":"n6","dst":"n7"},{"src":"n7","dst":"n8"},
-  {"src":"n8","dst":"n9"},{"src":"n9","dst":"n4","label":"No - next stage"},
-  {"src":"n9","dst":"n10","label":"Hired"},{"src":"n5","dst":"n2","label":"No - re-review"}]}
+  {"src":"n8","dst":"n9"},{"src":"n9","dst":"n4","label":"Next stage"},
+  {"src":"n9","dst":"n10","label":"Hired"},{"src":"n5","dst":"n2","label":"Redo"}]}

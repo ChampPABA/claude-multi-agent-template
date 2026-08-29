@@ -1,0 +1,63 @@
+{
+  "title": "LeadX Flow",
+  "pages": [
+    {
+      "name": "L0 - Overview",
+      "type": "overview",
+      "lanes": ["Customer", "LeadX", "AIA"],
+      "nodes": [
+        {"id": "s", "lane": 0, "kind": "start", "text": "Start"},
+        {"id": "b1", "kind": "subprocess", "text": "L1 - สมัคร & คัดกรอง",
+         "spans": ["Customer", "LeadX"], "expands_to": "L1 - สมัคร & คัดกรอง"},
+        {"id": "b2", "kind": "subprocess", "text": "L2 - ออกแบบแผน",
+         "spans": ["LeadX", "AIA"], "expands_to": "L2 - ออกแบบแผน"},
+        {"id": "e", "lane": 2, "kind": "end", "text": "End"}
+      ],
+      "edges": [
+        {"src": "s", "dst": "b1"},
+        {"src": "b1", "dst": "b2"},
+        {"src": "b2", "dst": "e"}
+      ]
+    },
+    {
+      "name": "L1 - สมัคร & คัดกรอง",
+      "type": "detail",
+      "lanes": ["Customer", "LeadX"],
+      "nodes": [
+        {"id": "s", "lane": 0, "kind": "start", "text": "Start"},
+        {"id": "n1", "lane": 0, "kind": "process", "text": "กรอกใบสมัคร"},
+        {"id": "n2", "lane": 1, "kind": "decision", "text": "เอกสารครบ?"},
+        {"id": "n3", "lane": 1, "kind": "process", "text": "ตรวจคุณสมบัติ"},
+        {"id": "e", "lane": 1, "kind": "end", "text": "End"}
+      ],
+      "edges": [
+        {"src": "s", "dst": "n1"},
+        {"src": "n1", "dst": "n2"},
+        {"src": "n2", "dst": "n3", "label": "ครบ"},
+        {"src": "n2", "dst": "n1", "label": "ไม่ครบ"},
+        {"src": "n3", "dst": "e"}
+      ]
+    },
+    {
+      "name": "L2 - ออกแบบแผน",
+      "type": "detail",
+      "lanes": ["LeadX", "AIA"],
+      "nodes": [
+        {"id": "s", "lane": 0, "kind": "start", "text": "Start"},
+        {"id": "n1", "lane": 0, "kind": "process", "text": "วิเคราะห์ความต้องการ"},
+        {"id": "n2", "lane": 0, "kind": "process", "text": "ร่างแผน"},
+        {"id": "n3", "lane": 1, "kind": "decision", "text": "AIA อนุมัติ?"},
+        {"id": "n4", "lane": 1, "kind": "process", "text": "ออกกรมธรรม์"},
+        {"id": "e", "lane": 1, "kind": "end", "text": "End"}
+      ],
+      "edges": [
+        {"src": "s", "dst": "n1"},
+        {"src": "n1", "dst": "n2"},
+        {"src": "n2", "dst": "n3"},
+        {"src": "n3", "dst": "n4", "label": "อนุมัติ"},
+        {"src": "n3", "dst": "n2", "label": "แก้ไข"},
+        {"src": "n4", "dst": "e"}
+      ]
+    }
+  ]
+}

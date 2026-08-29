@@ -2,22 +2,61 @@
   "skill_name": "drawio-swimlane",
   "evals": [
     {
-      "id": "leave-approval-blind",
+      "id": 1,
       "prompt": "Hey, can you make me a swimlane flowchart as a .drawio file for our team's leave request process? Here's how it works: an employee submits a leave request, then their manager reviews it and decides whether to approve it. If it's not approved it goes back to the employee to fix and resubmit. If it's approved, HR logs the leave and then payroll adjusts their pay. Vertical lanes please, and keep the lines clean.",
       "expected_output": "Vertical swimlane .drawio. Lanes Employee/Manager/HR/Payroll abut with no gap. Manager's approve step is a decision diamond (rhombus) connected at vertices. Reject path is an upward loop routed through an in-frame gutter with a label, NOT crossing the Start terminator or unrelated boxes. Happy path is a descending staircase, cross-lane hand-offs straight (0-bend) or 1-bend top-entry, never an accidental back-edge. Start/End are terminator ellipses.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "Output is a parseable .drawio file",
+        "The manager's approve/review step is a rhombus (decision)",
+        "The reject/resubmit edge is an upward back-edge and carries a branch label",
+        "Both decision out-edges carry labels (approve + reject paths)",
+        "There is exactly one Start terminator and one merged End terminator",
+        "scripts/check_layout.py exits 0 on the file",
+        "Branch labels render near the decision (edge label geometry x=-0.7 in the XML)"
+      ]
     },
     {
-      "id": "disguised-decision",
+      "id": 2,
       "prompt": "I need a draw.io vertical swimlane for our blog publishing workflow. A writer drafts the article. Then the editor goes through it - if it's good it goes to the SEO person to optimize, if it's not good enough it bounces back to the writer with feedback. Once SEO is done the CMS publishes it automatically. Four lanes: Writer, Editor, SEO, Publishing.",
       "expected_output": "The editor's 'goes through it' step FORKS into two outcomes (to SEO / back to writer), so it must be drawn as a decision diamond even though the prompt words it as 'reviews/goes through', not 'decides'. Reject/bounce-back is an in-frame gutter loop with a label, not crossing unrelated nodes. Vertical lanes abut, descending staircase, terminators for start/end.",
-      "files": []
+      "files": [],
+      "expectations": [
+        "The editor's review step is a rhombus (decision), not a plain process box",
+        "The bounce-back edge to the writer is an upward back-edge with a label",
+        "Both branches out of the editor decision are labelled",
+        "Vertical abutting lanes, one Start, one merged End",
+        "scripts/check_layout.py exits 0 on the file",
+        "Branch labels render near the decision (edge label geometry x=-0.7 in the XML)"
+      ]
     },
     {
-      "id": "lane-actor-backoffice",
+      "id": 3,
       "prompt": "Can you draw our employee onboarding process as a swimlane in draw.io? The hiring manager fills out a new-hire form and sends it to HR. HR checks the paperwork and enters the person into the HR system. After that the payroll system sets up their salary and an email gets sent to the new hire welcoming them. Make it top-down and tidy.",
-      "expected_output": "Lanes should represent ACTORS that take steps (Hiring Manager, HR, and arguably Payroll). A passive back-office receiver like 'HR system' or a 'notification/email service' should NOT get its own lane just for receiving a hand-off; it belongs in its owning actor's lane. Clean descending staircase, abutting lanes, terminators, no accidental back-edges.",
-      "files": []
+      "expected_output": "Lanes should represent ACTORS that take steps (Hiring Manager, HR, and arguably Payroll). A passive back-office receiver like 'HR system' or a 'notification/email service' should NOT get its own lane just for receiving a hand-off; it belongs in the owning actor's lane. Clean descending staircase, abutting lanes, terminators, no accidental back-edges.",
+      "files": [],
+      "expectations": [
+        "Lanes are actors only: no lane named for the HR system, email, or notification service",
+        "Vertical abutting lanes with a descending staircase (no accidental upward edge on the happy path)",
+        "One Start and one merged End",
+        "scripts/check_layout.py exits 0 on the file"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "ทำ flow กระบวนการขายประกันของ LeadX ให้หน่อย เป็น swimlane แบบ draw.io ครับ อยากได้ไฟล์เดียวที่มีทั้งหน้าภาพรวมและหน้ารายละเอียด: หน้าภาพรวมเป็นบล็อกใหญ่ 3 บล็อกพอ — ลูกค้าสนใจ & ลงทะเบียน (ลูกค้ากับ LeadX ยุ่ง), ออกแบบแผน (LeadX กับ AIA), ออกกรมธรรม์ & ส่งมอบ (AIA) แล้วแต่ละบล็อกมีหน้ารายละเอียดของตัวเอง เช่นบล็อกแรก: ลูกค้ากรอกข้อมูล LeadX ตรวจเอกสาร ถ้าไม่ครบส่งกลับให้แก้ ถ้าครบตรวจคุณสมบัติแล้วจบ ที่เหลือคุณเลือกขั้นเองให้เหมือนงานจริง เรียงอ่านต่อกันในไฟล์เดียวได้เลย",
+      "expected_output": "One multi-page .drawio: an overview page whose three sub-process bands span exactly the lanes they involve (pool children, equal lane widths, clustered lane order), plus one detail page per band (its lanes = the band's span; its Start = the band's entry, its single End = the exit). Band text equals its detail page name. Detail pages keep per-lane boxes, decisions with branch labels on every out-edge, one merged End per page. Generated via scripts/gen_swimlane.py from one spec; check_layout.py exits 0 on every page. Labels terse (no parentheses, & not +, no sequence numbers).",
+      "files": [],
+      "expectations": [
+        "Output is ONE .drawio file containing 4 pages (1 overview + 3 detail) as separate <diagram> elements",
+        "The overview page's three sub-process blocks are shape=process bands spanning multiple lanes (children of the pool, not of a single lane)",
+        "Each band's text exactly equals the name of its detail page",
+        "Each detail page's lanes are exactly (or a subset of) the lanes its band spans",
+        "Each detail page has exactly one Start and one merged End",
+        "Every decision out-edge on every page carries a branch label",
+        "scripts/check_layout.py exits 0 on the whole file (all pages)",
+        "Overview bands are inset from the lane borders (band width is NOT a multiple of the 195 lane width)"
+      ]
     }
   ]
 }
