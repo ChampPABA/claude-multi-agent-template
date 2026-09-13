@@ -83,6 +83,19 @@ endpoint does not exist, that is itself a finding — the standard's deploy
 verification stands on both, so "api has no /health or /version" goes in the
 report as a fail with "add the endpoints" as the fix.
 
+Host image state (on the VPS, read-only):
+
+```
+docker inspect --format '{{.Image}}' <api-container>          # image the api runs
+docker image inspect --format '{{.Id}}' ghcr.io/<org>/api:<branch>
+docker images ghcr.io/<org>/api ; df -h /var/lib/docker       # image count, free space
+```
+
+The first two IDs must match: the local branch tag names the running,
+verified build, so a manual recreate starts it. A mismatch on a stack whose
+`.env` names the branch means the retag is missing, or the last deploy failed
+after its switch (the running build never passed verification).
+
 Frontend equivalent — confirm the Pages deployment landed via the wrangler CLI
 (a green CI job proves the upload ran, not that Pages serves it):
 
@@ -127,6 +140,18 @@ it explicitly as unverified.
 - [ ] Docs-only pushes skip CI (paths-ignore)
 - [ ] Image hygiene: no devDeps in the runtime image
 - [ ] Registry login is ephemeral (temp DOCKER_CONFIG, trap-cleanup), never persists on host
+- [ ] Deploy runs `sha-<commit>`: every compose-running ssh step exports `IMAGE_TAG=sha-${{ github.sha }}`; nothing deploys the branch tag
+- [ ] Deploy is split into named ssh steps (pull/migrate/switch → wait for health → verify /version → re-probe), baseline handed off via `.probe-baseline` in the deploy root, and a missing baseline fails
+- [ ] `GHCR_PULL_TOKEN` reaches only the pull step (no `envs: GHCR_TOKEN` on the other steps)
+- [ ] `compose pull --policy always api` names the api service
+- [ ] Image hygiene runs on a local `load: true` build before the push; the image carries the `org.opencontainers.image.source` label
+- [ ] Deploy-failure issue fires on `failure() || cancelled()` (a timeout concludes `cancelled`)
+- [ ] Public `/version` verified from the runner when the api sits behind a tunnel/proxy
+- [ ] Host recovery: the deploy retags the host's `:<branch>` to the verified sha after re-probe (standard), or `.env` holds `IMAGE_TAG` empty (accepted alternative). `.env` naming the branch with no retag is a fail: a manual recreate starts a stale build
+
+A repo still on the old shape shows up as: no `IMAGE_TAG` export in the deploy
+script (it pulls the branch tag), one ssh-action doing everything, the prune
+reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
 
 **Pipeline (web repo)**
 
@@ -138,8 +163,10 @@ it explicitly as unverified.
 **Retention / rollback**
 
 - [ ] Weekly prune cron active; keeps N + active branch tags + `pinned-*`, manifest-graph-aware
-- [ ] trivy scan rides the prune run (not a build gate)
-- [ ] Any pinned environment has BOTH the `.env` `IMAGE_TAG` and a `pinned-<env>` GHCR tag
+- [ ] Prune and trivy run on `GITHUB_TOKEN` (`packages: write`), no PAT; `GHCR_PULL_TOKEN` scoped `read:packages` only
+- [ ] trivy scan of `:main` and `:development` rides the prune run (not a build gate)
+- [ ] Any pinned environment has the `.env` `IMAGE_TAG`, a `pinned-<env>` GHCR tag, AND its deploys held; no unpinned environment has a leftover `sha-` in `.env` or a stale `pinned-*` tag
+- [ ] Host disk: api image count and free space reported (sha images never dangle, so `image prune -f` does not bound them); warn until a label-scoped prune is proven (aaa-portal/api#90)
 
 **R2 / tokens**
 

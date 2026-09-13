@@ -40,11 +40,13 @@ GitHub org (Free plan)
 │                any other branch → preview (<branch>.pages.dev)
 │
 ├─ api repo ── gate (typecheck/lint/unit vs a real Postgres service)
-│                → build image → GHCR (:sha-<commit> + :branch tags)
+│                → build image → hygiene check → GHCR (:sha-<commit> + :branch tags)
 │                → VPS PULLS the pre-built image (never builds on the server)
+│                deploy runs :sha-<commit>, never the branch tag
 │                deploy order: pull → migrate (one-off run --rm) → up -d
 │                              → poll /health → verify /version sha == commit
-│                → weekly GHCR prune + trivy scan rides the same run
+│                              → re-probe vs baseline → retag host :branch
+│                → weekly GHCR prune (GITHUB_TOKEN) + trivy scan rides the same run
 │
 ├─ R2 ──────── ONE bucket <org>-backup; environments are PREFIXES inside it
 │                lifecycle: postgres/prod 365d · postgres/dev 30d · blobs 90d
@@ -106,8 +108,9 @@ Each rule's "why" is the compressed failure that paid for it.
     times). The default 360-minute ceiling can drain the whole 2,000-minute
     free month in one hung run.
 13. **Credentials never persist on the host.** Registry login goes through a
-    temp `DOCKER_CONFIG` removed on exit; CI reaches the VPS over Tailscale
-    with an ephemeral tag. `.env` stays hand-managed per environment.
+    temp `DOCKER_CONFIG` removed on exit, and only the pull step receives the
+    credential; CI reaches the VPS over Tailscale with an ephemeral tag.
+    `.env` stays hand-managed per environment.
 14. **No inventory row, no token.** Every bucket and token is recorded in the
     project's inventory doc (names, scopes, where each credential lives —
     never the values) before anything uses it. This rule is what catches
