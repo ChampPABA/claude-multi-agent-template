@@ -41,6 +41,10 @@ def scan_runs(root, part):
         if not cs:
             defects.append((part, snippet, 'rFonts missing @w:cs',
                             'Thai falls back to a default font: shrinks, tone marks float'))
+        if rPr is None or rPr.find(w('cs')) is None:
+            defects.append((part, snippet, 'Thai run missing <w:cs/>',
+                            'Word skips its Thai word breaker: lines end at real spaces '
+                            'only and Thai Distributed stretches them wide'))
         if rPr is not None:
             if rPr.find(w('sz')) is not None and rPr.find(w('szCs')) is None:
                 defects.append((part, snippet, 'has w:sz but no w:szCs',

@@ -31,6 +31,7 @@ _SZCS_SUCCESSORS = ('w:highlight', 'w:u', 'w:effect', 'w:bdr', 'w:shd', 'w:fitTe
                     'w:vertAlign', 'w:rtl', 'w:cs', 'w:em', 'w:lang',
                     'w:eastAsianLayout', 'w:specVanish', 'w:oMath')
 _LANG_SUCCESSORS = ('w:eastAsianLayout', 'w:specVanish', 'w:oMath')
+_CS_SUCCESSORS = ('w:em', 'w:lang') + _LANG_SUCCESSORS
 
 
 def _get_or_insert(rPr, tag, successors):
@@ -58,9 +59,14 @@ def _apply_rpr(rPr, *, thai_font, latin_font, thai_hp, latin_hp, lang,
     """
     rFonts = rPr.get_or_add_rFonts()
     rFonts.set(qn('w:cs'), thai_font)
+    rFonts.attrib.pop(qn('w:cstheme'), None)
     if latin_font:
         rFonts.set(qn('w:ascii'), latin_font)
         rFonts.set(qn('w:hAnsi'), latin_font)
+        # A theme attribute beats the explicit font in Word, so python-docx's
+        # Heading styles (asciiTheme="majorHAnsi") would show English in Cambria.
+        rFonts.attrib.pop(qn('w:asciiTheme'), None)
+        rFonts.attrib.pop(qn('w:hAnsiTheme'), None)
 
     # Language: safe everywhere.
     _get_or_insert(rPr, 'w:lang', _LANG_SUCCESSORS).set(qn('w:bidi'), lang)
@@ -147,13 +153,15 @@ def _iter_run_parts(doc):
 def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  size_pt=DEFAULT_SIZE_PT, thai_size_pt=None, latin_size_pt=None,
                  uniform=True, distribute=True, page=True, lang="th-TH",
-                 add_zwsp=False):
+                 style=None):
     """Make `doc` render Thai correctly in Microsoft Word. Call once before save().
 
     thai_font:   Complex-script font (Thai). Default "TH Sarabun New".
     latin_font:  Latin font. Default None -> same as thai_font (whole doc one font,
-                 the usual Thai-gov-doc case). Pass a different value, e.g.
-                 "Times New Roman", to split Latin vs Thai fonts within one run.
+                 the usual Thai-document case). A different value only reaches
+                 runs with NO Thai in them: a run holding Thai is flagged <w:cs/>,
+                 and Word then draws every character of that run, Latin included,
+                 in the cs font and size.
     size_pt:     Body size. Default 16pt (TH Sarabun New 16pt = the ราชการ norm).
     thai_size_pt/latin_size_pt: override the size per script (Thai often looks
                  smaller than a Latin font at the same point size).
@@ -167,35 +175,29 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
                  Pass page=False to keep the document's existing page setup.
     distribute:  Set Thai Distributed (กระจายแบบไทย, w:jc='thaiDistribute') on body
                  content paragraphs -- the Thai government norm for เนื้อความ, and the
-                 DEFAULT (True). Renders beautifully in real Microsoft Word (verified
-                 by eye); note it shows as plain left-aligned in LibreOffice / Google
-                 Docs / previews, which do not support thaiDistribute -- that is a
-                 viewer limitation, not a defect. Pass distribute=False for a plainly
-                 left-aligned (ชิดซ้าย) document. Only plain body paragraphs
-                 OUTSIDE tables are distributed; headings and centred/right
-                 paragraphs (titles, signatures, ที่/เรื่อง/เรียน lines) are left as
-                 they are, because distributing a short meta line looks wrong.
-                 Table cells are never distributed either: a narrow cell holds
-                 only a few words a line, and distribution would push them far
-                 apart (the "ตารางห่าง" look). Cells keep whatever alignment the
-                 builder gave them, defaulting to ชิดซ้าย.
-                 thaiDistribute is a justify type, so the last line of a paragraph
-                 stays naturally left-aligned (not stretched). Distribute REQUIRES
-                 word-boundary breaks to look right, so it auto-enables add_zwsp
-                 (and RAISES if pythainlp is missing -- see _insert_zwsp), and sets
-                 w:doNotExpandShiftReturn to stop Shift+Enter lines stretching.
-    add_zwsp:    Insert zero-width spaces at Thai word boundaries (and inside long
-                 URLs/Latin tokens) so justified / Thai-distributed paragraphs break
-                 between words instead of leaving a half-empty line for Word to
-                 stretch. Needs pythainlp; on its own (distribute=False) a missing
-                 pythainlp only warns. Mutates run text, so do it last.
+                 DEFAULT (True). Shows as plain left-aligned in LibreOffice / Google
+                 Docs / previews, which do not support thaiDistribute -- a viewer
+                 limitation, not a defect. Pass distribute=False for ชิดซ้าย. Only
+                 plain body paragraphs OUTSIDE tables are distributed; headings and
+                 centred/right paragraphs keep their alignment, and table cells are
+                 never distributed (a narrow cell would push its few words far
+                 apart, the "ตารางห่าง" look).
+    style:       None (ราชการ defaults above) or "dpu-apa7": the Dhurakij Pundit
+                 University APA 7th report layout -- margins 2.54cm all round,
+                 chapter heading 20pt, page number top right. See _apply_dpu_apa7.
+                 Overrides `uniform` and `page`.
     """
-    force_all = uniform                          # override heading sizes too
+    dpu = style == 'dpu-apa7'
+    if style not in (None, 'dpu-apa7'):
+        raise ValueError(f"unknown style {style!r}; use None or 'dpu-apa7'")
+    force_all = uniform and not dpu              # override heading sizes too
     latin_font = latin_font or thai_font
     thai_hp = round((thai_size_pt or size_pt) * 2)
     latin_hp = round((latin_size_pt or size_pt) * 2)
     common = dict(thai_font=thai_font, latin_font=latin_font, lang=lang)
 
+    if dpu:     # before the cs pass, so szCs/bCs mirror the preset's sizes and bold
+        _apply_dpu_apa7(doc)
     _enforce_doc_defaults(doc, thai_hp=thai_hp, latin_hp=latin_hp, **common)
     _enforce_styles(doc, thai_hp=thai_hp, latin_hp=(latin_hp if force_all else None),
                     force_size=force_all, **common)
@@ -208,9 +210,20 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
             # (uniform) is set, which flattens everything to one size.
             stamp = base if (force_all or plain) else None
             for r in p.iter(qn('w:r')):
-                _apply_rpr(r.get_or_add_rPr(), thai_hp=thai_hp, latin_hp=latin_hp,
+                rPr = r.get_or_add_rPr()
+                _apply_rpr(rPr, thai_hp=thai_hp, latin_hp=latin_hp,
                            force_size=force_all, mirror_toggles=True, base_size=stamp,
                            **common)
+                # <w:cs/> is what makes Word run its Thai word breaker on this run.
+                # Word writes it itself on every run of typed Thai; without it a
+                # generated run breaks only at real spaces, so lines end ~60% full
+                # and Thai Distributed stretches them wide (checked in Word 365
+                # with no Thai editing language installed).
+                if _has_thai(''.join(t.text or '' for t in r.iter(qn('w:t')))):
+                    _get_or_insert(rPr, 'w:cs', _CS_SUCCESSORS)
+                for t in r.iter(qn('w:t')):
+                    if t.text:
+                        t.text = _break_long_tokens(t.text)
             # Never distribute inside a table: a narrow cell holds only 2-4
             # words a line, and thaiDistribute pushes them edge-to-edge across
             # the cell width -- the "ตารางห่าง" look. Thai tables are ชิดซ้าย by
@@ -218,12 +231,12 @@ def enforce_thai(doc, *, thai_font=DEFAULT_THAI_FONT, latin_font=None,
             # row) is kept untouched.
             if distribute and plain and not _in_table(p):
                 _set_thai_distribute(p)
-    if page:
+            if dpu and plain and not _in_table(p):
+                _set_first_line_indent(p)
+    if page and not dpu:
         _enforce_page(doc)
-    _enforce_settings(doc, lang=lang, no_expand_shift_return=distribute)
+    _enforce_settings(doc, lang=lang)
     _enforce_theme(doc, thai_font=thai_font)
-    if add_zwsp or distribute:      # distribute needs word breaks to look right
-        _insert_zwsp(doc, required=distribute)
     return doc
 
 
@@ -257,9 +270,12 @@ def _enforce_styles(doc, *, thai_font, latin_font, thai_hp, latin_hp=None, lang,
             style_el.append(rPr)
         # Default: font/lang safe, size mirrors only an existing sz, toggles mirrored.
         # force_size=True (uniform mode) overrides every style's size, headings too.
-        _apply_rpr(rPr, thai_font=thai_font, latin_font=latin_font,
-                   thai_hp=thai_hp, latin_hp=latin_hp, lang=lang,
-                   force_size=force_size, mirror_toggles=True)
+        # iter() also reaches a table style's conditional rPr (header row, first
+        # column...), which otherwise keeps pointing English at the theme font.
+        for rPr in style_el.iter(qn('w:rPr')):
+            _apply_rpr(rPr, thai_font=thai_font, latin_font=latin_font,
+                       thai_hp=thai_hp, latin_hp=latin_hp, lang=lang,
+                       force_size=force_size, mirror_toggles=True)
 
 
 def _enforce_page(doc):
@@ -272,17 +288,101 @@ def _enforce_page(doc):
         s.top_margin, s.bottom_margin = Cm(2.5), Cm(2)
 
 
-def _enforce_settings(doc, *, lang, no_expand_shift_return=False):
+_DPU_INDENT_TWIPS = 864         # 0.6 in: DPU body first-line indent (first tab stop)
+
+
+def _set_first_line_indent(p):
+    """DPU body paragraphs start 0.6in in. Skipped where the builder already set
+    an indent (a hanging-indent reference entry, a block quote), on centred/right
+    lines, and on numbered/bulleted paragraphs."""
+    pPr = p.get_or_add_pPr()
+    jc = pPr.find(qn('w:jc'))
+    if (pPr.find(qn('w:ind')) is not None or pPr.find(qn('w:numPr')) is not None
+            or (jc is not None and jc.get(qn('w:val')) in ('center', 'right', 'end'))):
+        return
+    pPr.get_or_add_ind().set(qn('w:firstLine'), str(_DPU_INDENT_TWIPS))
+
+
+def page_numbering(section, fmt, start=None):
+    """Set a section's page-number format: 'thaiLetters' (ก ข ค, front matter) or
+    'decimal' (1 2 3), and optionally restart at `start`. w:pgNumType must sit
+    before w:cols in sectPr, or Word reports the file as corrupt."""
+    sectPr = section._sectPr
+    pg = sectPr.find(qn('w:pgNumType'))
+    if pg is None:
+        pg = OxmlElement('w:pgNumType')
+        sectPr.insert_element_before(pg, 'w:cols', 'w:formProt', 'w:vAlign',
+                                     'w:noEndnote', 'w:titlePg', 'w:textDirection',
+                                     'w:bidi', 'w:rtlGutter', 'w:docGrid',
+                                     'w:printerSettings', 'w:sectPrChange')
+    pg.set(qn('w:fmt'), fmt)
+    if start is not None:
+        pg.set(qn('w:start'), str(start))
+
+
+def _apply_dpu_apa7(doc):
+    """DPU APA 7th layout (คู่มือการเขียนรายงาน APA 7th, Dhurakij Pundit University).
+
+    A4, 2.54cm margins all round, no gutter. Single spacing, 0pt before/after.
+    Title/Heading 1 (cover, chapter) 20pt bold centred; Heading 2 (X.Y) 16pt bold
+    left; Heading 3+ 16pt regular. Captions 16pt bold. Footnotes 14pt. Page number
+    top right, header 1.25cm from the edge, hidden on each section's first page
+    (the cover, and each chapter when chapters are their own sections). Heading
+    colour and the Title's rule are removed: the report is black text only."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Cm, Pt
+    for sec in doc.sections:
+        sec.page_width, sec.page_height = Cm(21), Cm(29.7)
+        sec.left_margin = sec.right_margin = Cm(2.54)
+        sec.top_margin = sec.bottom_margin = Cm(2.54)
+        sec.header_distance = Cm(1.25)
+        sec.different_first_page_header_footer = True
+    header = doc.sections[0].header
+    if not any(p.text.strip() for p in header.paragraphs):
+        hp = header.paragraphs[0]
+        hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        fld = OxmlElement('w:fldSimple')
+        fld.set(qn('w:instr'), 'PAGE')
+        r = OxmlElement('w:r')
+        t = OxmlElement('w:t')
+        t.text = '1'
+        r.append(t)
+        fld.append(r)
+        hp._p.append(fld)
+
+    by_name = {st.name: st for st in doc.styles if st.type == 1}   # paragraph
+    for st in by_name.values():
+        pf = st.paragraph_format
+        pf.space_before = pf.space_after = Pt(0)
+        pf.line_spacing = 1.0
+    look = {'Title': (20, True, 'c'), 'Heading 1': (20, True, 'c'),
+            'Heading 2': (16, True, 'l'), 'Caption': (16, True, 'l'),
+            'Footnote Text': (14, None, None)}
+    look.update({f'Heading {n}': (16, False, 'l') for n in range(3, 10)})
+    for name, (size, bold, align) in look.items():
+        st = by_name.get(name)
+        if st is None:
+            continue
+        st.font.size = Pt(size)
+        if bold is not None:
+            st.font.bold, st.font.italic = bold, False
+        if align:
+            st.paragraph_format.alignment = (WD_ALIGN_PARAGRAPH.CENTER if align == 'c'
+                                             else WD_ALIGN_PARAGRAPH.LEFT)
+        rPr, pPr = st.element.rPr, st.element.pPr
+        for el in ((rPr.find(qn('w:color')) if rPr is not None else None),
+                   (pPr.find(qn('w:pBdr')) if pPr is not None else None)):
+            if el is not None:
+                el.getparent().remove(el)
+
+
+def _enforce_settings(doc, *, lang):
     settings_el = doc.settings.element
     tfl = settings_el.find(qn('w:themeFontLang'))
     if tfl is None:
         tfl = OxmlElement('w:themeFontLang')
         settings_el.append(tfl)
     tfl.set(qn('w:bidi'), lang)
-    # Stop a line that ends with Shift+Enter from being stretched full width under
-    # Thai Distributed / justify (the usual cause of a lone stretched short line).
-    if no_expand_shift_return and settings_el.find(qn('w:doNotExpandShiftReturn')) is None:
-        settings_el.append(OxmlElement('w:doNotExpandShiftReturn'))
 
 
 _A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
@@ -319,67 +419,33 @@ def _enforce_theme(doc, *, thai_font):
                                           encoding='UTF-8', standalone=True)
 
 
-_LONG_LATIN = 15        # chars; longer non-Thai tokens (URLs, paths) get break points
-_URL_BREAK_AFTER = '/-_.:=?&,'
+_LONG_TOKEN = 15        # chars; longer non-Thai tokens (URLs, paths) get break points
+_BREAK_AFTER = '/-_.:=?&,'
 
 
-def _split_long_latin(tok):
-    """Give a long non-Thai token (URL, file path, e-mail) places to break.
+def _break_long_tokens(text):
+    """Put zero-width spaces inside long URLs/paths/e-mails, and ONLY there.
 
-    A 43-char URL is one unbreakable token to Word, so the line before it can end
-    at ~60% of the column -- and Thai Distributed then stretches those few
-    characters across the full width. Ordinary words stay whole: only tokens
-    longer than _LONG_LATIN are split, after URL punctuation first and by hard
-    chunking only if a piece is still overlong."""
-    if len(tok) <= _LONG_LATIN or _has_thai(tok):
-        return [tok]
-    pieces, cur = [], ''
-    for c in tok:
-        cur += c
-        if c in _URL_BREAK_AFTER:
-            pieces.append(cur)
-            cur = ''
-    if cur:
-        pieces.append(cur)
-    out = []
-    for p in pieces:
-        while len(p) > _LONG_LATIN:
-            out.append(p[:_LONG_LATIN])
-            p = p[_LONG_LATIN:]
-        if p:
-            out.append(p)
-    return out
+    Word cannot break a URL, so the line before one ends half-empty and Thai
+    Distributed stretches it letter by letter (checked in Word 365). Thai words are
+    never touched: <w:cs/> lets Word break those itself, and a ZWSP inside Thai
+    shows as a box under ¶ and fights the Shift+Enter habit Thai editors rely on."""
+    import re
+
+    def split(tok):
+        tok = tok.replace('\u200b', '')        # idempotent on a second pass
+        if (len(tok) <= _LONG_TOKEN or _has_thai(tok)
+                or ('/' not in tok and '@' not in tok)):  # keep 1,000,000.00 whole
+            return tok
+        out, cur = [], ''
+        for c in tok:
+            cur += c
+            if c in _BREAK_AFTER or len(cur) >= _LONG_TOKEN:
+                out.append(cur)
+                cur = ''
+        return '\u200b'.join(out + [cur] if cur else out)
+    return re.sub(r'\S+', lambda m: split(m.group(0)), text)
 
 
 def _has_thai(s):
-    return any('฀' <= c <= '๿' for c in s)
-
-
-def _insert_zwsp(doc, required=False):
-    try:
-        from pythainlp.tokenize import word_tokenize
-    except ImportError:
-        msg = ("pythainlp not installed, so Thai word-break hints (ZWSP) cannot be "
-               "inserted. Word can then only break a Thai line at a real space, "
-               "leaving lines ~60% full that Thai Distributed stretches wide apart.")
-        if required:
-            raise ImportError(msg + " Install pythainlp, or pass distribute=False.")
-        import warnings
-        warnings.warn(msg)
-        return
-    import re
-    zwsp = '​'
-    for root in _iter_run_parts(doc):
-        for t in root.iter(qn('w:t')):
-            if not t.text:
-                continue
-            if _has_thai(t.text):
-                toks = word_tokenize(t.text)
-            elif any(len(w) > _LONG_LATIN for w in t.text.split()):
-                # No Thai, but a long unbreakable token (a URL in a hyperlink run
-                # of its own): it still needs break points, or the line before it
-                # ends half-empty and gets stretched.
-                toks = re.findall(r'\S+|\s+', t.text)
-            else:
-                continue
-            t.text = zwsp.join(p for tok in toks for p in _split_long_latin(tok))
+    return any('\u0e00' <= c <= '\u0e7f' for c in s)

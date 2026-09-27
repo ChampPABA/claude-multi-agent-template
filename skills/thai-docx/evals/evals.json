@@ -12,7 +12,7 @@
       "id": 1,
       "name": "thai-distributed-body",
       "prompt": "สร้างไฟล์ Word (.docx) ภาษาไทยเป็นบันทึกข้อความราชการ มีหัวข้อกลางหน้า เนื้อความยาวหลายย่อหน้า และบล็อกลายเซ็นกลางหน้า จัดเนื้อความแบบกระจายแบบไทย (Thai Distributed) ฟอนต์ TH Sarabun New 16pt ทุกอย่าง บันทึกเป็น memo.docx",
-      "expected_output": "Body paragraphs carry w:jc=thaiDistribute with ZWSP word breaks; heading and centred signature keep their alignment; settings has doNotExpandShiftReturn; all runs w:cs=TH Sarabun New 16pt. verify_thai_docx.py exits 0.",
+      "expected_output": "Body paragraphs carry w:jc=thaiDistribute; every Thai run carries <w:cs/>; no U+200B inside Thai text; settings has NO doNotExpandShiftReturn; heading and centred signature keep their alignment; all runs w:cs=TH Sarabun New 16pt. verify_thai_docx.py exits 0.",
       "files": []
     },
     {
@@ -20,6 +20,13 @@
       "name": "multilevel-headings-table",
       "prompt": "สร้างไฟล์ Word (.docx) ภาษาไทยเป็นระเบียบบริษัท มีหัวข้อใหญ่ Heading 1, หัวข้อย่อย Heading 2 ตัวหนา, เนื้อความ 16pt, และตาราง 2 คอลัมน์อย่างน้อย 3 แถว ฟอนต์ TH Sarabun New บันทึกเป็น policy.docx",
       "expected_output": "Every Thai run (including table cells) carries w:cs; runs with explicit sz have matching szCs; table-cell paragraphs do NOT carry w:jc=thaiDistribute (cells stay left-aligned / keep a builder-set alignment) while body paragraphs do; A4 page with ราชการ margins; headings are 16pt too unless uniform=False is passed. verify_thai_docx.py exits 0.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "dpu-apa7-report",
+      "prompt": "ช่วยทำรายงานวิชา AT319 เป็นไฟล์ Word ตามคู่มือ APA 7th ของ ม.ธุรกิจบัณฑิตย์ (DPU) หน่อย มีปก, คำนำ, สารบัญ (เลขหน้าส่วนหน้าเป็น ก ข ค), บทที่ 1 บทนำ มีหัวข้อ 1.1 และ 1.1.1 เนื้อความยาวหลายย่อหน้า มีตารางที่ 1.1 พร้อมที่มา, แล้วก็บรรณานุกรมที่มีทั้งไทยและอังกฤษ ใช้ TH Sarabun New ทั้งไฟล์ บันทึกเป็น at319_dpu.docx",
+      "expected_output": "enforce_thai(doc, style='dpu-apa7'): A4 with 2.54cm margins; chapter heading 20pt bold centred; Heading 2 bold 16pt; body first-line indent 0.6in + thaiDistribute; Thai runs carry <w:cs/>, no U+200B in Thai; front matter section pgNumType thaiLetters and chapter section decimal start=1; PAGE field in header top right; caption above the table; bibliography hanging indent, Thai entries before English. verify_thai_docx.py exits 0.",
       "files": []
     }
   ]
