@@ -105,6 +105,15 @@ wrangler pages deployment list --project-name=<org>-web[-dev]
 
 Newest row must match the pushed branch and deploy time.
 
+### VPS access probes
+
+```
+tailscale status --json         # the VPS node: tagged, no KeyExpiry
+sudo ufw status verbose          # on the VPS: default deny (incoming), 22/tcp on tailscale0 only
+```
+
+Or the Tailscale admin console: machine → "Key expiry: disabled".
+
 ### Backup probes (on the VPS, or via the backup-health workflow)
 
 ```
@@ -152,6 +161,13 @@ it explicitly as unverified.
 A repo still on the old shape shows up as: no `IMAGE_TAG` export in the deploy
 script (it pulls the branch tag), one ssh-action doing everything, the prune
 reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
+
+**VPS access**
+
+- [ ] VPS tailnet node tagged `tag:<project>-vps`: admin shows key expiry "disabled", or `tailscale status --json` shows no KeyExpiry for it
+- [ ] ACL lets `tag:ci` reach `tag:<project>-vps` on 22 (plus an `ssh` rule only if Tailscale SSH is used)
+- [ ] UFW: default deny incoming, 22/tcp allowed only on `tailscale0`, no public ports (web via Cloudflare Tunnel)
+- [ ] Break-glass console (provider VNC) logged into with its password at least once; credentials in the password manager
 
 **Pipeline (web repo)**
 

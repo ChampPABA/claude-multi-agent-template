@@ -115,6 +115,10 @@ Each rule's "why" is the compressed failure that paid for it.
     project's inventory doc (names, scopes, where each credential lives —
     never the values) before anything uses it. This rule is what catches
     dead orphans on cleanup passes.
+15. **Tag the VPS tailnet node (`tag:<project>-vps`).** An untagged node's
+    key expires and the host drops off the tailnet; with 22 open only on
+    `tailscale0`, every SSH path dies with it. ACL, firewall and break-glass:
+    `references/cicd-pipeline.md` → VPS access.
 
 ## Greenfield setup
 
@@ -125,7 +129,8 @@ reference named at the start of a phase before acting in it.
 anything; if one is missing, report the gap and stop rather than improvising
 half a pipeline:
 GitHub org (Free plan is assumed and sufficient) · one VPS shared by dev and
-prod · Tailscale with an OAuth client able to tag `tag:ci` · a Cloudflare
+prod, its tailnet node tagged `tag:<project>-vps` (rule 15) · Tailscale with
+an OAuth client able to tag `tag:ci` · a Cloudflare
 account (Pages + R2) · two repos: `<org>/web` and `<org>/api`.
 
 **Phase 1 — api pipeline.** Read `references/cicd-pipeline.md` (Backend

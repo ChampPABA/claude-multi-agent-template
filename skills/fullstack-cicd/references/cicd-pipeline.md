@@ -7,7 +7,7 @@ rollback, and the backup system. Values use a fictional org `acme`
 Contents: Assumptions and free-plan budget · Frontend pipeline · Backend
 pipeline (deploy.yml jobs, Host recovery, Host disk, Concurrency and
 timeouts) · Secrets inventory · Retention and scanning · Rollback pinning ·
-Backups · VPS layout.
+Backups · VPS layout · VPS access.
 
 ## Assumptions and free-plan budget
 
@@ -401,3 +401,19 @@ the same morning, with margin under the 25h net if the schedule slips.
 ```
 
 No separate staging environment: `development` on the same VPS is staging.
+
+## VPS access
+
+- **Tag the node** (`tag:<project>-vps`). Tagged nodes don't key-expire; a
+  user-owned node's key does, and on expiry the host drops off the tailnet:
+  every SSH-touching workflow fails with `dial tcp <host>:22: i/o timeout`
+  while the public site (via the tunnel) stays up, so nothing else alerts.
+- **ACL**: allow `tag:ci` → `tag:<project>-vps:22`. Once the node is tagged,
+  `autogroup:self` no longer covers it, so the rule must name the tag. Add an
+  `ssh` rule only if Tailscale SSH is used; it is optional, and
+  `appleboy/ssh-action` still authenticates with `VPS_SSH_KEY`.
+- **Firewall**: UFW default deny incoming; 22/tcp allowed only on
+  `tailscale0`; web via Cloudflare Tunnel, so no public ports.
+- **Break-glass**: the provider's VNC console, not public-IP SSH. At setup,
+  log in at the console with the password once, then store the credentials in
+  the password manager. A path never logged into does not count.
