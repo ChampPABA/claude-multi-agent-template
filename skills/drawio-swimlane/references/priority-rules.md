@@ -63,6 +63,25 @@ advisory — do not "fix" a P8 case if the fix violates P1–P4. Export a PNG an
 visually only as a final glance, and only when the gate reports an auto-route edge it
 could not trace (or the flow is large enough that spacing/labels need an eye).
 
+## Notation (BPMN-lite) — why so few shapes
+
+The P-rules decide *where* things go; these decide *what* is drawn. The readers are
+stakeholders who must decide from the picture, and devs who build from it plus the JSON.
+
+- **5 shapes** (start/end circle, task, decision, sub-process [+], system frame): real BPMN
+  practice uses only ~9 constructs per diagram (zur Muehlen & Recker 2008), so a small
+  vocabulary costs nothing and removes misreadings.
+- **Dashed system frame, no task-type icons**: notations work when a symbol's look suggests
+  its meaning (Moody 2009, *Physics of Notations*, semantic transparency); small abstract
+  icons are overlooked by non-experts, a labelled frame is read at a glance. A BPMN Group
+  is exactly this: a dashed outline that "does not affect the flow".
+- **Lanes are people; no System lane** unless the automation itself makes a decision, and
+  one task = what one actor does in one sitting ("Click submit" is too fine, "Handle
+  onboarding" too coarse) (LucidFlow, *BPMN 2.0 Best Practices: Twelve Mistakes*).
+- **Verb + object labels, one action per box**: the least ambiguous activity labels
+  (Mendling & Reijers; 7PMG). 7PMG also: decompose a model past ~50 elements → split into
+  overview + detail pages.
+
 ## Sources
 
 Purchase 1997 "Which aesthetic has the greatest effect on human understanding?";
@@ -70,3 +89,7 @@ Ware, Purchase, Colpoys & McGill 2002 "Cognitive Measurements of Graph
 Aesthetics"; Purchase et al. 2021 IEEE Access state-of-the-art review; Tamassia
 1987 / Sugiyama layered-graph pipeline; Lucidchart, Nulab, draw.io, ISO 5807
 flowchart guidance.
+Notation: zur Muehlen & Recker 2008 "How much language is enough?"; Moody 2009 "The
+Physics of Notations"; Mendling, Reijers & van der Aalst 2010 "Seven process modeling
+guidelines (7PMG)"; Mendling, Reijers & Recker 2010 activity labeling; LucidFlow
+"BPMN 2.0 Best Practices: The Twelve Mistakes".

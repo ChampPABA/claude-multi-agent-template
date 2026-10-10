@@ -18,19 +18,23 @@ route cleanly (see "When it can't" below) and for **cleaning up an existing `.dr
 
 ```json
 {
-  "title": "F1 - Create & publish a job",
-  "lanes": ["Candidate", "Recruiter", "Hiring Manager", "System"],
+  "title": "F1 - Publish a job",
+  "verbs": ["Fill", "Publish", "Approve"],
+  "lanes": ["Recruiter", "Hiring Manager"],
   "nodes": [
-    {"id": "n1", "lane": 1, "kind": "start",    "text": "Start"},
-    {"id": "n2", "lane": 1, "kind": "process",  "text": "Fill job details"},
-    {"id": "n3", "lane": 1, "kind": "decision", "text": "Approval required?"},
-    {"id": "n4", "lane": 3, "kind": "output",   "text": "Job live"}
+    {"id": "F1-s",  "lane": 0, "kind": "start",    "text": "Start"},
+    {"id": "F1-t1", "lane": 0, "kind": "process",  "text": "Fill job details", "page": "P2"},
+    {"id": "F1-d1", "lane": 0, "kind": "decision", "text": "Approval required?"},
+    {"id": "F1-t2", "lane": 0, "kind": "process",  "text": "Publish job",
+     "changes": "Job → live", "errors": ["duplicate title"]},
+    {"id": "F1-e",  "lane": 0, "kind": "end",      "text": "Job live"}
   ],
   "edges": [
-    {"src": "n1", "dst": "n2"},
-    {"src": "n2", "dst": "n3"},
-    {"src": "n3", "dst": "n4", "label": "No"},
-    {"src": "n3", "dst": "n2", "label": "Yes"}
+    {"src": "F1-s",  "dst": "F1-t1"},
+    {"src": "F1-t1", "dst": "F1-d1"},
+    {"src": "F1-d1", "dst": "F1-t2", "label": "No"},
+    {"src": "F1-d1", "dst": "F1-t1", "label": "Yes"},
+    {"src": "F1-t2", "dst": "F1-e"}
   ]
 }
 ```
@@ -46,11 +50,11 @@ route cleanly (see "When it can't" below) and for **cleaning up an existing `.dr
      "lanes": ["Customer", "LeadX", "AIA"],
      "nodes": [
        {"id": "s",  "lane": 0, "kind": "start", "text": "Start"},
-       {"id": "b1", "kind": "subprocess", "text": "L1 - สมัคร & คัดกรอง",
-        "spans": ["Customer", "LeadX"], "expands_to": "L1 - สมัคร & คัดกรอง"},
+       {"id": "b1", "kind": "subprocess", "text": "L1 - สมัครและคัดกรอง",
+        "spans": ["Customer", "LeadX"], "expands_to": "L1 - สมัครและคัดกรอง"},
        {"id": "b2", "kind": "subprocess", "text": "L2 - ออกแบบแผน",
         "spans": ["LeadX", "AIA"], "expands_to": "L2 - ออกแบบแผน"},
-       {"id": "e",  "lane": 2, "kind": "end", "text": "End"}
+       {"id": "e",  "lane": 2, "kind": "end", "text": "ออกกรมธรรม์แล้ว"}
      ],
      "edges": [{"src": "s", "dst": "b1"}, {"src": "b1", "dst": "b2"}, {"src": "b2", "dst": "e"}]}
   ]
@@ -67,10 +71,18 @@ route cleanly (see "When it can't" below) and for **cleaning up an existing `.dr
   the reviewer's top face so a reject loop can leave straight up. The engine routes a back-edge
   out of the source's **top** (straight up, into the target's near side) whenever that top is
   free and the lane above is clear — otherwise it uses a side gutter.
-- `kind`: `start end process decision output document store subprocess`. Pick by what the
-  step *means* (a step that forks = `decision`; an I/O output = `output` = parallelogram).
-  **Terminators (`start`/`end`) carry a short label only** ("Start", "End") — long text
-  overflows the ellipse.
+- `id`: the box's **permanent step id** (e.g. `A3-t1`); the renderer numbers boxes from it
+  and the JSON's non-visual data is keyed by it, so never renumber.
+- `kind`: BPMN-lite only — `start end process decision subprocess`, plus `document` for a
+  real hand-off. Anything else (`output`, `store`) is a FAIL. Pick by what the step *means*
+  (a step that forks = `decision`). The `end` text names the outcome ("Partner active").
+- `system`: the system the step is done in (e.g. `aaa-portal`); never a lane name.
+- `outside`: where an out-of-system step happens (`"LINE"`) → second line "นอกระบบ · LINE".
+- `type`: `user | manual | service | send`; `service` (work the system starts by itself)
+  adds the sub-line "ระบบทำเอง". What the system does after a click is NOT a box — put it
+  in the clicked box's `changes`.
+- `page`, `changes` (entity → state), `errors` (failure cases), and spec-level `verbs` /
+  `entities`: data for the step table and the dev, passed through untouched.
 - `edges`: pure topology. **The route is inferred** from node positions — do not specify it.
   A decision is the only shape that may have >1 outgoing edge.
 
@@ -107,9 +119,13 @@ time. Fix WARNs unless you mean otherwise:
   lands already says what happens. The rendered label rides **next to the decision**
   (near the source end), not at mid-edge.
 - **Terse labels:** no `(parenthesis) annotations` in node text or edge labels (put the
-  annotation in a note), `&` not `+`, no leading sequence/funnel numbers on overview pages.
-  `output` (parallelogram) labels stay short like terminator labels — the slanted shape
-  has less room than a box.
+  annotation in a note), no leading step numbers on any page.
+- **One box = one action:** `&` or `+` in a label warns (split the box); `และ` in a task
+  warns softly (fine only when truly inseparable). With a spec `verbs` list, a task label
+  must start with one of those verbs (prefix match, so it works for Thai).
+- **`[TBD]` is allowed** in a label; the run ends with "N box(es) still [TBD]".
+- **FAILs:** a kind outside the BPMN-lite budget, an unknown `type`, a lane named after a
+  system used in `system`.
 
 ## Run
 

@@ -7,11 +7,11 @@
       "lanes": ["Customer", "LeadX", "AIA"],
       "nodes": [
         {"id": "s", "lane": 0, "kind": "start", "text": "Start"},
-        {"id": "b1", "kind": "subprocess", "text": "L1 - สมัคร & คัดกรอง",
-         "spans": ["Customer", "LeadX"], "expands_to": "L1 - สมัคร & คัดกรอง"},
+        {"id": "b1", "kind": "subprocess", "text": "L1 - สมัครและคัดกรอง",
+         "spans": ["Customer", "LeadX"], "expands_to": "L1 - สมัครและคัดกรอง"},
         {"id": "b2", "kind": "subprocess", "text": "L2 - ออกแบบแผน",
          "spans": ["LeadX", "AIA"], "expands_to": "L2 - ออกแบบแผน"},
-        {"id": "e", "lane": 2, "kind": "end", "text": "End"}
+        {"id": "e", "lane": 2, "kind": "end", "text": "ออกกรมธรรม์แล้ว"}
       ],
       "edges": [
         {"src": "s", "dst": "b1"},
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "name": "L1 - สมัคร & คัดกรอง",
+      "name": "L1 - สมัครและคัดกรอง",
       "type": "detail",
       "lanes": ["Customer", "LeadX"],
       "nodes": [
@@ -28,7 +28,7 @@
         {"id": "n1", "lane": 0, "kind": "process", "text": "กรอกใบสมัคร"},
         {"id": "n2", "lane": 1, "kind": "decision", "text": "เอกสารครบ?"},
         {"id": "n3", "lane": 1, "kind": "process", "text": "ตรวจคุณสมบัติ"},
-        {"id": "e", "lane": 1, "kind": "end", "text": "End"}
+        {"id": "e", "lane": 1, "kind": "end", "text": "ผ่านคัดกรอง"}
       ],
       "edges": [
         {"src": "s", "dst": "n1"},
@@ -48,7 +48,7 @@
         {"id": "n2", "lane": 0, "kind": "process", "text": "ร่างแผน"},
         {"id": "n3", "lane": 1, "kind": "decision", "text": "AIA อนุมัติ?"},
         {"id": "n4", "lane": 1, "kind": "process", "text": "ออกกรมธรรม์"},
-        {"id": "e", "lane": 1, "kind": "end", "text": "End"}
+        {"id": "e", "lane": 1, "kind": "end", "text": "ออกกรมธรรม์แล้ว"}
       ],
       "edges": [
         {"src": "s", "dst": "n1"},

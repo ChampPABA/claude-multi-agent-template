@@ -133,22 +133,42 @@ Fix this at layout time (node placement), not by rerouting:
     pageWidth="1169" pageHeight="827" math="0" shadow="0">
   ```
 - **No decoration unless asked:** omit fillColor (white) / strokeColor (black).
-  **Terminators are unfilled too** — a Start/End is a plain open `ellipse`
-  (`ellipse;whiteSpace=wrap;html=1;`), NOT a solid black BPMN dot.
-- **Pick the shape from what the step MEANS, not by habit:**
+- **Notation is BPMN-lite: 5 shapes, nothing else.** Stakeholders sign these flows, and
+  real BPMN use settles on ~9 constructs; every extra shape or icon is one more thing a
+  reader can misread (rationale + citations: `references/priority-rules.md`). Pick the
+  shape from what the step MEANS:
 
   | The step means... | Shape | draw.io style |
   |---|---|---|
-  | Start / End of the flow | terminator | `ellipse;whiteSpace=wrap;html=1;` (unfilled) |
-  | An action someone performs (submit, create, send) | process | `rounded=0` |
-  | A **question that branches** — "approve?", pass/fail, any "evaluates/reviews then forks" | decision | `rhombus` |
-  | Generic data input or output | I/O | `shape=parallelogram` |
-  | A document / report / form / record | document | `shape=document` |
-  | A persistent store read or written (db, queue, registry) | data store | `shape=cylinder` |
-  | A whole sub-process expanded on its own page | sub-process | `shape=process` |
+  | Start of the flow | thin circle, label to its left | `ellipse;aspect=fixed;` 36x36 |
+  | End of the flow, **named by its outcome** ("Partner active") | thick circle, label below | `ellipse;aspect=fixed;strokeWidth=3;` |
+  | One action one person does in one sitting | task | `rounded=1` |
+  | A **business question that branches** — approve?, pass/fail | decision | `rhombus` |
+  | A whole sub-process on its own page | sub-process [+] | `shape=mxgraph.bpmn.task;isLoopSub=1;` |
+  | Which system a step is done in | dashed system frame | (generator, from `system`) |
 
+  A `document` shape only when a document is physically handed over; otherwise write it
+  as text ("→ สัญญา PDF"). No task-type icons (gear, hand, DB, paper): a dashed frame says
+  "done in system X" more plainly than an icon readers overlook.
   Rule of thumb: if the flow **forks** at a step (2+ outcomes), it is a decision diamond —
   even if the source word was "evaluates" or "reviews".
+- **Lanes are people who act — never a System lane.** A system is a dashed frame around
+  the boxes done in it (where the work happens, e.g. Google Sheet As-Is vs aaa-portal
+  To-Be), not a lane: a lane for a tool hides who actually does the work (a System lane
+  earns its place only when the automation itself makes the decision). A box outside
+  every frame is out of system and gets a small second line (`outside: "LINE"` →
+  "นอกระบบ · LINE").
+- **What the system does after a click is not a box.** "Partner → active", a record
+  created, an email sent: write it in the clicked box's `changes` (it becomes the step
+  table's "what happens"). Only work the system starts by itself (a scheduled job, an
+  automated decision) gets a box, with `type: "service"` (sub-line "ระบบทำเอง").
+- **One box = one action, verb + object** ("ตรวจเอกสาร", not "ตรวจเอกสาร & ผู้เซ็น") —
+  split multi-action boxes; "และ" only when truly inseparable. Use the spec's `verbs` list
+  so the same word means the same transition in flow, step table and buttons. Never type
+  step numbers; the renderer numbers boxes from their permanent ids (e.g. `A3-t1`).
+- **Unknown? Write `[TBD]` in the label.** Champ takes the drawio to stakeholders, removes
+  `[TBD]` and drags the box into the frame where it belongs; the generator reports how
+  many `[TBD]` boxes remain.
 - **Flow structure (by the book):** every flow begins at exactly one Start terminator and
   ends at **one merged End** — point every path that merely finishes at the SAME End node;
   reserve multiple Ends for genuinely distinct fates, each labelled differently
@@ -157,7 +177,7 @@ Fix this at layout time (node placement), not by rerouting:
   out-edge of a decision carries a branch label — the WORD PAIR only**
   (ได้/ไม่ได้, ใช่/ไม่ใช่, Yes/No; never "No - feedback");
   every other shape has exactly one outgoing edge on the happy path. Labels stay terse:
-  no `(annotation)` parentheses, `&` not `+`, no sequence/funnel numbers. Every connector
+  no `(annotation)` parentheses, no `&`/`+`, no step numbers. Every connector
   carries exactly **one arrowhead at its target end** — no bidirectional or headless
   lines. (The generator lints all of these — `references/generator.md`.)
 - **Edges — one consistent style, sharp corners:**
@@ -231,8 +251,8 @@ Optional human-viewable output: wrap the `.drawio` XML in a `data-mxgraph` div t
 ## Workflow
 
 ```
-1. Lanes = actors who *act* (a person/team/system that performs a step), not passive
-   receivers. A store that only gets written to, or a notification that only gets sent,
+1. Lanes = people who *act* (a person/team/role that performs a step), not passive
+   receivers, and not systems (systems are frames). A store that only gets written to, or a notification that only gets sent,
    does NOT earn a lane — fold it into the lane of whoever triggers it. Cap ~7
    (Miller's Law). Order by who acts first. Vertical columns, abutting.
 2. Place nodes; align center-X down each lane (P4); descending staircase across lanes.

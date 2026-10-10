@@ -37,7 +37,9 @@ clustering (co-blocked lanes adjacent, hubs central) so every band's span is min
 detail pages keep the author's flow order. "expands_to" binds a band to its detail page
 (lint: band text == page name, 1:1, detail lanes within the band's span).
 
-kinds: start end process decision output document store subprocess
+kinds (BPMN-lite): start end process decision subprocess (+ document for a real hand-off)
+Optional node fields: outside ("LINE" -> sub-line "นอกระบบ · LINE"), type (user|manual|service|send;
+service -> sub-line "ระบบทำเอง"), page/changes/errors (passed through). Spec-level: verbs, entities.
 Usage: python3 gen_swimlane.py spec.json out.drawio
 """
 import json, sys, os, re, hashlib, html as _html
@@ -55,19 +57,37 @@ BAND_INSET = 14   # gap between a band and the lane borders it spans (a band mus
 LBL_X = -0.7      # edge-label position along the edge: toward the SOURCE, so a branch label
                   # (Yes/No) sits by the decision that forked it, not at mid-edge
 
-# kind -> (w, h, style)  — skill standard: NO decorative colour (white fill, black stroke)
+# kind -> (w, h, style)  — BPMN-lite 5-shape budget (+ document only for a real hand-off).
+# NO decorative colour (white fill, black stroke). Start/End are small circles; the End is
+# thick and its label (the outcome) sits BELOW it; the Start label sits to its LEFT so it
+# never lands on the connector leaving its bottom.
+CIRCLE = "ellipse;aspect=fixed;html=1;"   # no wrap: the outcome label sits outside a 36px circle
 KIND = {
-    "start":      (120, 40, "ellipse;whiteSpace=wrap;html=1;"),
-    "end":        (120, 40, "ellipse;whiteSpace=wrap;html=1;"),
-    "process":    (150, 50, "rounded=0;whiteSpace=wrap;html=1;"),
+    "start":      (36, 36, CIRCLE + "labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;spacingRight=6;"),
+    "end":        (36, 36, CIRCLE + "strokeWidth=3;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;"),
+    "process":    (150, 50, "rounded=1;whiteSpace=wrap;html=1;"),
     "decision":   (140, 80, "rhombus;whiteSpace=wrap;html=1;"),
-    "output":     (150, 60, "shape=parallelogram;perimeter=parallelogramPerimeter;size=0.1;whiteSpace=wrap;html=1;"),
     "document":   (150, 60, "shape=document;whiteSpace=wrap;html=1;"),
-    "store":      (130, 60, "shape=cylinder;whiteSpace=wrap;html=1;"),
-    "subprocess": (150, 50, "shape=process;whiteSpace=wrap;html=1;"),
+    "subprocess": (150, 50, "shape=mxgraph.bpmn.task;taskMarker=abstract;isLoopSub=1;"
+                            "rectStyle=rounded;size=10;fillColor=#FFFFFF;whiteSpace=wrap;html=1;"),
 }
+TYPES = ("user", "manual", "service", "send")   # optional node "type"; service = system-started work
+SUBLINE_H = 12    # extra box height when a node carries a small second line
 EDGE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;"
         "html=1;endArrow=block;endFill=1;")
+
+def subline(n):
+    if n.get("outside"):
+        return f"นอกระบบ · {n['outside']}"
+    if n.get("type") == "service":
+        return "ระบบทำเอง"
+    return ""
+
+def label_html(n):
+    """Node value: the label, plus an optional smaller second line (where / who does it)."""
+    txt = _html.escape(n.get("text", ""))
+    sub = subline(n)
+    return f'{txt}<br><font style="font-size:10px">{_html.escape(sub)}</font>' if sub else txt
 
 def esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -136,6 +156,8 @@ def build_page(page, warns):
     for idx, n in enumerate(nodes):
         n.setdefault("row", idx)
         n["w"], n["h"], n["style"] = KIND[n["kind"]]
+        if subline(n):
+            n["h"] += SUBLINE_H
         if "spans" in n:                         # overview band: cover its lanes (inset, so
             idxs = sorted(lanes.index(nm) for nm in n["spans"])   # it floats, not pasted on
             if idxs[-1] - idxs[0] + 1 != len(idxs):
@@ -304,12 +326,12 @@ def build_page(page, warns):
         w, h = n["w"], n["h"]
         if "span_lanes" in n:                     # overview band: pool child, inset from the
             bx = n["span_lanes"][0] * LANE_W + BAND_INSET; by = n["cy"] - POOL_Y - h / 2
-            out.append(f'        <mxCell id="{n["id"]}" value="{esc(n["text"])}" style="{n["style"]}" '
+            out.append(f'        <mxCell id="{n["id"]}" value="{esc(label_html(n))}" style="{n["style"]}" '
                        f'vertex="1" parent="pool"><mxGeometry x="{bx:g}" y="{by:g}" '
                        f'width="{w:g}" height="{h}" as="geometry"/></mxCell>')
         else:
             lx = (LANE_W - w) / 2; ly = n["cy"] - POOL_Y - h / 2
-            out.append(f'        <mxCell id="{n["id"]}" value="{esc(n["text"])}" style="{n["style"]}" '
+            out.append(f'        <mxCell id="{n["id"]}" value="{esc(label_html(n))}" style="{n["style"]}" '
                        f'vertex="1" parent="{lane_ids[n["lane"]]}"><mxGeometry x="{lx:g}" y="{ly:g}" '
                        f'width="{w}" height="{h}" as="geometry"/></mxCell>')
 
@@ -347,7 +369,7 @@ def build_page(page, warns):
         # NOT as mxCell attributes) — otherwise the gate can't trace the face stabs.
         port = (f"exitX={ex};exitY={ey};exitDx=0;exitDy=0;"
                 f"entryX={ix};entryY={iy};entryDx=0;entryDy=0;")
-        out.append(f'        <mxCell id="e{k}" value="{label}" style="{EDGE}{port}{extra}" edge="1" '
+        out.append(f'        <mxCell id="edge-{k}" value="{label}" style="{EDGE}{port}{extra}" edge="1" '
                    f'source="{e["src"]}" target="{e["dst"]}" parent="1">'
                    f'<mxGeometry{lx} relative="1" as="geometry">{arr}</mxGeometry></mxCell>')
     out += ['      </root>', '    </mxGraphModel>', '</diagram>']
@@ -363,6 +385,14 @@ def lint_spec(spec):
     and the overview<->detail binding rules."""
     errs, warns = [], []
     pages = get_pages(spec)
+    verbs = spec.get("verbs") or []
+    tbd = [0]
+    systems = {n["system"] for p in pages for n in p["nodes"] if n.get("system")}
+    for p in pages:
+        for ln in p["lanes"]:
+            if ln in systems:
+                errs.append(f"page '{p['name']}': lane '{ln}' is a system name - lanes are humans "
+                            f"who act; a system is a dashed frame around the boxes done in it")
     pnames = [p["name"] for p in pages]
     if len(set(pnames)) != len(pnames):
         errs.append(f"duplicate page names {pnames} - each page name must be unique")
@@ -393,13 +423,31 @@ def lint_spec(spec):
             if "(" in txt:
                 warns.append(f"page '{name}': {where} '{txt}' carries a (parenthesis) annotation - "
                              f"put annotations in a note, keep the label terse")
-            if "+" in txt:
-                warns.append(f"page '{name}': {where} '{txt}' uses '+' - write '&' instead")
-            if ptype == "overview" and re.match(r"\s*\d+\s*[\.\)\-]", txt):
-                warns.append(f"page '{name}': {where} '{txt}' starts with a sequence/funnel number - "
-                             f"an overview page carries block names, not step numbers")
+            if "&" in txt or "+" in txt:
+                warns.append(f"page '{name}': {where} '{txt}' joins actions with '&'/'+' - one box "
+                             f"= one action: split it (write 'และ' only if truly inseparable)")
+            if re.match(r"\s*(\[TBD\]\s*)?\d+\s*[\.\)\-]", txt):
+                warns.append(f"page '{name}': {where} '{txt}' starts with a step number - never "
+                             f"type numbers; the renderer numbers boxes from their ids")
         for n in nodes:
-            terse(n.get("text", ""), f"node '{n['id']}'")
+            txt = n.get("text", "")
+            terse(txt, f"node '{n['id']}'")
+            if n["kind"] not in KIND:
+                errs.append(f"page '{name}': node '{n['id']}' kind '{n['kind']}' is outside the "
+                            f"BPMN-lite budget {sorted(KIND)} - an output/store is a task "
+                            f"(or text like '→ สัญญา PDF'), a document only for a real hand-off")
+            if n.get("type") is not None and n["type"] not in TYPES:
+                errs.append(f"page '{name}': node '{n['id']}' type '{n['type']}' not in {TYPES}")
+            if "[TBD]" in txt:
+                tbd[0] += 1
+            if n["kind"] == "process":
+                act = txt.replace("[TBD]", "").strip()
+                if "และ" in act:
+                    warns.append(f"page '{name}': node '{n['id']}' '{txt}' has 'และ' - one box = "
+                                 f"one action (verb + object); split it unless inseparable")
+                if verbs and not any(act.startswith(v) for v in verbs):
+                    warns.append(f"page '{name}': node '{n['id']}' '{txt}' does not start with a "
+                                 f"verb from the spec's verb list {verbs}")
             if ptype == "overview":
                 if "spans" in n and n["kind"] != "subprocess":
                     warns.append(f"page '{name}': node '{n['text']}' spans lanes but isn't a "
@@ -436,6 +484,8 @@ def lint_spec(spec):
         if len(srcs) > 1:
             errs.append(f"detail page '{tgt}' is expanded by {len(srcs)} bands {srcs} - "
                         f"1 sub-process : 1 detail page")
+    if tbd[0]:
+        warns.append(f"{tbd[0]} box(es) still [TBD]")
     return errs, warns
 
 # ------------------------------------------------------- hand-edit lifecycle ----
