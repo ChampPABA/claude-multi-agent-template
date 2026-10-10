@@ -57,6 +57,39 @@
         "scripts/check_layout.py exits 0 on the whole file (all pages)",
         "Overview bands are inset from the lane borders (band width is NOT a multiple of the 195 lane width)"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "ทำ flow ให้ stakeholder เซ็นหน่อย เรื่องหัวหน้าทีมสมัครเป็น Partner ใน aaa-portal: หัวหน้าทีมกรอกข้อมูลบริษัทใน aaa-portal แล้วอัปโหลดเอกสาร เซ็นสัญญาบนหน้าจอ Admin ได้ email แล้วเข้าไปตรวจเอกสารใน aaa-portal ถ้าผ่านกดอนุมัติ ระบบเปลี่ยน Partner เป็น active ถ้าไม่ผ่าน Admin โทรหรือ LINE บอกหัวหน้าทีมว่าต้องแก้อะไร แล้วหัวหน้าทีมกลับไปแก้ ส่วนเรื่องคำนวณค่าคอมย้อนหลังยังไม่ได้ตัดสินว่าทำที่ไหน ขอเป็น drawio",
+      "expected_output": "One .drawio generated from a spec via gen_swimlane.py; check_layout.py exits 0. Lanes are humans only (หัวหน้าทีม, Admin), no System lane. Steps done in aaa-portal sit inside a dashed aaa-portal lasso frame; the phone/LINE step and the email-received step sit outside frames with a 'นอกระบบ · ...' sub-line. 'Partner → active' is not its own box (it lives in the approving box's changes). The commission step carries [TBD] and sits outside frames. Labels are one action each, no '&'/'+', no typed step numbers; the End names the outcome.",
+      "files": [],
+      "assertions": [
+        "Output .drawio passes scripts/check_layout.py with exit 0",
+        "No lane is named System/ระบบ/aaa-portal - lanes are only human roles",
+        "At least one sysframe=1 dashed frame labelled aaa-portal exists",
+        "The phone/LINE step has a 'นอกระบบ' sub-line and lies outside every frame",
+        "No box label is just a state change like 'Partner → active' (automated effect lives in changes, not a box)",
+        "A box label contains '[TBD]' for the commission step",
+        "No node label contains '&' or '+' or starts with a step number",
+        "Every End node's label names an outcome (not just 'End'/'จบ')"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "ผมแก้ไฟล์ evals/files/partner-signing.edited.drawio ใน draw.io หลังคุยกับ stakeholder แล้ว spec อยู่ที่ evals/files/partner-signing.spec.json ช่วยอ่านกลับเข้า spec แล้วบอกว่าผมเปลี่ยนอะไรไปบ้าง แล้ว regenerate drawio ใหม่ให้ด้วยนะ",
+      "expected_output": "Runs the gate, then gen_swimlane.py --read on the edited drawio into the spec. Reports exactly: [TBD] removed from 'คำนวณค่าคอมย้อนหลัง', edge label ไม่ผ่าน -> ไม่ครบ, a new hand-drawn box 'แจ้งผลทาง email' with id Xk9fQ2-1 that needs a permanent id. Non-visual fields (page, changes) are preserved. Does NOT overwrite the hand-edited drawio: explains that regenerate is refused by design and further edits go into the drawio.",
+      "files": [
+        "evals/files/partner-signing.edited.drawio",
+        "evals/files/partner-signing.spec.json"
+      ],
+      "assertions": [
+        "Uses gen_swimlane.py --read (or equivalent) and the spec file is updated",
+        "Report mentions [TBD] removed from คำนวณค่าคอมย้อนหลัง",
+        "Report mentions the edge label change ไม่ผ่าน -> ไม่ครบ",
+        "Report mentions new box แจ้งผลทาง email (Xk9fQ2-1) needing a permanent id",
+        "Spec keeps page/changes fields on t1, t3, a1, a3 unchanged",
+        "The hand-edited .drawio is not overwritten by a regenerate (byte-identical or untouched)"
+      ]
     }
   ]
 }
