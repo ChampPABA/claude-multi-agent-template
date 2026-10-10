@@ -1,0 +1,265 @@
+<title>%TITLE%</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* palette: neutrals carry structure; accent = selected/clickable/highlight; amber = waiting on a decision; blue = in-system frame only.
+   wireframes stay paper-white low-fi in both themes on purpose */
+:root {
+  --bg: #f4f5f2; --surface: #ffffff; --ink: #1b1f1d; --muted: #5d6661; --line: #d5d9d4; --accent: #2d5a4a; --accent-soft: #e2ece7;
+  --warn: #9a6200; --warn-bg: #f8eed9; --sys: #2c5d8f; --sys-bg: #e4edf6; --paper: #ffffff; --paper-ink: #000000;
+  --sans: "IBM Plex Sans Thai", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141816; --surface: #1c211f; --ink: #e6ebe8; --muted: #9aa49f; --line: #333b37; --accent: #7cc0a5; --accent-soft: #23332c;
+  --warn: #e2b357; --warn-bg: #352a14; --sys: #8ab8e6; --sys-bg: #1c2a38; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141816; --surface: #1c211f; --ink: #e6ebe8; --muted: #9aa49f; --line: #333b37; --accent: #7cc0a5; --accent-soft: #23332c;
+  --warn: #e2b357; --warn-bg: #352a14; --sys: #8ab8e6; --sys-bg: #1c2a38; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6 }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 64px }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; padding-bottom: 14px }
+h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+h2 { font-size: 22px; margin: 0 0 4px; text-wrap: balance }
+.meta { color: var(--muted); font-size: 13px }
+.mono { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere }
+a { color: var(--accent) }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+[hidden] { display: none !important }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); padding-top: 6px }
+nav.tabs button { font: inherit; border: 0; background: none; color: var(--muted); padding: 10px 14px; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600 }
+nav.tabs button .mono { margin-right: 2px }
+.badge { font-size: 11px; background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 0 7px; margin-left: 6px }
+section.pane { padding-top: 20px }
+section.pane h3 { font-size: 16px; margin: 22px 0 8px }
+section.pane, .subpane, .canvas, tr[data-step] { scroll-margin-top: 64px }
+.eyebrow { margin: 0; font: 500 12px var(--mono); color: var(--muted) }
+.story { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; max-width: 80ch; line-height: 1.8 }
+.chain { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch }
+.fcard { flex: 1 1 180px; min-width: 0; display: grid; gap: 4px; align-content: start; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px }
+.fcard:hover { border-color: var(--accent) }
+.arrow { align-self: center; color: var(--muted) }
+@media (max-width: 700px) { .arrow { display: none } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 18px }
+.card h3 { margin: 0 0 8px; font-size: 16px }
+.tablewrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .88rem }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top }
+th { font-weight: 600; background: var(--bg); white-space: nowrap; font-size: 12px; color: var(--muted) }
+tr:last-child td { border-bottom: 0 }
+.chip { display: inline-block; font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; margin: 2px 4px 2px 0; text-decoration: none; color: var(--ink) }
+a.chip:hover { border-color: var(--accent); color: var(--accent) }
+.pid { display: inline-grid; place-items: center; min-width: 34px; height: 26px; border-radius: 6px; border: 1px solid var(--line); color: var(--accent); font-weight: 700; font-size: 13px; text-decoration: none }
+.kind { font-size: 12px; border-radius: 999px; padding: 1px 8px; white-space: nowrap; border: 1px solid var(--line); color: var(--muted) }
+.kind.new { border-color: var(--accent); color: var(--accent) }
+
+/* flow */
+.canvas { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto }
+.canvas svg { display: block; max-width: none; height: auto }
+.hflow .lane { fill: none; stroke: var(--line) } .hflow .lh { fill: var(--bg); stroke: var(--line) }
+.hflow .lt { font: 600 14px var(--sans); fill: var(--ink) }
+.hflow .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4 }
+.hflow .bt { font: 13px var(--sans); fill: var(--ink) }
+.hflow .bl { height: 100%; display: flex; flex-direction: column; justify-content: center; text-align: center; font: 13px/1.3 var(--sans); color: var(--ink) }
+.hflow .bs { font-size: 11px; color: var(--muted); margin-top: 3px }
+.hflow .bn { font: 600 11px var(--mono); fill: var(--muted) }
+.hflow .e { fill: none; stroke: var(--ink); stroke-width: 1.3 } .hflow .arh { fill: var(--ink) }
+.hflow .el { font: 12px var(--sans); fill: var(--muted) }
+.hflow .sys { fill: var(--sys-bg); fill-opacity: .6; stroke: var(--sys); stroke-width: 1.6; stroke-dasharray: 7 5 }
+.hflow .sl { font: 600 11px var(--sans); fill: var(--sys) }
+.hflow .ev { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4 }
+.hflow .evend { fill: var(--surface); stroke: var(--ink); stroke-width: 3.5 }
+.hflow g.go { cursor: pointer } .hflow g.go:hover .box, .hflow g.go.on .box { stroke: var(--accent); stroke-width: 3 }
+.hflow g.go:focus-visible { outline: 2px solid var(--accent) }
+.htbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface) }
+tr[data-step] { cursor: pointer } tr.on td { background: var(--accent-soft) }
+td.num { font: 600 .82rem var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums }
+tr.endrow td { color: var(--muted); font-weight: 600 }
+.where { display: inline-block; font-size: .8rem; border-radius: 4px; padding: 0 6px; white-space: nowrap; text-decoration: none }
+.w-sys { background: var(--sys-bg); color: var(--sys); border: 1px dashed var(--sys) }
+.w-out { color: var(--muted); border: 1px solid var(--line) }
+.hpid { font: .75rem var(--mono); color: var(--muted) }
+
+/* questions + feedback */
+.qcards { display: grid; gap: 10px }
+.qcard { display: flex; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px }
+.qcard > div { flex: 1; min-width: 0 } .qcard p { margin: 2px 0 } .qcard small { color: var(--muted) }
+.qid { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-weight: 700 }
+.dflt { color: var(--muted) } .dflt b { color: var(--ink) }
+.fb { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--bg) }
+.fb.fix { border-color: var(--warn) }
+.fbh { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
+.fb textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); color: var(--ink); resize: vertical }
+.fbrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px }
+.fbsave { font: inherit; font-size: 13px; border: 0; border-radius: 6px; padding: 4px 14px; background: var(--accent); color: var(--surface); cursor: pointer }
+.fbsave:disabled { opacity: .5; cursor: default }
+.fbst { font-size: 12px; color: var(--muted) }
+
+/* sitemap */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-bottom: 8px }
+.legend i { display: inline-block; width: 22px; height: 10px; vertical-align: middle; margin-right: 6px; border-radius: 3px }
+.smapwrap { overflow-x: auto }
+svg.smap { display: block; max-width: none; height: auto; font-family: var(--sans) }
+svg.smap .scol { fill: var(--bg); stroke: var(--line) }
+svg.smap .scolt { font-size: 13px; font-weight: 600; fill: var(--muted) }
+svg.smap .snode rect { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2 }
+svg.smap .snode.new rect { stroke: var(--accent); stroke-width: 2 }
+svg.smap .snode.old rect { stroke-dasharray: 3 3 }
+svg.smap .sid { font-size: 13px; font-weight: 700; fill: var(--ink) }
+svg.smap .stitle { font-size: 13px; fill: var(--ink) }
+svg.smap .surl { font-size: 10.5px; fill: var(--muted); font-family: var(--mono) }
+svg.smap a:hover rect { fill: var(--accent-soft) }
+svg.smap .snav { fill: none; stroke: var(--ink); stroke-width: 1.2 }
+svg.smap .smail { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4 }
+svg.smap .sarrhead { fill: var(--ink) }
+
+/* screens */
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px }
+.subtabs button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer }
+.subtabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface) }
+.wfwrap { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start }
+@media (max-width: 900px) { .wfwrap { grid-template-columns: 1fr } }
+.browser { background: var(--paper); color: var(--paper-ink); border: 1px solid #000; border-radius: 6px; overflow: hidden; font-family: system-ui, sans-serif; min-width: 0 }
+.bbar { display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #000; padding: 6px 10px; font-size: 12px }
+.dots { letter-spacing: 2px; color: #000 }
+.burl { border: 1px solid #000; padding: 0 8px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono) }
+.bbody { padding: 14px; min-height: 360px }
+.bbody.withside { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 14px; padding-left: 0 }
+.wside { border-right: 1px solid #000; padding: 0 10px; display: flex; flex-direction: column; gap: 6px; font-size: 13px }
+.wside .on { font-weight: 700; text-decoration: underline }
+.wmain { min-width: 0; overflow-x: auto }
+.wmain h4 { margin: 0 0 10px; font-size: 17px }
+.wmain p { margin: 10px 0 6px }
+.wf-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; align-items: baseline; margin: 6px 0 10px }
+.wf-form label { font-weight: 600; font-size: 13.5px }
+.winput { display: inline-block; border: 1px solid #000; padding: 2px 8px; min-width: 120px; font-size: 13.5px }
+.wrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 }
+.wbtn { display: inline-block; border: 1.5px solid #000; padding: 2px 10px; color: #000; text-decoration: none; background: #fff; font-size: 13.5px; cursor: pointer }
+a.wbtn:hover { background: #000; color: #fff }
+table.wt { font-size: 13.5px } table.wt th, table.wt td { border: 1px solid #000; padding: 4px 8px; background: none; color: #000; font-size: 13.5px }
+.wtab { border: 1px solid #000; padding: 1px 8px; font-size: 13px } .wtab.on { background: #000; color: #fff }
+.wpdf, .wsig { border: 1px dashed #000; display: grid; place-items: center; min-height: 160px; margin: 8px 0 } .wsig { min-height: 90px }
+.wbanner { border: 2px solid #000; padding: 6px 10px; margin: 6px 0 10px; font-size: 14px }
+.wnote { font-size: 13px }
+aside.spec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 14px }
+.spec-h { display: flex; gap: 10px; align-items: center; margin-bottom: 8px }
+.spec-h .pid { min-width: 44px; height: 36px; font-size: 16px }
+aside.spec dl { margin: 0 } aside.spec dt { font-size: 12px; color: var(--muted); margin-top: 10px; font-weight: 600 } aside.spec dd { margin: 2px 0 0 }
+table.ftab { font-size: 13px } table.ftab th, table.ftab td { padding: 4px 6px }
+ul.states { list-style: none; padding: 0; margin: 0; display: grid; gap: 3px }
+ul.states li { padding-left: 12px; border-left: 2px solid var(--line); font-size: 13.5px }
+
+/* baseline */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column }
+.stat .n { font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums }
+.stat.decide .n { color: var(--warn) }
+.bcards { display: grid; gap: 10px }
+.bcard { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px }
+.bcard.decide { border-color: var(--warn) }
+.bhead { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap }
+.pill { font-size: 12px; border-radius: 999px; padding: 1px 10px; font-weight: 600; color: var(--muted); border: 1px solid var(--line) }
+.pill.decide { background: var(--warn-bg); color: var(--warn); border-color: transparent }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 4px 20px; margin-top: 6px }
+.bgrid > div { min-width: 0 } .bgrid small { color: var(--muted); font-size: 12px } .bgrid p { margin: 0 }
+.bfrom { margin-top: 6px }
+</style>
+
+<div class="wrap">
+<header class="top"><div><h1>%TITLE%</h1><div class="meta">%META%</div></div><span id="fbstatus" class="meta"></span></header>
+<nav class="tabs" role="tablist">%NAV%</nav>
+%PANES%
+</div>
+
+<script>
+(function () {
+  const tabs = [...document.querySelectorAll('nav.tabs button')];
+  const panes = [...document.querySelectorAll('section.pane')];
+  function showTab(id) {
+    tabs.forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+    panes.forEach(p => { p.hidden = p.id !== id });
+  }
+  function showSub(id) {
+    const pane = document.getElementById(id), section = pane.closest('section.pane');
+    showTab(section.id);
+    section.querySelectorAll('.subpane').forEach(p => { p.hidden = p.id !== id });
+    section.querySelectorAll('.subtabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.sub === id)));
+  }
+  // highlight one step: its box in the flow and its row in the table; scroll to the other side from the one clicked
+  function step(k, from) {
+    const box = document.querySelector('g[data-step="' + k + '"]'), row = document.querySelector('tr[data-step="' + k + '"]');
+    if (!box || !row) return;
+    showTab(row.closest('section.pane').id);
+    document.querySelectorAll('.on').forEach(n => n.classList.remove('on'));
+    box.classList.add('on'); row.classList.add('on');
+    (from === 'row' ? box : row).scrollIntoView({ block: 'center', inline: 'center' });
+  }
+  function go(token) {
+    if (token.startsWith('step:')) return step(token.slice(5), 'link');
+    const el = document.getElementById(token);
+    if (!el) { showTab(tabs[0].dataset.tab); return }
+    if (el.classList.contains('subpane')) showSub(token);
+    else if (el.matches('section.pane')) showTab(token);
+    else showTab(el.closest('section.pane').id);
+    if (el.matches('section.pane, .subpane')) window.scrollTo({ top: 0 }); else el.scrollIntoView({ block: 'start' });
+    try { history.replaceState(null, '', '#' + token) } catch (e) {}
+  }
+  document.querySelectorAll('section.pane').forEach(s => { const f = s.querySelector('.subtabs button'); if (f) showSub(f.dataset.sub) });
+  showTab(tabs[0].dataset.tab);
+  tabs.forEach(b => b.addEventListener('click', () => go(b.dataset.tab)));
+  document.querySelectorAll('.subtabs button').forEach(b => b.addEventListener('click', () => go(b.dataset.sub)));
+  document.addEventListener('click', ev => {
+    const a = ev.target.closest('[data-go]');
+    if (a && !a.matches('.subtabs button')) { ev.preventDefault(); go(a.dataset.go); return }
+    const t = ev.target.closest('g[data-step], tr[data-step]');
+    if (t) step(t.dataset.step, t.tagName === 'TR' ? 'row' : 'box');
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.matches('g[data-step]')) step(ev.target.dataset.step, 'box') });
+  const h = location.hash.slice(1);
+  if (h) go(h);
+  window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+
+  // feedback: one box per item, kept in the artifact db, collection "feedback", doc id = data-key (version-prefixed)
+  const blocks = [...document.querySelectorAll('.fb')], dirty = new Set(), status = document.getElementById('fbstatus');
+  blocks.forEach(b => { b.querySelector('.fbsave').disabled = true; b.addEventListener('input', () => dirty.add(b.dataset.key)) });
+  const fmt = iso => { try { return new Date(iso).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' }) } catch (e) { return iso } };
+  (async () => {
+    const db = await window.claude?.use?.('db');
+    const user = await window.claude?.use?.('user');
+    if (!db) return;
+    const me = user ? await user.id() : null;
+    const col = db.collection('feedback');
+    let latest = {};
+    async function render() {
+      const ids = [...new Set(Object.values(latest).map(d => d.by).filter(Boolean))];
+      const ps = user && ids.length ? await user.profiles(ids) : {};
+      let n = 0;
+      blocks.forEach(b => {
+        const k = b.dataset.key, d = latest[k], ta = b.querySelector('textarea');
+        if (d && !dirty.has(k) && document.activeElement !== ta) ta.value = d.text || '';
+        const has = !!(d && d.text);
+        if (has) n++;
+        b.classList.toggle('fix', has);
+        b.querySelector('.fbst').textContent = has ? ((ps[d.by] && ps[d.by].name) || 'ผู้ใช้') + ' · ' + fmt(d.at) : '';
+      });
+      status.textContent = n ? 'ต้องแก้ ' + n + ' จุด' : '';
+    }
+    col.onSnapshot(snap => {
+      const next = {};
+      snap.docs.forEach(d => { next[d.id] = d.data() || {} });
+      latest = next; render();
+    }, () => { blocks.forEach(b => { b.querySelector('.fbst').textContent = 'เชื่อมต่อไม่ได้ ลองเปิดหน้าใหม่' }) });
+    blocks.forEach(b => {
+      const btn = b.querySelector('.fbsave');
+      btn.disabled = false;
+      btn.addEventListener('click', async () => {
+        const k = b.dataset.key, text = b.querySelector('textarea').value.trim();
+        btn.disabled = true; b.querySelector('.fbst').textContent = 'กำลังบันทึก…';
+        try { await col.doc(k).set({ text, by: me, at: new Date().toISOString() }); dirty.delete(k); render() }
+        catch (err) { b.querySelector('.fbst').textContent = err && err.code === 'permission_denied' ? 'สิทธิ์นี้ดูได้อย่างเดียว' : 'บันทึกไม่สำเร็จ ลองใหม่' }
+        finally { btn.disabled = false }
+      });
+    });
+  })();
+})();
+</script>

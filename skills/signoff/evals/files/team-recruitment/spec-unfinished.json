@@ -1,0 +1,504 @@
+{
+ "title": "ทีมขายและ Partner",
+ "pages": [
+  {
+   "name": "A0 - ภาพรวม",
+   "type": "overview",
+   "lanes": [
+    "Admin",
+    "หัวหน้าทีม",
+    "Advisor"
+   ],
+   "nodes": [
+    {
+     "id": "s",
+     "lane": 0,
+     "kind": "start",
+     "text": ""
+    },
+    {
+     "id": "b1",
+     "kind": "subprocess",
+     "text": "A1 - สร้างทีมพร้อมหัวหน้าทีม",
+     "spans": [
+      "Admin",
+      "หัวหน้าทีม"
+     ],
+     "expands_to": "A1 - สร้างทีมพร้อมหัวหน้าทีม"
+    },
+    {
+     "id": "b2",
+     "kind": "subprocess",
+     "text": "A2 - เพิ่มหรือย้าย advisor เข้าทีม",
+     "spans": [
+      "Admin",
+      "Advisor",
+      "หัวหน้าทีม"
+     ],
+     "expands_to": "A2 - เพิ่มหรือย้าย advisor เข้าทีม"
+    },
+    {
+     "id": "b3",
+     "kind": "subprocess",
+     "text": "A3 - Partner ส่งข้อมูลและเซ็นสัญญา",
+     "spans": [
+      "Admin",
+      "หัวหน้าทีม"
+     ],
+     "expands_to": "A3 - Partner ส่งข้อมูลและเซ็นสัญญา"
+    },
+    {
+     "id": "b4",
+     "kind": "subprocess",
+     "text": "A4 - หัวหน้าทีมดูงานของทีม",
+     "spans": [
+      "หัวหน้าทีม"
+     ],
+     "expands_to": "A4 - หัวหน้าทีมดูงานของทีม"
+    },
+    {
+     "id": "e",
+     "lane": 1,
+     "kind": "end",
+     "text": "ทีมขายและรับค่าคอมได้"
+    }
+   ],
+   "edges": [
+    {
+     "src": "s",
+     "dst": "b1"
+    },
+    {
+     "src": "b1",
+     "dst": "b2"
+    },
+    {
+     "src": "b2",
+     "dst": "b3"
+    },
+    {
+     "src": "b3",
+     "dst": "b4"
+    },
+    {
+     "src": "b4",
+     "dst": "e"
+    }
+   ]
+  },
+  {
+   "name": "A1 - สร้างทีมพร้อมหัวหน้าทีม",
+   "lanes": [
+    "Admin",
+    "หัวหน้าทีม"
+   ],
+   "nodes": [
+    {
+     "id": "s",
+     "lane": 0,
+     "kind": "start",
+     "text": ""
+    },
+    {
+     "id": "a1",
+     "lane": 0,
+     "kind": "process",
+     "text": "กรอกชื่อทีมและเลือกหัวหน้าทีม",
+     "system": "aaa-portal",
+     "page": "P2",
+     "errors": [
+      "ชื่อทีมซ้ำ หรือ email ของหัวหน้าทีมคนใหม่ซ้ำ: แจ้งที่ช่องนั้น"
+     ]
+    },
+    {
+     "id": "a2",
+     "lane": 0,
+     "kind": "process",
+     "text": "กด สร้างทีม",
+     "system": "aaa-portal",
+     "page": "P2",
+     "changes": "มีทีมใหม่ หัวหน้าทีมเป็นสมาชิกทีม · Partner → รอข้อมูล · ทีมขายได้ทันที · ส่ง email ถึงหัวหน้าทีม",
+     "errors": [
+      "ส่ง email ไม่สำเร็จ: ทีมสร้างแล้ว Admin กดส่งใหม่ได้"
+     ]
+    },
+    {
+     "id": "t1",
+     "lane": 1,
+     "kind": "process",
+     "text": "ได้ email ว่ามีทีมแล้ว",
+     "outside": "กล่อง email"
+    },
+    {
+     "id": "t2",
+     "lane": 1,
+     "kind": "process",
+     "text": "ยืนยัน email และตั้งรหัสผ่าน",
+     "system": "aaa-portal",
+     "changes": "ถ้าเป็น advisor ที่มีบัญชีอยู่แล้ว ข้ามขั้นนี้"
+    },
+    {
+     "id": "t3",
+     "lane": 1,
+     "kind": "process",
+     "text": "เปิดหน้าทีมของฉัน",
+     "system": "aaa-portal",
+     "page": "P7"
+    },
+    {
+     "id": "e",
+     "lane": 1,
+     "kind": "end",
+     "text": "หัวหน้าทีมเห็นทีมของตัวเอง"
+    }
+   ],
+   "edges": [
+    {
+     "src": "s",
+     "dst": "a1"
+    },
+    {
+     "src": "a1",
+     "dst": "a2"
+    },
+    {
+     "src": "a2",
+     "dst": "t1"
+    },
+    {
+     "src": "t1",
+     "dst": "t2"
+    },
+    {
+     "src": "t2",
+     "dst": "t3"
+    },
+    {
+     "src": "t3",
+     "dst": "e"
+    }
+   ]
+  },
+  {
+   "name": "A2 - เพิ่มหรือย้าย advisor เข้าทีม",
+   "lanes": [
+    "หัวหน้าทีม",
+    "Admin",
+    "Advisor"
+   ],
+   "nodes": [
+    {
+     "id": "s",
+     "lane": 0,
+     "kind": "start",
+     "text": ""
+    },
+    {
+     "id": "t1",
+     "lane": 0,
+     "kind": "process",
+     "text": "ส่งชื่อและ email ลูกทีมให้ Admin",
+     "outside": "LINE"
+    },
+    {
+     "id": "a1",
+     "lane": 1,
+     "kind": "process",
+     "text": "กรอกข้อมูล advisor แล้วกด เพิ่ม",
+     "system": "aaa-portal",
+     "page": "P4",
+     "changes": "ครบ: บันทึกเข้าทีมตามวันที่มีผล แล้วส่ง email ยืนยัน",
+     "errors": [
+      "ไม่ครบหรือ email ซ้ำ: แจ้งที่ช่องนั้น"
+     ]
+    },
+    {
+     "id": "d",
+     "lane": 1,
+     "kind": "decision",
+     "text": "ครบไหม",
+     "system": "aaa-portal",
+     "page": "P4"
+    },
+    {
+     "id": "v1",
+     "lane": 2,
+     "kind": "process",
+     "text": "ได้ email ยืนยัน",
+     "outside": "กล่อง email"
+    },
+    {
+     "id": "v2",
+     "lane": 2,
+     "kind": "process",
+     "text": "ยืนยัน email และตั้งรหัสผ่าน",
+     "system": "aaa-portal",
+     "changes": "บัญชี advisor: รอยืนยัน email → ใช้งาน"
+    },
+    {
+     "id": "v3",
+     "lane": 2,
+     "kind": "process",
+     "text": "เข้าใช้งานและเริ่มขาย",
+     "system": "aaa-portal"
+    },
+    {
+     "id": "e",
+     "lane": 2,
+     "kind": "end",
+     "text": "advisor เริ่มขายได้"
+    }
+   ],
+   "edges": [
+    {
+     "src": "s",
+     "dst": "t1"
+    },
+    {
+     "src": "t1",
+     "dst": "a1"
+    },
+    {
+     "src": "a1",
+     "dst": "d"
+    },
+    {
+     "src": "d",
+     "dst": "a1"
+    },
+    {
+     "src": "d",
+     "dst": "v1",
+     "label": "ครบ"
+    },
+    {
+     "src": "v1",
+     "dst": "v2"
+    },
+    {
+     "src": "v2",
+     "dst": "v3"
+    },
+    {
+     "src": "v3",
+     "dst": "e"
+    }
+   ]
+  },
+  {
+   "name": "A3 - Partner ส่งข้อมูลและเซ็นสัญญา",
+   "lanes": [
+    "หัวหน้าทีม",
+    "Admin"
+   ],
+   "nodes": [
+    {
+     "id": "s",
+     "lane": 0,
+     "kind": "start",
+     "text": ""
+    },
+    {
+     "id": "t1",
+     "lane": 0,
+     "kind": "process",
+     "text": "กรอกข้อมูลบริษัทและบัญชี",
+     "system": "aaa-portal",
+     "page": "P8",
+     "changes": "บันทึกค้างไว้ได้ กลับมาทำต่อทีหลัง"
+    },
+    {
+     "id": "t2",
+     "lane": 0,
+     "kind": "process",
+     "text": "อัปโหลดเอกสาร 3 ไฟล์",
+     "system": "aaa-portal",
+     "page": "P8",
+     "changes": "ระบบสร้างสัญญา PDF ให้อ่านในขั้นถัดไป"
+    },
+    {
+     "id": "t3",
+     "lane": 0,
+     "kind": "process",
+     "text": "อ่านสัญญา เซ็น แล้วส่งตรวจ",
+     "system": "aaa-portal",
+     "page": "P8",
+     "changes": "เก็บสัญญาที่เซ็นแล้ว · Partner → รอตรวจ · ส่ง email ถึง Admin",
+     "errors": [
+      "ยังไม่มี template สัญญา: เซ็นไม่ได้ แต่ทีมยังขายได้"
+     ]
+    },
+    {
+     "id": "a1",
+     "lane": 1,
+     "kind": "process",
+     "text": "ได้ email ว่ามี Partner รอตรวจ",
+     "outside": "กล่อง email"
+    },
+    {
+     "id": "a2",
+     "lane": 1,
+     "kind": "process",
+     "text": "ตรวจเอกสารและผู้เซ็น",
+     "system": "aaa-portal",
+     "page": "P6",
+     "errors": [
+      "ชื่อผู้เซ็นไม่ตรงหนังสือรับรอง: ส่งกลับแก้"
+     ]
+    },
+    {
+     "id": "d",
+     "lane": 1,
+     "kind": "decision",
+     "text": "ผ่านไหม",
+     "system": "aaa-portal",
+     "page": "P6"
+    },
+    {
+     "id": "a3",
+     "lane": 1,
+     "kind": "process",
+     "text": "กด ผ่าน",
+     "system": "aaa-portal",
+     "page": "P6",
+     "changes": "Partner → active · ทีมเริ่มรับค่าคอมได้"
+    },
+    {
+     "id": "a4",
+     "lane": 1,
+     "kind": "process",
+     "text": "กด ส่งกลับแก้",
+     "system": "aaa-portal",
+     "page": "P6",
+     "changes": "Partner → ส่งกลับแก้ · หัวหน้าทีมแก้ข้อมูลได้อีกครั้ง · ไม่มี email"
+    },
+    {
+     "id": "e1",
+     "lane": 1,
+     "kind": "end",
+     "text": "Partner active"
+    },
+    {
+     "id": "a5",
+     "lane": 1,
+     "kind": "process",
+     "text": "[TBD] บอกหัวหน้าทีมว่าต้องแก้อะไร",
+     "outside": "โทร หรือ LINE",
+     "changes": "หัวหน้าทีมกลับไปขั้น A3.1"
+    }
+   ],
+   "edges": [
+    {
+     "src": "s",
+     "dst": "t1"
+    },
+    {
+     "src": "t1",
+     "dst": "t2"
+    },
+    {
+     "src": "t2",
+     "dst": "t3"
+    },
+    {
+     "src": "t3",
+     "dst": "a1"
+    },
+    {
+     "src": "a1",
+     "dst": "a2"
+    },
+    {
+     "src": "a2",
+     "dst": "d"
+    },
+    {
+     "src": "d",
+     "dst": "a3",
+     "label": "ผ่าน"
+    },
+    {
+     "src": "d",
+     "dst": "a4",
+     "label": "ไม่ผ่าน"
+    },
+    {
+     "src": "a3",
+     "dst": "e1"
+    },
+    {
+     "src": "a4",
+     "dst": "a5"
+    },
+    {
+     "src": "a5",
+     "dst": "t1",
+     "label": "แก้แล้วส่งใหม่"
+    }
+   ]
+  },
+  {
+   "name": "A4 - หัวหน้าทีมดูงานของทีม",
+   "lanes": [
+    "หัวหน้าทีม"
+   ],
+   "nodes": [
+    {
+     "id": "s",
+     "lane": 0,
+     "kind": "start",
+     "text": ""
+    },
+    {
+     "id": "t1",
+     "lane": 0,
+     "kind": "process",
+     "text": "เปิดหน้าทีมของฉัน",
+     "system": "aaa-portal",
+     "page": "P7"
+    },
+    {
+     "id": "t2",
+     "lane": 0,
+     "kind": "process",
+     "text": "กดชื่อลูกทีม",
+     "system": "aaa-portal",
+     "page": "P7"
+    },
+    {
+     "id": "t3",
+     "lane": 0,
+     "kind": "process",
+     "text": "ดู case ของลูกทีม",
+     "system": "aaa-portal",
+     "page": "P9",
+     "changes": "ตัวกรองตั้งเป็นลูกทีมคนนั้นให้แล้ว · ดูได้อย่างเดียว"
+    },
+    {
+     "id": "e",
+     "lane": 0,
+     "kind": "end",
+     "text": "เห็น case ของลูกทีม"
+    }
+   ],
+   "edges": [
+    {
+     "src": "s",
+     "dst": "t1"
+    },
+    {
+     "src": "t1",
+     "dst": "t2"
+    },
+    {
+     "src": "t2",
+     "dst": "t3"
+    },
+    {
+     "src": "t3",
+     "dst": "e"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "skill_name": "signoff",
+ "evals": [
+  {
+   "id": 1,
+   "prompt": "flow team recruitment ตกลงกับ Champ ใน draw.io เรียบร้อยแล้ว spec อยู่ที่ evals/files/team-recruitment/spec.json ข้อมูลอื่นอยู่ใน evals/files/team-recruitment/signoff.json ทำหน้า signoff ให้หน่อย ยังไม่ต้อง publish",
+   "expected_output": "Gate passes and one signoff.html is written with tabs ภาพรวม, A1-A4, Sitemap, หน้าจอ, พื้นฐานระบบ, v4 เปลี่ยนอะไร; flows drawn by the skill's renderer with aaa-portal frames; step tables match box numbers; light and dark screenshots taken; nothing published.",
+   "files": ["evals/files/team-recruitment/spec.json", "evals/files/team-recruitment/signoff.json"]
+  },
+  {
+   "id": 2,
+   "prompt": "Champ บอกว่า flow เสร็จแล้ว spec อยู่ที่ evals/files/team-recruitment/spec-unfinished.json กับ signoff.json ใน folder เดียวกัน ทำ signoff เลย ด่วน",
+   "expected_output": "The build is refused: A3-a5 still [TBD] and the A2 decision branch to a1 has no label. No signoff.html is produced, the spec's flow is not edited to force a pass, and the reply sends Champ back to drawio-swimlane to finish those two items and --read the drawio.",
+   "files": ["evals/files/team-recruitment/spec-unfinished.json", "evals/files/team-recruitment/signoff.json"]
+  },
+  {
+   "id": 3,
+   "prompt": "Champ พิมพ์ comment ของ stakeholder ลงในหน้า signoff v4 แล้ว ใน test นี้อ่าน artifact ไม่ได้ เลย export collection feedback ไว้ที่ evals/files/team-recruitment/feedback.json ทำ version ถัดไปให้จาก spec.json กับ signoff.json ใน folder เดียวกัน ยังไม่ต้อง publish",
+   "expected_output": "signoff.json becomes v5 with changes rows for the handled comments: Q4 default rewritten to 'TL แก้เองได้ Admin อนุมัติก่อนมีผล', P2 drops the phone field from fields and wireframe. The P6 comment adds an approval step, so it is routed to drawio-swimlane, not written into the spec. Empty comments and the old v3 comment are ignored. signoff.html is rebuilt and the reply lists what happened to each comment.",
+   "files": ["evals/files/team-recruitment/spec.json", "evals/files/team-recruitment/signoff.json", "evals/files/team-recruitment/feedback.json"]
+  }
+ ]
+}
