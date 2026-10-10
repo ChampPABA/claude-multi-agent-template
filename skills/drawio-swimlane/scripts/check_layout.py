@@ -33,7 +33,10 @@ from __future__ import annotations
 
 import sys
 import argparse
+import base64
+import zlib
 import xml.etree.ElementTree as ET
+from urllib.parse import unquote
 
 TOL = 2.0  # px slack for floating-point / grid noise
 
@@ -77,6 +80,8 @@ class Cell:
         geo = el.find("mxGeometry")
         if geo is not None:
             self.x, self.y = fnum(geo.get("x")), fnum(geo.get("y"))
+            if self.is_vertex:  # draw.io omits a zero x/y when it saves
+                self.x, self.y = self.x or 0.0, self.y or 0.0
             self.w, self.h = fnum(geo.get("width")), fnum(geo.get("height"))
             for p in geo.findall("mxPoint"):
                 if p.get("as") in ("sourcePoint", "targetPoint"):
@@ -84,9 +89,7 @@ class Cell:
             arr = geo.find("Array[@as='points']")
             if arr is not None:
                 for p in arr.findall("mxPoint"):
-                    px, py = fnum(p.get("x")), fnum(p.get("y"))
-                    if px is not None and py is not None:
-                        self.points.append((px, py))
+                    self.points.append((fnum(p.get("x")) or 0.0, fnum(p.get("y")) or 0.0))
 
     def is_lane(self) -> bool:
         return "swimlane" in self.style or "pool" in self.style
@@ -103,7 +106,26 @@ class Cell:
         dashed = str(self.style.get("dashed")) == "1"
         if self.is_edge:
             return "sysframe" in self.style or (dashed and not self.source and not self.target)
-        return self.is_vertex and dashed and not self.is_lane() and not self.is_text()
+        # a dashed box wired into the flow is a step (e.g. an old-style dashed TBD box), not a frame
+        return (self.is_vertex and dashed and not self.is_lane() and not self.is_text()
+                and not getattr(self, "wired", False))
+
+
+def mark_wired(cells: dict[str, "Cell"]) -> None:
+    """Flag every vertex that is a connector endpoint, so is_frame() never takes a step."""
+    ends = {x for c in cells.values() if c.is_edge for x in (c.source, c.target) if x}
+    for c in cells.values():
+        c.wired = c.id in ends
+
+
+def diagram_root(dg: ET.Element) -> ET.Element | None:
+    """A page's <root>. draw.io may save a page compressed: base64 of raw-deflated,
+    URL-encoded XML as the <diagram> text instead of an <mxGraphModel> child."""
+    root = dg.find(".//root")
+    if root is None and (dg.text or "").strip():
+        xml = unquote(zlib.decompress(base64.b64decode(dg.text.strip()), -15).decode("utf-8"))
+        root = ET.fromstring(xml).find(".//root")
+    return root
 
 
 def abs_origin(cell: Cell, cells: dict[str, Cell]) -> Point:
@@ -235,6 +257,7 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
         if c.id is not None:
             cells[c.id] = c
 
+    mark_wired(cells)
     lanes = [c for c in cells.values() if c.is_vertex and c.is_lane() and c.y is not None]
     frames = [c for c in cells.values() if c.is_frame()]
     nodes = [
@@ -700,8 +723,7 @@ def main() -> None:
     try:
         tree = ET.parse(args.file)
     except ET.ParseError as ex:
-        print(f"FAIL: cannot parse {args.file} ({ex}). If the diagram is compressed, "
-              f"open it in draw.io and re-save with 'Compressed' off.")
+        print(f"FAIL: cannot parse {args.file} ({ex})")
         sys.exit(2)
 
     diagrams = tree.getroot().findall(".//diagram")
@@ -713,7 +735,7 @@ def main() -> None:
         if args.page is not None and i != args.page:
             continue
         name = dg.get("name") or f"page {i}"
-        model = dg.find(".//root")
+        model = diagram_root(dg)
         root = model if model is not None else dg
         hard, advisory = check_page(root, name)
         total_hard += len(hard)

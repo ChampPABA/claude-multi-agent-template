@@ -698,6 +698,7 @@ def read_page(root, page):
         c = cl.Cell(el)
         if c.id is not None:
             cells[c.id] = c
+    cl.mark_wired(cells)
     lanes = sorted((c for c in cells.values() if c.is_vertex and c.is_lane() and c.value),
                    key=lambda c: cl.node_box(c, cells)[0])
     lane_box = [(_plain(c.value)[0], cl.node_box(c, cells)) for c in lanes]
@@ -834,6 +835,7 @@ def _dump(o, ind=0):
 def read_back(drawio_path, spec_path):
     import xml.etree.ElementTree as ET
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import check_layout as cl
     spec = json.load(open(spec_path, encoding="utf-8"))
     pages = get_pages(spec)
     dgs = {(d.get("name") or ""): d for d in ET.parse(drawio_path).getroot().iter("diagram")}
@@ -842,7 +844,7 @@ def read_back(drawio_path, spec_path):
                  f"Rename the page in one of them so they match, then --read again.")
     changed = False
     for p in pages:
-        nodes, edges, names, warns = read_page(dgs[p["name"]].find(".//root"), p)
+        nodes, edges, names, warns = read_page(cl.diagram_root(dgs[p["name"]]), p)
         rep = diff_page(p, nodes, edges, names)
         print(f"=== {p['name']} ===")
         for w in warns:
