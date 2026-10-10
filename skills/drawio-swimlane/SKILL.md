@@ -157,7 +157,11 @@ Fix this at layout time (node placement), not by rerouting:
   To-Be), not a lane: a lane for a tool hides who actually does the work (a System lane
   earns its place only when the automation itself makes the decision). A box outside
   every frame is out of system and gets a small second line (`outside: "LINE"` →
-  "นอกระบบ · LINE").
+  "นอกระบบ · LINE"). A frame means **where the step is done, not a software component**.
+  The generator draws it from each box's `system` as a dashed **lasso** (an editable
+  polyline that hugs the boxes, notches around out-of-system ones, may cross lanes;
+  several frames with one name = one system). To hand-draw one: copy an existing frame
+  and drag its corners, or draw any dashed rectangle and label it with the system name.
 - **What the system does after a click is not a box.** "Partner → active", a record
   created, an email sent: write it in the clicked box's `changes` (it becomes the step
   table's "what happens"). Only work the system starts by itself (a scheduled job, an
@@ -213,7 +217,9 @@ absolute coords and hard-fails (exit 1):
 - a segment driven **through a box** that isn't its source/target (P1);
 - **two edges that cross** (P1) — unless one carries `jumpStyle=arc` to declare the
   crossing legible/unavoidable;
-- a **title below the pool**.
+- a **title below the pool**;
+- a box that **straddles a system frame** or sits inside **two** frames (each box is
+  fully inside one frame or outside all of them).
 
 Advisory (never fail): P8 same-side pile-ups, bend-heavy edges, and **auto-route**
 (portless / perpendicular-face) edges. That last one is the PNG tripwire below.

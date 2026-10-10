@@ -76,7 +76,12 @@ route cleanly (see "When it can't" below) and for **cleaning up an existing `.dr
 - `kind`: BPMN-lite only — `start end process decision subprocess`, plus `document` for a
   real hand-off. Anything else (`output`, `store`) is a FAIL. Pick by what the step *means*
   (a step that forks = `decision`). The `end` text names the outcome ("Partner active").
-- `system`: the system the step is done in (e.g. `aaa-portal`); never a lane name.
+- `system`: the system the step is done in (e.g. `aaa-portal`); never a lane name. The
+  engine draws one dashed lasso frame per system cluster (a member row gap > 2 starts a new
+  frame): it encloses the members, notches around every other box, and may cross lanes.
+  It is emitted as a dashed polyline edge (`sysframe=1`, no source/target) behind the
+  boxes, so its corners stay draggable in draw.io. A box can't have both `system` and
+  `outside` (FAIL). Worked example: `references/examples/aaa-partner-signing.json`.
 - `outside`: where an out-of-system step happens (`"LINE"`) → second line "นอกระบบ · LINE".
 - `type`: `user | manual | service | send`; `service` (work the system starts by itself)
   adds the sub-line "ระบบทำเอง". What the system does after a click is NOT a box — put it
@@ -125,7 +130,7 @@ time. Fix WARNs unless you mean otherwise:
   must start with one of those verbs (prefix match, so it works for Thai).
 - **`[TBD]` is allowed** in a label; the run ends with "N box(es) still [TBD]".
 - **FAILs:** a kind outside the BPMN-lite budget, an unknown `type`, a lane named after a
-  system used in `system`.
+  system used in `system`, a box with both `system` and `outside`.
 
 ## Run
 

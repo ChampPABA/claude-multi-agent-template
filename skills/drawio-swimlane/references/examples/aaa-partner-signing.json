@@ -1,0 +1,32 @@
+{
+  "title": "Partner ส่งข้อมูลและเซ็นสัญญา",
+  "verbs": ["กรอก", "ส่ง", "เซ็น", "ตรวจ", "อนุมัติ", "บอก", "คำนวณ"],
+  "lanes": ["หัวหน้าทีม", "Admin"],
+  "nodes": [
+    {"id": "s", "lane": 0, "kind": "start", "text": "เริ่ม"},
+    {"id": "t1", "lane": 0, "kind": "process", "text": "กรอกข้อมูลบริษัท", "system": "aaa-portal", "page": "P8"},
+    {"id": "t2", "lane": 0, "kind": "process", "text": "ส่งเอกสารตัวจริง", "outside": "ไปรษณีย์"},
+    {"id": "t3", "lane": 0, "kind": "process", "text": "เซ็นสัญญา", "system": "aaa-portal", "page": "P8",
+     "changes": "Partner → รอตรวจ"},
+    {"id": "a1", "lane": 1, "kind": "process", "text": "ตรวจเอกสาร", "system": "aaa-portal", "page": "P5"},
+    {"id": "d1", "lane": 1, "kind": "decision", "text": "ผ่านไหม", "system": "aaa-portal"},
+    {"id": "a3", "lane": 1, "kind": "process", "text": "อนุมัติ Partner", "system": "aaa-portal", "row": 6,
+     "changes": "Partner → active"},
+    {"id": "a2", "lane": 0, "kind": "process", "text": "บอกสิ่งที่ต้องแก้", "outside": "โทร หรือ LINE", "row": 6},
+    {"id": "a4", "lane": 1, "kind": "process", "text": "[TBD] คำนวณค่าคอมย้อนหลัง", "row": 7},
+    {"id": "e2", "lane": 0, "kind": "end", "text": "ส่งกลับแก้", "row": 8},
+    {"id": "e", "lane": 1, "kind": "end", "text": "Partner active", "row": 8}
+  ],
+  "edges": [
+    {"src": "s", "dst": "t1"},
+    {"src": "t1", "dst": "t2"},
+    {"src": "t2", "dst": "t3"},
+    {"src": "t3", "dst": "a1"},
+    {"src": "a1", "dst": "d1"},
+    {"src": "d1", "dst": "a3", "label": "ผ่าน"},
+    {"src": "d1", "dst": "a2", "label": "ไม่ผ่าน"},
+    {"src": "a2", "dst": "e2"},
+    {"src": "a3", "dst": "a4"},
+    {"src": "a4", "dst": "e"}
+  ]
+}

@@ -73,10 +73,14 @@ class Cell:
         self.is_edge = el.get("edge") == "1"
         self.x = self.y = self.w = self.h = None
         self.points = []  # explicit edge waypoints
+        self.ends = {}    # free edge endpoints (sourcePoint/targetPoint) - frames use them
         geo = el.find("mxGeometry")
         if geo is not None:
             self.x, self.y = fnum(geo.get("x")), fnum(geo.get("y"))
             self.w, self.h = fnum(geo.get("width")), fnum(geo.get("height"))
+            for p in geo.findall("mxPoint"):
+                if p.get("as") in ("sourcePoint", "targetPoint"):
+                    self.ends[p.get("as")] = (fnum(p.get("x")) or 0.0, fnum(p.get("y")) or 0.0)
             arr = geo.find("Array[@as='points']")
             if arr is not None:
                 for p in arr.findall("mxPoint"):
@@ -92,6 +96,14 @@ class Cell:
 
     def is_rhombus(self) -> bool:
         return "rhombus" in self.style
+
+    def is_frame(self) -> bool:
+        """A system frame ("where it is done"): the generator's dashed lasso polyline
+        (sysframe=1), any dashed edge with no source/target, or a hand-drawn dashed box."""
+        dashed = str(self.style.get("dashed")) == "1"
+        if self.is_edge:
+            return "sysframe" in self.style or (dashed and not self.source and not self.target)
+        return self.is_vertex and dashed and not self.is_lane() and not self.is_text()
 
 
 def abs_origin(cell: Cell, cells: dict[str, Cell]) -> Point:
@@ -224,11 +236,13 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
             cells[c.id] = c
 
     lanes = [c for c in cells.values() if c.is_vertex and c.is_lane() and c.y is not None]
+    frames = [c for c in cells.values() if c.is_frame()]
     nodes = [
         c for c in cells.values()
         if c.is_vertex and not c.is_lane() and not c.is_text() and c.h is not None
+        and not c.is_frame()
     ]
-    edges = [c for c in cells.values() if c.is_edge]
+    edges = [c for c in cells.values() if c.is_edge and not c.is_frame()]
 
     hard, advisory = [], []
     if not nodes:
@@ -576,9 +590,7 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
     # it flags a congested cluster the deterministic layout can't place cleanly (-> free-form
     # path or a hand nudge). Only a parallel run alongside the face counts, not a stab into it.
     NEAR, MINLEN = 8.0, 18.0
-    flow_boxes = [(c, node_box(c, cells)) for c in cells.values()
-                  if c.is_vertex and not c.is_lane() and not c.is_text()
-                  and c.x is not None and c.w]
+    flow_boxes = [(c, node_box(c, cells)) for c in nodes if c.x is not None and c.w]
     reported_nm = set()
     for e, p in polys:
         for a, b in zip(p, p[1:]):
@@ -603,7 +615,80 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
                         f"(within {NEAR:.0f}px) - reads as touching it. Give the connector more "
                         f"clearance, or route this congested cluster via the free-form path.")
 
+    # HARD: every box sits fully inside exactly ONE system frame or fully outside all of
+    # them. A frame says where a step is done; a box straddling a frame line (or inside two
+    # frames) leaves the reader unable to tell in-system from out-of-system.
+    fpolys = [(f, frame_polygon(f, cells)) for f in frames]
+    fpolys = [(f, poly) for f, poly in fpolys if len(poly) >= 3]
+    for n, nb, _ in node_boxes:
+        ins, part = [], []
+        for f, poly in fpolys:
+            r = box_vs_polygon(nb, poly)
+            if r == "in":
+                ins.append(f)
+            elif r == "partial":
+                part.append(f)
+        nm = n.value or n.id
+        if part:
+            hard.append(f"box '{nm}' straddles frame(s) {[f.value or f.id for f in part]} - a box "
+                        f"is either fully inside one system frame or fully outside every frame.")
+        elif len(ins) > 1:
+            hard.append(f"box '{nm}' is inside {len(ins)} frames {[f.value or f.id for f in ins]} - "
+                        f"a step is done in ONE place; frames must not nest or overlap on a box.")
+
+    # ADVISORY: a frame line running ON a connector reads as one line.
+    for f, poly in fpolys:
+        ring = poly + poly[:1]
+        for e, p in polys:
+            if any(_seg_overlap(a1, b1, a2, b2)
+                   for a1, b1 in zip(ring, ring[1:]) for a2, b2 in zip(p, p[1:])):
+                advisory.append(f"frame '{f.value or f.id}' runs on top of edge '{e.value or e.id}' - "
+                                f"nudge the frame line off the connector.")
+
     return hard, advisory
+
+
+def frame_polygon(f: Cell, cells: dict[str, Cell]) -> list[Point]:
+    """Absolute corner list of a frame (polyline frame, or a hand-drawn dashed box)."""
+    if f.is_edge:
+        pts = []
+        if "sourcePoint" in f.ends:
+            pts.append(f.ends["sourcePoint"])
+        pts += f.points
+        if "targetPoint" in f.ends and f.ends["targetPoint"] != (pts[0] if pts else None):
+            pts.append(f.ends["targetPoint"])
+        return pts
+    if f.x is None or f.w is None:
+        return []
+    x0, y0, x1, y1 = node_box(f, cells)
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+
+
+def _pip(px: float, py: float, poly: list[Point]) -> bool:
+    """Even-odd point-in-polygon (ray to +x)."""
+    inside = False
+    for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
+        if (y1 > py) != (y2 > py):
+            xc = x1 + (py - y1) * (x2 - x1) / (y2 - y1)
+            if px < xc:
+                inside = not inside
+    return inside
+
+
+def box_vs_polygon(box: Box, poly: list[Point]) -> str:
+    """'in' / 'out' / 'partial'. Corners are tested a hair inside the box so a frame
+    line that merely touches the box edge counts as clear, and any frame segment
+    cutting the box interior makes it partial."""
+    x0, y0, x1, y1 = box
+    t = TOL
+    corners = [(x0 + t, y0 + t), (x1 - t, y0 + t), (x1 - t, y1 - t), (x0 + t, y1 - t)]
+    flags = {_pip(px, py, poly) for px, py in corners}
+    if len(flags) > 1:
+        return "partial"
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1]):
+        if seg_hits_rect(ax, ay, bx, by, box, TOL):
+            return "partial"
+    return "in" if flags == {True} else "out"
 
 
 def main() -> None:

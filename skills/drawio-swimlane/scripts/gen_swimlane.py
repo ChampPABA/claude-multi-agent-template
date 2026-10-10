@@ -39,7 +39,8 @@ detail pages keep the author's flow order. "expands_to" binds a band to its deta
 
 kinds (BPMN-lite): start end process decision subprocess (+ document for a real hand-off)
 Optional node fields: outside ("LINE" -> sub-line "นอกระบบ · LINE"), type (user|manual|service|send;
-service -> sub-line "ระบบทำเอง"), page/changes/errors (passed through). Spec-level: verbs, entities.
+service -> sub-line "ระบบทำเอง"), system ("aaa-portal" -> the box sits inside that system's dashed
+lasso frame), page/changes/errors (passed through). Spec-level: verbs, entities.
 Usage: python3 gen_swimlane.py spec.json out.drawio
 """
 import json, sys, os, re, hashlib, html as _html
@@ -135,6 +136,130 @@ def clustered_order(lanes, blocks):
         if best is None or key < best_key:
             best, best_key = perm, key
     return list(best)
+
+# ------------------------------------------------------------ system frames ----
+# A frame says WHERE a step is done (aaa-portal, Google Sheet...), not which software
+# component does it. It is a dashed orthogonal LASSO: it hugs a system's boxes, bends
+# around out-of-system boxes (a notch) and may cross lanes. Built on a compressed grid
+# whose lines are the rect edges, so the outline is exact and the grid stays tiny.
+FRAME_PAD = 8      # frame -> member box gap
+FRAME_MARGIN = 8   # frame -> non-member box gap
+FRAME_GAP_ROWS = 2 # a member row gap above this starts a separate frame (no swiss cheese)
+FRAME_STYLE = ("endArrow=none;startArrow=none;dashed=1;dashPattern=8 4;rounded=0;html=1;"
+               "edgeStyle=none;strokeColor=#5B7FA6;fontColor=#5B7FA6;fontSize=11;"
+               "labelBackgroundColor=#FFFFFF;align=left;verticalAlign=bottom;sysframe=1;")
+
+def _grow(r, d):
+    return (r[0] - d, r[1] - d, r[2] + d, r[3] + d)
+
+def _hit(a, b):                                   # open rects overlap
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+def _lasso(members, others, top_limit):
+    """Rectilinear outline loops around `members` (rects x0,y0,x1,y1) avoiding `others`."""
+    mem = [(r[0], max(r[1], top_limit), r[2], r[3]) for r in (_grow(r, FRAME_PAD) for r in members)]
+    bb = (min(r[0] for r in mem), max(min(r[1] for r in mem), top_limit),
+          max(r[2] for r in mem), max(r[3] for r in mem))
+    obs = [_grow(r, FRAME_MARGIN) for r in others if _hit(_grow(r, FRAME_MARGIN), bb)]
+    raw = [_grow(r, 2) for r in others]
+    notches = []
+    for _ in range(len(obs) + 1):                 # each pass opens at most one enclosed obstacle
+        xs = sorted({v for r in [bb] + mem + obs + notches for v in (r[0], r[2])})
+        ys = sorted({v for r in [bb] + mem + obs + notches for v in (r[1], r[3])})
+        nx, ny = len(xs) - 1, len(ys) - 1
+        inside = lambda px, py, rs: any(r[0] < px < r[2] and r[1] < py < r[3] for r in rs)
+        fill = set()
+        for i in range(nx):
+            for j in range(ny):
+                px, py = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+                on = inside(px, py, [bb]) and not inside(px, py, obs + notches)
+                on = (on or inside(px, py, mem)) and not inside(px, py, raw)
+                if on:
+                    fill.add((i, j))
+        # out-cells not reachable from the bbox border = an enclosed (hole) obstacle
+        seen, stack = set(), [(i, j) for i in range(nx) for j in range(ny)
+                              if (i in (0, nx - 1) or j in (0, ny - 1)) and (i, j) not in fill]
+        while stack:
+            c = stack.pop()
+            if c in seen:
+                continue
+            seen.add(c)
+            i, j = c
+            for d in ((i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)):
+                if 0 <= d[0] < nx and 0 <= d[1] < ny and d not in fill:
+                    stack.append(d)
+        hole = [(i, j) for i in range(nx) for j in range(ny) if (i, j) not in fill and (i, j) not in seen]
+        if not hole:
+            break
+        i, j = hole[0]
+        px, py = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+        o = next((r for r in obs if r[0] <= px <= r[2] and r[1] <= py <= r[3]), None)
+        if o is None:
+            break
+        cuts = [(o[0] - bb[0], (bb[0] - 1, o[1], o[0], o[3])), (bb[2] - o[2], (o[2], o[1], bb[2] + 1, o[3])),
+                (o[1] - bb[1], (o[0], bb[1] - 1, o[2], o[1])), (bb[3] - o[3], (o[0], o[3], o[2], bb[3] + 1))]
+        ok = [c for c in sorted(cuts) if not any(_hit(c[1], m) for m in mem)]
+        if not ok:
+            break                                 # ponytail: no clean notch -> hole stays, gate flags it
+        notches.append(ok[0][1])
+    # keep components that hold a member, trace each one's boundary into loops
+    comp, loops = {}, []
+    for start in fill:
+        if start in comp:
+            continue
+        stack, k = [start], len(set(comp.values()))
+        while stack:
+            c = stack.pop()
+            if c in comp or c not in fill:
+                continue
+            comp[c] = k
+            i, j = c
+            stack += [(i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)]
+    for k in set(comp.values()):
+        cells = {c for c, v in comp.items() if v == k}
+        if not any(any(m[0] < (xs[i] + xs[i + 1]) / 2 < m[2] and m[1] < (ys[j] + ys[j + 1]) / 2 < m[3]
+                       for m in members) for i, j in cells):
+            continue
+        nxt = {}
+        for i, j in cells:                         # clockwise directed boundary edges (y down)
+            x0, x1, y0, y1 = xs[i], xs[i + 1], ys[j], ys[j + 1]
+            if (i, j - 1) not in cells: nxt.setdefault((x0, y0), []).append((x1, y0))
+            if (i + 1, j) not in cells: nxt.setdefault((x1, y0), []).append((x1, y1))
+            if (i, j + 1) not in cells: nxt.setdefault((x1, y1), []).append((x0, y1))
+            if (i - 1, j) not in cells: nxt.setdefault((x0, y1), []).append((x0, y0))
+        while nxt:
+            p0 = min(nxt, key=lambda p: (p[1], p[0]))
+            loop, p = [p0], p0
+            while True:
+                q = nxt[p].pop()
+                if not nxt[p]:
+                    del nxt[p]
+                if q == p0:
+                    break
+                loop.append(q); p = q
+            simp = [pt for a, pt, b in zip(loop[-1:] + loop[:-1], loop, loop[1:] + loop[:1])
+                    if not ((a[0] == pt[0] == b[0]) or (a[1] == pt[1] == b[1]))]
+            k0 = min(range(len(simp)), key=lambda t: (simp[t][1], simp[t][0]))
+            loops.append(simp[k0:] + simp[:k0])
+    return loops
+
+def system_frames(nodes, top_limit):
+    """[(system name, [corner points])] - one or more lasso loops per system."""
+    rect = lambda n: (n["left"], n["top"], n["right"], n["bot"])
+    out = []
+    for sysname in sorted({n["system"] for n in nodes if n.get("system")}):
+        mem = sorted((n for n in nodes if n.get("system") == sysname), key=lambda n: n["row"])
+        clusters = [[mem[0]]]
+        for n in mem[1:]:
+            if n["row"] - clusters[-1][-1]["row"] > FRAME_GAP_ROWS:
+                clusters.append([])
+            clusters[-1].append(n)
+        for cl in clusters:
+            ids = {n["id"] for n in cl}
+            others = [rect(n) for n in nodes if n["id"] not in ids]
+            for loop in _lasso([rect(n) for n in cl], others, top_limit):
+                out.append((sysname, loop))
+    return out
 
 def build_page(page, warns):
     title = page["name"]; lanes = list(page["lanes"]); N = len(lanes)
@@ -315,6 +440,16 @@ def build_page(page, warns):
     out.append(f'        <mxCell id="title" value="{esc(title)}" style="text;html=1;strokeColor=none;'
                'fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=16;fontStyle=1;" '
                f'vertex="1" parent="1"><mxGeometry x="{POOL_X}" y="20" width="{pool_w}" height="30" as="geometry"/></mxCell>')
+    # frames go BEFORE the pool so lanes (unfilled) and boxes (white) draw on top of them
+    for fi, (sysname, loop) in enumerate(system_frames(nodes, POOL_Y + 30 + 2)):
+        (sx, sy), rest = loop[0], loop[1:]
+        pts = "".join(f'<mxPoint x="{x:g}" y="{y:g}"/>' for x, y in rest)
+        out.append(f'        <mxCell id="frame-{fi}" value="{esc(sysname)}" style="{FRAME_STYLE}" '
+                   f'edge="1" parent="1"><mxGeometry x="-1" relative="1" as="geometry">'
+                   f'<mxPoint x="{sx:g}" y="{sy:g}" as="sourcePoint"/>'
+                   f'<mxPoint x="{sx:g}" y="{sy:g}" as="targetPoint"/>'
+                   f'<Array as="points">{pts}</Array><mxPoint x="6" y="-2" as="offset"/>'
+                   f'</mxGeometry></mxCell>')
     out.append(f'        <mxCell id="pool" value="" style="swimlane;startSize=0;horizontal=0;fillColor=none;'
                'strokeColor=#000000;container=1;collapsible=0;" vertex="1" parent="1">'
                f'<mxGeometry x="{POOL_X}" y="{POOL_Y}" width="{pool_w}" height="{pool_h}" as="geometry"/></mxCell>')
@@ -436,6 +571,10 @@ def lint_spec(spec):
                 errs.append(f"page '{name}': node '{n['id']}' kind '{n['kind']}' is outside the "
                             f"BPMN-lite budget {sorted(KIND)} - an output/store is a task "
                             f"(or text like '→ สัญญา PDF'), a document only for a real hand-off")
+            if n.get("system") and n.get("outside"):
+                errs.append(f"page '{name}': node '{n['id']}' has both system "
+                            f"'{n['system']}' and outside '{n['outside']}' - a box is done in one "
+                            f"place: inside a system frame OR out of system, not both")
             if n.get("type") is not None and n["type"] not in TYPES:
                 errs.append(f"page '{name}': node '{n['id']}' type '{n['type']}' not in {TYPES}")
             if "[TBD]" in txt:
