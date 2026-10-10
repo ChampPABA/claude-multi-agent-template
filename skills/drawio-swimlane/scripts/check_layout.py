@@ -638,6 +638,15 @@ def check_page(root: ET.Element, page_name: str) -> tuple[list[str], list[str]]:
                         f"(within {NEAR:.0f}px) - reads as touching it. Give the connector more "
                         f"clearance, or route this congested cluster via the free-form path.")
 
+    # HARD: a box with no connector at all is a step nobody reaches (typically a box drawn
+    # by hand in draw.io and never wired in) - the flow no longer says when it happens.
+    wired = {x for e in edges for x in (e.source, e.target)}
+    if len(node_boxes) > 1:
+        for n, _, _ in node_boxes:
+            if n.id not in wired:
+                hard.append(f"box '{n.value or n.id}' has no connector - wire it into the flow "
+                            f"(or delete it) so the reader knows when it happens.")
+
     # HARD: every box sits fully inside exactly ONE system frame or fully outside all of
     # them. A frame says where a step is done; a box straddling a frame line (or inside two
     # frames) leaves the reader unable to tell in-system from out-of-system.

@@ -31,8 +31,9 @@ instead of in an expensive look-at-the-PNG loop.
   data keyed by box id. The generator **refuses to overwrite a hand-edited page** (exit 1;
   no `--force`). After Champ edits in draw.io, run `check_layout.py`, then
   `gen_swimlane.py --read flow.drawio spec.json`. That updates the spec and prints what
-  changed, so relay that report. From then on, make your edits in the drawio XML, then
-  gate, then `--read`.
+  changed, so relay that report. From then on that one drawio is the only picture: make
+  your edits in its XML, then gate, then `--read`. Never generate a second drawio next to
+  it, even when asked to "regenerate" - two pictures drift apart and Champ's layout is lost.
 - **Cleaning up an existing messy `.drawio`, or a congested hub the generator can't route**
   → hand-author with the Plan / Build / Verify / Fix process below. The generator builds
   from a spec; it cannot ingest and reroute an existing diagram.
