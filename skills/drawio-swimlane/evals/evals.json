@@ -60,7 +60,7 @@
     },
     {
       "id": 5,
-      "prompt": "ทำ flow ให้ stakeholder เซ็นหน่อย เรื่องหัวหน้าทีมสมัครเป็น Partner ใน aaa-portal: หัวหน้าทีมกรอกข้อมูลบริษัทใน aaa-portal แล้วอัปโหลดเอกสาร เซ็นสัญญาบนหน้าจอ Admin ได้ email แล้วเข้าไปตรวจเอกสารใน aaa-portal ถ้าผ่านกดอนุมัติ ระบบเปลี่ยน Partner เป็น active ถ้าไม่ผ่าน Admin โทรหรือ LINE บอกหัวหน้าทีมว่าต้องแก้อะไร แล้วหัวหน้าทีมกลับไปแก้ ส่วนเรื่องคำนวณค่าคอมย้อนหลังยังไม่ได้ตัดสินว่าทำที่ไหน ขอเป็น drawio",
+      "prompt": "ทำ flow หน่อย เรื่องหัวหน้าทีมสมัครเป็น Partner ใน aaa-portal: หัวหน้าทีมกรอกข้อมูลบริษัทใน aaa-portal แล้วอัปโหลดเอกสาร เซ็นสัญญาบนหน้าจอ Admin ได้ email แล้วเข้าไปตรวจเอกสารใน aaa-portal ถ้าผ่านกดอนุมัติ ระบบเปลี่ยน Partner เป็น active ถ้าไม่ผ่าน Admin โทรหรือ LINE บอกหัวหน้าทีมว่าต้องแก้อะไร แล้วหัวหน้าทีมกลับไปแก้ ส่วนเรื่องคำนวณค่าคอมย้อนหลังยังไม่ได้ตัดสินว่าทำที่ไหน ขอเป็น drawio",
       "expected_output": "One .drawio generated from a spec via gen_swimlane.py; check_layout.py exits 0. Lanes are humans only (หัวหน้าทีม, Admin), no System lane. Steps done in aaa-portal sit inside a dashed aaa-portal lasso frame; the phone/LINE step and the email-received step sit outside frames with a 'นอกระบบ · ...' sub-line. 'Partner → active' is not its own box (it lives in the approving box's changes). The commission step carries [TBD] and sits outside frames. Labels are one action each, no '&'/'+', no typed step numbers; the End names the outcome.",
       "files": [],
       "assertions": [

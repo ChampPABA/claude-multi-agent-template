@@ -1,6 +1,6 @@
 ---
 name: drawio-swimlane
-description: Author, clean up, or review draw.io swimlane and cross-functional flowcharts to a professional standard. Make sure to use this skill whenever the user works on a .drawio flowchart, process diagram, or swimlane (lanes per role/entity, top-down process flows with decision diamonds), and ESPECIALLY when connector lines look messy - crossings, overlaps, lines cutting through boxes, too many bends, curved corners, or multiple lines piling on one side of a box. Also use when laying out any top-down flowchart or process map in draw.io even if the word "swimlane" is not said, or when someone asks to make a .drawio diagram "cleaner / straighter / prettier" or "fix the arrows". Encodes an evidence-based priority order (Purchase/Ware graph-aesthetics research) for resolving layout conflicts, the draw.io XML specifics (fixed connection points, 90-degree corners, decision-vertex connections, gutter/connector-node loops), and a script layout-gate (check_layout.py) that catches the render-breaking faults, plus a final visual check only when the gate cannot see an edge. Its deterministic generator also builds multi-page overview+detail documents (sub-process bands spanning lanes, one detail page per band) and never overwrites a hand-edited .drawio: it reads the hand-edited file back into the JSON spec and reports what changed. Flows use BPMN-lite notation for stakeholder signoff and dev handoff: human-only lanes, dashed system frames showing where each step is done (e.g. aaa-portal vs LINE vs Google Sheet), and [TBD] markers for undecided steps. Use it too when someone says "อ่าน drawio ที่แก้แล้วกลับเข้า spec", "ใส่กรอบระบบ", or "flow ให้ stakeholder เซ็น".
+description: Author, clean up, or review draw.io swimlane and cross-functional flowcharts to a professional standard. Make sure to use this skill whenever the user works on a .drawio flowchart, process diagram, or swimlane (lanes per role/entity, top-down process flows with decision diamonds), and ESPECIALLY when connector lines look messy - crossings, overlaps, lines cutting through boxes, too many bends, curved corners, or multiple lines piling on one side of a box. Also use when laying out any top-down flowchart or process map in draw.io even if the word "swimlane" is not said, or when someone asks to make a .drawio diagram "cleaner / straighter / prettier" or "fix the arrows". Encodes an evidence-based priority order (Purchase/Ware graph-aesthetics research) for resolving layout conflicts, the draw.io XML specifics (fixed connection points, 90-degree corners, decision-vertex connections, gutter/connector-node loops), and a script layout-gate (check_layout.py) that catches the render-breaking faults, plus a final visual check only when the gate cannot see an edge. Its deterministic generator also builds multi-page overview+detail documents (sub-process bands spanning lanes, one detail page per band) and never overwrites a hand-edited .drawio: it reads the hand-edited file back into the JSON spec and reports what changed. Flows use BPMN-lite notation, are agreed with Champ, then handed to the `signoff` skill, and serve as dev handoff: human-only lanes, dashed system frames showing where each step is done (e.g. aaa-portal vs LINE vs Google Sheet), and [TBD] markers for undecided steps. Use it too when someone says "อ่าน drawio ที่แก้แล้วกลับเข้า spec", or "ใส่กรอบระบบ".
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -34,6 +34,7 @@ instead of in an expensive look-at-the-PNG loop.
   changed, so relay that report. From then on that one drawio is the only picture: make
   your edits in its XML, then gate, then `--read`. Never generate a second drawio next to
   it, even when asked to "regenerate" - two pictures drift apart and Champ's layout is lost.
+  Once Champ approves the flow, the next step is the `signoff` skill; there is no step where stakeholders sign the flow.
 - **Cleaning up an existing messy `.drawio`, or a congested hub the generator can't route**
   → hand-author with the Plan / Build / Verify / Fix process below. The generator builds
   from a spec; it cannot ingest and reroute an existing diagram.
@@ -135,7 +136,7 @@ Fix this at layout time (node placement), not by rerouting:
     pageWidth="1169" pageHeight="827" math="0" shadow="0">
   ```
 - **No decoration unless asked:** omit fillColor (white) / strokeColor (black).
-- **Notation is BPMN-lite: 5 shapes, nothing else.** Stakeholders sign these flows, and
+- **Notation is BPMN-lite: 5 shapes, nothing else.** Stakeholders read these flows on the signoff page, and
   real BPMN use settles on ~9 constructs; every extra shape or icon is one more thing a
   reader can misread (rationale + citations: `references/priority-rules.md`). Pick the
   shape from what the step MEANS:
@@ -172,8 +173,8 @@ Fix this at layout time (node placement), not by rerouting:
   split multi-action boxes; "และ" only when truly inseparable. Use the spec's `verbs` list
   so the same word means the same transition in flow, step table and buttons. Never type
   step numbers; the renderer numbers boxes from their permanent ids (e.g. `A3-t1`).
-- **Unknown? Write `[TBD]` in the label.** Champ takes the drawio to stakeholders, removes
-  `[TBD]` and drags the box into the frame where it belongs; `--read` brings that back into
+- **Unknown? Write `[TBD]` in the label.** Champ resolves each `[TBD]`, removes
+  it and drags the box into the frame where it belongs; `--read` brings that back into
   the spec and reports how many `[TBD]` boxes remain.
 - **Flow structure (by the book):** every flow begins at exactly one Start terminator and
   ends at **one merged End** — point every path that merely finishes at the SAME End node;
