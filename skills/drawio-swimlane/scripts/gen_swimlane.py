@@ -42,6 +42,7 @@ Optional node fields: outside ("LINE" -> sub-line "นอกระบบ · LINE
 service -> sub-line "ระบบทำเอง"), system ("aaa-portal" -> the box sits inside that system's dashed
 lasso frame), page/changes/errors (passed through). Spec-level: verbs, entities.
 Usage: python3 gen_swimlane.py spec.json out.drawio
+       python3 gen_swimlane.py --read flow.drawio spec.json   # hand-edited drawio -> spec + report
 """
 import json, sys, os, re, hashlib, html as _html
 from itertools import permutations
@@ -661,7 +662,210 @@ def build_document(spec):
     doc += pages + ['</mxfile>']
     return "\n".join(doc), warns
 
+# --------------------------------------------------------------- read-back ----
+# Two-way editing: the .drawio owns the visuals (text, kind, lane, system frame, edges,
+# position); the spec owns the non-visual data keyed by box id (page, changes, errors...).
+# After a hand edit, `--read` pulls the visuals back into the spec and reports the diff.
+# The geometry parser is check_layout's, so the gate and the read-back see the same thing.
+VISUAL = ("text", "kind", "lane", "spans", "system", "outside", "row")
+
+def _plain(value):
+    """drawio html label -> (main text, sub-line or '')."""
+    v = re.sub(r"<br\s*/?>|</div>|</p>", "\n", value or "", flags=re.I)
+    lines = [ln.replace("\xa0", " ").strip()
+             for ln in _html.unescape(re.sub(r"<[^>]+>", "", v)).split("\n")]
+    lines = [ln for ln in lines if ln]
+    if len(lines) > 1 and (lines[-1].startswith("นอกระบบ") or lines[-1] == "ระบบทำเอง"):
+        return " ".join(lines[:-1]), lines[-1]
+    return " ".join(lines), ""
+
+def _kind(st):
+    if "ellipse" in st:
+        return "end" if str(st.get("strokeWidth")) == "3" else "start"
+    if "rhombus" in st:
+        return "decision"
+    if st.get("isLoopSub") == "1" or st.get("shape") == "process":
+        return "subprocess"
+    if st.get("shape") == "document":
+        return "document"
+    return "process"
+
+def read_page(root, page):
+    """Visuals of one drawio page -> (new nodes, new edges, lane names); spec page untouched."""
+    import check_layout as cl
+    cells = {}
+    for el in root.iter("mxCell"):
+        c = cl.Cell(el)
+        if c.id is not None:
+            cells[c.id] = c
+    lanes = sorted((c for c in cells.values() if c.is_vertex and c.is_lane() and c.value),
+                   key=lambda c: cl.node_box(c, cells)[0])
+    lane_box = [(_plain(c.value)[0], cl.node_box(c, cells)) for c in lanes]
+    frames = [(_plain(f.value)[0], cl.frame_polygon(f, cells)) for f in cells.values() if f.is_frame()]
+    boxes = [c for c in cells.values()
+             if c.is_vertex and not c.is_lane() and not c.is_text() and not c.is_frame()
+             and c.w is not None and not (cells.get(c.parent) and cells[c.parent].is_edge)]
+    # spec lane order is kept (an overview re-clusters at generate time anyway)
+    names = list(page["lanes"]) + [n for n, _ in lane_box if n not in page["lanes"]]
+    old = {n["id"]: n for n in page["nodes"]}
+    nodes, warns = [], []
+    for c in boxes:
+        x0, y0, x1, y1 = cl.node_box(c, cells)
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        text, sub = _plain(c.value)
+        n = {"id": c.id, "text": text, "kind": _kind(c.style)}
+        n["_y"], n["_x"] = cy, cx
+        n["row"] = round((cy - ROW0) / ROWSTEP)
+        over = [nm for nm, (a, _, b, _) in lane_box if min(x1, b) - max(x0, a) > 1]
+        if "spans" in old.get(c.id, {}) or len(over) > 1:
+            n["spans"] = over
+        else:
+            inl = [nm for nm, (a, t, b, u) in lane_box if a <= cx < b and t <= cy < u]
+            if inl:
+                n["lane"] = names.index(inl[0])
+        if sub.startswith("นอกระบบ"):
+            n["outside"] = sub.split("·", 1)[-1].strip()
+        if sub == "ระบบทำเอง":
+            n["type"] = "service"
+        ins, part = [], []
+        for nm, poly in frames:
+            r = cl.box_vs_polygon((x0, y0, x1, y1), poly)
+            (ins if r == "in" else part if r == "partial" else []).append(nm)
+        if len(ins) == 1 and not part:
+            n["system"] = ins[0]
+        elif ins or part:
+            warns.append(f"box '{c.id}' sits in frames {ins} / straddles {part} - "
+                         f"system left unchanged (run check_layout.py)")
+            if old.get(c.id, {}).get("system"):
+                n["system"] = old[c.id]["system"]
+        o = old.get(c.id, {})                   # keep the spec's key order and its non-visual data
+        merged = {k: n.pop(k) if k in n else v for k, v in o.items() if k in n or k not in VISUAL}
+        merged.update(n)
+        if merged.get("type") == "service" and sub != "ระบบทำเอง":
+            del merged["type"]                  # the "ระบบทำเอง" sub-line was removed by hand
+        nodes.append(merged)
+    nodes.sort(key=lambda n: (n["_y"], n["_x"]))
+    for i, n in enumerate(nodes):
+        del n["_y"], n["_x"]
+        if n["row"] == i:
+            del n["row"]                        # implicit row = list index
+    edges = []
+    for e in cells.values():
+        if e.is_edge and not e.is_frame() and e.source and e.target:
+            ed = {"src": e.source, "dst": e.target}
+            lbl = _plain(e.value)[0]
+            if lbl:
+                ed["label"] = lbl
+            edges.append(ed)
+    return nodes, edges, names, warns
+
+def _rows(nodes):
+    return {n["id"]: n.get("row", i) for i, n in enumerate(nodes)}
+
+def diff_page(page, nodes, edges, names):
+    """Human report lines: what the drawio changed versus the spec."""
+    rep = []
+    lanes_old = page["lanes"]
+    for nm in names[len(lanes_old):]:
+        rep.append(f"lane '{nm}' is new in the drawio (renamed or added)")
+    def lname(n):
+        if "spans" in n:
+            return n["spans"]
+        return names[n["lane"]] if isinstance(n.get("lane"), int) else None
+    old = {n["id"]: n for n in page["nodes"]}
+    ro, rn = _rows(page["nodes"]), _rows(nodes)
+    seen_lanes = {names[n["lane"]] for n in nodes if "lane" in n} | {s for n in nodes for s in n.get("spans", [])}
+    for nm in lanes_old:
+        if nm not in seen_lanes and any(lname(n) == nm for n in page["nodes"]):
+            rep.append(f"lane '{nm}' has no boxes in the drawio (renamed or removed?)")
+    for n in nodes:
+        o = old.get(n["id"])
+        if o is None:
+            rep.append(f"new box {n['id']} '{n['text']}' - give it a permanent id")
+            continue
+        ch = []
+        if "[TBD]" in o.get("text", "") and "[TBD]" not in n["text"]:
+            ch.append("[TBD] removed")
+            if o["text"].replace("[TBD]", "").strip() != n["text"]:
+                ch.append(f"text -> '{n['text']}'")
+        elif o.get("text", "") != n["text"]:
+            ch.append(f"text '{o.get('text', '')}' -> '{n['text']}'")
+        if o["kind"] != n["kind"]:
+            ch.append(f"kind {o['kind']} -> {n['kind']}")
+        if lname(o) != lname(n):
+            ch.append(f"lane {lname(o)} -> {lname(n)}")
+        for k in ("system", "outside"):
+            if o.get(k) != n.get(k):
+                ch.append(f"{k} {o.get(k) or 'none'} -> {n.get(k) or 'none'}")
+        if (o.get("type") == "service") != (n.get("type") == "service"):
+            ch.append("ระบบทำเอง " + ("added" if n.get("type") == "service" else "removed"))
+        if ro[n["id"]] != rn[n["id"]]:
+            ch.append(f"row {ro[n['id']]} -> {rn[n['id']]}")
+        if ch:
+            rep.append(f"{n['id']} '{n['text']}': " + " · ".join(ch))
+    ids = {n["id"] for n in nodes}
+    for o in page["nodes"]:
+        if o["id"] not in ids:
+            rep.append(f"box {o['id']} '{o.get('text', '')}' is gone from the drawio - kept under 'removed'")
+    key = lambda e: (e["src"], e["dst"])
+    oe = {key(e): e.get("label", "") for e in page["edges"]}
+    ne = {key(e): e.get("label", "") for e in edges}
+    for k in ne.keys() - oe.keys():
+        rep.append(f"edge {k[0]} -> {k[1]} added" + (f" '{ne[k]}'" if ne[k] else ""))
+    for k in oe.keys() - ne.keys():
+        rep.append(f"edge {k[0]} -> {k[1]} removed")
+    for k in oe.keys() & ne.keys():
+        if oe[k] != ne[k]:
+            rep.append(f"edge {k[0]} -> {k[1]} label '{oe[k]}' -> '{ne[k]}'")
+    return rep
+
+def _dump(o, ind=0):
+    """Compact-where-short JSON, matching the hand-written spec style."""
+    flat = json.dumps(o, ensure_ascii=False)
+    if not isinstance(o, (dict, list)) or len(flat) + ind <= 140:
+        return flat
+    pad = " " * (ind + 2)
+    if isinstance(o, dict):
+        body = ",\n".join(f"{pad}{json.dumps(k, ensure_ascii=False)}: {_dump(v, ind + 2)}"
+                          for k, v in o.items())
+        return "{\n" + body + "\n" + " " * ind + "}"
+    return "[\n" + ",\n".join(pad + _dump(v, ind + 2) for v in o) + "\n" + " " * ind + "]"
+
+def read_back(drawio_path, spec_path):
+    import xml.etree.ElementTree as ET
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    spec = json.load(open(spec_path, encoding="utf-8"))
+    pages = get_pages(spec)
+    dgs = {(d.get("name") or ""): d for d in ET.parse(drawio_path).getroot().iter("diagram")}
+    if set(dgs) != {p["name"] for p in pages}:
+        sys.exit(f"FAIL: page names differ - drawio {sorted(dgs)} vs spec {sorted(p['name'] for p in pages)}. "
+                 f"Rename the page in one of them so they match, then --read again.")
+    changed = False
+    for p in pages:
+        nodes, edges, names, warns = read_page(dgs[p["name"]].find(".//root"), p)
+        rep = diff_page(p, nodes, edges, names)
+        print(f"=== {p['name']} ===")
+        for w in warns:
+            print("WARN " + w)
+        print("\n".join(rep) if rep else "no changes")
+        changed |= bool(rep)
+        ids = {n["id"] for n in nodes}
+        gone = [o for o in p["nodes"] if o["id"] not in ids]
+        home = p if "pages" in spec else spec   # the flat form keeps its fields at top level
+        if gone:
+            home["removed"] = home.get("removed", []) + gone
+        home.update(lanes=names, nodes=nodes, edges=edges)
+        p["nodes"] = nodes
+    tbd = sum("[TBD]" in n.get("text", "") for p in pages for n in p["nodes"])
+    print(f"{tbd} box(es) still [TBD]")
+    if changed:
+        open(spec_path, "w", encoding="utf-8").write(_dump(spec) + "\n")
+        print("updated", spec_path)
+
 if __name__ == "__main__":
+    if sys.argv[1] == "--read":
+        read_back(sys.argv[2], sys.argv[3])
+        sys.exit(0)
     spec = json.load(open(sys.argv[1]))
     errs, warns = lint_spec(spec)
     for w in warns:
@@ -675,8 +879,8 @@ if __name__ == "__main__":
         touched = first_hand_edited_page(out_path)
         if touched is not None:
             sys.exit(f"REFUSE: page '{touched}' in {out_path} was hand-edited (or wasn't "
-                     f"generated by this script). The .drawio is now the source of truth: "
-                     f"edit its XML directly, or delete/rename the file to regenerate.")
+                     f"generated by this script). Never overwrite a hand edit: read it back with "
+                     f"`--read {out_path} <spec.json>`, and make further changes in the drawio XML.")
     xml, warns2 = build_document(spec)
     for w in warns2:
         print("WARN " + w)

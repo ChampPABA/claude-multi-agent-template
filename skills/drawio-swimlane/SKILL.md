@@ -27,11 +27,12 @@ instead of in an expensive look-at-the-PNG loop.
   A big flow (multi-phase) is the same one spec with a `pages` array: an **overview page**
   of sub-process bands + one **detail page** per band (see `references/generator.md`).
 
-  **File lifecycle:** a generated `.drawio` is spec-owned until its first hand edit; the
-  generator embeds a per-page provenance hash and **refuses to overwrite a hand-edited
-  page** (exit 1, naming it). Once hand-edited, that `.drawio` — not the spec — is the
-  source of truth: keep editing the XML. Delete/rename the file to regenerate; there is
-  no `--force`.
+  **File lifecycle (two-way):** the drawio owns the visuals; the spec owns the non-visual
+  data keyed by box id. The generator **refuses to overwrite a hand-edited page** (exit 1;
+  no `--force`). After Champ edits in draw.io, run `check_layout.py`, then
+  `gen_swimlane.py --read flow.drawio spec.json`. That updates the spec and prints what
+  changed, so relay that report. From then on, make your edits in the drawio XML, then
+  gate, then `--read`.
 - **Cleaning up an existing messy `.drawio`, or a congested hub the generator can't route**
   → hand-author with the Plan / Build / Verify / Fix process below. The generator builds
   from a spec; it cannot ingest and reroute an existing diagram.
@@ -171,8 +172,8 @@ Fix this at layout time (node placement), not by rerouting:
   so the same word means the same transition in flow, step table and buttons. Never type
   step numbers; the renderer numbers boxes from their permanent ids (e.g. `A3-t1`).
 - **Unknown? Write `[TBD]` in the label.** Champ takes the drawio to stakeholders, removes
-  `[TBD]` and drags the box into the frame where it belongs; the generator reports how
-  many `[TBD]` boxes remain.
+  `[TBD]` and drags the box into the frame where it belongs; `--read` brings that back into
+  the spec and reports how many `[TBD]` boxes remain.
 - **Flow structure (by the book):** every flow begins at exactly one Start terminator and
   ends at **one merged End** — point every path that merely finishes at the SAME End node;
   reserve multiple Ends for genuinely distinct fates, each labelled differently
