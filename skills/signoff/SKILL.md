@@ -36,6 +36,12 @@ ask Champ, don't do it.
    ```
    Fix the input it names; never work around the gate. `[TBD]`, a `System` lane, an End with
    no outcome or an unlabelled decision branch are flow problems: back to drawio-swimlane.
+   The gate also refuses a reference in text (`A2-d`, `A3.1`, `Q4`, `P8`, `E3`) to something
+   that does not exist. It cannot check meaning, so then read each chapter's story, page
+   states and emails against its flow and list every mismatch to Champ: a story promising a
+   path the flow lacks, a field a step needs that its page lacks, an email landing on a page
+   the recipient does not act on, a "ดู Q4" pointing at the wrong question. Don't fix these
+   silently; they are Champ's call.
 4. **Look once, light and dark.** The artifact adds the doctype, so preview through a wrapper:
    ```bash
    (printf '<!doctype html><html><head><meta charset=utf8></head><body>'; cat signoff.html; printf '</body></html>') > /tmp/preview.html

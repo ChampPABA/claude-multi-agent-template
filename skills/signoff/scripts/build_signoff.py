@@ -49,7 +49,7 @@ def strings(x, path=''):
             yield from strings(v, f'{path}.{k}' if path else k)
     elif isinstance(x, list):
         for i, v in enumerate(x):
-            yield from strings(v, f'{path}[{i}]')
+            yield from strings(v, f'{path}[{v["id"] if isinstance(v, dict) and "id" in v else i}]')
 
 
 # ---------------------------------------------------------------- layout
@@ -285,6 +285,22 @@ def gate(chs, S):
         if b['status'] not in STATUS:
             bad.append(f'baseline "{b["topic"]}": status {b["status"]} not one of {", ".join(STATUS)}')
         bad += [f'baseline "{b["topic"]}": step {s} is not a box in the flow' for s in b.get('steps', []) if s not in steps]
+    # free-text references (A2-d, A3.1, Q4, P8, E3) must point at something that exists
+    ids = {key(c['id'], n['id']) for c in chs for n in c['nodes']}
+    nums = {c['id']: sum(1 for n in c['nodes'] if n['kind'] in TASK) for c in chs}
+    qids, eids = {q['id'] for q in S.get('questions', [])}, {m['id'] for m in S.get('emails', [])}
+    texts = list(strings(S)) + [(f'spec {key(c["id"], n["id"])}', t) for c in chs for n in c['nodes']
+                                for _, t in strings({k: n.get(k) for k in ('changes', 'errors')})]
+    for path, text in texts:
+        if path.endswith('wireframe'):
+            continue
+        bad += [f'{path}: refers to step {r}, which is not in the flow' for r in re.findall(r'\b[A-Z]\d+-[a-z]\w*\b', text)
+                if r.split('-')[0] in cids and r not in ids]
+        bad += [f'{path}: refers to step {c}.{n}, but {c} has {nums[c]} steps' for c, n in re.findall(r'\b([A-Z]\d+)\.(\d+)\b', text)
+                if c in nums and not 1 <= int(n) <= nums[c]]
+        bad += [f'{path}: refers to {r}, which is not a question' for r in re.findall(r'\bQ\d+\b', text) if r not in qids]
+        bad += [f'{path}: refers to {r}, which is not in pages' for r in re.findall(r'\bP\d+\b', text) if r not in pidx]
+        bad += [f'{path}: refers to {r}, which is not an email' for r in re.findall(r'\bE\d+\b', text) if r not in eids]
     for path, text in strings(S):
         if '[TBD]' in text:
             bad.append(f'signoff.json {path}: still [TBD]')
