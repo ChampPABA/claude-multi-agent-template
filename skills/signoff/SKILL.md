@@ -68,8 +68,10 @@ ask Champ, don't do it.
   claude.ai", "ตกลงแล้วไม่ต้องตอบ", "ไม่มีความเห็น = ตกลง"), no explanatory ledes: Champ calls
   these AI smell. The gate refuses the phrases it knows; add a phrase to `BANNED` in
   `scripts/build_signoff.py` when Champ flags a new one.
-- Business Thai, English technical terms as-is. Ids, permissions and tables are dev detail:
-  only where a stakeholder decides something (baseline, state tables).
+- Business Thai, English technical terms as-is. Two readers: stakeholders approve the page,
+  front-end devs build from it. The back end is designed later from the code, so no data
+  model or UML; ids, permissions and tables only where a stakeholder decides something
+  (baseline, state tables).
 - The palette is fixed in `assets/page.html`: neutrals for structure, one green accent for
   selected/clickable/highlight, amber only for items awaiting a decision, blue only for the
   system frame. Don't add colours, stat-tile colours, coloured left bars or tinted table heads.

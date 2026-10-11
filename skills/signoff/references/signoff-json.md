@@ -43,6 +43,14 @@ its id is the page name before ` - `.
   wireframe and draws the sitemap arrow; `[[label]]` is a dead button. The sitemap's arrows
   come only from these, so every real navigation needs one. Classes available: `wf-form`
   (label/value grid), `winput`, `wrow`, `wt` (table), `wtab` / `wtab on`, `wbanner`, `wpdf`,
-  `wsig`, `wnote`. Use realistic Thai sample data, never lorem.
+  `wsig`, `wnote`. Use realistic Thai sample data, never lorem. Mark required inputs with
+  `*` on the label.
+- `fields`: `[[field or group, description]]`. The description holds what the wireframe
+  cannot show: format, must be unique, when the field appears, what the user sees when it
+  is wrong. Don't restate the label.
+- `states`: only what a front-end dev would build wrong without being told: business rules,
+  who sees what, when a button is disabled, how the page differs per status, empty-state
+  wording and its action. Generic loading, error toasts and offline handling are designed in
+  the hi-fi build, not here.
 - Button labels use the same verbs as the flow boxes and the state tables (ส่งตรวจ / ผ่าน /
   ส่งกลับแก้ / เพิ่ม / ย้าย / ลบ ...): a stakeholder must recognise the same action everywhere.
