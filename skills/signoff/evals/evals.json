@@ -4,7 +4,7 @@
   {
    "id": 1,
    "prompt": "flow team recruitment ตกลงกับ Champ ใน draw.io เรียบร้อยแล้ว spec อยู่ที่ evals/files/team-recruitment/spec.json ข้อมูลอื่นอยู่ใน evals/files/team-recruitment/signoff.json ทำหน้า signoff ให้หน่อย ยังไม่ต้อง publish",
-   "expected_output": "Gate passes and one signoff.html is written with tabs ภาพรวม, A1-A4, Sitemap, หน้าจอ, พื้นฐานระบบ, v4 เปลี่ยนอะไร; flows drawn by the skill's renderer with aaa-portal frames; step tables match box numbers; light and dark screenshots taken; nothing published. The reply lists the data mismatches the gate cannot see, for Champ to decide: A2 promises moving an existing advisor but the flow has no such path, E3 lands on P5 while the Admin reviews on P6, P8's 'ดู Q4' points at the wrong question.",
+   "expected_output": "Gate passes and one signoff.html is written with exactly the tabs ภาพรวม, A1-A4, Sitemap, พื้นฐานระบบ (no หน้าจอ, no เปลี่ยนอะไร, no questions or comment boxes); flows drawn by the skill's renderer with aaa-portal frames; step tables match box numbers; sitemap arrows follow each page's next list; light and dark screenshots taken; nothing published. The reply lists the data mismatches the gate cannot see, for Champ to decide: A2 promises moving an existing advisor but the flow has no such path, E3 lands on P5 while the Admin reviews on P6.",
    "files": [
     "evals/files/team-recruitment/spec.json",
     "evals/files/team-recruitment/signoff.json"
@@ -21,12 +21,11 @@
   },
   {
    "id": 3,
-   "prompt": "Champ พิมพ์ comment ของ stakeholder ลงในหน้า signoff v4 แล้ว ใน test นี้อ่าน artifact ไม่ได้ เลย export collection feedback ไว้ที่ evals/files/team-recruitment/feedback.json ทำ version ถัดไปให้จาก spec.json กับ signoff.json ใน folder เดียวกัน ยังไม่ต้อง publish",
-   "expected_output": "signoff.json becomes v5 with changes rows for the handled comments: Q4 default rewritten to 'TL แก้เองได้ Admin อนุมัติก่อนมีผล', P2 drops the phone field from fields and wireframe. The P6 comment adds an approval step, so it is routed to drawio-swimlane, not written into the spec. Empty comments and the old v3 comment are ignored. signoff.html is rebuilt and the reply lists what happened to each comment.",
+   "prompt": "Champ คุยกับ stakeholder แล้ว ขอ signoff version ถัดไปจาก evals/files/team-recruitment/spec.json กับ signoff.json: หน้า P2 ตัดช่องเบอร์โทรออก, P6 Admin ต้องให้หัวหน้าฝ่ายอนุมัติอีกขั้นก่อนผ่าน, แล้ว P9 ต้องกดกลับไป P8 ได้ด้วย ยังไม่ต้อง publish",
+   "expected_output": "signoff.json becomes v5: P2 drops the phone field from fields, P9 next gains P8 so the sitemap draws P9 -> P8. The P6 extra approval is a new flow step, so it is routed to drawio-swimlane, not written into the spec or signoff.json. No changes/questions keys are added. signoff.html is rebuilt with the same tabs and the reply says what happened to each request.",
    "files": [
     "evals/files/team-recruitment/spec.json",
-    "evals/files/team-recruitment/signoff.json",
-    "evals/files/team-recruitment/feedback.json"
+    "evals/files/team-recruitment/signoff.json"
    ]
   }
  ]

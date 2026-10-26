@@ -4,72 +4,13 @@
  "version": "v4",
  "date": "2026-10-10",
  "flow_source": "handbook/portal-flow/team-recruitment.drawio",
- "host": "portal.triple-a.international",
- "artifact": null,
+ "artifact": "https://claude.ai/artifact/DBKFhgxCDqeJHhXikZxFkt",
  "story": {
   "overview": "AAA จะมีทีมขายแบบ Partner บริษัทของหัวหน้าทีม (TL) เป็นคู่สัญญา และ TL คือกรรมการบริษัทนั้น Admin เป็นคนตั้งทีมและเพิ่มลูกทีม ทีมขายได้ทันทีที่ตั้ง แต่ค่าคอมจ่ายได้หลังบริษัทส่งเอกสารและเซ็นสัญญาครบ",
   "A1": "Admin ตั้งชื่อทีม แล้วเลือก TL จะเป็น advisor ที่มีอยู่แล้วหรือคนใหม่ก็ได้ กดสร้างแล้วทีมขายได้ทันที สถานะ Partner เป็นรอข้อมูล TL ได้ email ถ้าเป็นคนใหม่ก็ยืนยัน email ตั้งรหัสผ่าน แล้วเข้าไปเห็นทีมของตัวเอง",
   "A2": "TL ส่งชื่อกับ email ของลูกทีมให้ Admin ทาง LINE Admin เพิ่มเข้าทีม ถ้าข้อมูลไม่ครบหรือซ้ำ ระบบให้แก้ก่อน คนใหม่ได้ email ยืนยัน ตั้งรหัสผ่าน แล้วเริ่มขายได้ ส่วน advisor ที่มีอยู่แล้ว Admin ย้ายเข้าทีมได้เลย",
   "A3": "คุณสุภาพรเป็น TL และกรรมการของบริษัท สุภาพร เวลธ์ จำกัด เปิดหน้าข้อมูล Partner กรอกข้อมูลบริษัทกับบัญชี อัปโหลดเอกสาร 3 ไฟล์ อ่านสัญญาแล้วเซ็นบนหน้าจอ Admin ได้ email เข้าไปดูว่าเอกสารครบ และคนเซ็นเป็นกรรมการตามหนังสือรับรอง ผ่านแล้วทีมเริ่มรับค่าคอม ไม่ผ่าน Admin กดส่งกลับแก้แล้วโทรบอกว่าต้องแก้อะไร",
   "A4": "TL เปิดหน้าทีมของฉัน เห็นลูกทีมทุกคน กดชื่อใครก็ไปหน้า case ของทีมที่กรองเป็นคนนั้นให้แล้ว ดูได้อย่างเดียว แก้ case ไม่ได้"
- },
- "questions": [
-  {
-   "id": "Q1",
-   "chapter": "overview",
-   "question": "Partner เลิกสัญญา: ลูกทีมได้ค่าคอมยังไง",
-   "detail": "ยังไม่มี flow ถ้าตกลงจะวาดเป็น A5 · ลูกทีมคนหนึ่งขึ้นเป็น TL ใหม่ได้ด้วย A1 อยู่แล้ว",
-   "default": "ค้างค่าคอมไว้ ระบบแสดงยอดค้าง จ่ายเมื่อลูกทีมเข้าทีมใหม่",
-   "pages": [
-    "P3"
-   ]
-  },
-  {
-   "id": "Q2",
-   "chapter": "overview",
-   "question": "advisor ลาออก (ไม่ใช่ TL)",
-   "detail": "ยังไม่มี flow ถ้าตกลงจะวาดเป็น A6",
-   "default": "Admin ปิดบัญชี case ที่ยังไม่จบโอนให้ TL ดูแลต่อ",
-   "pages": [
-    "P3"
-   ]
-  },
-  {
-   "id": "Q3",
-   "chapter": "A3",
-   "question": "ค่าคอมช่วง Partner รอข้อมูล",
-   "detail": "คำตอบ v2 \"ใช่\" ขอยืนยันความหมาย",
-   "default": "พักไว้ แล้วจ่ายย้อนหลังทั้งหมดเมื่อ Partner active",
-   "pages": [
-    "P7",
-    "P8"
-   ]
-  },
-  {
-   "id": "Q4",
-   "chapter": "A3",
-   "question": "Partner active แล้ว TL แก้ข้อมูลบริษัทหรือบัญชีเองได้ไหม",
-   "detail": "บัญชีที่รับค่าคอมเปลี่ยนแล้วควรมีคนตรวจ",
-   "default": "แก้เองไม่ได้ ส่งเรื่องให้ Admin แก้",
-   "pages": [
-    "P8"
-   ]
-  }
- ],
- "sidebars": {
-  "Admin": [
-   "ทีม",
-   "Partner",
-   "Advisor",
-   "ผู้ใช้",
-   "Cases"
-  ],
-  "TL": [
-   "แดชบอร์ด",
-   "Cases",
-   "ทีมงาน",
-   "Commission"
-  ]
  },
  "pages": [
   {
@@ -107,8 +48,10 @@
     "ค้นหาจากชื่อทีมหรือชื่อ TL",
     "กรองตามสถานะ Partner"
    ],
-   "menu": "ทีม",
-   "wireframe": "<h4>ทีมทั้งหมด</h4><div class=\"wrow\"><span class=\"winput\">ค้นหาทีม / TL</span><span class=\"winput\">Partner: ทั้งหมด ▾</span>[[+ สร้างทีม->P2]]</div>\n<table class=\"wt\"><tr><th>ทีม</th><th>TL</th><th>สมาชิก</th><th>Partner</th></tr>\n<tr><td>[[ทีมสุภาพร->P3]]</td><td>สุภาพร ใจดี</td><td>12</td><td>รอตรวจ</td></tr>\n<tr><td>[[ทีมวิชัย->P3]]</td><td>วิชัย มั่นคง</td><td>3</td><td>รอข้อมูล</td></tr></table>"
+   "next": [
+    "P2",
+    "P3"
+   ]
   },
   {
    "id": "P2",
@@ -142,8 +85,10 @@
     "สร้างเสร็จ: ทีมขายได้ทันที สถานะ Partner = รอข้อมูล",
     "ส่ง email E1 ไม่สำเร็จ: สร้างทีมได้ แจ้งให้ส่งใหม่"
    ],
-   "menu": "ทีม",
-   "wireframe": "<h4>สร้างทีม</h4><div class=\"wf-form\"><label>ชื่อทีม</label><span class=\"winput\">ทีมวิชัย</span>\n<label>Team Leader</label><span>( ) advisor เดิม <span class=\"winput\">ค้นหา advisor ▾</span><br>(•) คนใหม่</span>\n<label>ชื่อ-นามสกุล</label><span class=\"winput\">วิชัย มั่นคง</span><label>email</label><span class=\"winput\">wichai@example.com</span>\n<label>เบอร์โทร</label><span class=\"winput\">086-111-2233</span></div>\n<p class=\"wnote\">สร้างแล้วทีมขายได้ทันที สถานะ Partner = รอข้อมูล</p>\n<div class=\"wrow\">[[สร้างทีม->P3]][[ยกเลิก->P1]]</div>"
+   "next": [
+    "P3",
+    "P1"
+   ]
   },
   {
    "id": "P3",
@@ -183,8 +128,10 @@
     "ย้าย TL ออกจากทีมตัวเองไม่ได้",
     "advisor ที่ยังไม่ยืนยัน email: สถานะบัญชี \"รอยืนยัน email\" ส่ง email ใหม่ได้"
    ],
-   "menu": "ทีม",
-   "wireframe": "<h4>ทีมสุภาพร</h4><div class=\"wf-form\"><label>TL</label><span>สุภาพร ใจดี</span>\n<label>Partner</label><span>บริษัท สุภาพร เวลธ์ จำกัด · รอตรวจ [[ไปตรวจ->P6]]</span></div>\n<p><b>สมาชิก (12)</b> [[+ เพิ่ม advisor ใหม่->P4]][[ย้าย advisor เดิมเข้าทีม]]</p>\n<div class=\"wrow\"><span class=\"winput\">ค้นหาชื่อ / email</span><span class=\"winput\">บัญชี: ทั้งหมด ▾</span></div><table class=\"wt\"><tr><th>ชื่อ</th><th>role</th><th>email</th><th>เบอร์</th><th>บัญชี</th><th>case เปิดอยู่</th><th>เข้าทีม</th><th></th></tr><tr><td>สุภาพร ใจดี</td><td>TL</td><td>supaporn@example.com</td><td>081-000-1111</td><td>ใช้งาน</td><td>4</td><td>15/10/2026</td><td></td></tr><tr><td>กิตติ วงศ์ทอง</td><td>advisor</td><td>kitti@example.com</td><td>089-222-3344</td><td>ใช้งาน</td><td>2</td><td>15/10/2026</td><td>ย้ายทีม</td></tr><tr><td>มณีรัตน์ ศรีสุข</td><td>advisor</td><td>manee@example.com</td><td>086-555-7788</td><td>ใช้งาน</td><td>1</td><td>15/10/2026</td><td>ย้ายทีม</td></tr><tr><td>ปิยะ รุ่งเรือง</td><td>advisor</td><td>piya@example.com</td><td>081-234-5678</td><td>รอยืนยัน email</td><td>0</td><td>15/10/2026</td><td>ย้ายทีม</td></tr></table><p class=\"wnote\">แสดง 4 จาก 12 คน · หน้า 1 / 3</p>\n<div class=\"wrow\">[[ลบทีม]]<small>ลบได้เมื่อไม่มีสมาชิกและไม่มี case</small></div>"
+   "next": [
+    "P6",
+    "P4"
+   ]
   },
   {
    "id": "P4",
@@ -220,8 +167,9 @@
     "email หรือเลขบัตรซ้ำ: แจ้งที่ช่องนั้น (A2-d)",
     "ส่ง email ไม่สำเร็จ: EMAIL_FAILED (ของเดิม) ส่งใหม่ได้"
    ],
-   "menu": "ทีม",
-   "wireframe": "<h4>เพิ่ม Advisor</h4><div class=\"wf-form\"><label>ทีม *</label><span class=\"winput\">ทีมสุภาพร ▾</span>\n<label>ชื่อ-นามสกุล</label><span class=\"winput\">ปิยะ รุ่งเรือง</span><label>เลขบัตร</label><span class=\"winput\">1-1037-01234-56-7</span>\n<label>email</label><span class=\"winput\">piya@example.com</span><label>เบอร์ / LINE</label><span class=\"winput\">081-234-5678 / piya.r</span>\n<label>วันเกิด</label><span class=\"winput\">12/04/1995</span><label>ที่อยู่</label><span class=\"winput\">… 10400</span></div>\n<div class=\"wrow\">[[เพิ่มและส่ง email ยืนยัน->P3]][[ยกเลิก->P3]]</div>"
+   "next": [
+    "P3"
+   ]
   },
   {
    "id": "P5",
@@ -256,8 +204,9 @@
     "แท็บสถานะ: รอตรวจ / รอข้อมูล / ส่งกลับแก้ / active",
     "ไม่มีรอตรวจ: \"ไม่มี Partner รอตรวจ\""
    ],
-   "menu": "Partner",
-   "wireframe": "<h4>Partner</h4><div class=\"wrow\"><span class=\"wtab on\">รอตรวจ (1)</span><span class=\"wtab\">รอข้อมูล (1)</span><span class=\"wtab\">ส่งกลับแก้</span><span class=\"wtab\">active</span></div>\n<table class=\"wt\"><tr><th>บริษัท</th><th>ทีม</th><th>สถานะ</th><th>เซ็นเมื่อ</th></tr><tr><td>[[บริษัท สุภาพร เวลธ์ จำกัด->P6]]</td><td>ทีมสุภาพร</td><td>รอตรวจ</td><td>20/10/2026 14:05</td></tr></table>"
+   "next": [
+    "P6"
+   ]
   },
   {
    "id": "P6",
@@ -298,8 +247,9 @@
     "ส่งกลับแก้: แค่เปลี่ยนสถานะ คุยกับ TL นอกระบบ ไม่มี email",
     "ชื่อผู้เซ็นไม่ตรงหนังสือรับรอง: ส่งกลับแก้"
    ],
-   "menu": "Partner",
-   "wireframe": "<h4>ตรวจ Partner: บริษัท สุภาพร เวลธ์ จำกัด</h4><div class=\"wf-form\">\n<label>เลขนิติบุคคล</label><span>0105567012345</span><label>ที่อยู่</label><span>99/1 ถ.สุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110</span>\n<label>บัญชี</label><span>กสิกรไทย 012-3-45678-9 · บริษัท สุภาพร เวลธ์ จำกัด</span>\n<label>เอกสาร</label><span>[หนังสือรับรอง.pdf] [book-bank.pdf] [บัตรกรรมการ.jpg]</span>\n<label>ผู้เซ็น</label><span>สุภาพร ใจดี (TL, กรรมการ) · 20/10/2026 14:05 · [signed-contract.pdf]</span></div>\n<div class=\"wrow\">[[ผ่าน->P5]][[ส่งกลับแก้->P5]]</div>"
+   "next": [
+    "P5"
+   ]
   },
   {
    "id": "P7",
@@ -334,9 +284,11 @@
     "ยังไม่มีลูกทีม: \"ยังไม่มีลูกทีม ส่งชื่อกับ email ให้ Admin เพิ่มได้เลย\"",
     "ไม่มีทีม: TEAM_NOT_FOUND แสดงหน้าว่าง"
    ],
-   "menu": "ทีมงาน",
-   "wireframe": "<h4>ทีมของฉัน: ทีมสุภาพร</h4>\n<div class=\"wbanner\">Partner: รอข้อมูล · ส่งข้อมูลบริษัทให้ครบเพื่อรับค่าคอม [[ส่งข้อมูล Partner->P8]]</div>\n<p><b>ลูกทีม (12)</b> <span class=\"winput\">ค้นหาชื่อ</span></p><table class=\"wt\"><tr><th>ชื่อ</th><th>role</th><th>email</th><th>เบอร์</th><th>บัญชี</th><th>case เปิดอยู่</th><th>เข้าทีม</th></tr><tr><td>สุภาพร ใจดี</td><td>TL</td><td>supaporn@example.com</td><td>081-000-1111</td><td>ใช้งาน</td><td>4</td><td>15/10/2026</td></tr><tr><td>กิตติ วงศ์ทอง</td><td>advisor</td><td>kitti@example.com</td><td>089-222-3344</td><td>ใช้งาน</td><td>2</td><td>15/10/2026</td></tr><tr><td>มณีรัตน์ ศรีสุข</td><td>advisor</td><td>manee@example.com</td><td>086-555-7788</td><td>ใช้งาน</td><td>1</td><td>15/10/2026</td></tr><tr><td>ปิยะ รุ่งเรือง</td><td>advisor</td><td>piya@example.com</td><td>081-234-5678</td><td>รอยืนยัน email</td><td>0</td><td>15/10/2026</td></tr></table><p class=\"wnote\">กดชื่อลูกทีม = ไปหน้า case ของทีม กรองเป็นคนนั้น [[ตัวอย่าง: กิตติ วงศ์ทอง->P9]] · แสดง 4 จาก 12 คน</p>\n",
-   "status_note": "ตอนนี้เป็น mock"
+   "status_note": "ตอนนี้เป็น mock",
+   "next": [
+    "P8",
+    "P9"
+   ]
   },
   {
    "id": "P9",
@@ -365,8 +317,9 @@
     "ยังไม่มี case: \"ทีมยังไม่มี case\"",
     "มาจากการกดชื่อใน P7: ตัวกรองลูกทีมตั้งไว้ให้แล้ว"
    ],
-   "menu": "ทีมงาน",
-   "wireframe": "<h4>case ของทีม: ทีมสุภาพร</h4><div class=\"wrow\"><span class=\"winput\">ลูกทีม: กิตติ วงศ์ทอง ▾</span><span class=\"winput\">ขั้น: ทั้งหมด ▾</span>[[กลับไปทีมของฉัน->P7]]</div>\n<table class=\"wt\"><tr><th>advisor</th><th>ผู้เอาประกัน</th><th>ขั้น</th><th>สถานะ</th><th>เบี้ย</th><th>อัปเดต</th></tr>\n<tr><td>กิตติ วงศ์ทอง</td><td>นภา ส.</td><td>Application</td><td>รอ KYC</td><td>USD 50,000</td><td>21/10/2026</td></tr>\n<tr><td>กิตติ วงศ์ทอง</td><td>ธีระ ก.</td><td>Proposal</td><td>รอข้อมูลลูกค้า</td><td>USD 20,000</td><td>20/10/2026</td></tr></table>"
+   "next": [
+    "P7"
+   ]
   },
   {
    "id": "P8",
@@ -404,10 +357,11 @@
     "รอตรวจ: อ่านอย่างเดียว",
     "ส่งกลับแก้: แก้ได้อีกครั้งแล้วเซ็นส่งใหม่",
     "active: อ่านอย่างเดียว ดาวน์โหลดสัญญาได้",
-    "ยังไม่มี template สัญญา: เซ็นไม่ได้ (ดู Q4)"
+    "ยังไม่มี template สัญญา: เซ็นไม่ได้"
    ],
-   "menu": "ทีมงาน",
-   "wireframe": "<h4>ข้อมูล Partner</h4><p class=\"wnote\">ขั้น 1 ข้อมูลบริษัท → ขั้น 2 เอกสาร → ขั้น 3 อ่านและเซ็นสัญญา</p>\n<div class=\"wf-form\"><label>ชื่อบริษัท</label><span class=\"winput\">บริษัท สุภาพร เวลธ์ จำกัด</span>\n<label>เลขนิติบุคคล</label><span class=\"winput\">0105567012345</span><label>ที่อยู่</label><span class=\"winput\">99/1 ถ.สุขุมวิท … 10110</span>\n<label>บัญชีบริษัท</label><span class=\"winput\">กสิกรไทย ▾ · 012-3-45678-9 · บริษัท สุภาพร เวลธ์ จำกัด</span>\n<label>หนังสือรับรอง</label><span class=\"winput\">[ เลือกไฟล์ ]</span><label>book bank</label><span class=\"winput\">[ เลือกไฟล์ ]</span>\n<label>บัตรกรรมการ</label><span class=\"winput\">[ เลือกไฟล์ ]</span></div>\n<div class=\"wpdf\">[ สัญญา PDF version 1 ]</div><div class=\"wsig\">[ ช่องวาดลายเซ็น ]</div>\n<div class=\"wrow\">[[บันทึกไว้ก่อน]][[เซ็นและส่งตรวจ->P7]]</div>"
+   "next": [
+    "P7"
+   ]
   },
   {
    "id": "B3",
@@ -415,7 +369,8 @@
    "status": "old",
    "title": "ตั้งรหัสผ่าน",
    "role": "Advisor",
-   "column": "Advisor"
+   "column": "Advisor",
+   "states": []
   }
  ],
  "emails": [
@@ -603,7 +558,7 @@
      "แก้ข้อมูลบริษัทหรือบัญชี",
      "active",
      "Admin",
-     "ดู Q4"
+     "แก้เองไม่ได้ ส่งเรื่องให้ Admin แก้"
     ]
    ]
   },
@@ -633,59 +588,5 @@
     ]
    ]
   }
- ],
- "pending": [
-  [
-   "template สัญญา Partner v1",
-   "Champ จะส่งให้ ระหว่างนี้ TL เซ็นไม่ได้ แต่ทีมขายได้"
-  ],
-  [
-   "หน้า /register เดิม",
-   "ยกเว้นการเช็ค traffic ได้ (ยังไม่เปิดให้สมัครเพิ่ม) แก้ใน development ตอนทำงานจริง"
-  ]
- ],
- "removed": [
-  [
-   "/register?team=CODE",
-   "advisor สมัครเองไม่ได้แล้ว Admin เป็นคนเพิ่มอย่างเดียว"
-  ],
-  [
-   "Team Code",
-   "ไม่มีใครใช้เมื่อตัดการสมัครเอง"
-  ],
-  [
-   "/sign/partner/:token",
-   "TL คือกรรมการ เซ็นในระบบได้เลย"
-  ],
-  [
-   "ทีม AAA Direct",
-   "TL ถูกใส่เข้าทีมตัวเองตอนสร้าง advisor เก่าย้ายเข้าทีมจริงตอน migrate"
-  ],
-  [
-   "แก้หน้าอนุมัติใบสมัคร",
-   "ไม่มีใบสมัครจากลิงก์ทีมแล้ว"
-  ]
- ],
- "changes": [
-  [
-   "รูปแบบ",
-   "แต่ละเรื่อง (A1-A4) อยู่ในแท็บของตัวเอง: เรื่องย่อ, flow, ตารางทีละขั้น, หน้าจอ, คำถาม"
-  ],
-  [
-   "ตารางทีละขั้น",
-   "ใหม่: ทุกกล่องใน flow มีแถวบอกว่าใครทำ ทำที่หน้าไหน และถ้าไม่ผ่านไปไหน กดรหัสขั้นเพื่อดูกล่องใน flow"
-  ],
-  [
-   "หน้าจอ",
-   "ข้อมูลแต่ละหน้าเปลี่ยนเป็นตาราง ช่อง | คำอธิบาย"
-  ],
-  [
-   "สถานะ Partner",
-   "ใหม่: ตารางสถานะ → ปุ่ม → สถานะถัดไป → ใครกด ในแท็บพื้นฐานระบบ"
-  ],
-  [
-   "Q4",
-   "คำถามใหม่: Partner active แล้วแก้ข้อมูลบริษัทเองได้ไหม"
-  ]
  ]
 }

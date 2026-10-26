@@ -1,6 +1,6 @@
 ---
 name: signoff
-description: Build, publish, and revise the ONE stakeholder signoff page for a feature (a Claude artifact) from a confirmed drawio-swimlane spec plus a signoff.json - tabs ภาพรวม, one tab per chapter (story, flow, step table, screens, questions), Sitemap, หน้าจอ (low-fi wireframes), พื้นฐานระบบ, เปลี่ยนอะไร - and fold the comments typed into it back into the next version. Use this whenever the flow is already agreed in draw.io and the next step is the page stakeholders read and approve, or when someone says "ทำ signoff", "signoff page", "หน้า signoff", "เอา flow ไปให้ stakeholder ดู", "publish signoff version ใหม่", "อ่าน comment ใน signoff", "แก้ตาม feedback ใน signoff", "/signoff", even without saying "skill". Not for drawing or fixing the flow itself (that is drawio-swimlane).
+description: Build, publish, and revise the ONE stakeholder signoff page for a feature (a Claude artifact) from a confirmed drawio-swimlane spec plus a signoff.json - tabs ภาพรวม, one tab per chapter (story, flow, step table, pages used), Sitemap, พื้นฐานระบบ - and publish each revision Champ asks for as a new version at the same link. Use this whenever the flow is already agreed in draw.io and the next step is the page stakeholders read and approve, or when someone says "ทำ signoff", "signoff page", "หน้า signoff", "เอา flow ไปให้ stakeholder ดู", "publish signoff version ใหม่", "แก้ signoff", "/signoff", even without saying "skill". Not for drawing or fixing the flow itself (that is drawio-swimlane).
 allowed-tools: Read, Write, Edit, Bash
 ---
 
@@ -28,39 +28,34 @@ ask Champ, don't do it.
 2. **Write or update signoff.json.** First time: read `references/signoff-json.md` and the
    worked file `evals/files/team-recruitment/signoff.json`. Baseline comes from reading the
    target repo's code (auth, roles and permissions, audit log, email, upload); stories,
-   questions and their defaults come from Champ. A default Champ has not given is your
-   proposal: say so in your reply.
+   page details come from Champ. Anything Champ has not given is your proposal: say so in
+   your reply. Open questions are discussed with Champ in chat, not put on the page.
 3. **Build** (gate first; on any finding it writes nothing and exits 1):
    ```bash
    python3 <skill>/scripts/build_signoff.py spec.json signoff.json signoff.html
    ```
    Fix the input it names; never work around the gate. `[TBD]`, a `System` lane, an End with
    no outcome or an unlabelled decision branch are flow problems: back to drawio-swimlane.
-   The gate also refuses a reference in text (`A2-d`, `A3.1`, `Q4`, `P8`, `E3`) to something
+   The gate also refuses a reference in text (`A2-d`, `A3.1`, `P8`, `E3`) to something
    that does not exist. It cannot check meaning, so then read each chapter's story, page
    states and emails against its flow and list every mismatch to Champ: a story promising a
    path the flow lacks, a field a step needs that its page lacks, an email landing on a page
-   the recipient does not act on, a "ดู Q4" pointing at the wrong question. Don't fix these
-   silently; they are Champ's call.
+   the recipient does not act on. Don't fix these silently; they are Champ's call.
 4. **Look once, light and dark.** The artifact adds the doctype, so preview through a wrapper:
    ```bash
-   (printf '<!doctype html><html><head><meta charset=utf8></head><body>'; cat signoff.html; printf '</body></html>') > /tmp/preview.html
-   agent-browser open file:///tmp/preview.html#A1 && agent-browser screenshot light.png
-   agent-browser set media dark && agent-browser screenshot dark.png
+   P=$(mktemp --suffix=.html)
+   (printf '<!doctype html><html><head><meta charset=utf8></head><body>'; cat signoff.html; printf '</body></html>') > $P
+   agent-browser --session signoff-$$ open file://$P#A1 && agent-browser --session signoff-$$ screenshot light.png
+   agent-browser --session signoff-$$ set media dark && agent-browser --session signoff-$$ screenshot dark.png
    ```
-   Check a chapter, หน้าจอ and พื้นฐานระบบ. Nothing unreadable, nothing overflowing its box.
-5. **Publish.** First time: Artifact publish of `signoff.html` with
-   `capabilities: {db: {}, user: {scopes: ["profile"]}}` (the comment boxes need both), then
-   write the returned URL into `signoff.json` `artifact`. Every later version: Artifact `read`
-   that URL first (a publish to an unread URL is refused), then publish with `url` and no
-   `capabilities` (omitting keeps them). Same URL forever; versions, not new links.
-6. **Fold comments into the next version.** Champ types each stakeholder comment into the box
-   under the question, screen, sitemap or baseline. Read them with `ArtifactData` `list` on
-   collection `feedback`; doc ids are `<version>-Q3`, `<version>-page-P8`, `<version>-sitemap`,
-   `<version>-baseline`; empty `text` = no comment. Read every comment of the current version
-   before bumping it. For each: change signoff.json (or hand the flow change to
-   drawio-swimlane), add a row to `changes`, bump `version`, rebuild, republish. Tell Champ
-   per comment what you changed, or why you didn't.
+   Run it as one shell command: a fixed preview path or the shared browser session shows
+   another run's page.
+   Check a chapter, Sitemap and พื้นฐานระบบ. Nothing unreadable, nothing overflowing its box.
+5. **Publish.** First time: Artifact publish of `signoff.html`, then write the returned URL
+   into `signoff.json` `artifact`. Every later version: Artifact `read` that URL first (a
+   publish to an unread URL is refused), bump `version`, rebuild, then publish with `url`.
+   Same URL forever; versions, not new links. A revision that changes the flow goes to
+   drawio-swimlane first.
 
 ## Content rules
 
@@ -69,9 +64,9 @@ ask Champ, don't do it.
   these AI smell. The gate refuses the phrases it knows; add a phrase to `BANNED` in
   `scripts/build_signoff.py` when Champ flags a new one.
 - Business Thai, English technical terms as-is. Two readers: stakeholders approve the page,
-  front-end devs build from it. The back end is designed later from the code, so no data
-  model or UML; ids, permissions and tables only where a stakeholder decides something
-  (baseline, state tables).
+  front-end devs build from it. Screens are designed later in hi-fi and the back end later
+  from the code, so no wireframes, data model or UML; ids, permissions and tables only where
+  a stakeholder decides something (baseline, state tables).
 - The palette is fixed in `assets/page.html`: neutrals for structure, one green accent for
   selected/clickable/highlight, amber only for items awaiting a decision, blue only for the
   system frame. Don't add colours, stat-tile colours, coloured left bars or tinted table heads.
