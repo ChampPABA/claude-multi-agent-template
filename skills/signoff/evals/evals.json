@@ -37,6 +37,16 @@
     "evals/files/team-recruitment/signoff.json",
     "evals/files/team-recruitment/web/"
    ]
+  },
+  {
+   "id": 5,
+   "prompt": "หน้า P5 (/admin/partners) ยังไม่มี code เลย dev จะเริ่มทำสัปดาห์หน้า เขียนรายละเอียด P5 ใน signoff.json ให้พร้อม (ชื่อหน้า เมนู ปุ่ม แท็บ status empty state) code ส่วนอื่นของ app อยู่ที่ web/ แล้ว build signoff.html ใหม่ ยังไม่ต้อง publish",
+   "expected_output": "P5 UI wording follows the admin zone convention from web/ (English; login is the Thai zone): title Partners, a Partners menu item in the sidebar's Team group, tabs reuse P1's statuses Awaiting info / Needs review / Returned for edits / Active, English empty states, and no Thai label mixed in (no 'เปิดตรวจ' button). Descriptions stay business Thai. The reply says the wording is a proposal. Flow and web/ are not edited.",
+   "files": [
+    "evals/files/team-recruitment/spec.json",
+    "evals/files/team-recruitment/signoff.json",
+    "evals/files/team-recruitment/web/"
+   ]
   }
  ]
 }
