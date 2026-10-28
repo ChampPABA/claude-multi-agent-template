@@ -46,4 +46,4 @@ its id is the page name before ` - `.
   the hi-fi build, not here.
 - Action and status labels come from the UI wording rule in SKILL.md (code first, else the
   app's convention), and one action reads the same in pages, state tables and emails: a
-  stakeholder must recognise the same action everywhere. Flow boxes may word it differently.
+  stakeholder must recognise the same action everywhere.

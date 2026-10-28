@@ -72,11 +72,9 @@ ask Champ, don't do it.
   - Screen already in code: quote the running code exactly, and check the app shell and
     sibling pages too, not only this feature's. Code Champ approved beats the signoff, so on
     a difference revise the signoff. A rename Champ wants is a change: list it in your
-    reply, never slip it in. (v14 of aaa-portal team recruitment put ~45 labels in Thai
-    while the approved UI was English.)
+    reply, never slip it in.
   - No code yet: choose wording that fits the whole app's existing convention (language per
-    zone, how menus and statuses are named), not wording invented per page, and say in
-    your reply which convention you followed.
+    zone, how menus and statuses are named), not wording invented per page.
 - Two readers: stakeholders approve the page,
   front-end devs build from it. Screens are designed later in hi-fi and the back end later
   from the code, so no wireframes, data model or UML; ids, permissions and tables only where
