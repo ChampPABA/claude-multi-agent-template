@@ -27,6 +27,16 @@
     "evals/files/team-recruitment/spec.json",
     "evals/files/team-recruitment/signoff.json"
    ]
+  },
+  {
+   "id": 4,
+   "prompt": "หน้า P1 (/admin/teams) ทำ code เสร็จและ approve แล้ว code อยู่ที่ web/ ใน folder team-recruitment อัปเดต signoff.json ของ P1 ให้ตรงกับของจริง แล้ว build signoff.html ใหม่ ยังไม่ต้อง publish แล้วบอกด้วยว่ามีอะไรไม่ตรงกันบ้าง",
+   "expected_output": "P1 in signoff.json quotes the approved code exactly, not translated: title Teams, action Create team, empty state No teams yet, Partner statuses Awaiting info / Needs review / Returned for edits / Active, column names Team / Team leader / Members / Partner status. Page prose stays business Thai. The spec flow text (e.g. 'กด สร้างทีม') is not edited, and the reply does not list flow-box wording vs button label as a mismatch. Code is not changed.",
+   "files": [
+    "evals/files/team-recruitment/spec.json",
+    "evals/files/team-recruitment/signoff.json",
+    "evals/files/team-recruitment/web/"
+   ]
   }
  ]
 }
