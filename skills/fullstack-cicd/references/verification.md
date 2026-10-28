@@ -142,7 +142,7 @@ it explicitly as unverified.
 - [ ] Migrate runs between pull and `up -d`, as a one-off, with a timeout
 - [ ] Deploy verifies `/health` then `/version` sha before reporting success
 - [ ] The api exposes `/health` and `/version` (sha) at all — missing endpoints are a fail, not a nicety
-- [ ] Gate job (typecheck/lint/unit vs real Postgres) gates both branches, in step with test.yml
+- [ ] Gate job gates both branches by calling test.yml (`workflow_call`, typecheck/lint/unit vs real Postgres); no second copy of the gate
 - [ ] Secret scan (gitleaks) gates the build
 - [ ] Every job sets `timeout-minutes`
 - [ ] Deploy concurrency queues (`cancel-in-progress: false`); PR workflows cancel
@@ -171,7 +171,9 @@ reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
 
 **Pipeline (web repo)**
 
-- [ ] Gate job on development/main pushes, explicit-result `needs` check so feature previews survive
+- [ ] Gate job on development/main pushes calls test.yml (no copy), explicit-result `needs` check so feature previews survive
+- [ ] test.yml cancels superseded runs only on `pull_request`, so a called gate queues instead of blocking the deploy
+- [ ] If tests are sharded: the count lives once (matrix list + `strategy.job-total`), shard test counts sum to an unsharded run, and a failing shard has been shown to stop build-deploy
 - [ ] wrangler-action deploys to prod project (main) / dev project (else); previews on branch
 - [ ] Deploy verified via wrangler CLI: newest `pages deployment list` row matches the push
 - [ ] `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets present

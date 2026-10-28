@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "จะเปิด project ใหม่ org ชื่อ nova มีหน้าบ้าน Vite + หลังบ้าน Elysia/Postgres รันบน VPS เดียวที่มีทั้ง dev กับ prod ใช้ GitHub Free plan กับ Cloudflare ช่วยวางแผน setup CI/CD ให้ครบตั้งแต่ deploy หน้าบ้านหลังบ้านจน backup ขึ้น R2 พร้อมลำดับทำและคำสั่งที่ต้องรัน",
-      "expected_output": "An ordered greenfield plan matching the standard: phases in the right order, no-build-on-host immutable image deploys, gate inside deploy.yml, migrate-before-up, health+version verify, one nova-backup bucket with prefixes + lifecycle via `lifecycle add`, two dashboard-only tokens (nova-backup-rw, nova-pages), R2_KEY_PREFIX, fail-loud size-verified backups, backup-health, inventory rule, timeout-minutes on jobs.",
+      "expected_output": "An ordered greenfield plan matching the standard: phases in the right order, no-build-on-host immutable image deploys, deploy.yml gates by calling test.yml (workflow_call, no copy), migrate-before-up, health+version verify, one nova-backup bucket with prefixes + lifecycle via `lifecycle add`, two dashboard-only tokens (nova-backup-rw, nova-pages), R2_KEY_PREFIX, fail-loud size-verified backups, backup-health, inventory rule, timeout-minutes on jobs.",
       "files": [],
       "assertions": [
         "Backend deploys as a pre-built immutable image (GHCR) pulled by the VPS; no build step runs on the server",

@@ -11,8 +11,9 @@ description: >-
   consolidating R2 buckets, or auditing an existing project against this standard
   ("ตรวจว่า pipeline ครบไหม", "what am I missing to deploy properly"). Also use for any
   question touching R2 buckets, R2 S3 tokens, Pages API tokens, wrangler r2
-  lifecycle/cors, GHCR retention, or deploy-pipeline shape, even when the user never
-  says the word "standard".
+  lifecycle/cors, GHCR retention, deploy-pipeline shape, or a slow CI test gate
+  ("test ช้า", "CI ช้า", shard the tests), even when the user never says the word
+  "standard".
 ---
 
 # Fullstack CI/CD standard
@@ -78,10 +79,12 @@ Each rule's "why" is the compressed failure that paid for it.
    on them. Frontend: confirm the Pages deployment actually landed via
    `wrangler pages deployment list` (newest deployment matches the pushed
    branch). CI-green is not "deployed".
-4. **The gate gates both branches.** Free orgs cannot require checks, and main is
-   reachable without a PR (direct push, UI edit, revert button) — so the
-   typecheck/lint/test job is duplicated inside deploy.yml. Keep it in step with
-   test.yml's copy.
+4. **The gate gates both branches, from one definition.** Free orgs cannot
+   require checks, and main is reachable without a PR (direct push, UI edit,
+   revert button) — so deploy.yml's `gate` job calls test.yml
+   (`uses: ./.github/workflows/test.yml`, `on: workflow_call`). Never a second
+   copy: a copy drifts and silently changes what gates a deploy. A slow gate
+   gets sharded, never skipped: `references/cicd-pipeline.md` → Test gate speed.
 5. **Environments are prefixes, never buckets.** One bucket per org; dev/prod
    separation lives in the key prefix. Bucket-per-env once orphaned a token
    scope and uploads died silently for six weeks before anyone noticed.

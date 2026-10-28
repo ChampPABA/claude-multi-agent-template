@@ -6,7 +6,7 @@ rollback, and the backup system. Values use a fictional org `acme`
 
 Contents: Assumptions and free-plan budget · Frontend pipeline · Backend
 pipeline (deploy.yml jobs, Host recovery, Host disk, Concurrency and
-timeouts) · Secrets inventory · Retention and scanning · Rollback pinning ·
+timeouts) · Test gate speed · Secrets inventory · Retention and scanning · Rollback pinning ·
 Backups · VPS layout · VPS access.
 
 ## Assumptions and free-plan budget
@@ -17,12 +17,18 @@ Backups · VPS layout · VPS access.
   bill. That, not cost, is the failure mode retention guards.
 - One VPS, two compose stacks on it (dev + prod). CI reaches it over Tailscale.
 - Consequences the standard accepts: PR discipline replaces branch protection;
-  a gate job duplicated inside deploy.yml replaces required checks; GHCR
+  a gate job deploy.yml calls (test.yml via workflow_call) replaces required checks; GHCR
   retention is an active prune job, not a passive setting.
 
 ## Frontend pipeline (web repo)
 
-Two workflows: `test.yml` (PR-only) and `deploy.yml`.
+Two workflows: `test.yml` (the gate: `on: pull_request` + `workflow_call`) and
+`deploy.yml`, which calls it.
+
+**test.yml concurrency:** `group: test-${{ github.ref }}`,
+`cancel-in-progress: ${{ github.event_name == 'pull_request' }}`. A PR push
+cancels its superseded run; called from deploy.yml the event is `push`, so it
+queues instead — a cancelled gate would block the deploy.
 
 **deploy.yml shape:**
 
@@ -30,10 +36,11 @@ Two workflows: `test.yml` (PR-only) and `deploy.yml`.
   'LICENSE']` — docs-only pushes deploy nothing.
 - `concurrency: group: cf-pages-${{ github.ref_name }}`,
   `cancel-in-progress: false` — deploys queue, never vanish.
-- **gate** job: `if: github.ref_name == 'development' || github.ref_name == 'main'`
-  — typecheck + lint + test on direct pushes to the deploy branches. Skipped on
+- **gate** job: `if: github.ref_name == 'development' || github.ref_name == 'main'`,
+  `uses: ./.github/workflows/test.yml` — the whole PR gate (typecheck + lint +
+  test) on direct pushes to the deploy branches, with no copy. Skipped on
   feature branches (test.yml already covers the PR event; gating there would
-  run the suite twice per push). Mirrors the api gate; keep the two in step.
+  run the suite twice per push).
 - **build-deploy** job: `needs: [gate]` with an explicit result check:
 
   ```yaml
@@ -91,14 +98,14 @@ service. Where they differ, this file states the standard.
 
 ### deploy.yml jobs
 
-**Gate job** (typecheck/lint/unit). No `if:` — runs for both branches. Free orgs
-cannot require checks and main is reachable without a PR (direct push, UI edit,
-revert button), so this job is what actually gates production. It runs the suite
-against a real Postgres service container (`postgres:17-alpine`, health-cmd
-`pg_isready`, mapped port, `DATABASE_URL` env) because most test files hit a
-real database — a suite without one gates nothing. The job is a deliberate
-duplicate of test.yml's unit job; editing one without the other silently
-changes what gates a deploy.
+**Gate job** (`uses: ./.github/workflows/test.yml`, typecheck/lint/unit). No
+`if:` — runs for both branches. Free orgs cannot require checks and main is
+reachable without a PR (direct push, UI edit, revert button), so this job is
+what actually gates production. test.yml runs the suite against a real
+Postgres service container (`postgres:17-alpine`, health-cmd `pg_isready`,
+mapped port, `DATABASE_URL` env) because most test files hit a real database —
+a suite without one gates nothing. One definition, called, never copied: a
+copy drifts and silently changes what gates a deploy.
 
 **build-and-push job:**
 
@@ -290,10 +297,81 @@ its pinned image, so it is in use and survives.
 
 ### Concurrency and timeouts
 
-- deploy.yml: `cancel-in-progress: false` (deploys queue).
-- PR workflows: `cancel-in-progress: true` (superseded runs vanish).
+- deploy.yml: `cancel-in-progress: false` (a running deploy finishes).
+  GitHub keeps at most one pending run per group and a newer pending run
+  cancels the older one, so a burst of pushes deploys the first and the last,
+  not every commit in between. Cancelling the running development deploy too
+  (`cancel-in-progress: ${{ github.ref_name == 'development' }}`) is an
+  untried option for the web repo only; never on the api, where a cancel can
+  land mid-migration.
+- test.yml: cancels only on `pull_request` (see Frontend pipeline).
 - Every job: `timeout-minutes` tiered ~10 (web build) / 15 (gate, build,
   deploy) / 20 (long jobs) against real run times.
+
+## Test gate speed
+
+The gate runs before every deploy, so its wall time is the floor of every
+deploy. Proven on aaa-portal/web#84 (PR #85): one vitest job (127 files, 1281
+tests) took 160-235 s on the 2-vCPU private-repo runner; 4 shards brought PR
+Test to 68-96 s and development gate + deploy to ~140 s.
+
+1. **Measure first.** Find which step owns the time before changing anything:
+
+   ```
+   gh run view <id> --json jobs -q '.jobs[] | .name+" "+.startedAt+" "+.completedAt+" | "+([.steps[] | .name+"="+.startedAt[14:19]+"-"+.completedAt[14:19]] | join(", "))'
+   ```
+
+   Reproduce the runner locally with `vitest run --maxWorkers=2`
+   (`ubuntu-latest` is 2 vCPU on private repos, 4 on public). A local run on
+   all cores hides both the slowness and the flakes that only appear under load.
+2. **Shard inside test.yml.** deploy.yml calls test.yml, so one change speeds
+   both PRs and deploys. typecheck + lint run once in their own job, not per
+   shard:
+
+   ```yaml
+   jobs:
+     checks:            # typecheck + lint, once
+       ...
+     test:
+       strategy:
+         matrix:
+           shard: [1, 2, 3, 4]
+       steps:
+         ...
+         - run: bun run test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+   ```
+
+   The matrix list is the only place the count lives; `strategy.job-total`
+   reads it back. Expressions have no arithmetic, so `strategy.job-index`
+   (zero-based) cannot build the 1-based shard number.
+3. **Pick the count from measured shard times, not division.** Vitest splits
+   by file count, not duration, so one heavy file sets its shard's time. On
+   #84, 3 shards ran 97 / 78 / 126 s (one held a ~30 s file, over the 120 s
+   target); 4 passed. Then prove nothing was dropped: the shards' `Tests N
+   passed` must sum to one unsharded run on the same commit (#84: 289 + 267 +
+   253 + 472 = 1281). Sharding only to gate needs no blob-report merge.
+4. **Prove a failed shard blocks the deploy.** Push a throwaway failing test,
+   see its shard go red, Test fail and build-deploy not run, then revert.
+   `fail-fast` defaults to true: the first failing shard cancels its siblings,
+   so a red run shows one failed leg and the rest cancelled — read the failed
+   one. The deploy's `success || skipped` check skips on either result.
+5. **Not worth doing:** caching `bun install` (2-4 s per job on #84;
+   setup-bun caches only the Bun binary, and a cache restore costs about the
+   same), and skipping the gate on development pushes (it is the only check
+   between a direct push and the dev deploy, rule 4).
+6. **A test that fails only under load** is usually a `lazy()` page module
+   loading inside the first test's `findBy` window. Warm it in `beforeAll`
+   (`await Promise.all([import('<routes>'), import('<page>')])`), never a
+   project-wide `testTimeout` raise (it hides real hangs everywhere). Then
+   search for every other test rendering a lazy page without the warm-up — on
+   #84 review found two more.
+7. **Renaming a job renames its check.** Sharding turns `test` into `checks` +
+   `test (1)`..`test (4)`, prefixed `gate / ` when called from deploy.yml.
+   Before renaming, look for the old name in rulesets and required checks
+   (`gh api repos/<org>/<repo>/rulesets`,
+   `gh api repos/<org>/<repo>/branches/<branch>/protection`): a required check
+   that never reports again blocks every merge. On a Free private repo neither
+   exists; say so in the PR's Drift.
 
 ## Secrets inventory
 
