@@ -41,6 +41,9 @@ ask Champ, don't do it.
    states and emails against its flow and list every mismatch to Champ: a story promising a
    path the flow lacks, a field a step needs that its page lacks, an email landing on a page
    the recipient does not act on. Don't fix these silently; they are Champ's call.
+   Flow box text explains the process and need not match on-screen labels word for word:
+   a wording gap between a flow box and a button is not a mismatch, and never edit flow text
+   to match a label.
 4. **Look once, light and dark.** The artifact adds the doctype, so preview through a wrapper:
    ```bash
    P=$(mktemp --suffix=.html)
@@ -63,7 +66,18 @@ ask Champ, don't do it.
   claude.ai", "ตกลงแล้วไม่ต้องตอบ", "ไม่มีความเห็น = ตกลง"), no explanatory ledes: Champ calls
   these AI smell. The gate refuses the phrases it knows; add a phrase to `BANNED` in
   `scripts/build_signoff.py` when Champ flags a new one.
-- Business Thai, English technical terms as-is. Two readers: stakeholders approve the page,
+- Page prose (stories, field descriptions, states, emails) is business Thai, English
+  technical terms as-is. UI wording inside it (menu, page title, button, tab, status, empty
+  state, toast) is quoted as the app shows it, not translated:
+  - Screen already in code: quote the running code exactly, and check the app shell and
+    sibling pages too, not only this feature's. Code Champ approved beats the signoff, so on
+    a difference revise the signoff. A rename Champ wants is a change: list it in your
+    reply, never slip it in. (v14 of aaa-portal team recruitment put ~45 labels in Thai
+    while the approved UI was English.)
+  - No code yet: choose wording that fits the whole app's existing convention (language per
+    zone, how menus and statuses are named), not wording invented per page, and say in
+    your reply which convention you followed.
+- Two readers: stakeholders approve the page,
   front-end devs build from it. Screens are designed later in hi-fi and the back end later
   from the code, so no wireframes, data model or UML; ids, permissions and tables only where
   a stakeholder decides something (baseline, state tables).

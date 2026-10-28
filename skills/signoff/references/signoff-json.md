@@ -44,5 +44,6 @@ its id is the page name before ` - `.
   who sees what, when a button is disabled, how the page differs per status, empty-state
   wording and its action. Generic loading, error toasts and offline handling are designed in
   the hi-fi build, not here.
-- Action labels use the same verbs as the flow boxes and the state tables (ส่งตรวจ / ผ่าน /
-  ส่งกลับแก้ / เพิ่ม / ย้าย / ลบ ...): a stakeholder must recognise the same action everywhere.
+- Action and status labels come from the UI wording rule in SKILL.md (code first, else the
+  app's convention), and one action reads the same in pages, state tables and emails: a
+  stakeholder must recognise the same action everywhere. Flow boxes may word it differently.
