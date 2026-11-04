@@ -63,9 +63,21 @@ queues instead — a cancelled gate would block the deploy.
   ```
 
   Two Pages projects: prod (`main`) and dev (everything else); any non-dev
-  branch under the dev project is a preview at `<branch>.pages.dev`.
+  branch under the dev project is a preview at `<branch>.<project>.pages.dev`.
+  Login does not work on previews: it needs web and api on one registrable
+  domain (`app-dev.example.co.th` ↔ `api-dev.example.co.th`), and `pages.dev`
+  is cross-site. Session cookies stay host-only with a cookie prefix per app
+  and env: a cookie on a parent domain that hosts several apps (another org's
+  included) is sent to all of them, and dev and prod share its name.
+- A project name taken globally gets `<name>-<rand>.pages.dev`: read
+  `subdomain` from the API (`GET /accounts/<id>/pages/projects/<name>`),
+  never assume `<name>.pages.dev`. A custom domain added via the API needs its
+  own CNAME to that subdomain; it answers 522 until the first deploy.
 - Build-time env differs per branch (e.g. `VITE_API_URL`: empty on main where
-  prod hostname is baked in, `secrets.DEV_API_URL` otherwise).
+  prod hostname is baked in, `secrets.DEV_API_URL` otherwise). Write it
+  `${{ github.ref_name != 'main' && secrets.DEV_API_URL || '' }}`: in the
+  `main && '' || dev` form the empty string is falsy, so prod builds against
+  the dev api.
 - **Verify the deploy landed** — a green build job proves the upload ran, not
   that Pages serves it. Final step in build-deploy (or the audit probe):
 
@@ -82,7 +94,8 @@ queues instead — a cancelled gate would block the deploy.
 ## Backend pipeline (api repo)
 
 Workflows: `test.yml` (PR gate), `deploy.yml` (build + deploy), `prune-ghcr.yml`
-(retention + CVE scan), plus scheduled health checks (see Backups).
+(retention + CVE scan), plus scheduled health checks (see Backups). Each job's
+`timeout-minutes`: Concurrency and timeouts.
 
 **Worked examples** (real repos, read `.github/workflows/deploy.yml`,
 `prune-ghcr.yml` and `docker-compose.yml` at these commits):
@@ -158,12 +171,14 @@ except cosmetics":
   is actually live.
 
 **deploy-dev / deploy-prod jobs** (`if:` on branch name, `needs: [gate,
-build-and-push]`, GitHub `environment:` set for each):
+build-and-push]`, GitHub `environment:` set for each; on a Free private repo it only labels
+the deployment, since environment secrets and protection rules need a paid
+plan there, so every secret stays repo-level):
 
 1. Connect to Tailscale (`tailscale/github-action@v4`, OAuth client id/secret,
    `tags: tag:ci`) — the SSH targets are Tailscale names.
 2. `appleboy/scp-action` ships `docker-compose.yml` and the backup script from
-   the repo to the deploy root (`/srv/<org>-dev` / `/srv/<org>-prod`),
+   the repo to the deploy root (`/srv/<org>/<repo>-<env>`, see VPS layout),
    `overwrite: true` (without it an existing file is left in place and the
    step is a no-op). The repo copy is canonical: the deploy is what carries
    config changes to the host; a host-side edit is overwritten at its own
@@ -179,7 +194,8 @@ build-and-push]`, GitHub `environment:` set for each):
    **"Pull, migrate and switch"** — the only step that receives
    `GHCR_PULL_TOKEN` (`env:` + `envs:`), in order:
    - `export IMAGE_TAG=sha-${{ github.sha }}` — overrides whatever `.env`
-     names; the deploy always runs the immutable build.
+     names; the deploy always runs the immutable build. Never `. ./.env` after
+     it: sourcing resets `IMAGE_TAG` to the branch (compose reads `.env` itself).
    - `chmod +x` + `sha256sum` the shipped backup script (scp preserves modes
      unreliably; the hash pins the shipped bytes in the log).
    - **Ephemeral registry login**: `DOCKER_CONFIG=$(mktemp -d)`, `trap 'rm -rf`
@@ -305,8 +321,12 @@ its pinned image, so it is in use and survives.
   untried option for the web repo only; never on the api, where a cancel can
   land mid-migration.
 - test.yml: cancels only on `pull_request` (see Frontend pipeline).
-- Every job: `timeout-minutes` tiered ~10 (web build) / 15 (gate, build,
-  deploy) / 20 (long jobs) against real run times.
+- Every job in every workflow sets `timeout-minutes`, tiered against real run
+  times: ~10 (web build, backup-health) / 15 (gate, build, deploy) / 20
+  (prune + trivy scan). The gate's timeout goes on the job inside test.yml:
+  a job that only `uses:` a reusable workflow cannot take `timeout-minutes`,
+  and GitHub rejects the file. A scheduled job with none is the one that hangs
+  unseen for 360 minutes.
 
 ## Test gate speed
 
@@ -381,13 +401,27 @@ Test to 68-96 s and development gate + deploy to ~140 s.
 | api | `VPS_HOST` / `VPS_USER` / `VPS_SSH_KEY` | deploy target | deploy + health workflows |
 | api | `GHCR_PULL_TOKEN` | PAT `read:packages` only (the prune uses `GITHUB_TOKEN`) | the deploy's "Pull, migrate and switch" step only |
 | api | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | the `<org>-backup-rw` S3 token | backup-health / checks that read R2 |
+| api | `PROBE_<ENV>_EMAIL` / `PROBE_<ENV>_PASSWORD` | a probe login per environment | Probes workflow (authenticated probes) |
 | web | `CLOUDFLARE_API_TOKEN` | the `<org>-pages` token | wrangler-action |
 | web | `CLOUDFLARE_ACCOUNT_ID` | account id | wrangler-action |
 | web | `DEV_API_URL` | dev api origin | dev/preview builds |
 
 On the VPS the same R2 token values live in the deploy-root `.env`s (both
-stacks) and in `~/.backups/.r2-backup.env` for the backup cron. Values are
+stacks) and in `~/backups/<org>/.r2-backup.env` for the backup cron. Values are
 never written into any doc or repo — only names and where each lives.
+
+Each credential exists once per org (rule 6). Free private repos cannot read
+org-level secrets, so every repo that needs it gets its own copy. Set them in
+one go, never echoing the value:
+
+```
+read -rsp 'value: ' T; for r in api web; do printf %s "$T" | gh secret set NAME -R <org>/$r; done; unset T
+```
+
+Copying from an existing source, pipe it straight in (`ssh vps 'grep -m1
+^KEY= /srv/.../.env | cut -d= -f2-' | gh secret set KEY -R <org>/<repo>`,
+`gh secret set VPS_SSH_KEY -R <org>/<repo> < key`). Never cat, grep or sed a
+secrets file to the terminal; to compare copies, print a sha256 prefix.
 
 ## Retention and scanning
 
@@ -442,8 +476,8 @@ recreate, silently rolling back past every deploy since.
 Nightly script (canonical copy in the api repo; the deploy ships it to the
 host, the host crontab runs the deployed copy — one tested artifact, no drift):
 
-- Per database: `docker exec <db-container> pg_dump -U <user> <db> | gzip >
-  ~/backups/<db>_<UTC-ts>.sql.gz`.
+- Per database, every database of both stacks (dev too): `docker exec
+  <db-container> pg_dump -U <user> <db> | gzip > ~/backups/<org>/<db>_<UTC-ts>.sql.gz`.
 - **Fail loud**: exit non-zero and print `Backup FAILED` on any dump error, any
   undersized dump (size floor ~1KB — catches an empty-but-successful pg_dump),
   or any offsite failure. Cron only appends to a log; without this a broken
@@ -457,12 +491,12 @@ host, the host crontab runs the deployed copy — one tested artifact, no drift)
   between databases on the same host, so one global window fits none.
 - R2-side retention is NOT the script's job: bucket lifecycle rules own it
   (see `r2-tokens.md`). The upload is PUT-only, no delete credential needed.
-- Credentials live in `~/.backups/.r2-backup.env` (sourced with `set -a`),
+- Credentials live in `~/backups/<org>/.r2-backup.env` (sourced with `set -a`),
   not in the script. Missing file = warn and skip offsite; the local backup is
   still valid on its own.
 
 **Backup-health** (scheduled GH Actions, morning after the backup window):
-SSH to the VPS and check two things — newest dump file age ≤ 25h (catches dead
+SSH to the VPS and check two things — for each database (dev too), newest dump file age ≤ 25h (catches dead
 cron, broken script, silent no-file failure) and the last status line in
 backup.log is `completed`, not `FAILED` (a fresh file alone does not prove the
 offsite leg worked). Non-zero exit = red workflow = the incident channel.
@@ -473,12 +507,32 @@ the same morning, with margin under the 25h net if the schedule slips.
 ## VPS layout
 
 ```
-/srv/<org>-dev/     dev stack: docker-compose.yml, backup script, .env (hand-managed)
-/srv/<org>-prod/    prod stack: same shape
-~/backups/          dumps, backup.log, .r2-backup.env (offsite credentials)
+/srv/<org>/<repo>-dev/    dev stack: docker-compose.yml, backup script, .env (hand-managed)
+/srv/<org>/<repo>-prod/   prod stack: same shape
+~/backups/<org>/          dumps, backup.log, .r2-backup.env (offsite credentials)
 ```
 
+Backups are per org: a shared `~/backups/` lets the next org's
+`.r2-backup.env` overwrite this one's credentials, its rotation `find` delete
+another org's same-named dumps, and backup-health pass on another org's log
+line.
+
 No separate staging environment: `development` on the same VPS is staging.
+An existing stack keeps its path (rule 16).
+
+**Compose project name** `<org>-<repo>-<env>`, set as top-level `name:` (and
+`COMPOSE_PROJECT_NAME` in `.env`). The default is the directory name, and two
+orgs each with a repo `api` both get `api-dev`: `up`/`down` then replaces the
+other org's containers, and networks and volumes clash. Name volumes
+explicitly (`name: ${PGDATA_VOLUME}`, `${UPLOADS_VOLUME}`) so a project rename
+never resolves to a new, empty volume, and mark them `external: true`, created
+once at setup (`docker volume create`): compose then refuses to start on a
+missing volume (`external volume "..." not found`) instead of creating an
+empty one. The deploy also refuses a project name `docker compose ls -a`
+shows from another path (without `-a`, a stopped stack is invisible). Renaming an
+existing stack: `docker volume ls`, pin each volume's `name:` to the existing
+volume first, then rename. Container names must be unique per host; an
+existing `container_name: ${PROJECT_NAME}_db` stays, backup scripts exec by it.
 
 ## VPS access
 
@@ -495,3 +549,21 @@ No separate staging environment: `development` on the same VPS is staging.
 - **Break-glass**: the provider's VNC console, not public-IP SSH. At setup,
   log in at the console with the password once, then store the credentials in
   the password manager. A path never logged into does not count.
+- Tailscale SSH can be on for humans while CI still authenticates with
+  `VPS_SSH_KEY`; prove the CI path with the reachability probe
+  (`verification.md` → VPS access probes), not by reading the ACL.
+
+### Tunnel routes via the API
+
+- Token: Account → Cloudflare Tunnel: Edit + Zone → DNS: Edit (wrangler's
+  OAuth can read tunnels but not write them or DNS). Temporary, with an
+  expiry: Tunnel Edit cannot be scoped to one tunnel, so it reaches every
+  org's tunnel on the account.
+- `PUT /accounts/<id>/cfd_tunnel/<tunnel-id>/configurations` replaces the
+  whole ingress: GET it, insert the new host before the catch-all rule, PUT
+  the result. Match the existing service form (`http://localhost:<port>`).
+- The DNS record is a separate call: CNAME `<host>` → `<tunnel-id>.cfargotunnel.com`,
+  proxied. The host answers 502 until the app is up; expected.
+- Hostnames stay one level under the zone (`orbit-api-dev.example.co.th`, not
+  `api.orbit.example.co.th`): the free Universal SSL certificate covers
+  `*.<zone>` only, so a deeper proxied host fails TLS.

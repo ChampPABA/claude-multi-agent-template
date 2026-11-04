@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "จะเปิด project ใหม่ org ชื่อ nova มีหน้าบ้าน Vite + หลังบ้าน Elysia/Postgres รันบน VPS เดียวที่มีทั้ง dev กับ prod ใช้ GitHub Free plan กับ Cloudflare ช่วยวางแผน setup CI/CD ให้ครบตั้งแต่ deploy หน้าบ้านหลังบ้านจน backup ขึ้น R2 พร้อมลำดับทำและคำสั่งที่ต้องรัน",
-      "expected_output": "An ordered greenfield plan matching the standard: phases in the right order, no-build-on-host immutable image deploys, deploy.yml gates by calling test.yml (workflow_call, no copy), migrate-before-up, health+version verify, one nova-backup bucket with prefixes + lifecycle via `lifecycle add`, two dashboard-only tokens (nova-backup-rw, nova-pages), R2_KEY_PREFIX, fail-loud size-verified backups, backup-health, inventory rule, timeout-minutes on jobs.",
+      "expected_output": "An ordered greenfield plan matching the standard: phases in the right order, no-build-on-host immutable image deploys, deploy.yml gates by calling test.yml (workflow_call, no copy), migrate-before-up, health+version verify, one nova-backup bucket with prefixes + lifecycle via `lifecycle add`, two dashboard-made account tokens (nova-backup-rw, nova-pages), R2_KEY_PREFIX, fail-loud size-verified backups, backup-health, inventory rule, timeout-minutes on jobs.",
       "files": [],
       "assertions": [
         "Backend deploys as a pre-built immutable image (GHCR) pulled by the VPS; no build step runs on the server",
@@ -12,18 +12,21 @@
         "Deploy verification polls /health and compares /version sha to the commit, and notes the api must expose these endpoints",
         "Frontend deploys via wrangler to Cloudflare Pages with distinct prod/dev targets and verifies the deployment via `wrangler pages deployment list`",
         "R2 uses exactly one bucket (nova-backup) with environments as key prefixes, lifecycle rules added via `wrangler r2 bucket lifecycle add` (not a raw ruleset PUT/set)",
-        "Exactly two tokens: nova-backup-rw (Object R&W, bucket-only) and nova-pages (Pages:Edit), both flagged as creatable only in the dashboard",
+        "Exactly two tokens: nova-backup-rw (Object R&W, bucket-only) and nova-pages (Pages:Edit), both Account API Tokens created in the dashboard",
         "R2_KEY_PREFIX is required whenever R2 is configured (fail loud at boot)",
         "Backups are fail-loud with a minimum-size check and a size-verified offsite upload (HEAD content-length), plus a scheduled backup-health check",
         "A gate job (typecheck/lint/test) gates deploy branches not just PRs, and every CI job sets timeout-minutes",
-        "Plan is phased with a verify step per phase and records artifacts in an inventory (no inventory row, no token)"
+        "Plan is phased with a verify step per phase and records artifacts in an inventory (no inventory row, no token)",
+        "Nightly backups cover the databases of both stacks (dev and prod), not prod only"
       ]
     },
     {
       "id": 2,
       "prompt": "Repo นี้คือ project acme ที่รัน production อยู่จริง ช่วย audit ให้หน่อยว่า CI/CD กับ backup ตรงมาตรฐานที่ควรจะเป็นไหม มีอะไรขาดหรือเพี้ยน ออกรายงานพร้อมสิ่งที่ต้องแก้",
       "expected_output": "A compliance audit report that finds the planted gaps in the fixture: builds on the VPS (not immutable images), migrate after up -d, no post-deploy /health + /version verification, no timeout-minutes, no gate job, bucket-per-env (acme-prod-backup + acme-dev-backup), account-wide token instead of bucket-scoped, orphan bucket acme-old-backup, silent offsite (`|| true`, no size floor/verify, always exits 0), no backup-health workflow, no GHCR prune. Report uses expected/found/verdict/fix rows; read-only, proposes fixes without executing mutations.",
-      "files": ["evals/fixtures/acme-legacy"],
+      "files": [
+        "evals/fixtures/acme-legacy"
+      ],
       "assertions": [
         "Finds the api builds on the VPS (git pull + docker compose build) instead of pulling a pre-built image",
         "Finds db:migrate runs AFTER up -d (must run between pull and up)",
@@ -42,10 +45,10 @@
     {
       "id": 3,
       "prompt": "ตอนนี้เรามี R2 bucket แยกต่อ environment อยู่สองลูกคือ nova-prod-backup กับ nova-dev-backup และใช้ token เดียวครอบทั้ง account อยากปรับเป็น bucket เดียวตามมาตรฐานพร้อม token ใหม่ โดยที่ backup ห้ามขาดและห้ามพัง ช่วยวางแผน migration ให้หน่อย",
-      "expected_output": "A migration runbook with load-bearing ordering: temp nova-backup-migration token (dashboard) scoped to both buckets, rclone copy to new bucket root + size-verified, deploy new backup script BEFORE flipping .r2-backup.env, pre-flip app .env before promote (crash-loop avoidance), switch + restart dev first then prod, re-copy stragglers, wait for a scheduled backup cycle to land in the new bucket, only then delete old buckets/tokens + migration token, update inventory; CORS before cutover if browser uploads exist; note tokens are dashboard-only.",
+      "expected_output": "A migration runbook with load-bearing ordering: temp nova-backup-migration token (dashboard) scoped to both buckets, rclone copy to new bucket root + size-verified, deploy new backup script BEFORE flipping .r2-backup.env, pre-flip app .env before promote (crash-loop avoidance), switch + restart dev first then prod, re-copy stragglers, wait for a scheduled backup cycle to land in the new bucket, only then delete old buckets/tokens + migration token, update inventory; CORS before cutover if browser uploads exist; note tokens are made in the dashboard by default.",
       "files": [],
       "assertions": [
-        "Creates a temp migration token scoped to BOTH old and new buckets (dashboard-only), deleted when done",
+        "Creates a temp migration token scoped to BOTH old and new buckets (dashboard), deleted when done",
         "Copies old bucket roots into the new bucket ROOT (keys carry prefixes) with size verification before any switch",
         "Orders: new backup script deployed BEFORE flipping the backup env file",
         "Orders: app .env pre-flipped before promote (crash-loop window avoidance)",
@@ -53,6 +56,23 @@
         "Deletes old buckets/tokens only after a scheduled backup cycle lands in the new bucket",
         "New bucket gets lifecycle rules via `lifecycle add` and CORS before cutover (if browser uploads exist)",
         "Ends with inventory updated and exactly one bucket + one S3 token + one Pages token as the target state"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "มี org ใหม่บน GitHub ชื่อ orbit-labs มี repo api (Elysia/Postgres) กับ web (Vite) จะเอาขึ้น VPS ตัวเดิมที่รัน stack dev+prod ของ org nova อยู่แล้ว (api ของ nova ใช้ compose project api-dev, deploy root /srv/nova/api-dev) ใช้ Cloudflare account เดียวกัน และทั้งสอง org ใช้ host ใต้ example.co.th เหมือนกัน ใช้ GitHub Free plan ช่วยวางแผน setup CI/CD ให้ orbit-labs หน่อย ต้องทำอะไรบ้าง เรียงลำดับพร้อมคำสั่ง",
+      "expected_output": "A greenfield plan for a second org on a shared host: compose project orbit-labs-api-<env> with named volumes and a docker compose ls collision check, nova left untouched, one credential of each kind per org copied into each repo without printing, Pages subdomain read from the API, preview caveats, host-only cookies, tunnel ingress GET/append/PUT with a temp expiring token, inventory in Hindsight.",
+      "files": [],
+      "assertions": [
+        "Compose project for orbit-labs is orbit-labs-api-<env> (top-level name:), volumes named explicitly, and the plan checks docker compose ls for a collision before deploying",
+        "nova's existing names (api-dev, /srv/nova/api-dev) are left alone: no rename proposed as part of this setup, or any rename is flagged as a migration that pins volume names first",
+        "One credential of each kind per org (Tailscale OAuth client, SSH deploy key, GHCR read:packages PAT, R2 S3 token, Pages token) reused across orbit-labs repos",
+        "Notes GitHub Free private repos cannot use org-level secrets, so each repo holds its own copy, set via gh secret set without printing the value",
+        "Pages hostname read from the API's subdomain (may be <name>-<rand>.pages.dev); preview URL is <branch>.<project>.pages.dev and login does not work on previews",
+        "Session cookies host-only with a distinct prefix per app and env; no cookie on the parent domain .example.co.th",
+        "Tunnel route added via GET ingress, insert before the catch-all, PUT, plus a separate proxied CNAME, using a temporary token with an expiry",
+        "Inventory recorded in Hindsight as 'Inventory: orbit-labs CI/CD credentials' with names, scopes and where values live, never the values",
+        "orbit-labs backups live in their own per-org path (dumps, backup.log, .r2-backup.env), not nova's shared ~/backups"
       ]
     }
   ]

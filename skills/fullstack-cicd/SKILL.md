@@ -4,7 +4,7 @@ description: >-
   End-to-end standard for standing up, extending, or auditing a full-stack project's
   infrastructure: GitHub Actions CI/CD on the Free org plan, Cloudflare Pages frontend
   deploys, GHCR + VPS immutable-image backend deploys, one R2 bucket per org with
-  lifecycle rules, exactly two Cloudflare tokens (dashboard-only), and nightly database
+  lifecycle rules, exactly two Cloudflare account tokens, and nightly database
   backups with health-check crons. Use whenever the task is setting up a new project's
   pipeline from scratch ("set up CI/CD", "ตั้ง project ใหม่", "deploy หน้าบ้านหลังบ้านให้ครบ"),
   adding R2 storage or backups, creating or rotating Cloudflare tokens, migrating or
@@ -38,7 +38,7 @@ Work in exactly one of three modes — decide which before doing anything:
 GitHub org (Free plan)
 ├─ web repo ── GH Actions gate → wrangler pages deploy
 │                main → prod Pages project · development → dev project
-│                any other branch → preview (<branch>.pages.dev)
+│                any other branch → preview (<branch>.<project>.pages.dev)
 │
 ├─ api repo ── gate (typecheck/lint/unit vs a real Postgres service)
 │                → build image → hygiene check → GHCR (:sha-<commit> + :branch tags)
@@ -52,7 +52,7 @@ GitHub org (Free plan)
 ├─ R2 ──────── ONE bucket <org>-backup; environments are PREFIXES inside it
 │                lifecycle: postgres/prod 365d · postgres/dev 30d · blobs 90d
 │
-├─ tokens ──── exactly two per org, both created in the DASHBOARD:
+├─ tokens ──── exactly two per org, Account API Tokens made in the dashboard:
 │                <org>-backup-rw  R2 S3 token, Object Read & Write, that bucket only
 │                <org>-pages      account API token, Cloudflare Pages: Edit
 │
@@ -88,13 +88,25 @@ Each rule's "why" is the compressed failure that paid for it.
 5. **Environments are prefixes, never buckets.** One bucket per org; dev/prod
    separation lives in the key prefix. Bucket-per-env once orphaned a token
    scope and uploads died silently for six weeks before anyone noticed.
-6. **Exactly two tokens per org.** `<org>-backup-rw` for everything touching the
-   bucket, `<org>-pages` for deploys. Read/write separation is traded away
-   deliberately (one point to audit and revoke per type).
-7. **R2 S3 tokens and Pages tokens can only be created in the dashboard.** The
-   API's `POST /accounts/{id}/tokens` returns a bearer value that does not sign
-   S3 requests (SignatureDoesNotMatch), and the API has no Pages permission
-   group. Budget the two dashboard clicks; everything else is CLI-able.
+6. **One of each credential per org, reused by all its repos.** Cloudflare:
+   exactly two tokens, `<org>-backup-rw` for everything touching the bucket,
+   `<org>-pages` for deploys (read/write separation traded away deliberately:
+   one point to audit and revoke per type). CI: one Tailscale OAuth client
+   (`github-actions-<org>-deploy`), one SSH deploy key, one GHCR `read:packages`
+   PAT. A per-repo key turns the next repo into a new credential and every
+   rotation into a hunt. Free private repos cannot read org-level secrets and
+   values cannot be read back, so each repo holds its own copy, set in one
+   loop and stored in the password manager at creation
+   (`references/cicd-pipeline.md` → Secrets inventory). Temp tokens
+   (migration, tunnel edit) carry an explicit expiry or get deleted when done.
+7. **Create the two tokens in the dashboard**, as Account API Tokens
+   (Manage account → Account API tokens), not user tokens, which die with the
+   user. The API can make them too, but only with a token holding Account API
+   Tokens Write, which can mint any token: keeping that around costs more than
+   two clicks. If a token does come from `POST /accounts/{id}/tokens`, its S3
+   pair is the token `id` and the SHA-256 of its `value`; the raw value as
+   the secret fails every sigv4 call with SignatureDoesNotMatch
+   (`references/r2-tokens.md` → Creating tokens).
 8. **Lifecycle via `wrangler r2 bucket lifecycle add`, never a raw ruleset PUT.**
    The PUT replaces the whole ruleset and rejects rules without a transition.
    Always keep the default multipart-abort (7d) rule.
@@ -114,14 +126,28 @@ Each rule's "why" is the compressed failure that paid for it.
     temp `DOCKER_CONFIG` removed on exit, and only the pull step receives the
     credential; CI reaches the VPS over Tailscale with an ephemeral tag.
     `.env` stays hand-managed per environment.
-14. **No inventory row, no token.** Every bucket and token is recorded in the
-    project's inventory doc (names, scopes, where each credential lives —
-    never the values) before anything uses it. This rule is what catches
-    dead orphans on cleanup passes.
+14. **No inventory row, no credential.** Every bucket, token, key and secret
+    is recorded before anything uses it, in one Hindsight document per org
+    titled `Inventory: <org> CI/CD credentials` (`hindsight_ingest_document`).
+    Re-ingest the whole table on every change: the newer document supersedes,
+    so a partial ingest drops rows. Names, scopes, where each value lives and
+    which repos hold a copy; never values (Hindsight is a server, anything
+    sent stays). A temp token gets a row too, with its expiry, dropped when
+    it is deleted. A project that already keeps an inventory file keeps it. The
+    inventory is what catches dead orphans on cleanup passes.
 15. **Tag the VPS tailnet node (`tag:<project>-vps`).** An untagged node's
     key expires and the host drops off the tailnet; with 22 open only on
     `tailscale0`, every SSH path dies with it. ACL, firewall and break-glass:
     `references/cicd-pipeline.md` → VPS access.
+16. **Names follow what exists.** Before naming anything, read the sibling
+    repos in the workset and the org's inventory. An existing name is reused
+    exactly: renaming a compose project, volume, secret, bucket or token is a
+    migration (data, deploys and backup scripts bind to it), not a cleanup. A
+    new name takes the standard pattern with the full GitHub org name:
+    `/srv/<org>/<repo>-<env>/`, compose project `<org>-<repo>-<env>`,
+    `<org>-backup`, `<org>-backup-rw`, `<org>-pages`, secret names verbatim
+    from the Secrets inventory table. Several orgs share one VPS and one
+    Cloudflare account: a repo-only name like `api-dev` collides across orgs.
 
 ## Greenfield setup
 
@@ -134,21 +160,29 @@ half a pipeline:
 GitHub org (Free plan is assumed and sufficient) · one VPS shared by dev and
 prod, its tailnet node tagged `tag:<project>-vps` (rule 15) · Tailscale with
 an OAuth client able to tag `tag:ci` · a Cloudflare
-account (Pages + R2) · two repos: `<org>/web` and `<org>/api`.
+account (Pages + R2) · two repos: `<org>/web` and `<org>/api`. Then list what
+already exists: the org's inventory, `docker compose ls -a` and `/srv` on the
+host, the org's existing CI credentials (rules 6 and 16 reuse them). Open
+the inventory now: each credential created in any phase gets its row before
+anything uses it (rule 14).
 
 **Phase 1 — api pipeline.** Read `references/cicd-pipeline.md` (Backend
 pipeline). Ends with: the api exposes `/health` and `/version` (build sha —
 add them if missing), push to development deploys dev, both endpoints verify
-the deploy, merge to main deploys prod the same way.
+the deploy, merge to main deploys prod the same way, each repo holds its own
+copy of every secret it needs (Free private repos cannot read org-level
+secrets; rule 6), and the CI reachability
+probe passed (`references/verification.md` → VPS access probes).
 
 **Phase 2 — web pipeline.** Read `references/cicd-pipeline.md` (Frontend
-pipeline). Ends with: three Pages targets live (prod, dev, preview) behind the
+pipeline). The first deploy needs the `<org>-pages` token, so create it here
+(`references/r2-tokens.md` → Creating tokens). Ends with: three Pages targets live (prod, dev, preview) behind the
 gate job, and the deploy is verifiable via wrangler CLI — newest
 `wrangler pages deployment list` row matches the push.
 
 **Phase 3 — R2 + tokens.** Read `references/r2-tokens.md` (New-project setup).
-Ends with: bucket + lifecycle rules verified, both tokens created and stored
-where the pipeline expects them, inventory row written.
+Ends with: bucket + lifecycle rules verified, the S3 token created and stored
+where the pipeline expects it, inventory re-ingested.
 
 **Phase 4 — backups + health.** Read `references/cicd-pipeline.md` (Backups and
 retention). Ends with: nightly cron produced a dump that is in R2 (size-verified)
@@ -156,7 +190,7 @@ and backup-health went green once.
 
 **Phase 5 — close-out.** One restore drill: download last night's dump from R2,
 restore into a scratch database, confirm it queries. A backup that has never
-been restored is a hope, not a backup. Then confirm the inventory doc lists
+been restored is a hope, not a backup. Then confirm the inventory lists
 every artifact created in phases 0–4.
 
 ## Audit
@@ -165,11 +199,13 @@ Read `references/verification.md` in full — it has the probe toolkit and the
 report template. Two hard boundaries while auditing:
 
 - Run **read-only** probes only (list / get / head / status checks). Any
-  mutation — create, set, delete, rotate — needs the user's explicit approval
+  mutation — create, set, delete, rotate, or the CI reachability probe (it
+  pushes a branch and runs Actions) — needs the user's explicit approval
   first; propose it as a finding instead of doing it.
 - Never read or print secret values. Probe by name and by behaviour (a token
   that 200s its own bucket and 403s others is correctly scoped — no value
-  needed).
+  needed); compare two copies by sha256 prefix. A sed "redaction" of a
+  secrets file once printed an R2 key into the log.
 
 Emit the compliance report in the template from verification.md: one row per
 check — expected, found, verdict, fix.

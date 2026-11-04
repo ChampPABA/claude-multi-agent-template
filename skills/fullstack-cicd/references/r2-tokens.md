@@ -58,29 +58,39 @@ Rules the hard way taught:
   hardening is ever needed again, split a read-only checker token off; nothing
   else changes.
 
-## Creating tokens (dashboard-only, both kinds)
+## Creating tokens (dashboard by default, both kinds)
 
-R2 S3 tokens and Pages tokens **cannot be created via the API**:
+Both can be made through the API, but that call needs a token holding Account
+API Tokens Write, which can mint any token on the account; two dashboard
+clicks per org are cheaper than keeping one. Everything else is CLI-able.
+Both are Account API Tokens: a user token (My Profile → API Tokens) dies with
+the user who made it.
 
-- `POST /accounts/{id}/tokens` returns a bearer `value` that does not sign S3
-  requests — every sigv4 call fails with SignatureDoesNotMatch. S3 tokens from
-  the dashboard work; API-issued ones do not.
-- The IAM permission-group list has no Pages group, so a Pages-scoped token
-  cannot be expressed through the API at all.
+1. **S3 token**: dashboard → R2 → Manage R2 API Tokens → Create Account API
+   Token. Name `<org>-backup-rw`, permission Object Read & Write, scope: this
+   bucket only (`<org>-backup`). Yields an access-key-id + secret pair.
+2. **Pages token**: Manage account → Account API tokens
+   (`dash.cloudflare.com/<account>/api-tokens`) → Create Token
+   → custom. Name `<org>-pages`, permission Account → Cloudflare Pages → Edit,
+   this account only.
 
-So budget exactly two dashboard clicks per org; everything else is CLI-able:
+Any temporary token (migration, tunnel edit) gets an explicit expiry at
+creation.
 
-1. **S3 token**: dashboard → R2 → Manage R2 API Tokens → Create API Token.
-   Name `<org>-backup-rw`, permission Object Read & Write, scope: this bucket
-   only (`<org>-backup`). Yields an access-key-id + secret pair.
-2. **Pages token**: dashboard → My Profile → API Tokens → Create Custom Token.
-   Name `<org>-pages`, permission Account → Cloudflare Pages → Edit, account
-   scope: this account only.
+A token made through `POST /accounts/{id}/tokens` instead: bucket scope is
+resource `com.cloudflare.edge.r2.bucket.<ACCOUNT_ID>_default_<bucket>` with
+permission group `Workers R2 Storage Bucket Item Write` (`default` = no
+jurisdiction); Pages is `Pages Write`. Its S3 pair is Access Key ID = the
+token `id`, Secret = `printf %s "$VALUE" | sha256sum | cut -d' ' -f1`. The raw
+`value` as the secret fails every sigv4 call with SignatureDoesNotMatch.
 
 Store the S3 pair as `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY` in the VPS
-deploy-root `.env`s and as same-named GitHub secrets; store the Pages token as
-GitHub secret `CLOUDFLARE_API_TOKEN` on the web repo. Never write values into
-docs or chats — the inventory records names, scopes and where each lives.
+deploy-root `.env`s and as same-named GitHub secrets on every repo that needs
+them; store the Pages token as GitHub secret `CLOUDFLARE_API_TOKEN` on each web
+repo. Put the value in the password manager at creation: GitHub secrets cannot
+be read back. Distribute without printing (`cicd-pipeline.md` → Secrets
+inventory). Values never go into docs, chats or Hindsight — the inventory
+records names, scopes and where each lives.
 
 ## CORS for browser uploads
 
@@ -130,16 +140,16 @@ weeks.
    present AND the multipart-abort default survived.
 3. **CORS** (only if browser uploads exist): set + list per above, before any
    cutover.
-4. **S3 token** (dashboard): per Creating tokens. Distribute to `.env`s and
-   GitHub secrets.
-5. **Pages token** (dashboard): per Creating tokens. GitHub secret
-   `CLOUDFLARE_API_TOKEN` on the web repo.
+4. **S3 token** (dashboard): per Creating tokens. Add the bucket and the
+   token to the inventory and re-ingest the whole table (template below)
+   BEFORE distributing it: a token used before its row exists is the next
+   orphan. Then distribute to `.env`s and GitHub secrets.
+5. **Pages token** (dashboard): already made, and given its row, in Phase 2
+   if the web pipeline came first; otherwise per Creating tokens, row first.
+   GitHub secret `CLOUDFLARE_API_TOKEN` on the web repo.
 6. **Verify the token scope** with the sigv4 probe from `verification.md`:
    200 on its own bucket, 403 on any other. Do this before anything depends
    on it.
-7. **Inventory row**: record bucket + both tokens (names, scopes, where the
-   values live) in the project's inventory doc. No inventory row, no token —
-   this rule is what catches dead orphans on later cleanup passes.
 
 ## Migration runbook (merge/consolidate buckets)
 
@@ -181,17 +191,26 @@ loss. Read the whole runbook before starting.
 10. **Only now delete**: empty and delete the old buckets, delete the
     `-migration` token and every replaced token, shred local staging files
     from the copy.
-11. **Update the inventory**: removed artifacts struck out, new ones recorded.
+11. **Update the inventory**: drop removed artifacts, add new ones, re-ingest
+    the whole table.
     Then verify the end state: exactly one bucket, one S3 token, one Pages
     token for the org.
 
 ## Inventory table template
 
-Keep this in the project's handbook/inventory doc; values never appear, only
-names, scopes, and where each credential lives:
+One Hindsight document per org, title `Inventory: <org> CI/CD credentials`,
+written with `hindsight_ingest_document` and read back with
+`hindsight_search_knowledge_pages` → `hindsight_read_knowledge_page`. Every
+change re-ingests the whole table (the newer document supersedes; a partial
+one drops rows). A project that already keeps an inventory file keeps using
+it. Values never appear, only names, scopes, and where each lives:
 
-| artifact | type | scope | used by | lives in |
-|---|---|---|---|---|
-| `<org>-backup` | bucket | prefix lifecycles per table above | everything below | R2 |
-| `<org>-backup-rw` | R2 S3 token | Object R&W, this bucket only | backup cron, app, CI | VPS `.env`s + GH secrets |
-| `<org>-pages` | account API token | Pages: Edit | web deploys | GH secret on web repo |
+| artifact | type | scope | used by | lives in | repos holding a copy |
+|---|---|---|---|---|---|
+| `<org>-backup` | bucket | prefix lifecycles per table above | everything below | R2 | n/a |
+| `<org>-backup-rw` | R2 S3 token (account) | Object R&W, this bucket only | backup cron, app, CI | VPS `.env`s, password manager | api |
+| `<org>-pages` | account API token | Pages: Edit | web deploys | password manager | every web repo |
+| `github-actions-<org>-deploy` | Tailscale OAuth client | auth_keys, `tag:ci` | SSH-touching workflows | password manager | every api repo |
+| `VPS_SSH_KEY` | SSH deploy key | `<VPS_USER>` on the VPS | deploy, health | password manager, VPS `authorized_keys` | every api repo |
+| `GHCR_PULL_TOKEN` | GitHub PAT | `read:packages` | deploy pull step | password manager | every api repo |
+| `PROBE_<ENV>_EMAIL/PASSWORD` | app login | probe user per env | Probes workflow | password manager | api |

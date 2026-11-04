@@ -6,10 +6,13 @@ checklist, and the report format. Everything here is read-only.
 Two boundaries, restated:
 
 - **Read-only only.** list / get / head / status checks. Any mutation (create,
-  set, delete, rotate) is a finding to propose, not an action to take.
+  set, delete, rotate, the CI reachability probe) is a finding to propose, not
+  an action to take.
 - **Never read or print secret values.** Probe by name and by behaviour. A
   token that 200s its own bucket and 403s others is correctly scoped — no
-  value needs to be seen by anyone.
+  value needs to be seen by anyone. Two copies of a value compare by sha256
+  prefix (`sha256sum | cut -c1-8`); never cat, grep or sed a secrets file to
+  the terminal.
 
 ## Probe toolkit
 
@@ -34,7 +37,7 @@ wrangler r2 bucket cors list <bucket>       # browser-upload rule present?
 wrangler pages project list                 # Pages projects: prod + dev exist?
 ```
 
-`bucket list` compared against the inventory doc is the orphan check: any
+`bucket list` compared against the inventory is the orphan check: any
 bucket not in the inventory is a finding; any inventory row with no bucket is
 a finding. `bucket info` gives the numbers for "is the new bucket actually
 receiving backups" (object_count rising daily).
@@ -50,9 +53,10 @@ curl -s -o /dev/null -w '%{http_code}' \
   "https://<account_id>.r2.cloudflarestorage.com/<bucket>/<known-key>"
 ```
 
-Expected: **200 on its own bucket, 403 on any other bucket**. Anything else is
+A new, empty bucket has no known key (404): use the bucket root with
+`?list-type=2` instead. Expected: **200 on its own bucket, 403 on any other bucket**. Anything else is
 a scope finding. This exact signing shape (`aws:amz:auto:s3`) is what works
-against R2 with a dashboard-created token.
+against R2.
 
 ### Object listing WITHOUT an S3 token (mystery-object hunting)
 
@@ -114,15 +118,32 @@ sudo ufw status verbose          # on the VPS: default deny (incoming), 22/tcp o
 
 Or the Tailscale admin console: machine → "Key expiry: disabled".
 
+**CI reachability probe** — proves the path CI actually uses, which reading
+the ACL does not. A push-triggered workflow on a temp branch: tailnet join as
+`tag:ci` → `tailscale ping <vps>` → tcp 22 → ssh with `VPS_SSH_KEY` →
+`docker login` with a temp `DOCKER_CONFIG` → `docker manifest inspect` on a
+private image. About a minute of Actions; delete the branch after. It pushes
+and runs a workflow, so in an audit it waits for approval; in setup it is the
+VPS-access verify step.
+
+Host state (on the VPS, read-only):
+
+```
+docker compose ls -a                               # project names + config paths, stopped ones too: any collision?
+docker volume ls                                   # every stack's volumes named, none orphaned
+ls -a /srv/*/ /srv/*/*/ | grep -E '\.bak'          # stale secret copies (.env.bak-*, *.bak-*)
+grep -rlE '(KEY|SECRET|TOKEN)[^=]*=[^$]' <host configs>   # file names only, never -o or the match
+```
+
 ### Backup probes (on the VPS, or via the backup-health workflow)
 
 ```
-ls -t ~/backups/<prod-db>_*.sql.gz | head -1     # newest dump
+ls -t ~/backups/<org>/<prod-db>_*.sql.gz | head -1     # newest dump
 stat -c %Y <that file>                            # age <= 25h?
-grep -E '^Backup (completed|FAILED):' ~/backups/backup.log | tail -1
+grep -E '^Backup (completed|FAILED):' ~/backups/<org>/backup.log | tail -1
 ```
 
-Fresh file AND last status `completed` — the status line is what proves the
+An existing host's own path counts (rule 16). Fresh file AND last status `completed` — the status line is what proves the
 offsite leg worked; a fresh file alone does not.
 
 ## Compliance checklist
@@ -168,6 +189,16 @@ reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
 - [ ] ACL lets `tag:ci` reach `tag:<project>-vps` on 22 (plus an `ssh` rule only if Tailscale SSH is used)
 - [ ] UFW: default deny incoming, 22/tcp allowed only on `tailscale0`, no public ports (web via Cloudflare Tunnel)
 - [ ] Break-glass console (provider VNC) logged into with its password at least once; credentials in the password manager
+- [ ] CI reachability probe passed (or proposed, in an audit)
+
+**Host (shared by several orgs)**
+
+- [ ] Compose project names unique on the host (`docker compose ls -a`), set via top-level `name:`; volumes named explicitly and `external: true`
+- [ ] Container names unique per host
+- [ ] Names follow what exists (rule 16): a name off the standard pattern that collides with nothing is pass; a collision is fail
+- [ ] Host configs read secrets from env; no literal secret in any config file (a hardcoded key is missed on rotation)
+- [ ] No stale secret copies on the host (`.env.bak-*`, `*.bak-*`)
+- [ ] Session cookies host-only, a distinct cookie prefix per app and env; no parent-domain cookie when the parent domain hosts more than one app
 
 **Pipeline (web repo)**
 
@@ -177,6 +208,7 @@ reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
 - [ ] wrangler-action deploys to prod project (main) / dev project (else); previews on branch
 - [ ] Deploy verified via wrangler CLI: newest `pages deployment list` row matches the push
 - [ ] `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets present
+- [ ] Pages hostnames come from the API's `subdomain`, not an assumed `<project>.pages.dev`
 
 **Retention / rollback**
 
@@ -192,9 +224,12 @@ reading a PAT secret, and `GHCR_PULL_TOKEN` documented with `delete:packages`.
 - [ ] Lifecycle rules: prod 365d / dev 30d / blobs 90d / multipart-abort present
 - [ ] Exactly one live S3 token (`<org>-backup-rw`), scope probe passes (200 own / 403 others)
 - [ ] One Pages token (`<org>-pages`); no `-migration` token left over
+- [ ] Both are Account API Tokens, not user tokens; every temp token has an expiry
+- [ ] One of each CI credential per org (Tailscale OAuth client, SSH deploy key, GHCR PAT), each repo holding a copy; no per-repo duplicates
 - [ ] CORS rule present if browser uploads exist
 - [ ] `R2_KEY_PREFIX` set wherever R2 is configured; app fails at boot without it
-- [ ] No bucket or token exists that the inventory doesn't list (and vice versa)
+- [ ] Inventory exists (Hindsight `Inventory: <org> CI/CD credentials`, or the project's own inventory file) and lists every bucket, token, key and secret with the repos holding a copy; nothing live is missing from it, and no row is missing from live
+- [ ] Bucket names still referenced in configs or scripts exist in `bucket list`; a reference to a gone or other-org bucket is a finding
 
 **Backups**
 
