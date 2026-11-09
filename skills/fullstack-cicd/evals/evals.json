@@ -74,6 +74,22 @@
         "Inventory recorded in Hindsight as 'Inventory: orbit-labs CI/CD credentials' with names, scopes and where values live, never the values",
         "orbit-labs backups live in their own per-org path (dumps, backup.log, .r2-backup.env), not nova's shared ~/backups"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "org acme ใช้ GitHub Free plan repo private ไม่มี branch protection ตอน merge PR เข้า development แล้ว deploy.yml ของ api เรียก test.yml (workflow_call) ซ้ำทั้งชุด ใช้เวลา 2 นาทีก่อนจะ build image ได้ เกือบทุกครั้งเป็นโค้ดเดียวกับที่ PR test ผ่านมาแล้ว อยากตัดงานซ้ำนี้ออกแต่ไม่อยากให้ deploy พลาด ควรทำยังไง ขอ yaml ด้วย",
+      "expected_output": "A step-level skip inside the gate keyed on tree sha equality with a merged PR head whose latest pull_request Test run succeeded, failing closed, with artifact steps always running, permissions, full-sha pinning, and the warned mistakes.",
+      "files": [],
+      "assertions": [
+        "The check runs as a step inside test.yml's gate job (gate job itself always runs), not as a separate job that makes the gate job skip",
+        "Match compares the pushed commit's git tree sha with a merged PR head's tree sha, and requires that head's latest pull_request run of the Test workflow to have concluded success",
+        "Fails closed: names at least three uncertain cases that run the full checks (no merged PR / direct push, tree differs, latest run not success, gh api error, null tree)",
+        "Only pure checks (install, lint, typecheck, unit tests) get the skip condition; build/artifact/required-variable steps always run",
+        "Grants actions: read and pull-requests: read to both test.yml's job and the caller's gate job",
+        "Shared action pinned by full 40-char commit sha (or the check is inline in the repo)",
+        "Warns that skipping the whole gate job lets an older push's gate finish later and deploy an old commit (concurrency group not joined)",
+        "Says when it is not worth it (gate short and parallel to the image build) or names the Free 2,000-minute budget as a reason"
+      ]
     }
   ]
 }

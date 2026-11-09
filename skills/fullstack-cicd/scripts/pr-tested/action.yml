@@ -1,0 +1,33 @@
+# Did a merged PR with this exact tree already pass the workflow? See pr-tested.sh.
+# Callers need job permissions `actions: read` and `pull-requests: read`, and must pin
+# `<org>/<repo>/ci/pr-tested@<full 40-char sha>`.
+name: pr-tested
+description: tested=true when a merged PR head with the same tree has a successful latest pull_request run of the workflow
+inputs:
+  sha:
+    description: Commit to check
+    required: true
+  workflow:
+    description: Workflow name to look for
+    default: Test
+  token:
+    description: Token for gh api
+    default: ${{ github.token }}
+outputs:
+  tested:
+    description: "true or false"
+    value: ${{ steps.check.outputs.tested }}
+  heads:
+    description: Space-separated merged PR head shas whose tree equals sha's tree
+    value: ${{ steps.check.outputs.heads }}
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        SHA: ${{ inputs.sha }}
+        WORKFLOW: ${{ inputs.workflow }}
+      run: bash "${{ github.action_path }}/pr-tested.sh" "$REPO" "$SHA" "$WORKFLOW" >> "$GITHUB_OUTPUT"

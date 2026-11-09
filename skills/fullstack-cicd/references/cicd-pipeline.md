@@ -6,7 +6,7 @@ rollback, and the backup system. Values use a fictional org `acme`
 
 Contents: Assumptions and free-plan budget · Frontend pipeline · Backend
 pipeline (deploy.yml jobs, Host recovery, Host disk, Concurrency and
-timeouts) · Test gate speed · Secrets inventory · Retention and scanning · Rollback pinning ·
+timeouts) · Test gate speed · Skip checks a merged PR already ran · Secrets inventory · Retention and scanning · Rollback pinning ·
 Backups · VPS layout · VPS access.
 
 ## Assumptions and free-plan budget
@@ -377,8 +377,9 @@ Test to 68-96 s and development gate + deploy to ~140 s.
    one. The deploy's `success || skipped` check skips on either result.
 5. **Not worth doing:** caching `bun install` (2-4 s per job on #84;
    setup-bun caches only the Bun binary, and a cache restore costs about the
-   same), and skipping the gate on development pushes (it is the only check
-   between a direct push and the dev deploy, rule 4).
+   same), and skipping the gate job on development pushes (it is the only
+   check between a direct push and the dev deploy, rule 4). Skipping steps
+   a merged PR already ran is the safe form: next section.
 6. **A test that fails only under load** is usually a `lazy()` page module
    loading inside the first test's `findBy` window. Warm it in `beforeAll`
    (`await Promise.all([import('<routes>'), import('<page>')])`), never a
@@ -392,6 +393,69 @@ Test to 68-96 s and development gate + deploy to ~140 s.
    `gh api repos/<org>/<repo>/branches/<branch>/protection`): a required check
    that never reports again blocks every merge. On a Free private repo neither
    exists; say so in the PR's Drift.
+
+## Skip checks a merged PR already ran
+
+Free private repos have no branch protection, no "require up to date" and no
+merge queue, so the deploy's gate re-runs test.yml on every push to
+development/main: that catches two PRs that pass alone and break together.
+But a squash of an up-to-date branch pushes the exact tree its PR already
+tested, so the re-run is mostly duplicate work.
+
+The check asks: does a merged PR head have this commit's tree sha, and did
+its latest `pull_request` run of Test conclude `success`? Then skip the pure
+checks. Anything uncertain runs them: no merged PR (a direct push), tree
+differs, latest run failure/cancelled/skipped/running/absent, any gh error,
+a null or empty tree (null == null must never match). Copy
+`scripts/pr-tested/` (composite action, script, 15-case `test.sh` that CI
+runs) into one org repo, set that repo's Actions access to the org
+(`gh api -X PUT repos/<org>/<repo>/actions/permissions/access -f access_level=organization`,
+works on Free), and pin callers to the full 40-char sha so an unreviewed edit
+reaches no CI until a caller PR bumps it.
+
+The check goes **inside** the gate, as a step after checkout; the gate job
+always runs:
+
+```yaml
+# test.yml; the job and the caller's gate job both grant actions: read + pull-requests: read
+- id: tested
+  if: github.event_name == 'push'          # the deploy call only
+  continue-on-error: true                  # a failed check runs everything
+  uses: <org>/<repo>/ci/pr-tested@<40-char sha>
+  with: { sha: ${{ github.sha }} }
+- run: bun install
+  if: steps.tested.outputs.tested != 'true'   # empty on PRs, so PRs run everything
+```
+
+Put that `if:` on pure checks only (install, lint, typecheck, unit tests,
+codegen/migration diff). Steps that build or validate the deploy artifact
+(build with the real env, bundle checks, required-variable checks, artifact
+upload) always run; the deploy job is unchanged.
+
+Mistakes that already happened:
+
+- **Skipping the whole gate job ships an old commit.** A skipped job never
+  joins the gate's `cancel-in-progress` group, so it cannot cancel an older
+  push's gate still running; that one passes later and deploys over the
+  newer one. A repo that already has a separate match job needs a head job
+  that deploys only while the sha is still the branch tip
+  (`gh api repos/<org>/<repo>/git/ref/heads/<branch>`).
+- **A second job that rebuilds the artifact when the gate is skipped** is a
+  copy of the gate's build: it drifts, and the deploy-only checks run on one
+  path only.
+- **`skip-duplicate-actions` never matches here**: it compares runs of the
+  same workflow, and a PR run of Test and a gate called from Deploy are two.
+- **`continue-on-error` does not cover an action that cannot be fetched**:
+  GitHub downloads every action at job setup, even for skipped steps, so a
+  revoked access setting fails the job at setup. Still fail closed; say that
+  in the comment, not "never blocks a deploy".
+- **Known limit, state it, don't engineer around it**: the PR run tested
+  `refs/pull/N/merge`, the check compares head trees. Wrong only if a base
+  commit was reverted between the PR run and the merge.
+
+Not worth it when the gate is short and runs in parallel with the image
+build (only billed minutes drop). Worth it when the gate is on the deploy's
+critical path or the org nears the 2,000 free minutes.
 
 ## Secrets inventory
 

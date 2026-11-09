@@ -164,6 +164,7 @@ it explicitly as unverified.
 - [ ] Deploy verifies `/health` then `/version` sha before reporting success
 - [ ] The api exposes `/health` and `/version` (sha) at all — missing endpoints are a fail, not a nicety
 - [ ] Gate job gates both branches by calling test.yml (`workflow_call`, typecheck/lint/unit vs real Postgres); no second copy of the gate
+- [ ] Gate skips checks a merged PR already ran (cicd-pipeline.md): after the first merge the gate log shows "PR #N head <sha>: tree matches, Test success" plus the skipped steps, the deployed `/version` (web: Pages deployment source) equals the pushed sha, and the live web bundle holds the real api URL
 - [ ] Secret scan (gitleaks) gates the build
 - [ ] Every job sets `timeout-minutes`
 - [ ] Deploy concurrency queues (`cancel-in-progress: false`); PR workflows cancel

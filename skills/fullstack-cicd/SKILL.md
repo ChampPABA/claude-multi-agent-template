@@ -85,6 +85,8 @@ Each rule's "why" is the compressed failure that paid for it.
    (`uses: ./.github/workflows/test.yml`, `on: workflow_call`). Never a second
    copy: a copy drifts and silently changes what gates a deploy. A slow gate
    gets sharded, never skipped: `references/cicd-pipeline.md` → Test gate speed.
+   Inside the running gate, the pure checks may skip when a merged PR already
+   passed Test on the identical tree: → Skip checks a merged PR already ran.
 5. **Environments are prefixes, never buckets.** One bucket per org; dev/prod
    separation lives in the key prefix. Bucket-per-env once orphaned a token
    scope and uploads died silently for six weeks before anyone noticed.
