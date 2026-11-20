@@ -12,6 +12,7 @@ under `skills/`; Claude loads it automatically when a task matches its descripti
 | **design-extract** (`/extract`) | Extract a comprehensive design system (tokens, components, layout) from any website via agent-browser. |
 | **drawio-swimlane** | Author, clean up, and review draw.io swimlane / cross-functional flowcharts to a professional standard, with a scripted layout gate. |
 | **thai-docx** | Fix broken Thai rendering in Word `.docx` files generated with python-docx (fonts, tone marks, bold/italic, justification). |
+| **ifcg-doc** (`/ifcg-doc`) | Rewrite an IFCG Thai draft (ระเบียบ, วาระเสนอบอร์ด) into the approved wording and layout and return a Thai Distributed `.docx`. Built for the Gemini app's skills too: the python-docx block is embedded in `SKILL.md` and self-checks the file. |
 | **postgres-drizzle** | PostgreSQL + Drizzle ORM best practices (schemas, migrations, indexes, queries). Vendored — tracked in `skills-lock.json`. |
 
 ## Using them

@@ -1,0 +1,93 @@
+{
+  "skill_name": "ifcg-doc",
+  "evals": [
+    {
+      "id": 0,
+      "name": "regulation",
+      "prompt": "/ifcg-doc ทำไฟล์เลย ช่วยจัดหน้าและแก้ภาษาระเบียบนี้ให้หน่อย ทำเป็นไฟล์ Word (input: a junior's ระเบียบ excerpt, หมวด ก.-ค., lines hard-wrapped mid-sentence)",
+      "expected_output": "A .docx: Thai settings on every Thai run, body Thai Distributed, A4, headings centred bold, each ข้อ one paragraph, Champ's wording fixes applied, reply lists the changes.",
+      "files": [
+        "inputs/junior_regulation_excerpt.txt (gitignored: internal HR text)"
+      ],
+      "assertions": [
+        "verify_thai_docx.py exits 0",
+        "at least one body paragraph is w:jc=thaiDistribute and no table cell is",
+        "page is A4 (11906 x 16838 twips)",
+        "rule 14.1 is one paragraph (its text runs from 'ในวันทำงานปกติ' to 'คิดคำนวณ' in the same w:p)",
+        "'สามารถที่บริหาร' does not appear",
+        "หมวด heading 'ก. การทดลองปฏิบัติงาน' is centred and bold",
+        "reply lists the wording changes"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "board-memo",
+      "prompt": "/ifcg-doc ทำไฟล์เลย น้องร่างวาระเข้าบอร์ดไว้ ช่วยเกลาให้เป็นทางการและทำเป็นไฟล์ Word ส่งพี่หน่อย (input: a short memo with an em-dash, an emoji, marketing words and hard breaks)",
+      "expected_output": "A .docx in the วาระ structure (เรื่อง / เรียน / 1-5 topics / comparison table / จึงเรียนมาเพื่อโปรดพิจารณา) with Thai settings, no em-dash, emoji or marketing words, no invented facts.",
+      "files": [
+        "inputs/junior_memo_draft.txt"
+      ],
+      "assertions": [
+        "verify_thai_docx.py exits 0",
+        "at least one body paragraph is w:jc=thaiDistribute and no table cell is",
+        "page is A4 (11906 x 16838 twips)",
+        "no em-dash, emoji, 'ยกระดับ', 'ไร้รอยต่อ' or 'ขับเคลื่อน' in the document text",
+        "has a table whose header contains 'ข้อความเดิม' and 'เหตุผล'",
+        "contains 'จึงเรียนมาเพื่อโปรดพิจารณา'",
+        "keeps the facts: 'มาตรา 67', '31 มีนาคม', '1 มกราคม 2570'"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "regulation-full",
+      "prompt": "/ifcg-doc ทำไฟล์เลย นี่คือระเบียบข้อบังคับการทำงานทั้งฉบับที่น้องทำ ช่วยแก้ภาษาและจัดหน้าให้เป็นไฟล์ Word (input: the junior's full ระเบียบ, rules 1-86)",
+      "expected_output": "Every rule kept, no number dropped, text similarity >= 0.9 to the input, sub-items indented, Thai settings pass.",
+      "files": [
+        "inputs/junior_regulation_full.txt (gitignored: internal HR text)"
+      ],
+      "assertions": [
+        "verify_thai_docx.py exits 0",
+        "body Thai Distributed, no cell distributed",
+        "page is A4",
+        "no rule number lost",
+        "no number dropped",
+        "text kept (similarity >= 0.9)",
+        "rule 14.1 one paragraph"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "announcement",
+      "prompt": "/ifcg-doc ทำไฟล์เลย น้องร่างประกาศวันหยุดปีใหม่มา ช่วยเกลาและทำเป็น Word ให้หน่อย (input: a draft with emoji, em-dash, hype words, HR, ซีอีโอ)",
+      "expected_output": "ประกาศบริษัท shape, no AI tone, facts kept, wrong weekday flagged not changed.",
+      "files": [
+        "inputs/junior_announcement_draft.txt"
+      ],
+      "assertions": [
+        "verify_thai_docx.py exits 0",
+        "body Thai Distributed, no cell distributed",
+        "page is A4",
+        "no em-dash/emoji/hype/English",
+        "ประกาศบริษัท title",
+        "จึงประกาศ closing",
+        "facts kept"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "preview",
+      "prompt": "/ifcg-doc น้องร่างวาระเข้าบอร์ดไว้ ช่วยเกลาให้เป็นทางการและทำเป็นไฟล์ Word ส่งพี่หน่อย (input: the memo draft)",
+      "expected_output": "No .docx yet: a change table (ข้อ / เดิม / ใหม่ / เหตุผล), ควรตรวจ and blanks, ending with the ok prompt.",
+      "files": [
+        "inputs/junior_memo_draft.txt"
+      ],
+      "assertions": [
+        "no .docx in outputs",
+        "reply has a change table with เดิม and ใหม่",
+        "reply lists ควรตรวจ",
+        "reply ends asking 'ตอบ ok เพื่อสร้างไฟล์'",
+        "reply does not repeat the full rewritten text"
+      ]
+    }
+  ]
+}
